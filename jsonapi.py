@@ -58,7 +58,7 @@ class JSONAPIFromSqlAlchemyRenderer:
         del(itemdict['id'])
         return ret
 
-    def item_as_dict(self, item, nest=1):
+    def item_as_dict(self, item, nest_level=1):
         '''Return a dictionary representation of an item from a query.'''
         data = {}
         state = inspect(item)
@@ -66,7 +66,17 @@ class JSONAPIFromSqlAlchemyRenderer:
         # Basic data.
         for colname in mapper.columns.keys():
             data[colname] = getattr(item, colname)
+
+        # No more nesting.
+        if nest_level == 0:
+            return data
+
         # Nested data from relationships.
         for name, rel in mapper.relationships.items():
             print(repr(name),repr(rel))
+            subitem = getattr(item, name)
+            if isinstance(subitem, list):
+                data[name] = []
+            else:
+                data[name] = self.item_as_dict(subitem, nest_level=nest_level - 1)
         return data
