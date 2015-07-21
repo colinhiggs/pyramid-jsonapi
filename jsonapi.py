@@ -1,4 +1,5 @@
 import json
+from sqlalchemy import inspect
 
 class JSONAPIFromSqlAlchemyRenderer:
     '''Pyramid renderer: to JSON-API from SqlAlchemy.
@@ -57,6 +58,15 @@ class JSONAPIFromSqlAlchemyRenderer:
         del(itemdict['id'])
         return ret
 
-    def item_as_dict(self, item):
+    def item_as_dict(self, item, nest=1):
         '''Return a dictionary representation of an item from a query.'''
-        return {attr: get.as_dict() if hasattr(get, 'as_dict') else get for attr in item.__mapper__.attrs.keys() for get in [getattr(item, attr)]}
+        data = {}
+        state = inspect(item)
+        mapper = state.mapper
+        # Basic data.
+        for colname in mapper.columns.keys():
+            data[colname] = getattr(item, colname)
+        # Nested data from relationships.
+        for name, rel in mapper.relationships.items():
+            print(repr(name),repr(rel))
+        return data
