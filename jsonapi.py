@@ -41,44 +41,45 @@ class JSONAPIFromSqlAlchemyRenderer:
         }
         return json.dumps(ret)
 
-    def serialise_db_item(self, item, system):
+    def serialise_db_item(self, item, system, nest_level=1):
         '''Serialise an individual database item to JSON-API.'''
-        itemdict = self.item_as_dict(item)
+        mapper = inspect(item).mapper
+        atts = {
+            colname: getattr(item, colname)
+            for colname in mapper.columns.keys()
+        }
+        item_id = atts['id']
+        del(atts['id'])
+
         ret = {
-            'id': str(itemdict['id']),
+            'id': str(item_id),
             'type': item.__tablename__,
-            'attributes': itemdict,
+            'attributes': atts,
             'links': {
                 'self': system['request'].route_url(
                     item.__class__.__name__.lower() + 'resource',
-                    **{'id': itemdict['id']}
+                    **{'id': item_id}
                 )
             }
         }
-        del(itemdict['id'])
-        return ret
 
-    def item_as_dict(self, item, nest_level=1):
-        '''Return a dictionary representation of an item from a query.'''
-        data = {}
-        state = inspect(item)
-        mapper = state.mapper
-        # Basic data.
-        for colname in mapper.columns.keys():
-            data[colname] = getattr(item, colname)
-
-        # No more nesting.
+        # Don't nest any further.
         if nest_level == 0:
-            return data
+            return ret
 
-        # Nested data from relationships.
-        for name, rel in mapper.relationships.items():
-            print(repr(name),repr(rel))
-            subitem = getattr(item, name)
-            if isinstance(subitem, list):
-                data[name] = []
-                for thing in subitem:
-                    data[name].append(self.item_as_dict(thing, nest_level=nest_level-1))
+        # At least one more nesting level: check for relationships and add.
+        relationships = {}
+        for relname, rel in mapper.relationships.items():
+            thing = getattr(item, relname)
+            # thing can be a single item or a list of them.
+            if isinstance(thing, list):
+                relationships[relname] = [
+                    self.serialise_db_item(subitem, system, nest_level - 1)
+                        for subitem in thing
+                ]
             else:
-                data[name] = self.item_as_dict(subitem, nest_level=nest_level - 1)
-        return data
+                relationships[relname] = self.serialise_db_item(thing, system, nest_level - 1)
+        if relationships:
+            ret['relationships'] = relationships
+
+        return ret
