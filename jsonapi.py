@@ -77,6 +77,8 @@ class JSONAPIFromSqlAlchemyRenderer:
             subitem = getattr(item, name)
             if isinstance(subitem, list):
                 data[name] = []
+                for thing in subitem:
+                    data[name].append(self.item_as_dict(thing, nest_level=nest_level-1))
             else:
                 data[name] = self.item_as_dict(subitem, nest_level=nest_level - 1)
         return data
