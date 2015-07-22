@@ -1,5 +1,6 @@
 import json
 from sqlalchemy import inspect
+from pprint import pprint
 
 class JSONAPIFromSqlAlchemyRenderer:
     '''Pyramid renderer: to JSON-API from SqlAlchemy.
@@ -21,28 +22,78 @@ class JSONAPIFromSqlAlchemyRenderer:
         return DBSession.query(some_model).filter(some_model.id == request.matchdict['id']).one()
     '''
 
-    def __init__(self, info):
-        self.info = info
+    def __init__(self, **options):
+        #self.info = info
+        self.options = options
+        self.options.setdefault('nest',1)
+        pprint(options)
 
-    def __call__(self, value, system):
+    def __call__(self, info):
         '''Hook called by pyramid to invoke renderer.'''
-        req = system['request']
-        req.response.content_type = 'application/vnd.api+json'
-        if isinstance(value, list):
-            data = [self.serialise_db_item(dbitem, system) for dbitem in value]
-        else:
-            data = self.serialise_db_item(value, system)
-        #matchdict = req.matchdict
-        ret = {
-            'data': data,
-            'links': {
-                'self': req.route_url(req.matched_route.name, **req.matchdict)
+        def _render(value, system):
+            req = system['request']
+            #intro = req.registry.introspector
+            #print(intro.get_category('routes'))
+            req.response.content_type = 'application/vnd.api+json'
+            view_options = {}
+            if isinstance(value, dict):
+                results = value['results']
+                del(value['results'])
+                view_options.update(value)
+            else:
+                results = value
+            if isinstance(results, list):
+                data = [
+                    self.serialise_db_item(
+                        dbitem, system,
+                        options = view_options,
+                        nests_remaining = view_options.get(
+                            'nest', self.options.get('nest', 0)
+                        )
+                    )
+                    for dbitem in results
+                ]
+            else:
+                data = self.serialise_db_item(
+                    results, system,
+                    options = view_options,
+                    nests_remaining = view_options.get(
+                        'nest', self.options.get('nest', 0)
+                    )
+                )
+            ret = {
+                'data': data,
+                'links': {
+                    'self': req.route_url(req.matched_route.name, **req.matchdict)
+                }
             }
-        }
-        return json.dumps(ret)
+            return json.dumps(ret)
+        return _render
 
-    def serialise_db_item(self, item, system, nest_level=1):
-        '''Serialise an individual database item to JSON-API.'''
+    def resource_link(self, item, system):
+        return system['request'].route_url(
+            item.__class__.__name__.lower() + 'resource',
+            **{'id': getattr(item, 'id')}
+        )
+
+    def serialise_db_item(self, item, system, options = None, nests_remaining=0):
+        '''Serialise an individual database item to JSON-API.
+
+
+        '''
+        # options affect how data is rendered. Get defaults from self.
+        opts = {}
+        opts.update(self.options)
+        # Next update with options from the model.
+        try:
+            opts.update(item.__jsonapi_options__)
+        except AttributeError:
+            pass
+        # Lastly update with options passed as args (from the view).
+        if options is None:
+            options = {}
+        opts.update(options)
+
         mapper = inspect(item).mapper
         atts = {
             colname: getattr(item, colname)
@@ -56,15 +107,12 @@ class JSONAPIFromSqlAlchemyRenderer:
             'type': item.__tablename__,
             'attributes': atts,
             'links': {
-                'self': system['request'].route_url(
-                    item.__class__.__name__.lower() + 'resource',
-                    **{'id': item_id}
-                )
+                'self': self.resource_link(item, system)
             }
         }
 
         # Don't nest any further.
-        if nest_level == 0:
+        if nests_remaining == 0:
             return ret
 
         # At least one more nesting level: check for relationships and add.
@@ -74,11 +122,11 @@ class JSONAPIFromSqlAlchemyRenderer:
             # thing can be a single item or a list of them.
             if isinstance(thing, list):
                 relationships[relname] = [
-                    self.serialise_db_item(subitem, system, nest_level - 1)
+                    self.serialise_db_item(subitem, system, options=opts, nests_remaining=nests_remaining - 1)
                         for subitem in thing
                 ]
             else:
-                relationships[relname] = self.serialise_db_item(thing, system, nest_level - 1)
+                relationships[relname] = self.serialise_db_item(thing, system, options=opts, nests_remaining=nests_remaining - 1)
         if relationships:
             ret['relationships'] = relationships
 
