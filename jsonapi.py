@@ -2,6 +2,17 @@ import json
 from sqlalchemy import inspect
 from pprint import pprint
 
+def get_query_fields(request, type_name):
+    '''Get the sparse field names as a set from req params for type_name.
+
+    Return None if there was no sparse field param.
+    '''
+    param = request.params.get('fields[{}]'.format(type_name))
+    if param is None:
+        return None
+    return set(param.split(','))
+
+
 class JSONAPIFromSqlAlchemyRenderer:
     '''Pyramid renderer: to JSON-API from SqlAlchemy.
 
@@ -94,17 +105,38 @@ class JSONAPIFromSqlAlchemyRenderer:
             options = {}
         opts.update(options)
 
+        # Required for some introspection.
         mapper = inspect(item).mapper
+
+        # JSON API type
+        type_name = item.__tablename__
+
+        # fields string to look for in params for sparse fieldsets
+        fields_str = 'fields[{}]'.format(type_name)
+        # Start by allowing all fields.
+        allowed_fields = {c for c in mapper.columns.keys()}
+        # Intersect with fields allowed by options (from model or view).
+        if fields_str in opts:
+            allowed_fields = allowed_fields & opts[fields_str]
+        # Intersect with fields asked for in query string.
+        query_fields = get_query_fields(system['request'], type_name)
+        if query_fields:
+            allowed_fields = allowed_fields & query_fields
+
         atts = {
             colname: getattr(item, colname)
             for colname in mapper.columns.keys()
+            if colname in allowed_fields
         }
-        item_id = atts['id']
-        del(atts['id'])
+        item_id = getattr(item, 'id')
+        try:
+            del(atts['id'])
+        except KeyError:
+            pass
 
         ret = {
             'id': str(item_id),
-            'type': item.__tablename__,
+            'type': type_name,
             'attributes': atts,
             'links': {
                 'self': self.resource_link(item, system)
