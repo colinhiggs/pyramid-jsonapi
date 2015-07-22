@@ -112,8 +112,8 @@ class JSONAPIFromSqlAlchemyRenderer:
         }
 
         # Don't nest any further.
-        if nests_remaining == 0:
-            return ret
+        #if nests_remaining == 0:
+        #    return ret
 
         # At least one more nesting level: check for relationships and add.
         relationships = {}
@@ -121,12 +121,26 @@ class JSONAPIFromSqlAlchemyRenderer:
             thing = getattr(item, relname)
             # thing can be a single item or a list of them.
             if isinstance(thing, list):
-                relationships[relname] = [
-                    self.serialise_db_item(subitem, system, options=opts, nests_remaining=nests_remaining - 1)
-                        for subitem in thing
-                ]
+                if nests_remaining == 0:
+                    relationships[relname] = [
+                        self.resource_link(subitem, system) for subitem in thing
+                    ]
+                else:
+                    relationships[relname] = [
+                        self.serialise_db_item(
+                            subitem, system,
+                            options=opts, nests_remaining=nests_remaining - 1
+                        )
+                            for subitem in thing
+                    ]
             else:
-                relationships[relname] = self.serialise_db_item(thing, system, options=opts, nests_remaining=nests_remaining - 1)
+                if nests_remaining == 0:
+                    relationships[relname] = self.resource_link(thing, system)
+                else:
+                    relationships[relname] = self.serialise_db_item(
+                        thing, system, options=opts,
+                        nests_remaining=nests_remaining - 1
+                    )
         if relationships:
             ret['relationships'] = relationships
 
