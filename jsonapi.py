@@ -108,7 +108,10 @@ class JSONAPIFromSqlAlchemyRenderer:
         # Required for some introspection.
         mapper = inspect(item).mapper
 
-        # JSON API type
+        # Item's id and type are required at the top level of json-api objects.
+        # The item's id.
+        item_id = getattr(item, 'id')
+        # JSON API type.
         type_name = item.__tablename__
 
         # fields string to look for in params for sparse fieldsets
@@ -123,12 +126,13 @@ class JSONAPIFromSqlAlchemyRenderer:
         if query_fields:
             allowed_fields = allowed_fields & query_fields
 
+        # Build a dictionary of attributes.
         atts = {
             colname: getattr(item, colname)
             for colname in mapper.columns.keys()
             if colname in allowed_fields
         }
-        item_id = getattr(item, 'id')
+        # make sure that 'id' doesn't end up in attributes
         try:
             del(atts['id'])
         except KeyError:
@@ -153,26 +157,28 @@ class JSONAPIFromSqlAlchemyRenderer:
             thing = getattr(item, relname)
             # thing can be a single item or a list of them.
             if isinstance(thing, list):
-                if nests_remaining == 0:
-                    relationships[relname] = [
-                        self.resource_link(subitem, system) for subitem in thing
-                    ]
-                else:
-                    relationships[relname] = [
-                        self.serialise_db_item(
-                            subitem, system,
-                            options=opts, nests_remaining=nests_remaining - 1
-                        )
+                relationships[relname] = {
+                    'links': {
+                        'self': self.resource_link(item,system) +
+                        '/relationships/' + relname
+                    },
+                    'data': [
+                        {'type': subitem.__tablename__,
+                         'id': getattr(subitem, 'id')}
                             for subitem in thing
                     ]
+                }
             else:
-                if nests_remaining == 0:
-                    relationships[relname] = self.resource_link(thing, system)
-                else:
-                    relationships[relname] = self.serialise_db_item(
-                        thing, system, options=opts,
-                        nests_remaining=nests_remaining - 1
-                    )
+                relationships[relname] = {
+                    'links': {
+                        'self': self.resource_link(item,system) +
+                        '/relationships/' + relname
+                    },
+                    'data': {
+                        'type': thing.__tablename__,
+                        'id': getattr(thing, 'id')
+                    }
+                }
         if relationships:
             ret['relationships'] = relationships
 
