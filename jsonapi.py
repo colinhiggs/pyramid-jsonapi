@@ -2,7 +2,7 @@ import json
 from sqlalchemy import inspect
 from pprint import pprint
 
-def get_query_fields(request, type_name):
+def requested_fields(request, type_name):
     '''Get the sparse field names as a set from req params for type_name.
 
     Return None if there was no sparse field param.
@@ -12,6 +12,16 @@ def get_query_fields(request, type_name):
         return None
     return set(param.split(','))
 
+def requested_includes(request):
+    '''Parse any 'include' param in request.'''
+    param = request.params.get('include', '')
+    inc = set()
+    for i in param.split(','):
+        curname = []
+        for name in i.split('.'):
+            curname.append(name)
+            inc.add('.'.join(curname))
+    return inc
 
 class JSONAPIFromSqlAlchemyRenderer:
     '''Pyramid renderer: to JSON-API from SqlAlchemy.
@@ -36,13 +46,14 @@ class JSONAPIFromSqlAlchemyRenderer:
     def __init__(self, **options):
         #self.info = info
         self.options = options
-        self.options.setdefault('nest',1)
-        pprint(options)
+        #pprint(options)
 
     def __call__(self, info):
         '''Hook called by pyramid to invoke renderer.'''
         def _render(value, system):
             req = system['request']
+            inc = requested_includes(req)
+
             #intro = req.registry.introspector
             #print(intro.get_category('routes'))
             req.response.content_type = 'application/vnd.api+json'
@@ -53,14 +64,14 @@ class JSONAPIFromSqlAlchemyRenderer:
                 view_options.update(value)
             else:
                 results = value
+            included = {}
             if isinstance(results, list):
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
                         options = view_options,
-                        nests_remaining = view_options.get(
-                            'nest', self.options.get('nest', 0)
-                        )
+                        requested_includes = inc,
+                        included = included
                     )
                     for dbitem in results
                 ]
@@ -68,9 +79,8 @@ class JSONAPIFromSqlAlchemyRenderer:
                 data = self.serialise_db_item(
                     results, system,
                     options = view_options,
-                    nests_remaining = view_options.get(
-                        'nest', self.options.get('nest', 0)
-                    )
+                    requested_includes = inc,
+                    included = included
                 )
             ret = {
                 'data': data,
@@ -78,6 +88,8 @@ class JSONAPIFromSqlAlchemyRenderer:
                     'self': req.route_url(req.matched_route.name, **req.matchdict)
                 }
             }
+            if included:
+                ret['included'] = [v for v in included.values()]
             return json.dumps(ret)
         return _render
 
@@ -87,11 +99,19 @@ class JSONAPIFromSqlAlchemyRenderer:
             **{'id': getattr(item, 'id')}
         )
 
-    def serialise_db_item(self, item, system, options = None, nests_remaining=0):
+    def serialise_db_item(self, item, system,
+        requested_includes=None, include_path=None, included=None,
+        options=None):
         '''Serialise an individual database item to JSON-API.
 
 
         '''
+        if requested_includes is None:
+            requested_includes = set()
+        if include_path is None:
+            include_path = []
+        if included is None:
+            included = {}
         # options affect how data is rendered. Get defaults from self.
         opts = {}
         opts.update(self.options)
@@ -122,7 +142,7 @@ class JSONAPIFromSqlAlchemyRenderer:
         if fields_str in opts:
             allowed_fields = allowed_fields & opts[fields_str]
         # Intersect with fields asked for in query string.
-        query_fields = get_query_fields(system['request'], type_name)
+        query_fields = requested_fields(system['request'], type_name)
         if query_fields:
             allowed_fields = allowed_fields & query_fields
 
@@ -147,27 +167,40 @@ class JSONAPIFromSqlAlchemyRenderer:
             }
         }
 
-        # Don't nest any further.
-        #if nests_remaining == 0:
-        #    return ret
-
-        # At least one more nesting level: check for relationships and add.
+        # Add relationships
         relationships = {}
         for relname, rel in mapper.relationships.items():
             thing = getattr(item, relname)
+            rel_path = include_path + [relname]
+            rel_str = '.'.join(rel_path)
             # thing can be a single item or a list of them.
             if isinstance(thing, list):
                 relationships[relname] = {
                     'links': {
                         'self': self.resource_link(item,system) +
                         '/relationships/' + relname
-                    },
-                    'data': [
-                        {'type': subitem.__tablename__,
-                         'id': getattr(subitem, 'id')}
-                            for subitem in thing
-                    ]
+                    }
                 }
+                relationships[relname]['data'] = []
+                for subitem in thing:
+                    relationships[relname]['data'].append(
+                        {
+                            'type': subitem.__tablename__,
+                            'id': getattr(subitem, 'id')
+                        }
+                    )
+                    if rel_str in requested_includes:
+                        included.setdefault(
+                            (subitem.__tablename__, getattr(subitem, 'id')),
+                            self.serialise_db_item(
+                                subitem,system,
+                                include_path=include_path,
+                                requested_includes=requested_includes,
+                                included=included,
+                                options=options
+                            )
+                        )
+
             else:
                 relationships[relname] = {
                     'links': {
@@ -179,6 +212,18 @@ class JSONAPIFromSqlAlchemyRenderer:
                         'id': getattr(thing, 'id')
                     }
                 }
+                if rel_str in requested_includes:
+                    included.setdefault(
+                        (thing.__tablename__, getattr(thing, 'id')),
+                        self.serialise_db_item(
+                            thing,system,
+                            include_path=include_path,
+                            requested_includes=requested_includes,
+                            included=included,
+                            options=options
+                        )
+                    )
+
         if relationships:
             ret['relationships'] = relationships
 
