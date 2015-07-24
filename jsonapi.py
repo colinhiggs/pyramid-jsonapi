@@ -1,6 +1,5 @@
 import json
 from sqlalchemy import inspect
-from pprint import pprint
 
 def requested_fields(request, type_name):
     '''Get the sparse field names as a set from req params for type_name.
@@ -44,9 +43,7 @@ class JSONAPIFromSqlAlchemyRenderer:
     '''
 
     def __init__(self, **options):
-        #self.info = info
         self.options = options
-        #pprint(options)
 
     def __call__(self, info):
         '''Hook called by pyramid to invoke renderer.'''
@@ -194,7 +191,7 @@ class JSONAPIFromSqlAlchemyRenderer:
                             (subitem.__tablename__, getattr(subitem, 'id')),
                             self.serialise_db_item(
                                 subitem,system,
-                                include_path=include_path,
+                                include_path=rel_path,
                                 requested_includes=requested_includes,
                                 included=included,
                                 options=options
@@ -217,7 +214,7 @@ class JSONAPIFromSqlAlchemyRenderer:
                         (thing.__tablename__, getattr(thing, 'id')),
                         self.serialise_db_item(
                             thing,system,
-                            include_path=include_path,
+                            include_path=rel_path,
                             requested_includes=requested_includes,
                             included=included,
                             options=options
