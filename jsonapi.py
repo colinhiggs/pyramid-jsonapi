@@ -1,5 +1,97 @@
 import json
 from sqlalchemy import inspect
+import sqlalchemy
+from pyramid.view import view_config
+import cornice.resource
+import sys
+
+from zope.sqlalchemy import ZopeTransactionExtension
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
+DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+
+def autocreate_jsonapi(models):
+    '''Auto-create jsonapi from module with sqlAlchemy models.'''
+    for k,v in models.__dict__.items():
+        if isinstance(v, sqlalchemy.ext.declarative.api.DeclarativeMeta) and hasattr(v, 'id'):
+            print('{}: {}'.format(k, v.__class__.__name__))
+            setattr(sys.modules[__name__], k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,)))
+
+
+create_jsonapi_using_magic_and_pixie_dust = autocreate_jsonapi
+
+class Resource:
+    '''Base class for all REST resources'''
+    def __init__(self, request):
+        self.request = request
+
+    @cornice.resource.view(renderer='jsonapi')
+    def collection_get(self):
+        '''Get items from the collection.'''
+        return DBSession.query(self.model).all()
+
+    @cornice.resource.view(renderer='jsonapi')
+    def get(self):
+        '''Get a single item.'''
+        try:
+            item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
+        except NoResultFound:
+            raise ResourceNotFoundError('No such {} item: {}.'.format(self.model.__tablename__, self.request.matchdict['id']))
+        return item
+
+    @cornice.resource.view(renderer='jsonapi')
+    def collection_post(self):
+        '''Create a new item.'''
+        data = self.request.json_body
+        # Delete id key to force creation of a new item
+        try:
+            del(data['id'])
+        except KeyError:
+            pass
+        item = DBSession.merge(self.model(**data))
+        DBSession.flush()
+        return item
+
+    @cornice.resource.view(renderer='jsonapi')
+    def patch(self):
+        '''Update an existing item.'''
+        data = self.request.json_body
+        req_id = self.request.matchdict['id']
+        data_id = data.get('id')
+        if data_id is not None and data_id != req_id:
+            raise KeyError('JSON id ({}) does not match URL id ({}).'.
+            format(data_id, req_id))
+        data['id'] = req_id
+        item = DBSession.merge(self.model(**data))
+        DBSession.flush()
+        return item
+
+
+def resource(model, name):
+    '''Class decorator: produce a set of resource endpoints from an appropriate class.'''
+    model.__jsonapi_route_name__ = name
+    def wrap(cls):
+        # Depth has something to do with venusian detecting and creating routes.
+        # Needs to be bumped up by one each time a function/class is wrapped.
+        return create_resource(model, name, cls, depth=3)
+    return wrap
+
+def create_resource(model, name, cls=None, bases=(object,), depth=2):
+    '''Produce a set of resource endpoints.'''
+    print('bases: {}'.format(bases))
+    model.__jsonapi_route_name__ = name
+    if cls is None:
+        cls = type(
+            '{}Resource'.format(model.__name__),
+            bases,
+            {'model': model, 'route_name': name}
+        )
+    cls.model = model
+    cls.route_name = name
+    # See the comment in resource about depth.
+    return cornice.resource.resource(name=name, collection_path=name, path='{}/{{id}}'.format(name), depth=depth)(cls)
 
 def requested_fields(request, type_name):
     '''Get the sparse field names as a set from req params for type_name.
@@ -91,9 +183,16 @@ class JSONAPIFromSqlAlchemyRenderer:
         return _render
 
     def resource_link(self, item, system):
+        '''Return a link to the resource represented by item.'''
         return system['request'].route_url(
-            item.__class__.__name__.lower() + 'resource',
+            item.__jsonapi_route_name__,
             **{'id': getattr(item, 'id')}
+        )
+
+    def collection_link(self, item, system):
+        '''Return a link to the collection item is from.'''
+        return system['request'].route_url(
+            'collection_' + item.__jsonapi_route_name__, **{}
         )
 
     def serialise_db_item(self, item, system,
@@ -175,7 +274,7 @@ class JSONAPIFromSqlAlchemyRenderer:
                 relationships[relname] = {
                     'links': {
                         'self': self.resource_link(item,system) +
-                        '/relationships/' + relname
+                        '/relationships/' + relname,
                     }
                 }
                 relationships[relname]['data'] = []
@@ -202,7 +301,7 @@ class JSONAPIFromSqlAlchemyRenderer:
                 relationships[relname] = {
                     'links': {
                         'self': self.resource_link(item,system) +
-                        '/relationships/' + relname
+                        '/relationships/' + relname,
                     },
                     'data': {
                         'type': thing.__tablename__,
