@@ -1,9 +1,10 @@
 import json
-from sqlalchemy import inspect
+#from sqlalchemy import inspect
 import sqlalchemy
 from pyramid.view import view_config
 import cornice.resource
 import sys
+import inspect
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -12,12 +13,26 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
-def autocreate_jsonapi(models):
+def autocreate_jsonapi(models, module=None):
     '''Auto-create jsonapi from module with sqlAlchemy models.'''
+    if module is None:
+    # Add resource classes to the caller's module.
+        parentframe = inspect.stack()[1][0]
+        try:
+            module = inspect.getmodule(parentframe)
+        finally:
+            # Memory leak (or delayed free) if parentframe is not
+            # deleted.
+            del parentframe
+
+    # Adding the new classes to another module doesn't work for some reason.
+    # Stick to our own for now.
+    module = sys.modules[__name__]
+    print('module: {}'.format(module))
     for k,v in models.__dict__.items():
         if isinstance(v, sqlalchemy.ext.declarative.api.DeclarativeMeta) and hasattr(v, 'id'):
             print('{}: {}'.format(k, v.__class__.__name__))
-            setattr(sys.modules[__name__], k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,)))
+            setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,)))
 
 
 create_jsonapi_using_magic_and_pixie_dust = autocreate_jsonapi
@@ -222,7 +237,7 @@ class JSONAPIFromSqlAlchemyRenderer:
         opts.update(options)
 
         # Required for some introspection.
-        mapper = inspect(item).mapper
+        mapper = sqlalchemy.inspect(item).mapper
 
         # Item's id and type are required at the top level of json-api objects.
         # The item's id.
