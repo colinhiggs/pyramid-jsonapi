@@ -1,6 +1,6 @@
 # Getting started
 
-## Make a virtual env
+## Make a Virtual Env
 
 ```bash
 ./create-venv.sh
@@ -30,4 +30,12 @@ source env/bin/activate
 Install requirements:
 ```bash
 pip install -r requirements.txt
+```
+
+## Install Deps for Test Project
+
+```bash
+source env/bin/activate # if not already in virtualenv
+cd test_project
+python setup.py develop
 ```
