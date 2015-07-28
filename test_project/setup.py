@@ -15,7 +15,9 @@ requires = [
     'zope.sqlalchemy',
     'waitress',
     'cornice',
-    'psycopg2'
+    'psycopg2',
+    'testing.postgresql',
+    'webtest',
     ]
 
 setup(name='test_project',
