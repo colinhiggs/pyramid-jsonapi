@@ -32,7 +32,7 @@ def autocreate_jsonapi(models, module=None):
     for k,v in models.__dict__.items():
         if isinstance(v, sqlalchemy.ext.declarative.api.DeclarativeMeta) and hasattr(v, 'id'):
             print('{}: {}'.format(k, v.__class__.__name__))
-            setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,)))
+            setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,), module=module))
 
 
 create_jsonapi_using_magic_and_pixie_dust = autocreate_jsonapi
@@ -93,7 +93,7 @@ def resource(model, name):
         return create_resource(model, name, cls, depth=3)
     return wrap
 
-def create_resource(model, name, cls=None, bases=(object,), depth=2):
+def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=None):
     '''Produce a set of resource endpoints.'''
     print('bases: {}'.format(bases))
     model.__jsonapi_route_name__ = name
@@ -105,6 +105,7 @@ def create_resource(model, name, cls=None, bases=(object,), depth=2):
         )
     cls.model = model
     cls.route_name = name
+    setattr(module, cls.__name__, cls)
     # See the comment in resource about depth.
     return cornice.resource.resource(name=name, collection_path=name, path='{}/{{id}}'.format(name), depth=depth)(cls)
 
