@@ -60,6 +60,9 @@ class TestJsonApi(unittest.TestCase):
                         author=person
                     )
 
+        cls.app = get_app('development.ini')
+        cls.test_app = webtest.TestApp(cls.app)
+
     @classmethod
     def tearDownClass(cls):
         '''Throw away test DB.'''
@@ -103,3 +106,14 @@ class TestJsonApi(unittest.TestCase):
             self.assertIsInstance(item, Post)
             self.assertTrue(item.author.name in self.idx['people'])
             self.assertTrue(item.blog.title in self.idx['blogs'])
+
+    def test_api_people_get(self):
+        '''Should return all people via jsonapi.'''
+        r = self.test_app.get('/people')
+        self.assertTrue(r.status_code == 200)
+        data = r.json['data']
+        self.assertIsInstance(data, list)
+        self.assertTrue(len(data) == len(self.idx['people']))
+        for item in data:
+            with self.subTest(name=item['attributes']['name']):
+                self.assertTrue(item['attributes']['name'] in self.idx['people'])
