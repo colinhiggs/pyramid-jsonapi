@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
-def autocreate_jsonapi(models, module=None):
+def create_jsonapi(models, module=None):
     '''Auto-create jsonapi from module with sqlAlchemy models.'''
     if module is None:
     # Add resource classes to the caller's module.
@@ -35,7 +35,7 @@ def autocreate_jsonapi(models, module=None):
             setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,), module=module))
 
 
-create_jsonapi_using_magic_and_pixie_dust = autocreate_jsonapi
+create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
 class Resource:
     '''Base class for all REST resources'''

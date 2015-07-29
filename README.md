@@ -4,21 +4,31 @@ Utilities for creating JSON-API apis from a database using the sqlAlchemy ORM an
 
 ## Installation
 
-Pretty basic right now: copy `jsonapi.py` into your PYTHONPATH or into your project.
+Pretty basic right now: copy the directory jsonapi/ into your PYTHONPATH or into your project.
 
 ## Quick preview
 
-In `views.py`:
+If you are happy with the defaults, you can get away with the following additions to the standard pyramid alchemy scaffold's top level `__init__.py`:
+
 ```python
 import jsonapi
 # Or 'from . import jsonapi' if you copied jsonapi directly into your project.
+
 from . import models # Your models module.
 
-jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
-
+# In the main function:
+  renderer = jsonapi.JSONAPIFromSqlAlchemyRenderer()
+  config.add_renderer('jsonapi', renderer)
+  jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
+  # Make sure we scan the *jsonapi* package.
+  config.scan(package=jsonapi)
 ```
 
-Yes, there really is a method called "create_api_using_magic_and_pixie_dust". No, you don't *have* to call it that. If you are feeling more sensible you can use the synonym `autocreate_jsonapi()`.
+See `test_project/test_project/__init.py` for a fully working file.
+
+You don't need views.py unless you have some other routes and views.
+
+Yes, there really is a method called "create_api_using_magic_and_pixie_dust". No, you don't *have* to call it that. If you are feeling more sensible you can use the synonym `create_jsonapi()`.
 
 ## Usage
 
@@ -27,44 +37,7 @@ Yes, there really is a method called "create_api_using_magic_and_pixie_dust". No
 1. Create Some Models:
 
     ```python
-    from sqlalchemy import (
-      Column,
-      BigInteger,
-      Text,
-      ForeignKey,
-    )
-
-    from sqlalchemy.ext.declarative import declarative_base
-
-    from sqlalchemy.orm import (
-        relationship,
-        backref,
-    )
-
-    Base = declarative_base()
-
-    # Nearly everything will need an id and most things will need to refer to
-    # other id columns. Create convenience functions for those.
-    IdType = BigInteger
-    def IdColumn():
-      '''Convenience function: the default Column for object ids.'''
-      return Column(IdType, primary_key=True, autoincrement=True)
-    def IdRefColumn(reference, *args, **kwargs):
-      '''Convenience function: the default Column for references to object ids.'''
-      return Column(IdType, ForeignKey(reference), *args, **kwargs)
-
-    class Blog(Base):
-      __tablename__ = 'blogs'
-      id = IdColumn()
-      title = Column(Text)
-      posts = relationship('Post', backref='blog')
-
-    class Post(Base):
-      __tablename__ = 'posts'
-      id = IdColumn()
-      title = Column(text)
-      content = Column(text)
-      blog_id = IdRefColumn('blogs.id', nullable=False)
+    
     ```
 
 #### Auto-create Assumptions
