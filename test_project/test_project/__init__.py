@@ -1,7 +1,7 @@
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 
-from . import jsonapi
+import jsonapi
 from . import models
 
 #from .models import (
@@ -23,5 +23,5 @@ def main(global_config, **settings):
     jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/')
-    config.scan()
+    config.scan(package=jsonapi)
     return config.make_wsgi_app()
