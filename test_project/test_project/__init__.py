@@ -37,6 +37,7 @@ def main(global_config, **settings):
     # Set up the renderer.
     renderer = jsonapi.JSONAPIFromSqlAlchemyRenderer()
     config.add_renderer('jsonapi', renderer)
+    config.add_renderer(None, renderer)
     # Create the routes and views automagically.
     jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
     # Make sure we scan the *jsonapi* package.

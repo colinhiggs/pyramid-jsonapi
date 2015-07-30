@@ -13,6 +13,48 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
+class Resource:
+    '''Base class for all REST resources'''
+    def __init__(self, request):
+        self.request = request
+
+    def collection_get(self):
+        '''Get items from the collection.'''
+        return DBSession.query(self.model).all()
+
+    def get(self):
+        '''Get a single item.'''
+        try:
+            item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
+        except NoResultFound:
+            raise ResourceNotFoundError('No such {} item: {}.'.format(self.model.__tablename__, self.request.matchdict['id']))
+        return item
+
+    def collection_post(self):
+        '''Create a new item.'''
+        data = self.request.json_body
+        # Delete id key to force creation of a new item
+        try:
+            del(data['id'])
+        except KeyError:
+            pass
+        item = DBSession.merge(self.model(**data))
+        DBSession.flush()
+        return item
+
+    def patch(self):
+        '''Update an existing item.'''
+        data = self.request.json_body
+        req_id = self.request.matchdict['id']
+        data_id = data.get('id')
+        if data_id is not None and data_id != req_id:
+            raise KeyError('JSON id ({}) does not match URL id ({}).'.
+            format(data_id, req_id))
+        data['id'] = req_id
+        item = DBSession.merge(self.model(**data))
+        DBSession.flush()
+        return item
+
 def create_jsonapi(models, module=None):
     '''Auto-create jsonapi from module with sqlAlchemy models.'''
     if module is None:
@@ -33,56 +75,7 @@ def create_jsonapi(models, module=None):
         if isinstance(v, sqlalchemy.ext.declarative.api.DeclarativeMeta) and hasattr(v, 'id'):
             print('{}: {}'.format(k, v.__class__.__name__))
             setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,), module=module))
-
-
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
-
-class Resource:
-    '''Base class for all REST resources'''
-    def __init__(self, request):
-        self.request = request
-
-    @cornice.resource.view(renderer='jsonapi')
-    def collection_get(self):
-        '''Get items from the collection.'''
-        return DBSession.query(self.model).all()
-
-    @cornice.resource.view(renderer='jsonapi')
-    def get(self):
-        '''Get a single item.'''
-        try:
-            item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
-        except NoResultFound:
-            raise ResourceNotFoundError('No such {} item: {}.'.format(self.model.__tablename__, self.request.matchdict['id']))
-        return item
-
-    @cornice.resource.view(renderer='jsonapi')
-    def collection_post(self):
-        '''Create a new item.'''
-        data = self.request.json_body
-        # Delete id key to force creation of a new item
-        try:
-            del(data['id'])
-        except KeyError:
-            pass
-        item = DBSession.merge(self.model(**data))
-        DBSession.flush()
-        return item
-
-    @cornice.resource.view(renderer='jsonapi')
-    def patch(self):
-        '''Update an existing item.'''
-        data = self.request.json_body
-        req_id = self.request.matchdict['id']
-        data_id = data.get('id')
-        if data_id is not None and data_id != req_id:
-            raise KeyError('JSON id ({}) does not match URL id ({}).'.
-            format(data_id, req_id))
-        data['id'] = req_id
-        item = DBSession.merge(self.model(**data))
-        DBSession.flush()
-        return item
-
 
 def resource(model, name):
     '''Class decorator: produce a set of resource endpoints from an appropriate class.'''
@@ -107,7 +100,7 @@ def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=No
     cls.route_name = name
     setattr(module, cls.__name__, cls)
     # See the comment in resource about depth.
-    return cornice.resource.resource(name=name, collection_path=name, path='{}/{{id}}'.format(name), depth=depth)(cls)
+    return cornice.resource.resource(name=name, collection_path=name, path='{}/{{id}}'.format(name), depth=depth, renderer='jsonapi')(cls)
 
 def requested_fields(request, type_name):
     '''Get the sparse field names as a set from req params for type_name.
