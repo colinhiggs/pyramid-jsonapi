@@ -77,7 +77,7 @@ class TestJsonApi(unittest.TestCase):
         transaction.abort()
 
     def test_db_people(self):
-        '''Should return initial list of people driect from DB.'''
+        '''Should return initial list of people direct from DB.'''
         results = DBSession.query(Person).all()
         self.assertIsInstance(results, list)
         self.assertTrue(len(results) == len(self.data['people']))
