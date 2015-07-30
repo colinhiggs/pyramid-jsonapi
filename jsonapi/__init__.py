@@ -1,5 +1,6 @@
 import json
 #from sqlalchemy import inspect
+import transaction
 import sqlalchemy
 from pyramid.view import view_config
 import cornice.resource
@@ -20,6 +21,8 @@ class Resource:
 
     def collection_get(self):
         '''Get items from the collection.'''
+        limit = 10
+        offset = 0
         return DBSession.query(self.model).all()
 
     def get(self):
@@ -33,12 +36,13 @@ class Resource:
     def collection_post(self):
         '''Create a new item.'''
         data = self.request.json_body
+        atts = data['attributes']
         # Delete id key to force creation of a new item
         try:
-            del(data['id'])
+            del(atts['id'])
         except KeyError:
             pass
-        item = DBSession.merge(self.model(**data))
+        item = DBSession.merge(self.model(**atts))
         DBSession.flush()
         return item
 
