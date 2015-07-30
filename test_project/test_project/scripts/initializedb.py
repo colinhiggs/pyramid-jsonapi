@@ -17,6 +17,8 @@ from ..models import (
     Post
     )
 
+from .. import test_data
+
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
@@ -34,3 +36,4 @@ def main(argv=sys.argv):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.create_all(engine)
+    test_data.add_to_db()
