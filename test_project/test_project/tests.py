@@ -15,19 +15,12 @@ from .models import (
     Post
 )
 
+from . import test_data
+from .test_data import data, idx
+
 class TestJsonApi(unittest.TestCase):
     '''Unit test suite for jsonapi.
     '''
-
-    # Some initial data in a handy form.
-    data = {
-        'people': [{'name': 'alice'}, {'name': 'bob'}],
-        'blogs': [{'title': 'main'}, {'title': 'second'}]
-    }
-    # Indexes for later tests.
-    idx = {}
-    idx['people'] = {obj['name']: obj for obj in data['people']}
-    idx['blogs'] = {obj['title']: obj for obj in data['blogs']}
 
     @classmethod
     def setUpClass(cls):
@@ -39,26 +32,7 @@ class TestJsonApi(unittest.TestCase):
         Base.metadata.create_all(cls.engine)
 
         # Add some basic test data.
-        with transaction.manager:
-            for pdata in cls.data['people']:
-                person = Person(**pdata)
-                DBSession.add(person)
-                for bdata in cls.data['blogs']:
-                    bdata['owner'] = person
-                    blog = Blog(**bdata)
-                    DBSession.add(blog)
-                    post1 = Post(
-                        title='first post',
-                        content='{}\'s first post in {}'.format(person.name, blog.title),
-                        blog=blog,
-                        author=person
-                    )
-                    post2 = Post(
-                        title='also ran',
-                        content='{}\'s second post in {}'.format(person.name, blog.title),
-                        blog=blog,
-                        author=person
-                    )
+        test_data.add_to_db()
 
         cls.app = get_app('development.ini')
         cls.test_app = webtest.TestApp(cls.app)
@@ -80,10 +54,10 @@ class TestJsonApi(unittest.TestCase):
         '''Should return initial list of people direct from DB.'''
         results = DBSession.query(Person).all()
         self.assertIsInstance(results, list)
-        self.assertTrue(len(results) == len(self.data['people']))
+        self.assertTrue(len(results) == len(data['people']))
         for item in results:
             self.assertIsInstance(item, Person)
-            self.assertTrue(item.name in self.idx['people'])
+            self.assertTrue(item.name in idx['people'])
             self.assertTrue(len(item.blogs) != 0)
             self.assertTrue(len(item.posts) != 0)
 
@@ -91,29 +65,29 @@ class TestJsonApi(unittest.TestCase):
         '''Should return initial blogs from DB with accessible owners.'''
         results = DBSession.query(Blog).all()
         self.assertIsInstance(results, list)
-        self.assertTrue(len(results) == len(self.data['blogs']) * len(self.data['people']))
+        self.assertTrue(len(results) == len(data['blogs']) * len(data['people']))
         for item in results:
             self.assertIsInstance(item, Blog)
-            self.assertTrue(item.title in self.idx['blogs'])
-            self.assertTrue(item.owner.name in self.idx['people'])
+            self.assertTrue(item.title in idx['blogs'])
+            self.assertTrue(item.owner.name in idx['people'])
 
     def test_db_posts(self):
         '''Should fetch all posts from DB.'''
         results = DBSession.query(Post).all()
         self.assertIsInstance(results, list)
-        self.assertTrue(len(results) == len(self.data['blogs']) * len(self.data['people']) * 2)
+        self.assertTrue(len(results) == len(data['blogs']) * len(data['people']) * 2)
         for item in results:
             self.assertIsInstance(item, Post)
-            self.assertTrue(item.author.name in self.idx['people'])
-            self.assertTrue(item.blog.title in self.idx['blogs'])
+            self.assertTrue(item.author.name in idx['people'])
+            self.assertTrue(item.blog.title in idx['blogs'])
 
     def test_api_people_get(self):
         '''Should return all people via jsonapi.'''
         r = self.test_app.get('/people')
         self.assertTrue(r.status_code == 200)
-        data = r.json['data']
-        self.assertIsInstance(data, list)
-        self.assertTrue(len(data) == len(self.idx['people']))
-        for item in data:
+        jdata = r.json['data']
+        self.assertIsInstance(jdata, list)
+        self.assertTrue(len(jdata) == len(idx['people']))
+        for item in jdata:
             with self.subTest(name=item['attributes']['name']):
-                self.assertTrue(item['attributes']['name'] in self.idx['people'])
+                self.assertTrue(item['attributes']['name'] in idx['people'])
