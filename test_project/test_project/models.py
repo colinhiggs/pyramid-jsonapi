@@ -36,6 +36,9 @@ class Person(Base):
     name = Column(Text)
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
+    __jsonapi_options__ = {
+        'default_limit': 2
+    }
 
 class Blog(Base):
     __tablename__ = 'blogs'

@@ -21,9 +21,18 @@ class Resource:
 
     def collection_get(self):
         '''Get items from the collection.'''
-        limit = 10
-        offset = 0
-        return DBSession.query(self.model).all()
+        print(self.request.params)
+        limit = min(
+            self.max_limit,
+            int(self.request.params.get('limit', self.default_limit))
+        )
+        offset = int(self.request.params.get('offset', 0))
+        print('offset: ' + str(offset))
+        order_by = self.request.params.get('order_by', 'id')
+        return DBSession.query(self.model).\
+            order_by(order_by).\
+            offset(offset).limit(limit).\
+            all()
 
     def get(self):
         '''Get a single item.'''
@@ -81,18 +90,23 @@ def create_jsonapi(models, module=None):
             setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,), module=module))
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
-def resource(model, name):
+def resource(model, name, **options):
     '''Class decorator: produce a set of resource endpoints from an appropriate class.'''
     model.__jsonapi_route_name__ = name
     def wrap(cls):
         # Depth has something to do with venusian detecting and creating routes.
         # Needs to be bumped up by one each time a function/class is wrapped.
-        return create_resource(model, name, cls, depth=3)
+        return create_resource(model, name, cls=cls, depth=3, **options)
     return wrap
 
-def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=None):
+def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=None, **options):
     '''Produce a set of resource endpoints.'''
-    print('bases: {}'.format(bases))
+    my_opts = {'default_limit': 10, 'max_limit': 100}
+    try:
+        my_opts.update(model.__jsonapi_options__)
+    except AttributeError:
+        pass
+    my_opts.update(options)
     model.__jsonapi_route_name__ = name
     if cls is None:
         cls = type(
@@ -102,6 +116,8 @@ def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=No
         )
     cls.model = model
     cls.route_name = name
+    cls.default_limit = my_opts['default_limit']
+    cls.max_limit = my_opts['max_limit']
     setattr(module, cls.__name__, cls)
     # See the comment in resource about depth.
     return cornice.resource.resource(name=name, collection_path=name, path='{}/{{id}}'.format(name), depth=depth, renderer='jsonapi')(cls)
