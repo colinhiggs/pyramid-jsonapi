@@ -57,6 +57,7 @@ class Resource:
             except IndexError:
                 sub_key = 'id'
             order = getattr(order.property.mapper.entity, sub_key)
+        q = q.order_by(order)
 
         # Filtering.
         # Use 'filter[<condition>]' param.
@@ -78,13 +79,34 @@ class Resource:
             match = re.match(r'filter\[(.*?)\]', p)
             if not match:
                 continue
+            val = self.request.params.get(p)
             colspec, op = match.group(1).split(':')
             colspec = colspec.split('.')
-#        return None
+            prop = getattr(self.model, colspec[0])
+            if isinstance(prop.property, RelationshipProperty):
+                pass
+            if op == 'eq':
+                op_func = getattr(prop, '__eq__')
+            elif op == 'ne':
+                op_func = getattr(prop, '__ne__')
+            elif op == 'startswith':
+                op_func = getattr(prop, 'startswith')
+            elif op == 'contains':
+                op_func = getattr(prop, 'contains')
+            elif op == 'lt':
+                op_func = getattr(prop, '__lt__')
+            elif op == 'gt':
+                op_func = getattr(prop, '__gt__')
+            elif op == 'le':
+                op_func = getattr(prop, '__le__')
+            elif op == 'ge':
+                op_func = getattr(prop, '__ge__')
+            elif op == 'like' or op == 'ilike':
+                op_func = getattr(prop, op)
+                val = re.sub(r'\*', '%', val)
+            q = q.filter(op_func(val))
 
-        return q.order_by(order).\
-            offset(offset).limit(limit).\
-            all()
+        return q.offset(offset).limit(limit).all()
 
     def get(self):
         '''Get a single item.'''
