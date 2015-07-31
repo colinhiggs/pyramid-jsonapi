@@ -1,5 +1,6 @@
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
+from . import views
 
 # The jsonapi module.
 import jsonapi
@@ -21,6 +22,8 @@ def main(global_config, **settings):
     config = Configurator(settings=settings)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/')
+    config.add_route('echo', '/echo/{type}')
+    config.scan(views)
 
     # jsonapi requires cornice.
     config.include('cornice')
