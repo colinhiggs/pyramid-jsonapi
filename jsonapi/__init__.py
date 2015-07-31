@@ -11,6 +11,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.relationships import RelationshipProperty
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
@@ -26,9 +27,17 @@ class Resource:
             int(self.request.params.get('page[limit]', self.default_limit))
         )
         offset = int(self.request.params.get('page[offset]', 0))
-        sort = self.request.params.get('sort', 'id')
-        return DBSession.query(self.model).\
-            order_by(sort).\
+        q = DBSession.query(self.model)
+        sort_key = self.request.params.get('sort', 'id').split('.')
+        order = getattr(self.model, sort_key[0])
+        if isinstance(order.property, RelationshipProperty):
+            q = q.join(order)
+            try:
+                sub_key = sort_key[1]
+            except IndexError:
+                sub_key = 'id'
+            order = getattr(order.property.mapper.entity, sub_key)
+        return q.order_by(order).\
             offset(offset).limit(limit).\
             all()
 
@@ -181,7 +190,9 @@ class JSONAPIFromSqlAlchemyRenderer:
             else:
                 results = value
             included = {}
-            if isinstance(results, list):
+            if results is None:
+                data = None
+            elif isinstance(results, list):
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
