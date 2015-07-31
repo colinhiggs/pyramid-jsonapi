@@ -6,6 +6,7 @@ from pyramid.view import view_config
 import cornice.resource
 import sys
 import inspect
+import re
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -22,21 +23,65 @@ class Resource:
 
     def collection_get(self):
         '''Get items from the collection.'''
+        # Paging by limit and offset.
+        # Use params 'page[limit]' and 'page[offset]' to comply with spec.
         limit = min(
             self.max_limit,
             int(self.request.params.get('page[limit]', self.default_limit))
         )
         offset = int(self.request.params.get('page[offset]', 0))
+
+        # Start building the query.
         q = DBSession.query(self.model)
+
+        # Sorting.
+        # Use param 'sort' as per spec.
+        # Split on '.' to allow sorting on columns of relationship tables:
+        #   sort=name -> sort on the 'name' column.
+        #   sort=owner.name -> sort on the 'name' column of the target table
+        #     of the relationship 'owner'.
+        # The default sort column is 'id'.
         sort_key = self.request.params.get('sort', 'id').split('.')
         order = getattr(self.model, sort_key[0])
+        # order will be a sqlalchemy.orm.properties.ColumnProperty if
+        # sort_key[0] is the name of an attribute or a
+        # sqlalchemy.orm.relationships.RelationshipProperty if sort_key[0]
+        # is the name of a relationship.
         if isinstance(order.property, RelationshipProperty):
+            # If order is a relationship then we need to add a join to the query
+            # and order_by the sort_key[1] column of the relationship's target.
+            # The default target column is 'id'.
             q = q.join(order)
             try:
                 sub_key = sort_key[1]
             except IndexError:
                 sub_key = 'id'
             order = getattr(order.property.mapper.entity, sub_key)
+
+        # Filtering.
+        # Use 'filter[<condition>]' param.
+        # Format:
+        #   filter[<column_spec>:<operator>] = <value>
+        #   where:
+        #     <column_spec> is either:
+        #       <column_name> for an attribute, or
+        #       <relationship_name>.<column_name> for a relationship.
+        # Examples:
+        #   filter[name:eq]=Fred
+        #      would find all objects with a 'name' attribute of 'Fred'
+        #   filter[author.name:eq]=Fred
+        #      would find all objects where the relationship author pointed
+        #      to an object with 'name' 'Fred'
+        #
+        # Find all the filters.
+        for p in self.request.params.keys():
+            match = re.match(r'filter\[(.*?)\]', p)
+            if not match:
+                continue
+            colspec, op = match.group(1).split(':')
+            colspec = colspec.split('.')
+#        return None
+
         return q.order_by(order).\
             offset(offset).limit(limit).\
             all()
