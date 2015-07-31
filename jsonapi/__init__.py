@@ -21,16 +21,14 @@ class Resource:
 
     def collection_get(self):
         '''Get items from the collection.'''
-        print(self.request.params)
         limit = min(
             self.max_limit,
-            int(self.request.params.get('limit', self.default_limit))
+            int(self.request.params.get('page[limit]', self.default_limit))
         )
-        offset = int(self.request.params.get('offset', 0))
-        print('offset: ' + str(offset))
-        order_by = self.request.params.get('order_by', 'id')
+        offset = int(self.request.params.get('page[offset]', 0))
+        sort = self.request.params.get('sort', 'id')
         return DBSession.query(self.model).\
-            order_by(order_by).\
+            order_by(sort).\
             offset(offset).limit(limit).\
             all()
 
