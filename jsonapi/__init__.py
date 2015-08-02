@@ -22,7 +22,13 @@ class Resource:
         self.request = request
 
     def collection_get(self):
-        '''Get items from the collection.'''
+        '''Get items from the collection.
+
+
+        '''
+        # Start building the query.
+        q = DBSession.query(self.model)
+
         # Paging by limit and offset.
         # Use params 'page[limit]' and 'page[offset]' to comply with spec.
         limit = min(
@@ -30,9 +36,6 @@ class Resource:
             int(self.request.params.get('page[limit]', self.default_limit))
         )
         offset = int(self.request.params.get('page[offset]', 0))
-
-        # Start building the query.
-        q = DBSession.query(self.model)
 
         # Sorting.
         # Use param 'sort' as per spec.
@@ -42,22 +45,31 @@ class Resource:
         #     of the relationship 'owner'.
         # The default sort column is 'id'.
         sort_key = self.request.params.get('sort', 'id').split('.')
-        order = getattr(self.model, sort_key[0])
-        # order will be a sqlalchemy.orm.properties.ColumnProperty if
+        # Check to see if it starts with '-', which indicates a reverse sort.
+        ascending = True
+        if sort_key[0].startswith('-'):
+            ascending = False
+            sort_key[0] = sort_key[0][1:]
+        # Get the ordering attribute.
+        order_att = getattr(self.model, sort_key[0])
+        # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
         # sort_key[0] is the name of an attribute or a
         # sqlalchemy.orm.relationships.RelationshipProperty if sort_key[0]
         # is the name of a relationship.
-        if isinstance(order.property, RelationshipProperty):
+        if isinstance(order_att.property, RelationshipProperty):
             # If order is a relationship then we need to add a join to the query
             # and order_by the sort_key[1] column of the relationship's target.
             # The default target column is 'id'.
-            q = q.join(order)
+            q = q.join(order_att)
             try:
                 sub_key = sort_key[1]
             except IndexError:
                 sub_key = 'id'
-            order = getattr(order.property.mapper.entity, sub_key)
-        q = q.order_by(order)
+            order_att = getattr(order_att.property.mapper.entity, sub_key)
+        if ascending:
+            q = q.order_by(order_att)
+        else:
+            q = q.order_by(order_att.desc())
 
         # Filtering.
         # Use 'filter[<condition>]' param.
@@ -84,6 +96,7 @@ class Resource:
             colspec = colspec.split('.')
             prop = getattr(self.model, colspec[0])
             if isinstance(prop.property, RelationshipProperty):
+                # TODO(Colin): deal with relationships properly.
                 pass
             if op == 'eq':
                 op_func = getattr(prop, '__eq__')
