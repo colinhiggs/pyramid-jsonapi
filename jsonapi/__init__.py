@@ -21,21 +21,18 @@ class Resource:
     def __init__(self, request):
         self.request = request
 
-    def collection_get(self):
-        '''Get items from the collection.
-
-
-        '''
-        # Start building the query.
-        q = DBSession.query(self.model)
+    @classmethod
+    def collection_query_info(cls, request):
+        '''Dictionary of information used during DB query.'''
+        info = {}
 
         # Paging by limit and offset.
         # Use params 'page[limit]' and 'page[offset]' to comply with spec.
-        limit = min(
-            self.max_limit,
-            int(self.request.params.get('page[limit]', self.default_limit))
+        info['page[limit]'] = min(
+            cls.max_limit,
+            int(request.params.get('page[limit]', cls.default_limit))
         )
-        offset = int(self.request.params.get('page[offset]', 0))
+        info['page[offset]'] = int(request.params.get('page[offset]', 0))
 
         # Sorting.
         # Use param 'sort' as per spec.
@@ -44,32 +41,17 @@ class Resource:
         #   sort=owner.name -> sort on the 'name' column of the target table
         #     of the relationship 'owner'.
         # The default sort column is 'id'.
-        sort_key = self.request.params.get('sort', 'id').split('.')
+        sort_key = request.params.get('sort', 'id')
+        info['sort'] = sort_key
+        # Break sort param down into components and store in _sort.
+        info['_sort'] = {}
         # Check to see if it starts with '-', which indicates a reverse sort.
         ascending = True
-        if sort_key[0].startswith('-'):
+        if sort_key.startswith('-'):
             ascending = False
-            sort_key[0] = sort_key[0][1:]
-        # Get the ordering attribute.
-        order_att = getattr(self.model, sort_key[0])
-        # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
-        # sort_key[0] is the name of an attribute or a
-        # sqlalchemy.orm.relationships.RelationshipProperty if sort_key[0]
-        # is the name of a relationship.
-        if isinstance(order_att.property, RelationshipProperty):
-            # If order is a relationship then we need to add a join to the query
-            # and order_by the sort_key[1] column of the relationship's target.
-            # The default target column is 'id'.
-            q = q.join(order_att)
-            try:
-                sub_key = sort_key[1]
-            except IndexError:
-                sub_key = 'id'
-            order_att = getattr(order_att.property.mapper.entity, sub_key)
-        if ascending:
-            q = q.order_by(order_att)
-        else:
-            q = q.order_by(order_att.desc())
+            sort_key = sort_key[1:]
+        info['_sort']['key'] = sort_key
+        info['_sort']['ascending'] = ascending
 
         # Filtering.
         # Use 'filter[<condition>]' param.
@@ -87,13 +69,61 @@ class Resource:
         #      to an object with 'name' 'Fred'
         #
         # Find all the filters.
-        for p in self.request.params.keys():
+        info['_filters'] = {}
+        for p in request.params.keys():
             match = re.match(r'filter\[(.*?)\]', p)
             if not match:
                 continue
-            val = self.request.params.get(p)
+            val = request.params.get(p)
             colspec, op = match.group(1).split(':')
             colspec = colspec.split('.')
+            info['_filters'][p] = {
+                'colspec': colspec,
+                'op': op,
+                'value': val
+            }
+
+        return info
+
+
+    def collection_get(self):
+        '''Get items from the collection.
+
+
+        '''
+        # Start building the query.
+        q = DBSession.query(self.model)
+
+        # Get info for query.
+        qinfo = self.collection_query_info(self.request)
+
+        # Sorting.
+        sort_keys = qinfo['_sort']['key'].split('.')
+        order_att = getattr(self.model, sort_keys[0])
+        # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
+        # sort_keys[0] is the name of an attribute or a
+        # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
+        # is the name of a relationship.
+        if isinstance(order_att.property, RelationshipProperty):
+            # If order_att is a relationship then we need to add a join to the
+            # query and order_by the sort_keys[1] column of the relationship's
+            # target. The default target column is 'id'.
+            q = q.join(order_att)
+            try:
+                sub_key = sort_keys[1]
+            except IndexError:
+                sub_key = 'id'
+            order_att = getattr(order_att.property.mapper.entity, sub_key)
+        if qinfo['_sort']['ascending']:
+            q = q.order_by(order_att)
+        else:
+            q = q.order_by(order_att.desc())
+
+        # Filters
+        for p, finfo in qinfo['_filters'].items():
+            val = finfo['value']
+            colspec = finfo['colspec']
+            op = finfo['op']
             prop = getattr(self.model, colspec[0])
             if isinstance(prop.property, RelationshipProperty):
                 # TODO(Colin): deal with relationships properly.
@@ -119,7 +149,16 @@ class Resource:
                 val = re.sub(r'\*', '%', val)
             q = q.filter(op_func(val))
 
-        return q.offset(offset).limit(limit).all()
+        ret = {}
+        # Full count
+        ret['count'] = q.count()
+
+        # Paging
+        q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
+
+        ret['results'] = q.all()
+
+        return ret
 
     def get(self):
         '''Get a single item.'''
@@ -201,6 +240,7 @@ def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=No
             bases,
             {'model': model, 'route_name': name}
         )
+    model.__jsonapi_resource_class__ = cls
     cls.model = model
     cls.route_name = name
     cls.default_limit = my_opts['default_limit']
@@ -270,9 +310,17 @@ class JSONAPIFromSqlAlchemyRenderer:
             else:
                 results = value
             included = {}
+            add_links = {}
             if results is None:
                 data = None
             elif isinstance(results, list):
+                add_links.update(
+                    self.pagination_links(
+                        results,
+                        req,
+                        view_options.get('count')
+                    )
+                )
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
@@ -292,9 +340,11 @@ class JSONAPIFromSqlAlchemyRenderer:
             ret = {
                 'data': data,
                 'links': {
-                    'self': req.route_url(req.matched_route.name, **req.matchdict)
+                    'self': req.route_url(req.matched_route.name,_query=req.params, **req.matchdict)
                 }
             }
+            ret['links'].update(add_links)
+
             if included:
                 ret['included'] = [v for v in included.values()]
             return json.dumps(ret)
@@ -312,6 +362,46 @@ class JSONAPIFromSqlAlchemyRenderer:
         return system['request'].route_url(
             'collection_' + item.__jsonapi_route_name__, **{}
         )
+
+    def pagination_links(self, results, req, count=None):
+        '''Return a dictionary of pagination links.'''
+        links = {}
+        if not results:
+            return links
+        route_name = 'collection_' + results[0].__jsonapi_route_name__
+        qinfo = results[0].__jsonapi_resource_class__.\
+            collection_query_info(req)
+        _query = {
+            'page[limit]': qinfo['page[limit]'],
+            'sort': qinfo['sort']
+        }
+        for f in sorted(qinfo['_filters']):
+            _query[f] = qinfo['_filters'][f]['value']
+
+        # First link.
+        _query['page[offset]'] = 0
+        links['first'] = req.route_url(route_name,_query=_query)
+
+        # Next link.
+        next_offset = qinfo['page[offset]'] + qinfo['page[limit]']
+        if count is not None and next_offset < count:
+            _query['page[offset]'] = next_offset
+            links['next'] = req.route_url(route_name,_query=_query)
+
+        # Previous link.
+        if qinfo['page[offset]'] > 0:
+            prev_offset = qinfo['page[offset]'] - qinfo['page[limit]']
+            if prev_offset < 0:
+                prev_offset = 0
+            _query['page[offset]'] = prev_offset
+            links['prev'] = req.route_url(route_name, _query=_query)
+
+        # Last link.
+        if count is not None:
+            links['count'] = count
+            _query['page[offset]'] = ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
+            links['last'] = req.route_url(route_name,_query=_query)
+        return links
 
     def serialise_db_item(self, item, system,
         requested_includes=None, include_path=None, included=None,
