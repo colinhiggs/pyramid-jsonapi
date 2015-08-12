@@ -9,6 +9,7 @@ from .models import (
     Blog,
     Post
 )
+import datetime
 
 # Some initial data in a handy form.
 data = {
@@ -47,7 +48,8 @@ def add_to_db():
                         title='first post',
                         content='{}\'s first post in {}'.format(person.name, blog.title),
                         blog=blog,
-                        author=person
+                        author=person,
+                        published_at=datetime.datetime(2015,1,1)
                         )
                     DBSession.add(post1)
                 try:
@@ -58,6 +60,7 @@ def add_to_db():
                         title='also ran',
                         content='{}\'s second post in {}'.format(person.name, blog.title),
                         blog=blog,
-                        author=person
+                        author=person,
+                        published_at=datetime.datetime.today()
                         )
                     DBSession.add(post1)

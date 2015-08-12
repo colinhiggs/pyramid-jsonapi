@@ -4,6 +4,7 @@ from sqlalchemy import (
     Integer,
     Text,
     BigInteger,
+    DateTime,
     ForeignKey,
     UniqueConstraint,
     )
@@ -53,5 +54,6 @@ class Post(Base):
     id = IdColumn()
     title = Column(Text)
     content = Column(Text)
+    published_at = Column(DateTime, nullable=False)
     blog_id = IdRefColumn('blogs.id', nullable=False)
     author_id = IdRefColumn('people.id', nullable=False)

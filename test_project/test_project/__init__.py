@@ -16,7 +16,7 @@ from . import test_data
 # Used to test that adding JSON adapters works.
 import datetime
 def datetime_adapter(obj, request):
-        return obj.isoformat()
+    return obj.isoformat()
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
