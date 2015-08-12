@@ -271,7 +271,7 @@ def requested_includes(request):
             inc.add('.'.join(curname))
     return inc
 
-class JSONAPIFromSqlAlchemyRenderer:
+class JSONAPIFromSqlAlchemyRenderer(JSON):
     '''Pyramid renderer: to JSON-API from SqlAlchemy.
 
     Pass in as the renderer to a view and return the results of a sqlalchemy
@@ -291,10 +291,11 @@ class JSONAPIFromSqlAlchemyRenderer:
         return DBSession.query(some_model).filter(some_model.id == request.matchdict['id']).one()
     '''
 
-    def __init__(self, **options):
+    def __init__(self, options=None, **kw):
+        if options is None:
+            options = {}
         self.options = options
-        _tmp = JSON()
-        self.json = staticmethod(_tmp)
+        super().__init__(**kw)
 
     def __call__(self, info):
         '''Hook called by pyramid to invoke renderer.'''
@@ -316,7 +317,7 @@ class JSONAPIFromSqlAlchemyRenderer:
             ret = {
                 'links': {
                     'self': req.route_url(req.matched_route.name,_query=req.params, **req.matchdict)
-                }
+                },
             }
             if results is None:
                 data = None
@@ -330,8 +331,8 @@ class JSONAPIFromSqlAlchemyRenderer:
                 )
                 if 'meta' not in ret:
                     ret['meta'] = {}
-                    ret['meta']['results_available'] = view_options.get('count')
-                    ret['meta']['results_returned'] = len(results)
+                ret['meta']['results_available'] = view_options.get('count')
+                ret['meta']['results_returned'] = len(results)
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
@@ -352,8 +353,9 @@ class JSONAPIFromSqlAlchemyRenderer:
 
             if included:
                 ret['included'] = [v for v in included.values()]
-            return json.dumps(ret)
-            #return self.json(ret,system)
+            #return json.dumps(ret)
+            default = self._make_default(req)
+            return self.serializer(ret, default=default, **self.kw)
         return _render
 
     def resource_link(self, item, system):

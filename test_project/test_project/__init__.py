@@ -12,6 +12,12 @@ from . import models
 # auto-populate the DB with it.
 from . import test_data
 
+
+# Used to test that adding JSON adapters works.
+import datetime
+def datetime_adapter(obj, request):
+        return obj.isoformat()
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -39,6 +45,7 @@ def main(global_config, **settings):
     # Lines specific to jsonapi.
     # Set up the renderer.
     renderer = jsonapi.JSONAPIFromSqlAlchemyRenderer()
+    renderer.add_adapter(datetime.date, datetime_adapter)
     config.add_renderer('jsonapi', renderer)
     config.add_renderer(None, renderer)
     # Create the routes and views automagically.
