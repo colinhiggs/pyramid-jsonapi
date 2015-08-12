@@ -3,6 +3,7 @@ import json
 import transaction
 import sqlalchemy
 from pyramid.view import view_config
+from pyramid.renderers import JSON
 import cornice.resource
 import sys
 import inspect
@@ -292,6 +293,8 @@ class JSONAPIFromSqlAlchemyRenderer:
 
     def __init__(self, **options):
         self.options = options
+        _tmp = JSON()
+        self.json = staticmethod(_tmp)
 
     def __call__(self, info):
         '''Hook called by pyramid to invoke renderer.'''
@@ -310,17 +313,25 @@ class JSONAPIFromSqlAlchemyRenderer:
             else:
                 results = value
             included = {}
-            add_links = {}
+            ret = {
+                'links': {
+                    'self': req.route_url(req.matched_route.name,_query=req.params, **req.matchdict)
+                }
+            }
             if results is None:
                 data = None
             elif isinstance(results, list):
-                add_links.update(
+                ret['links'].update(
                     self.pagination_links(
                         results,
                         req,
                         view_options.get('count')
                     )
                 )
+                if 'meta' not in ret:
+                    ret['meta'] = {}
+                    ret['meta']['results_available'] = view_options.get('count')
+                    ret['meta']['results_returned'] = len(results)
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
@@ -337,17 +348,12 @@ class JSONAPIFromSqlAlchemyRenderer:
                     requested_includes = inc,
                     included = included
                 )
-            ret = {
-                'data': data,
-                'links': {
-                    'self': req.route_url(req.matched_route.name,_query=req.params, **req.matchdict)
-                }
-            }
-            ret['links'].update(add_links)
+            ret['data'] = data
 
             if included:
                 ret['included'] = [v for v in included.values()]
             return json.dumps(ret)
+            #return self.json(ret,system)
         return _render
 
     def resource_link(self, item, system):
@@ -398,7 +404,6 @@ class JSONAPIFromSqlAlchemyRenderer:
 
         # Last link.
         if count is not None:
-            links['count'] = count
             _query['page[offset]'] = ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
             links['last'] = req.route_url(route_name,_query=_query)
         return links
