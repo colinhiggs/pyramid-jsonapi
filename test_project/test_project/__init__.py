@@ -56,7 +56,7 @@ def main(global_config, **settings):
     for intro in config.introspector.get_category('routes'):
         if intro['introspectable']['name'] in {'params', '__static/'}:
             continue
-        print('{}:'.format(intro['introspectable']['name']))
+        #print('{}:'.format(intro['introspectable']['name']))
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

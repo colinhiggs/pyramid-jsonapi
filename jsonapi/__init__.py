@@ -97,17 +97,18 @@ class Resource:
 
 
         '''
-        # Start building the query.
-        #q = DBSession.query(self.model)
-
         # Figure out whether this is a direct model route or a relationship one.
         rc = RouteComponents.from_route(self.request.matched_route.name)
         if rc.relationship:
+            # Looking for items from the relationship model.
             rel_class = getattr(self.model, rc.relationship)\
                 .property.mapper.class_
+            # Looking for relationship items where parent id is resource_id.
             q = DBSession.query(rel_class)
-            q = q.join(self.model).filter(self.model.id == self.request.matchdict['resource_id'])
+            q = q.join(self.model).filter(
+                self.model.id == self.request.matchdict['resource_id'])
         else:
+            # Directly looking for items from this classes model.
             q = DBSession.query(self.model)
 
         # Get info for query.
@@ -169,15 +170,10 @@ class Resource:
         # Full count
         ret['count'] = q.count()
 
-        if rc.relationship:
-            ret['relationship_parent'] = self.model
-
         # Paging
         q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
         ret['results'] = q.all()
-
-        print(ret)
 
         return ret
 
@@ -215,18 +211,12 @@ class Resource:
         DBSession.flush()
         return item
 
-class Relationship:
-
-    def __init__(self, request):
-        self.request = request
-
-    def collection_get(self):
-        print(self.request.matchdict.get('resource_id'))
-
 class ModelInfo:
+    '''Information about a model class: table or relationship.'''
 
     @classmethod
     def construct(cls, model_part):
+        '''Construct a ModelInfo instance from a model or relationship class.'''
         info = cls()
         if isinstance(model_part, DeclarativeMeta):
             info.is_relationship = False
@@ -242,15 +232,24 @@ class ModelInfo:
         return info
 
 class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'relationship'))):
+    '''The components of a jsonapi route.'''
+
     @classmethod
     def from_route(cls, route):
+        '''Construct an instance by splitting a route string.'''
         comps = route.split(':')
         if len(comps) == 2:
             comps.append(None)
         return cls(*comps)
 
+    @classmethod
+    def from_components(cls, resource, relationship=None):
+        '''Construct an instance from resource and/or relationship names.'''
+        return cls(route_prefix, resource, relationship)
+
     @property
     def route(self):
+        '''Construct a route string from components.'''
         if self.relationship is None:
             return ':'.join(self[:-1])
         else:
@@ -259,35 +258,35 @@ class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'rela
 
 def create_jsonapi(models):
     '''Auto-create jsonapi from module with sqlAlchemy models.'''
+    # Need to add wrapped classes back into this module so that the venusian
+    # scan can find them.
     module = sys.modules[__name__]
-    for k,v in models.__dict__.items():
-        if isinstance(v, sqlalchemy.ext.declarative.api.DeclarativeMeta) and hasattr(v, 'id'):
-            print('{}: {}'.format(k, v.__class__.__name__))
+
+    # Loop through the models module looking for declaratively defined model
+    # classes (inherit DeclarativeMeta). Wrap those classes and their
+    # relationships with create_resource().
+    for k, model_class in models.__dict__.items():
+        if isinstance(model_class,
+            sqlalchemy.ext.declarative.api.DeclarativeMeta)\
+                and hasattr(model_class, 'id'):
+#            print('{}: {}'.format(k, model_class.__class__.__name__))
             setattr(module, k + 'Resource',
-                create_resource(v, bases=(Resource,))
+                create_resource(model_class, bases=(Resource,))
             )
-            for relname, rel in sqlalchemy.inspect(v).relationships.items():
+            for relname, rel in\
+                sqlalchemy.inspect(model_class).relationships.items():
                 setattr(module, '{}_{}Relationship'.format(k, relname),
                     create_resource(rel, bases=(Resource,))
                 )
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
-def resource(model, name, **options):
+def resource(model, **options):
     '''Class decorator: produce a set of resource endpoints from an appropriate class.'''
-    model.__jsonapi_route_name__ = name
     def wrap(cls):
         # Depth has something to do with venusian detecting and creating routes.
         # Needs to be bumped up by one each time a function/class is wrapped.
-        return create_resource(model, name, cls=cls, depth=3, **options)
+        return create_resource(model, cls=cls, depth=3, **options)
     return wrap
-
-def resource_route_name(name):
-    '''Generate route name from name of resource.'''
-    return '{}:{}'.format(route_prefix, name)
-
-def relationship_route_name(resource_name, relationship_name):
-    '''Generate route name from name of resource and relationship.'''
-    return '{}:{}:{}'.format(route_prefix, resource_name, relationship_name)
 
 def create_resource(model,
     collection_name=None, relationship_name=None,
@@ -327,13 +326,11 @@ def create_resource(model,
 
     # Populate route information.
     routes = info.model_class.__jsonapi__.setdefault('routes', {})
+    route_name = RouteComponents.from_components(collection_name, relationship_name).route
     if info.is_relationship:
         rels = routes.setdefault('relationships', {})
-        rels[relationship_name] = route_name = '{}:{}:{}'.format(
-            route_prefix, collection_name, relationship_name
-        )
+        rels[relationship_name] = route_name
     else:
-        route_name = '{}:{}'.format(route_prefix, collection_name)
         info.model_class.__jsonapi__['routes'].setdefault(
             'resource', route_name
         )
@@ -459,7 +456,6 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                         results,
                         req,
                         view_options.get('count'),
-                        relationship_name = rc.relationship
                     )
                 )
                 if 'meta' not in ret:
@@ -505,13 +501,11 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
             'collection_' + item.__jsonapi__['routes']['resource'], **{}
         )
 
-    def pagination_links(self, results, req, count=None, relationship_name=None):
+    def pagination_links(self, results, req, count=None):
         '''Return a dictionary of pagination links.'''
         links = {}
         if not results:
             return links
-        print(results[0].__jsonapi__)
-        print(relationship_name)
         route_name = req.matched_route.name
         rc = RouteComponents.from_route(req.matched_route.name)
         if rc.relationship is None:
@@ -519,8 +513,6 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
         else:
             qinfo = relationship_map[rc.resource][rc.relationship]\
                 .collection_query_info(req)
-
-        print(route_name)
 
         _query = {
             'page[limit]': qinfo['page[limit]'],
