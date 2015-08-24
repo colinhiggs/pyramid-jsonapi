@@ -53,5 +53,10 @@ def main(global_config, **settings):
     # Make sure we scan the *jsonapi* package.
     config.scan(package=jsonapi)
 
+    for intro in config.introspector.get_category('routes'):
+        if intro['introspectable']['name'] in {'params', '__static/'}:
+            continue
+        print('{}:'.format(intro['introspectable']['name']))
+
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

@@ -8,14 +8,19 @@ import cornice.resource
 import sys
 import inspect
 import re
+from collections import namedtuple
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
+from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+route_prefix = 'jsonapi'
+model_map = {}
+relationship_map = {}
 
 class Resource:
     '''Base class for all REST resources'''
@@ -93,7 +98,17 @@ class Resource:
 
         '''
         # Start building the query.
-        q = DBSession.query(self.model)
+        #q = DBSession.query(self.model)
+
+        # Figure out whether this is a direct model route or a relationship one.
+        rc = RouteComponents.from_route(self.request.matched_route.name)
+        if rc.relationship:
+            rel_class = getattr(self.model, rc.relationship)\
+                .property.mapper.class_
+            q = DBSession.query(rel_class)
+            q = q.join(self.model).filter(self.model.id == self.request.matchdict['resource_id'])
+        else:
+            q = DBSession.query(self.model)
 
         # Get info for query.
         qinfo = self.collection_query_info(self.request)
@@ -154,10 +169,15 @@ class Resource:
         # Full count
         ret['count'] = q.count()
 
+        if rc.relationship:
+            ret['relationship_parent'] = self.model
+
         # Paging
         q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
         ret['results'] = q.all()
+
+        print(ret)
 
         return ret
 
@@ -195,26 +215,61 @@ class Resource:
         DBSession.flush()
         return item
 
-def create_jsonapi(models, module=None):
-    '''Auto-create jsonapi from module with sqlAlchemy models.'''
-    if module is None:
-    # Add resource classes to the caller's module.
-        parentframe = inspect.stack()[1][0]
-        try:
-            module = inspect.getmodule(parentframe)
-        finally:
-            # Memory leak (or delayed free) if parentframe is not
-            # deleted.
-            del parentframe
+class Relationship:
 
-    # Adding the new classes to another module doesn't work for some reason.
-    # Stick to our own for now.
+    def __init__(self, request):
+        self.request = request
+
+    def collection_get(self):
+        print(self.request.matchdict.get('resource_id'))
+
+class ModelInfo:
+
+    @classmethod
+    def construct(cls, model_part):
+        info = cls()
+        if isinstance(model_part, DeclarativeMeta):
+            info.is_relationship = False
+            info.table_name = sqlalchemy.inspect(model_part).tables[0].name
+            info.model_class = model_part
+        elif isinstance(model_part, RelationshipProperty):
+            info.is_relationship = True
+            info.relationship_name = model_part.key
+            info.table_name = model_part.parent.tables[0].name
+            info.model_class = model_part.parent.class_
+        else:
+            raise ValueError("Don't know how to deal with model_part class {}".format(model_part.__class__))
+        return info
+
+class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'relationship'))):
+    @classmethod
+    def from_route(cls, route):
+        comps = route.split(':')
+        if len(comps) == 2:
+            comps.append(None)
+        return cls(*comps)
+
+    @property
+    def route(self):
+        if self.relationship is None:
+            return ':'.join(self[:-1])
+        else:
+            return ':'.join(self)
+
+
+def create_jsonapi(models):
+    '''Auto-create jsonapi from module with sqlAlchemy models.'''
     module = sys.modules[__name__]
-    print('module: {}'.format(module))
     for k,v in models.__dict__.items():
         if isinstance(v, sqlalchemy.ext.declarative.api.DeclarativeMeta) and hasattr(v, 'id'):
             print('{}: {}'.format(k, v.__class__.__name__))
-            setattr(module, k + 'Resource', create_resource(v, v.__tablename__, bases=(Resource,), module=module))
+            setattr(module, k + 'Resource',
+                create_resource(v, bases=(Resource,))
+            )
+            for relname, rel in sqlalchemy.inspect(v).relationships.items():
+                setattr(module, '{}_{}Relationship'.format(k, relname),
+                    create_resource(rel, bases=(Resource,))
+                )
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
 def resource(model, name, **options):
@@ -226,29 +281,100 @@ def resource(model, name, **options):
         return create_resource(model, name, cls=cls, depth=3, **options)
     return wrap
 
-def create_resource(model, name, cls=None, bases=(Resource,), depth=2, module=None, **options):
+def resource_route_name(name):
+    '''Generate route name from name of resource.'''
+    return '{}:{}'.format(route_prefix, name)
+
+def relationship_route_name(resource_name, relationship_name):
+    '''Generate route name from name of resource and relationship.'''
+    return '{}:{}:{}'.format(route_prefix, resource_name, relationship_name)
+
+def create_resource(model,
+    collection_name=None, relationship_name=None,
+    cls=None, cls_name=None, bases=(Resource,),
+    depth=2,
+    **options):
     '''Produce a set of resource endpoints.'''
+
+    # Figure out what table model is from
+    info = ModelInfo.construct(model)
+
+    if collection_name is None:
+        collection_name = info.table_name
+    if relationship_name is None and info.is_relationship:
+        relationship_name = info.relationship_name
+
+    # Set up the cornice paths.
+    if info.is_relationship:
+        collection_path = '{}/{{resource_id}}/relationships/{}'\
+            .format(collection_name, relationship_name)
+        path = collection_path + '/{related_id}'
+    else:
+        collection_path = collection_name
+        path = collection_path + '/{id}'
+
+    # Find a name for the cornice resource class.
+    if cls_name is None:
+        if info.is_relationship:
+            cls_name = '{}_{}Relationship'.format(
+                info.model_class.__name__, relationship_name)
+        else:
+            cls_name = '{}Resource'.format(info.model_class.__name__)
+
+    # Make sure the __jsonapi__ attribute is available on model_class.
+    if not hasattr(info.model_class, '__jsonapi__'):
+        info.model_class.__jsonapi__ = {}
+
+    # Populate route information.
+    routes = info.model_class.__jsonapi__.setdefault('routes', {})
+    if info.is_relationship:
+        rels = routes.setdefault('relationships', {})
+        rels[relationship_name] = route_name = '{}:{}:{}'.format(
+            route_prefix, collection_name, relationship_name
+        )
+    else:
+        route_name = '{}:{}'.format(route_prefix, collection_name)
+        info.model_class.__jsonapi__['routes'].setdefault(
+            'resource', route_name
+        )
+
+    # Merge in options from model_class, if any.
     my_opts = {'default_limit': 10, 'max_limit': 100}
     try:
-        my_opts.update(model.__jsonapi_options__)
-    except AttributeError:
+        my_opts.update(info.model_class.__jsonapi__['options'])
+    except (AttributeError, KeyError):
         pass
     my_opts.update(options)
-    model.__jsonapi_route_name__ = name
+
+    # Set up the class to be wrapped by cornice.
     if cls is None:
-        cls = type(
-            '{}Resource'.format(model.__name__),
-            bases,
-            {'model': model, 'route_name': name}
-        )
-    model.__jsonapi_resource_class__ = cls
-    cls.model = model
-    cls.route_name = name
+        cls = type(cls_name, bases, {})
+    # Store the class in the model so that the renderer can find it.
+    classes = info.model_class.__jsonapi__.setdefault('classes', {})
+    if info.is_relationship:
+        classes.setdefault('relationships', {})
+        classes['relationships'][relationship_name] = cls
+    else:
+        classes['resource'] = cls
+    cls.model = info.model_class
     cls.default_limit = my_opts['default_limit']
     cls.max_limit = my_opts['max_limit']
-    setattr(module, cls.__name__, cls)
+    # Add the cls to our module so that a scan will find it.
+    setattr(sys.modules[__name__], cls.__name__, cls)
+    # Add cls to model_map or relationship_map.
+    if info.is_relationship:
+        relationship_map.setdefault(collection_name, {})
+        relationship_map[collection_name][relationship_name] = cls
+    else:
+        model_map[collection_name] = cls
+
+
+    # Call cornice to create the resource class.
     # See the comment in resource about depth.
-    return cornice.resource.resource(name=name, collection_path=name, path='{}/{{id}}'.format(name), depth=depth, renderer='jsonapi')(cls)
+    return cornice.resource.resource(
+        name=route_name,
+        collection_path=collection_path, path=path,
+        depth=depth, renderer='jsonapi')(cls)
 
 def requested_fields(request, type_name):
     '''Get the sparse field names as a set from req params for type_name.
@@ -306,6 +432,7 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
             #intro = req.registry.introspector
             #print(intro.get_category('routes'))
             req.response.content_type = 'application/vnd.api+json'
+
             view_options = {}
             if isinstance(value, dict):
                 results = value['results']
@@ -314,11 +441,16 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
             else:
                 results = value
             included = {}
+            rc = RouteComponents.from_route(req.matched_route.name)
             ret = {
                 'links': {
-                    'self': req.route_url(req.matched_route.name,_query=req.params, **req.matchdict)
+                    'self': req.route_url(rc.route,_query=req.params, **req.matchdict),
                 },
+                'meta': {
+                    'route': rc.route
+                }
             }
+
             if results is None:
                 data = None
             elif isinstance(results, list):
@@ -326,7 +458,8 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                     self.pagination_links(
                         results,
                         req,
-                        view_options.get('count')
+                        view_options.get('count'),
+                        relationship_name = rc.relationship
                     )
                 )
                 if 'meta' not in ret:
@@ -358,27 +491,37 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
             return self.serializer(ret, default=default, **self.kw)
         return _render
 
+
     def resource_link(self, item, system):
         '''Return a link to the resource represented by item.'''
         return system['request'].route_url(
-            item.__jsonapi_route_name__,
+            item.__jsonapi__['routes']['resource'],
             **{'id': getattr(item, 'id')}
         )
 
     def collection_link(self, item, system):
         '''Return a link to the collection item is from.'''
         return system['request'].route_url(
-            'collection_' + item.__jsonapi_route_name__, **{}
+            'collection_' + item.__jsonapi__['routes']['resource'], **{}
         )
 
-    def pagination_links(self, results, req, count=None):
+    def pagination_links(self, results, req, count=None, relationship_name=None):
         '''Return a dictionary of pagination links.'''
         links = {}
         if not results:
             return links
-        route_name = 'collection_' + results[0].__jsonapi_route_name__
-        qinfo = results[0].__jsonapi_resource_class__.\
-            collection_query_info(req)
+        print(results[0].__jsonapi__)
+        print(relationship_name)
+        route_name = req.matched_route.name
+        rc = RouteComponents.from_route(req.matched_route.name)
+        if rc.relationship is None:
+            qinfo = model_map[rc.resource].collection_query_info(req)
+        else:
+            qinfo = relationship_map[rc.resource][rc.relationship]\
+                .collection_query_info(req)
+
+        print(route_name)
+
         _query = {
             'page[limit]': qinfo['page[limit]'],
             'sort': qinfo['sort']
@@ -388,13 +531,13 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
 
         # First link.
         _query['page[offset]'] = 0
-        links['first'] = req.route_url(route_name,_query=_query)
+        links['first'] = req.route_url(route_name,_query=_query, **req.matchdict)
 
         # Next link.
         next_offset = qinfo['page[offset]'] + qinfo['page[limit]']
         if count is not None and next_offset < count:
             _query['page[offset]'] = next_offset
-            links['next'] = req.route_url(route_name,_query=_query)
+            links['next'] = req.route_url(route_name,_query=_query,**req.matchdict)
 
         # Previous link.
         if qinfo['page[offset]'] > 0:
@@ -402,12 +545,12 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
             if prev_offset < 0:
                 prev_offset = 0
             _query['page[offset]'] = prev_offset
-            links['prev'] = req.route_url(route_name, _query=_query)
+            links['prev'] = req.route_url(route_name, _query=_query, **req.matchdict)
 
         # Last link.
         if count is not None:
             _query['page[offset]'] = ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
-            links['last'] = req.route_url(route_name,_query=_query)
+            links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
         return links
 
     def serialise_db_item(self, item, system,
