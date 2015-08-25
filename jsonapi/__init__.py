@@ -247,6 +247,11 @@ class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'rela
         '''Construct an instance from resource and/or relationship names.'''
         return cls(route_prefix, resource, relationship)
 
+    @classmethod
+    def from_request(cls, request):
+        '''Construct an instance from a request object.'''
+        return cls.from_route(request.matched_route.name)
+
     @property
     def route(self):
         '''Construct a route string from components.'''
@@ -255,8 +260,29 @@ class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'rela
         else:
             return ':'.join(self)
 
+def std_meta(section, request, results, **options):
+    ret = {}
+    if section == 'toplevel':
+        ret['route'] = request.matched_route.name
+    if isinstance(results, list):
+        ret['results_returned'] = len(results)
+        if 'count' in options:
+            ret['results_available'] = options['count']
+    return ret
 
-def create_jsonapi(models):
+def test_links(section, request, results, **options):
+    ret = {}
+    if section == 'toplevel':
+        ret['test'] = '/testing'
+    if section == 'item':
+        rc = RouteComponents.from_request(request)
+        if rc.relationship is None:
+            ret['schema'] = '/schemas/{}'.format(rc.resource)
+        else:
+            ret['schema'] = '/schemas/{}'.format(rc.relationship)
+    return ret
+
+def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
     '''Auto-create jsonapi from module with sqlAlchemy models.'''
     # Need to add wrapped classes back into this module so that the venusian
     # scan can find them.
@@ -271,12 +297,20 @@ def create_jsonapi(models):
                 and hasattr(model_class, 'id'):
 #            print('{}: {}'.format(k, model_class.__class__.__name__))
             setattr(module, k + 'Resource',
-                create_resource(model_class, bases=(Resource,))
+                create_resource(
+                    model_class, bases=(Resource,),
+                    links_callback=links_callback,
+                    meta_callback=meta_callback
+                )
             )
             for relname, rel in\
                 sqlalchemy.inspect(model_class).relationships.items():
                 setattr(module, '{}_{}Relationship'.format(k, relname),
-                    create_resource(rel, bases=(Resource,))
+                    create_resource(
+                        rel, bases=(Resource,),
+                        links_callback=links_callback,
+                        meta_callback=meta_callback
+                    )
                 )
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
@@ -291,6 +325,7 @@ def resource(model, **options):
 def create_resource(model,
     collection_name=None, relationship_name=None,
     cls=None, cls_name=None, bases=(Resource,),
+    links_callback=None, meta_callback=std_meta,
     depth=2,
     **options):
     '''Produce a set of resource endpoints.'''
@@ -334,6 +369,9 @@ def create_resource(model,
         info.model_class.__jsonapi__['routes'].setdefault(
             'resource', route_name
         )
+
+    info.model_class.__jsonapi__['links_callback'] = links_callback
+    info.model_class.__jsonapi__['meta_callback'] = meta_callback
 
     # Merge in options from model_class, if any.
     my_opts = {'default_limit': 10, 'max_limit': 100}
@@ -443,9 +481,6 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                 'links': {
                     'self': req.route_url(rc.route,_query=req.params, **req.matchdict),
                 },
-                'meta': {
-                    'route': rc.route
-                }
             }
 
             if results is None:
@@ -460,8 +495,6 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                 )
                 if 'meta' not in ret:
                     ret['meta'] = {}
-                ret['meta']['results_available'] = view_options.get('count')
-                ret['meta']['results_returned'] = len(results)
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
@@ -471,6 +504,24 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                     )
                     for dbitem in results
                 ]
+                if results[0].__jsonapi__['meta_callback'] is not None:
+                    ret['meta'].update(
+                        results[0].__jsonapi__['meta_callback'](
+                            section='toplevel',
+                            request=req,
+                            results=results,
+                            **view_options
+                        )
+                    )
+                if results[0].__jsonapi__['links_callback'] is not None:
+                    ret['links'].update(
+                        results[0].__jsonapi__['links_callback'](
+                            section='toplevel',
+                            request=req,
+                            results=results,
+                            **view_options
+                        )
+                    )
             else:
                 data = self.serialise_db_item(
                     results, system,
@@ -478,6 +529,25 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                     requested_includes = inc,
                     included = included
                 )
+                if results.__jsonapi__['meta_callback'] is not None:
+                    ret['meta'].update(
+                        results.__jsonapi__['meta_callback'](
+                            section='toplevel',
+                            request=req,
+                            results=results,
+                            **view_options
+                        )
+                    )
+                if results.__jsonapi__['links_callback'] is not None:
+                    ret['links'].update(
+                        results.__jsonapi__['links_callback'](
+                            section='toplevel',
+                            request=req,
+                            results=results,
+                            **view_options
+                        )
+                    )
+
             ret['data'] = data
 
             if included:
@@ -612,6 +682,30 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                 'self': self.resource_link(item, system)
             }
         }
+
+        # meta and links callbacks
+        if item.__jsonapi__['meta_callback'] is not None:
+            add_meta = item.__jsonapi__['meta_callback'](
+                section='item',
+                request=system['request'],
+                results=item,
+                **opts
+            )
+            if add_meta:
+                if 'meta' in ret:
+                    ret['meta'].update(add_meta)
+                else:
+                    ret['meta'] = add_meta
+        if item.__jsonapi__['links_callback'] is not None:
+            ret['links'].update(
+                item.__jsonapi__['links_callback'](
+                    section='item',
+                    request=system['request'],
+                    results=item,
+                    **opts
+                )
+            )
+
 
         # Add relationships
         relationships = {}

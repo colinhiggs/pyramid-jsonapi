@@ -86,8 +86,39 @@ class TestJsonApi(unittest.TestCase):
         r = self.test_app.get('/people')
         self.assertTrue(r.status_code == 200)
         jdata = r.json['data']
+
+        # collection_get should return list
         self.assertIsInstance(jdata, list)
         self.assertTrue(len(jdata) == len(idx['people']))
+
+        # Links:
+        self.assertIn('links', r.json)
+        links = r.json['links']
+        self.assertIn('self', links)
+        self.assertIn('first', links)
+        self.assertIn('last', links)
+
         for item in jdata:
+            # Has an id.
+            self.assertIn('id', item)
+
+            # Has an appropriate self link.
+            self.assertIn('links', item)
+            self.assertIn('self', item['links'])
+            self.assertRegex(item['links']['self'], r'^.*/people/\d+')
+
             with self.subTest(name=item['attributes']['name']):
+                # Name as expected.
                 self.assertTrue(item['attributes']['name'] in idx['people'])
+                # Has a blogs relationship.
+                self.assertIn('blogs', item['relationships'])
+                # Has a posts relationship.
+                self.assertIn('posts', item['relationships'])
+
+    def test_api_posts_get(self):
+        '''Should return all posts in pages of 3.'''
+        r = self.test_app.get('/posts?page[limit]=3')
+        self.assertEqual(r.status_code, 200)
+        d = r.json
+        data = d['data']
+        self.assertEqual(len(data), 3)
