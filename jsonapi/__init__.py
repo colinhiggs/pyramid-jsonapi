@@ -269,11 +269,24 @@ class ModelInfo:
     '''Information about a model class (either table or relationship).
 
     Use the :meth:`construct` factory method to create one.
+
+    Attributes:
+        is_relationship (bool): True if info is for relationship.
+        model_class (class): sqlalchemy class which represents the table.
+        table_name (str): database table name.
+        relationship_name (str): (relationships only) name of relationship.
     '''
 
     @classmethod
     def construct(cls, model_part):
-        '''Construct a ModelInfo instance from a model or relationship class.'''
+        '''Construct a ModelInfo instance from a model or relationship class.
+
+        Args:
+            model_part (class): model or relationship class.
+
+        Returns:
+            ModelInfo: ModelInfo class instance.
+        '''
         info = cls()
         if isinstance(model_part, DeclarativeMeta):
             info.is_relationship = False
@@ -289,7 +302,18 @@ class ModelInfo:
         return info
 
 class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'relationship'))):
-    '''The components of a jsonapi route.'''
+    '''The components of a jsonapi route.
+
+    **Inherits:** :class:`namedtuple`
+
+    pyramid-jsonapi routes are in the form prefix:resource:relationship.
+
+    Attributes:
+        prefix (str): route prefix (from jsonapi.route_prefix)
+        resource (str): resource collection name.
+        relationship (str): relationship_name.
+
+    '''
 
     @classmethod
     def from_route(cls, route):
@@ -311,13 +335,14 @@ class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'rela
 
     @property
     def route(self):
-        '''Construct a route string from components.'''
+        '''route string evaluated from components.'''
         if self.relationship is None:
             return ':'.join(self[:-1])
         else:
             return ':'.join(self)
 
 def std_meta(section, request, results, **options):
+    '''Default function to generate meta sections.'''
     ret = {}
     if section == 'toplevel':
         ret['route'] = request.matched_route.name
@@ -340,7 +365,13 @@ def test_links(section, request, results, **options):
     return ret
 
 def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
-    '''Auto-create jsonapi from module with sqlAlchemy models.'''
+    '''Auto-create jsonapi from module with sqlAlchemy models.
+
+    Arguments:
+        models (module): a module with model classes derived from sqlalchemy.ext.declarative.declarative_base().
+        links_callback (function): function which returns a links dictionary.
+        meta_callback (function): function which returns a meta dictionary.
+    '''
     # Need to add wrapped classes back into this module so that the venusian
     # scan can find them.
     module = sys.modules[__name__]
@@ -372,7 +403,10 @@ def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
 def resource(model, **options):
-    '''Class decorator: produce a set of resource endpoints from an appropriate class.'''
+    '''Class decorator: produce a set of resource endpoints from a model class.
+
+    See :meth:`create_resource` for arguments and their meanings.
+    '''
     def wrap(cls):
         # Depth has something to do with venusian detecting and creating routes.
         # Needs to be bumped up by one each time a function/class is wrapped.
@@ -385,7 +419,28 @@ def create_resource(model,
     links_callback=None, meta_callback=std_meta,
     depth=2,
     **options):
-    '''Produce a set of resource endpoints.'''
+    '''Produce a set of resource endpoints.
+
+    Arguments:
+        collectiona_name (str): name of collection. Defaults to table name from model.
+        relationship_name (str): name of relationship. Defaults to None or relationship name derived from model.
+        cls (class): class providing cornice view functions. Auto constructed from bases if None.
+        cls_name (str): name for autoconstructed class. Defaults to model cls_name + 'Resource' for resources, cls_name + '_' + relationship_name + 'Relationship' for relationships.
+        bases (tuple): tuple of base classes for autonstructed cls.
+        links_callback (function): function
+        meta_callback (function): function
+        depth (int): depth passed to cornice.resource.resource.
+        **options (dict): options attached to cls for later rendering.
+            In the form::
+
+                {
+                    'default_limit': default no of results per page,
+                    'max_limit': maximum no of results per page
+                }
+
+            \ \
+
+    '''
 
     # Figure out what table model is from
     info = ModelInfo.construct(model)
@@ -479,7 +534,7 @@ def requested_fields(request, type_name):
     return set(param.split(','))
 
 def requested_includes(request):
-    '''Parse any 'include' param in request.'''
+    '''Parse any 'include' param in http request.'''
     param = request.params.get('include', '')
     inc = set()
     for i in param.split(','):
