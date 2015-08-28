@@ -27,7 +27,45 @@ from . import models # Your models module.
   config.scan(package=jsonapi)
 ```
 
-See `test_project/test_project/__init__.py` for a fully working __init__ file.
+You should now have a working JSON-API.
+
+Start the server:
+
+```bash
+$ pserv your_project/development.ini
+```
+
+Using the rather lovely [httpie](https://github.com/jkbrzt/httpie) to test:
+
+```bash
+$ http http://localhost:6543/people
+```
+```
+HTTP/1.1 200 OK
+Content-Length: 1387
+Content-Type: application/vnd.api+json; charset=UTF-8
+Date: Fri, 28 Aug 2015 20:22:46 GMT
+Server: waitress
+
+{
+  "data": [
+  {
+    "attributes": {
+      "name": "alice"
+    },
+    "id": "2",
+    "links": {
+      "self": "http://localhost:6543/people/2"
+    },
+    "relationships": {
+    ...
+  }
+  ...
+  ]
+}
+```
+
+See `test_project/test_project/__init__.py` for a fully working `__init__` file.
 
 You don't need a views.py unless you have some other routes and views.
 
