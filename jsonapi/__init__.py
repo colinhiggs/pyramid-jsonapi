@@ -1,3 +1,4 @@
+'''Tools for constructing a JSON-API from sqlalchemy models in Pyramid.'''
 import json
 #from sqlalchemy import inspect
 import transaction
@@ -23,13 +24,46 @@ model_map = {}
 relationship_map = {}
 
 class Resource:
-    '''Base class for all REST resources'''
+    '''Base class for JSON-API RESTful resources.
+
+    Args:
+        request (pyramid.request): request object.
+
+    Attributes:
+        request (pyramid.request): request object.
+    '''
     def __init__(self, request):
         self.request = request
 
     @classmethod
     def collection_query_info(cls, request):
-        '''Dictionary of information used during DB query.'''
+        '''Return dictionary of information used during DB query.
+
+        Args:
+            request (pyramid.request): request object.
+
+        Returns:
+            dict: query info in the form::
+
+                {
+                    'page[limit]': maximum items per page,
+                    'page[offset]': offset for current page (in items),
+                    'sort': sort param from request,
+                    '_sort': {
+                        'key': sort key ('field' or 'relationship.field'),
+                        'ascending': sort ascending or descending (bool)
+                    },
+                    '_filters': {
+                        filter_param_name: {
+                            'colspec': list of columns split on '.',
+                            'op': filter operator,
+                            'value': value of filter param,
+                        }
+                    },
+                }
+
+            Keys beginning with '_' are derived.
+        '''
         info = {}
 
         # Paging by limit and offset.
@@ -95,7 +129,15 @@ class Resource:
     def collection_get(self):
         '''Get items from the collection.
 
+        Returns:
+            dict: results with count::
 
+                {
+                    'results': sqlalchemy query results,
+                    'count': full number of results available (without pagination)
+                }
+
+            \ \
         '''
         # Figure out whether this is a direct model route or a relationship one.
         rc = RouteComponents.from_route(self.request.matched_route.name)
@@ -178,7 +220,11 @@ class Resource:
         return ret
 
     def get(self):
-        '''Get a single item.'''
+        '''Get a single item.
+
+        Returns:
+            single sqlalchemy result.
+        '''
         try:
             item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
         except NoResultFound:
@@ -186,7 +232,11 @@ class Resource:
         return item
 
     def collection_post(self):
-        '''Create a new item.'''
+        '''Create a new item from information in POST request.
+
+        Returns:
+            created item.
+        '''
         data = self.request.json_body
         atts = data['attributes']
         # Delete id key to force creation of a new item
@@ -199,7 +249,11 @@ class Resource:
         return item
 
     def patch(self):
-        '''Update an existing item.'''
+        '''Update an existing item with information in PATCH request.
+
+        Returns:
+            altered item.
+        '''
         data = self.request.json_body
         req_id = self.request.matchdict['id']
         data_id = data.get('id')
@@ -212,7 +266,10 @@ class Resource:
         return item
 
 class ModelInfo:
-    '''Information about a model class: table or relationship.'''
+    '''Information about a model class (either table or relationship).
+
+    Use the :meth:`construct` factory method to create one.
+    '''
 
     @classmethod
     def construct(cls, model_part):
@@ -433,33 +490,55 @@ def requested_includes(request):
     return inc
 
 class JSONAPIFromSqlAlchemyRenderer(JSON):
-    '''Pyramid renderer: to JSON-API from SqlAlchemy.
+    '''Pyramid renderer: to JSON-API from SqlAlchemy query results.
 
-    Pass in as the renderer to a view and return the results of a sqlalchemy
-    query from the view. The renderer will produce a correct JSON-API response.
+    **Inherits:** :class:`JSON`
 
-    In __init__.py:
-    from jsonapi import JSONAPIFromSqlAlchemyRenderer
-    ...
-    config.add_renderer('jsonapi', JSONAPIFromSqlAlchemyRenderer)
+    Args:
+        options (dict): Renderer options.
+        **kw: Arguments sent to JSON().
 
-    In views.py:
-    @view(renderer='jsonapi')
-    def some_view(request):
-        # return a collection
-        return DBSession.query(some_model).all()
-        # or an individual item
-        return DBSession.query(some_model).filter(some_model.id == request.matchdict['id']).one()
+    Attributes:
+        options (dict): Renderer options.
     '''
 
     def __init__(self, options=None, **kw):
+        '''Init renderer.'''
         if options is None:
             options = {}
         self.options = options
         super().__init__(**kw)
 
     def __call__(self, info):
-        '''Hook called by pyramid to invoke renderer.'''
+        '''Return a renderer function.
+
+        Args:
+            info (pyramid.interfaces.IRendererInfo): renderer info
+
+        Returns:
+            function: .. function:: _render(value, system)
+
+            The rendering function.
+
+            Args:
+                value (dict or query results): Result of view.
+                    Should either be a dict like::
+
+                        {
+                            'results': query_results,
+                            'count': optional_number_of_results,
+                            'option1': value1,
+                            'option2': value2,
+                            ...
+                        }
+
+                    or a list of sqlalchemy query results.
+
+                system (dict): Rendering information passed by pyramid.
+
+            Returns:
+                Rendered view.
+        '''
         def _render(value, system):
             req = system['request']
             inc = requested_includes(req)
@@ -559,20 +638,45 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
 
 
     def resource_link(self, item, system):
-        '''Return a link to the resource represented by item.'''
+        '''Return a link to the resource represented by item.
+
+        Args:
+            item: item from query results.
+            system (dict): Rendering information passed by pyramid.
+
+        Returns:
+            str: URL
+        '''
         return system['request'].route_url(
             item.__jsonapi__['routes']['resource'],
             **{'id': getattr(item, 'id')}
         )
 
     def collection_link(self, item, system):
-        '''Return a link to the collection item is from.'''
+        '''Return a link to the collection item is from.
+
+        Args:
+            item: item from query results.
+            system (dict): rendering information passed by pyramid.
+
+        Returns:
+            str: URL
+        '''
         return system['request'].route_url(
             'collection_' + item.__jsonapi__['routes']['resource'], **{}
         )
 
     def pagination_links(self, results, req, count=None):
-        '''Return a dictionary of pagination links.'''
+        '''Return a dictionary of pagination links.
+
+        Args:
+            results (list): query results.
+            req: request.
+            count (int): total number of results available.
+
+        Returns:
+            dict: dictionary of named links.
+        '''
         links = {}
         if not results:
             return links
@@ -620,7 +724,15 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
         options=None):
         '''Serialise an individual database item to JSON-API.
 
+        Args:
+            item: item from query to serialise.
+            system (dict): information passed by pyramid.
+            requested_includes (set): to be included as per request.
+            include_path (list):
+            included (dict): tracking included items.
 
+        Returns:
+            dict: item dictionary.
         '''
         if requested_includes is None:
             requested_includes = set()
