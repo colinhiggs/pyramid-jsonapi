@@ -342,7 +342,17 @@ class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'rela
             return ':'.join(self)
 
 def std_meta(section, request, results, **options):
-    '''Default function to generate meta sections.'''
+    '''Default function to generate meta sections.
+
+    Arguments:
+        section (str): 'toplevel' or 'item'
+        request (pyramid.request): request object.
+        results (list or query results): results.
+        **options: jsonapi options.
+
+    Returns:
+        dict: key, value pairs to be merged with meta section.
+    '''
     ret = {}
     if section == 'toplevel':
         ret['route'] = request.matched_route.name
@@ -369,8 +379,8 @@ def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
 
     Arguments:
         models (module): a module with model classes derived from sqlalchemy.ext.declarative.declarative_base().
-        links_callback (function): function which returns a links dictionary.
-        meta_callback (function): function which returns a meta dictionary.
+        links_callback (function): function returning links dict. Passed to :meth:`create_resource` with the signature described in :meth:`std_meta`.
+        meta_callback (function): function returning meta dict. Passed to :meth:`create_resource` with the signature described in :meth:`std_meta`.
     '''
     # Need to add wrapped classes back into this module so that the venusian
     # scan can find them.
@@ -427,8 +437,8 @@ def create_resource(model,
         cls (class): class providing cornice view functions. Auto constructed from bases if None.
         cls_name (str): name for autoconstructed class. Defaults to model cls_name + 'Resource' for resources, cls_name + '_' + relationship_name + 'Relationship' for relationships.
         bases (tuple): tuple of base classes for autonstructed cls.
-        links_callback (function): function
-        meta_callback (function): function
+        links_callback (function): function which returns a links dictionary. Signature as described in :meth:`std_meta`.
+        meta_callback (function): function which returns a meta dictionary. Signature as described in :meth:`std_meta`.
         depth (int): depth passed to cornice.resource.resource.
         **options (dict): options attached to cls for later rendering.
             In the form::
@@ -547,7 +557,7 @@ def requested_includes(request):
 class JSONAPIFromSqlAlchemyRenderer(JSON):
     '''Pyramid renderer: to JSON-API from SqlAlchemy query results.
 
-    **Inherits:** :class:`JSON`
+    **Inherits:** :class:`pyramid.renderers.JSON`
 
     Args:
         options (dict): Renderer options.
