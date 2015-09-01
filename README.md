@@ -140,6 +140,8 @@ There are two optional parameters to `create_api_using_magic_and_pixie_dust()`:
 
 * `links_callback` and `meta_callback`:
 
+  `xxxx_callback(section, request, results, **options)`
+
   These are functions which should return dictionaries.
 
   In the case of links, the returned links dictionary will be merged (via
