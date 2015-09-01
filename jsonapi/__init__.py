@@ -345,9 +345,17 @@ def std_meta(section, request, results, **options):
     '''Default function to generate meta sections.
 
     Arguments:
-        section (str): 'toplevel' or 'item'
+        section (str): 'toplevel' or 'item'.
+            Section of the resulting JSON where this
+            information will be added:
+
+                toplevel: information for the
+                `JSON-API document top level <http://jsonapi.org/format/#document-top-level>`_.
+
+                resource: information for each `JSON-API document resource object <http://jsonapi.org/format/#document-resource-objects>`_.
+
         request (pyramid.request): request object.
-        results (list or query results): results.
+        results (list of query results): results.
         **options: jsonapi options.
 
     Returns:
@@ -366,7 +374,7 @@ def test_links(section, request, results, **options):
     ret = {}
     if section == 'toplevel':
         ret['test'] = '/testing'
-    if section == 'item':
+    if section == 'resource':
         rc = RouteComponents.from_request(request)
         if rc.relationship is None:
             ret['schema'] = '/schemas/{}'.format(rc.resource)
@@ -863,7 +871,7 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
         # meta and links callbacks
         if item.__jsonapi__['meta_callback'] is not None:
             add_meta = item.__jsonapi__['meta_callback'](
-                section='item',
+                section='resource',
                 request=system['request'],
                 results=item,
                 **opts
@@ -876,7 +884,7 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
         if item.__jsonapi__['links_callback'] is not None:
             ret['links'].update(
                 item.__jsonapi__['links_callback'](
-                    section='item',
+                    section='resource',
                     request=system['request'],
                     results=item,
                     **opts
