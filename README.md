@@ -69,7 +69,7 @@ See `test_project/test_project/__init__.py` for a fully working `__init__` file.
 
 You don't need a views.py unless you have some other routes and views.
 
-Yes, there really is a method called "create_api_using_magic_and_pixie_dust". No, you don't *have* to call it that. If you are feeling more sensible you can use the synonym `create_jsonapi()`.
+Yes, there really is a method called `create_jsonapi_using_magic_and_pixie_dust()`. No, you don't *have* to call it that. If you are feeling more sensible you can use the synonym `create_jsonapi()`.
 
 # Usage
 
@@ -130,8 +130,26 @@ More or less the same as the quick preview above. Spelled out in a bit more deta
 
 ### Customising the Generated API
 
+#### Information Callbacks
+
 There are two optional parameters to `create_api_using_magic_and_pixie_dust()`:
-`links_callback` and `meta_callback`. Both of these can be supplied with callback functions. They are the same ones described in [create_resource](#create_resource).
+`links_callback` and `meta_callback`. These are passed on to [create_resource()](#create_resource).
+
+#### Selectively Passing Models for API Generation
+
+Your database may have some tables which you do not wish to expose as collections in the generated API. You can be selective by:
+
+* writing a models module with only the model classes you wish to expose; or
+* [not yet] passing an iterable of model classes to `create_jsonapi_using_magic_and_pixie_dust()`.
+
+#### `__jsonapi__` Attribute of Models
+
+The behaviour of the jsonapi renderer can be influenced by options stored the `__jsonapi__` attribute (a `dict`) of a model class.
+
+
+
+If you need deeper customisation of your JSON-API, you will need to construct it using the building blocks that `create_api_using_magic_and_pixie_dust()` uses. Start with [create_resource()](#create_resource) or [the @resource class decorator](#resource_decorator)
+
 ## Creating Individual JSON-API Resources from Models
 
 ### <a name="create_resource"></a>Resource Creation On-the-fly: `create_resource()`
@@ -156,4 +174,4 @@ There are two optional parameters to `create_api_using_magic_and_pixie_dust()`:
   results.
 
 
-### Decorating Class Definitions
+### <a name="resource_decorator"></a>Decorating Class Definitions
