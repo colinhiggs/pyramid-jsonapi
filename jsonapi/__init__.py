@@ -645,8 +645,8 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                         view_options.get('count'),
                     )
                 )
-                if 'meta' not in ret:
-                    ret['meta'] = {}
+#                if 'meta' not in ret:
+#                    ret['meta'] = {}
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
@@ -657,14 +657,17 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                     for dbitem in results
                 ]
                 if results[0].__jsonapi__['meta_callback'] is not None:
-                    ret['meta'].update(
-                        results[0].__jsonapi__['meta_callback'](
-                            section='toplevel',
-                            request=req,
-                            results=results,
-                            **view_options
-                        )
+                    meta = results[0].__jsonapi__['meta_callback'](
+                        section='toplevel',
+                        request=req,
+                        results=results,
+                        **view_options
                     )
+                    if meta:
+                        if 'meta' in ret:
+                            ret['meta'].update(meta)
+                        else:
+                            ret['meta'] = meta
                 if results[0].__jsonapi__['links_callback'] is not None:
                     ret['links'].update(
                         results[0].__jsonapi__['links_callback'](
@@ -682,14 +685,17 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                     included = included
                 )
                 if results.__jsonapi__['meta_callback'] is not None:
-                    ret['meta'].update(
-                        results.__jsonapi__['meta_callback'](
-                            section='toplevel',
-                            request=req,
-                            results=results,
-                            **view_options
-                        )
+                    meta = results.__jsonapi__['meta_callback'](
+                        section='toplevel',
+                        request=req,
+                        results=results,
+                        **view_options
                     )
+                    if meta:
+                        if 'meta' in ret:
+                            ret['meta'].update(meta)
+                        else:
+                            ret['meta'] = meta
                 if results.__jsonapi__['links_callback'] is not None:
                     ret['links'].update(
                         results.__jsonapi__['links_callback'](
