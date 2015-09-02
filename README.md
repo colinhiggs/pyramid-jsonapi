@@ -182,6 +182,8 @@ If you need deeper customisation of your JSON-API, you will need to construct it
 
 ## Creating Individual JSON-API Resources from Models
 
+Documentation from this point on should be considered a work in progress...
+
 ### <a name="create_resource"></a>Resource Creation On-the-fly: `create_resource()`
 
 #### `create_resource()` Parameters
