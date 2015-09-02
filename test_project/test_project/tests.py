@@ -174,3 +174,60 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         # Check that the id is the same as we got before.
         self.assertEqual(r.json['data'][0]['id'], owner_id)
+
+    def test_api_skewed_pagination(self):
+        '''Should get pages from query with offset not a multiple of limit.'''
+
+        # Build a list with all post ids, sorted.
+        post_ids = [int(post['id']) for post in
+            self.test_app.get('/posts').json['data']]
+        post_ids.sort()
+
+        # Fetch 3 per page.
+        # Offset of 1 so that there is a previous page.
+        # Offset deliberately not a multiple of 3.
+        r = self.test_app.get('/posts?page[limit]=3&page[offset]=1')
+        self.assertEqual(r.status_code, 200)
+
+        data = r.json['data']
+        # Check that we got 3 results, as per pagination instruction.
+        self.assertEqual(len(data), 3)
+
+        links = r.json['links']
+        # Check that pagination links are there.
+        self.assertIn('first', links)
+        self.assertIn('last', links)
+        self.assertIn('prev', links)
+        self.assertIn('next', links)
+
+        # Check that 'first' link gets a page of 3 starting at post_ids[0]
+        r = self.test_app.get(links['first'])
+        self.assertEqual(r.status_code, 200)
+        ids = [int(post['id']) for post in r.json['data']]
+        ids.sort()
+        self.assertEqual(len(ids), 3)
+        self.assertEqual(ids[0], post_ids[0])
+
+        # Check that 'last' link gets a page of 2 starting at post_ids[6]
+        r = self.test_app.get(links['last'])
+        self.assertEqual(r.status_code, 200)
+        ids = [int(post['id']) for post in r.json['data']]
+        ids.sort()
+        self.assertEqual(len(ids), 2)
+        self.assertEqual(ids[0], post_ids[6])
+
+        # Check that 'prev' link gets a page of 3 starting at post_ids[0]
+        r = self.test_app.get(links['prev'])
+        self.assertEqual(r.status_code, 200)
+        ids = [int(post['id']) for post in r.json['data']]
+        ids.sort()
+        self.assertEqual(len(ids), 3)
+        self.assertEqual(ids[0], post_ids[0])
+
+        # Check that 'next' link gets a page of 3 starting at post_ids[4]
+        r = self.test_app.get(links['next'])
+        self.assertEqual(r.status_code, 200)
+        ids = [int(post['id']) for post in r.json['data']]
+        ids.sort()
+        self.assertEqual(len(ids), 3)
+        self.assertEqual(ids[0], post_ids[4])
