@@ -128,6 +128,12 @@ class TestJsonApi(unittest.TestCase):
         alice = r.json['data']
         self.assertEqual(alice['attributes']['name'], 'alice')
 
+    def test_api_person_post(self):
+        '''Should add a new person.'''
+        r = self.test_app.post('/people', '{"attributes": {"name": "george"}}')
+        self.assertEqual(r.status_code, 200)
+        print(r.json)
+
 
     def test_api_posts_get(self):
         '''Should return all posts.'''
@@ -231,3 +237,28 @@ class TestJsonApi(unittest.TestCase):
         ids.sort()
         self.assertEqual(len(ids), 3)
         self.assertEqual(ids[0], post_ids[4])
+
+    def test_api_filters(self):
+        '''Should return filtered search results.'''
+        pass
+
+    def test_api_sorting(self):
+        '''Should return sorted results.'''
+        pass
+
+    def test_api_sparse_fields(self):
+        '''Should return sparse results.'''
+        pass
+
+    def test_api_includes(self):
+        '''Should return compound documents.'''
+        pass
+
+    def test_resource_decorator(self):
+        pass
+
+    def test_resource_links_callback(self):
+        pass
+
+    def test_resource_meta_callback(self):
+        pass

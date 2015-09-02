@@ -266,6 +266,11 @@ class Resource:
         DBSession.flush()
         return item
 
+    def delete(self):
+        '''Delete an existing item.'''
+        item = self.get()
+        DBSession.delete(item)
+
 class ModelInfo:
     '''Information about a model class (either table or relationship).
 
