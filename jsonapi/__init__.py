@@ -246,6 +246,7 @@ class Resource:
             pass
         item = DBSession.merge(self.model(**atts))
         DBSession.flush()
+        self.request.response.status_code = 201
         return item
 
     def patch(self):
