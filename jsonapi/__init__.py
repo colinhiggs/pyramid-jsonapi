@@ -645,8 +645,6 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                         view_options.get('count'),
                     )
                 )
-#                if 'meta' not in ret:
-#                    ret['meta'] = {}
                 data = [
                     self.serialise_db_item(
                         dbitem, system,
