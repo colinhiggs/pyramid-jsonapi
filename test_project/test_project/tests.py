@@ -115,10 +115,62 @@ class TestJsonApi(unittest.TestCase):
                 # Has a posts relationship.
                 self.assertIn('posts', item['relationships'])
 
+    def test_api_person_get(self):
+        '''Should return a specific person.'''
+        # Find the id of alice.
+        r = self.test_app.get('/people?filter[name:eq]=alice')
+        self.assertEqual(r.status_code, 200)
+        item = r.json['data'][0]
+        self.assertEqual(item['attributes']['name'], 'alice')
+        alice_id = item['id']
+        # Now get alice object.
+        r = self.test_app.get('/people/' + alice_id)
+        alice = r.json['data']
+        self.assertEqual(alice['attributes']['name'], 'alice')
+
+
     def test_api_posts_get(self):
-        '''Should return all posts in pages of 3.'''
-        r = self.test_app.get('/posts?page[limit]=3')
+        '''Should return all posts.'''
+        r = self.test_app.get('/posts')
         self.assertEqual(r.status_code, 200)
         d = r.json
         data = d['data']
-        self.assertEqual(len(data), 3)
+        self.assertEqual(len(data), 8)
+
+    def test_api_blogs_get(self):
+        '''Should return all blogs.'''
+        r = self.test_app.get('/blogs')
+        self.assertEqual(r.status_code, 200)
+        d = r.json
+        data = d['data']
+        self.assertEqual(len(data), 4)
+
+    def test_api_relationships(self):
+        '''Should return relationships from blog.'''
+        # Follow relationship links from first blog returned.
+        r = self.test_app.get('/blogs')
+        self.assertEqual(r.status_code, 200)
+        blog = r.json['data'][0]
+        posts = blog['relationships']['posts']
+        owner = blog['relationships']['owner']
+
+        # blogs
+        self.assertIsInstance(posts['data'], list)
+        # Every blog should have 2 posts.
+        self.assertEqual(len(posts['data']), 2)
+        # Follow posts link and check ids
+        post_ids = [str(item['id']) for item in posts['data']]
+        r = self.test_app.get(posts['links']['self'])
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json['data']), len(post_ids))
+        for item in r.json['data']:
+            self.assertIn(item['id'], post_ids)
+
+        # owner.
+        self.assertIsInstance(owner['data'], dict)
+        owner_id = str(owner['data']['id'])
+        # Follow owner link:
+        r = self.test_app.get(owner['links']['self'])
+        self.assertEqual(r.status_code, 200)
+        # Check that the id is the same as we got before.
+        self.assertEqual(r.json['data'][0]['id'], owner_id)
