@@ -13,18 +13,18 @@ Functionality already added (works modulo bugs):
 * `GET`ing of resource collections and individual resources.
 * `POST`ing new resources.
 * `PATCH`ing existing resources.
-* There is no PUT in JSON-API.
-* 'links' section auto-populated with some standard links.
-* 'ralationships' section auto-populated from relationships defined in sqlalchemy model.
-* Pagination of collection gets via page[] parameters.
-* Filtering of collection gets via filter[] parameters.
+* There is no `PUT` in JSON-API.
+* `links` section auto-populated with some standard links.
+* `relationships` section auto-populated from relationships defined in sqlalchemy model.
+* Pagination of collection gets via `page[]` parameters.
+* Filtering of collection gets via `filter[]` parameters.
   * A good number of comparators are supported.
-* Sorting of collection gets via sort parameter.
+* Sorting of collection gets via `sort` parameter.
 * Sparse field returns
-  * via fields[] parameter and/or
+  * via `fields[]` parameter and/or
   * limiting field visibility in the model.
-* Included documents via include parameter.
-* Customisation of 'links' and 'meta' sections.
+* Included documents via `include` parameter.
+* Customisation of `links` and `meta` sections.
 
 Definitely at the stage where you can play with it; don't use it in production.
 
