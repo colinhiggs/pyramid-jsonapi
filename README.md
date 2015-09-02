@@ -1,10 +1,40 @@
 # pyramid-jsonapi
 
-Utilities for creating JSON-API apis from a database using the sqlAlchemy ORM and pyramid framework.
+Create a [JSON-API](http://jsonapi.org/) standard api from a database using the sqlAlchemy ORM and pyramid framework.
+
+# Status
+
+New and still being developed. There are bugs: some known (see the [issues](https://github.com/colinhiggs/pyramid-jsonapi/issues) page), doubtless many unknown.
+
+Right now it will take a typical sqlalchemy declarative-style models file and produce a working REST-ful web api conforming to the JSON-API standard, pretty much with the invocation of one function.
+
+Functionality already added (works modulo bugs):
+
+* `GET`ing of resource collections and individual resources.
+* `POST`ing new resources.
+* `PATCH`ing existing resources.
+* There is no PUT in JSON-API.
+* 'links' section auto-populated with some standard links.
+* 'ralationships' section auto-populated from relationships defined in sqlalchemy model.
+* Pagination of collection gets via page[] parameters.
+* Filtering of collection gets via filter[] parameters.
+  * A good number of comparators are supported.
+* Sorting of collection gets via sort parameter.
+* Sparse field returns
+  * via fields[] parameter and/or
+  * limiting field visibility in the model.
+* Included documents via include parameter.
+* Customisation of 'links' and 'meta' sections.
+
+Definitely at the stage where you can play with it; don't use it in production.
 
 # Installation
 
-Pretty basic right now: copy the directory jsonapi/ into your PYTHONPATH or into your project.
+Pretty basic right now: copy the directory jsonapi/ into your PYTHONPATH or into your project. There is only one file.
+
+setup.py *should* work but has not really been tested.
+
+A release worthy of some packaging should come soon.
 
 # Quick preview
 
