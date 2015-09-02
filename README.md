@@ -29,6 +29,7 @@ Functionality already added (works modulo bugs):
 
 I tend to keep track of TODOs in the [github issue list](https://github.com/colinhiggs/pyramid-jsonapi/issues). Biggies that don't work for now:
 
+* `PATCH` should really work with [JSON Patch](http://tools.ietf.org/html/rfc6902); right now it works more the way one might expect a partial `PUT` to work.
 * Modify (`POST`, `PATCH`?, `DELETE`) relationships.
 
 Definitely at the stage where you can play with it; don't use it in production.
