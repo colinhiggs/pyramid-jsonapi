@@ -13,6 +13,7 @@ Functionality already added (works modulo bugs):
 * `GET`ing of resource collections and individual resources.
 * `POST`ing new resources.
 * `PATCH`ing existing resources.
+* `DELETE`ing resources.
 * There is no `PUT` in JSON-API.
 * `links` section auto-populated with some standard links.
 * `relationships` section auto-populated from relationships defined in sqlalchemy model.
@@ -25,6 +26,10 @@ Functionality already added (works modulo bugs):
   * limiting field visibility in the model.
 * Included documents via `include` parameter.
 * Customisation of `links` and `meta` sections.
+
+I tend to keep track of TODOs in the [github issue list](https://github.com/colinhiggs/pyramid-jsonapi/issues). Biggies that don't work for now:
+
+* Modify (`POST`, `PATCH`?, `DELETE`) relationships.
 
 Definitely at the stage where you can play with it; don't use it in production.
 
