@@ -148,9 +148,23 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json['data']), 1)
 
+    def test_api_post_delete(self):
+        '''Should delete a post (non cascading delete).'''
+        # Find the id of a post to delete.
+        r = self.test_app.get("/posts?filter[content:eq]=deleteme's second post in main")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json['data']),1)
+        post_id = r.json['data'][0]['id']
+        # Now delete it.
+        r = self.test_app.delete('/posts/' + post_id)
+        self.assertEqual(r.status_code, 200)
+        # Now make sure it isn't there.
+        r = self.test_app.get('/posts/' + post_id, status=404)
+        self.assertEqual(r.status_code, 404)
+
     @unittest.skip('wait to sort out cascading deletes')
     def test_api_person_delete(self):
-        '''Should delete person "deleteme".'''
+        '''Should delete person "deleteme" and their blogs and posts.'''
         # Find the person first.
         r = self.test_app.get('/people?filter[name:eq]=deleteme')
         self.assertEqual(r.status_code, 200)
@@ -165,8 +179,6 @@ class TestJsonApi(unittest.TestCase):
         r = self.test_app.get('/people?filter[name:eq]=deleteme')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json['data']),0)
-
-
 
     def test_api_posts_get(self):
         '''Should return all posts.'''

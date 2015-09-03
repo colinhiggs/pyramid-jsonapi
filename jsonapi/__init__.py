@@ -193,6 +193,8 @@ class Resource:
                 op_func = getattr(prop, '__ne__')
             elif op == 'startswith':
                 op_func = getattr(prop, 'startswith')
+            elif op == 'endswith':
+                op_func = getattr(prop, 'endswith')
             elif op == 'contains':
                 op_func = getattr(prop, 'contains')
             elif op == 'lt':
@@ -228,6 +230,8 @@ class Resource:
         try:
             item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
         except NoResultFound:
+            self.request.response.status_code = 404
+            return self.request.response
             raise ResourceNotFoundError('No such {} item: {}.'.format(self.model.__tablename__, self.request.matchdict['id']))
         return item
 
