@@ -56,39 +56,39 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(len(results), len(data['people']))
         for item in results:
             self.assertIsInstance(item, Person)
-            self.assertTrue(item.name in idx['people'])
-            self.assertTrue(len(item.blogs) != 0)
-            self.assertTrue(len(item.posts) != 0)
+            self.assertIn(item.name, idx['people'])
+            self.assertNotEqual(len(item.blogs), 0)
+            self.assertNotEqual(len(item.posts), 0)
 
     def test_db_blogs(self):
         '''Should return initial blogs from DB with accessible owners.'''
         results = DBSession.query(Blog).all()
         self.assertIsInstance(results, list)
-        self.assertTrue(len(results) == len(data['blogs']) * len(data['people']))
+        self.assertEqual(len(results), len(data['blogs']) * len(data['people']))
         for item in results:
             self.assertIsInstance(item, Blog)
-            self.assertTrue(item.title in idx['blogs'])
-            self.assertTrue(item.owner.name in idx['people'])
+            self.assertIn(item.title, idx['blogs'])
+            self.assertIn(item.owner.name, idx['people'])
 
     def test_db_posts(self):
         '''Should fetch all posts from DB.'''
         results = DBSession.query(Post).all()
         self.assertIsInstance(results, list)
-        self.assertTrue(len(results) == len(data['blogs']) * len(data['people']) * 2)
+        self.assertEqual(len(results), len(data['blogs']) * len(data['people']) * 2)
         for item in results:
             self.assertIsInstance(item, Post)
-            self.assertTrue(item.author.name in idx['people'])
-            self.assertTrue(item.blog.title in idx['blogs'])
+            self.assertIn(item.author.name, idx['people'])
+            self.assertIn(item.blog.title, idx['blogs'])
 
     def test_api_people_get(self):
         '''Should return all people via jsonapi.'''
         r = self.test_app.get('/people')
-        self.assertTrue(r.status_code == 200)
+        self.assertEqual(r.status_code, 200)
         jdata = r.json['data']
 
         # collection_get should return list
         self.assertIsInstance(jdata, list)
-        self.assertTrue(len(jdata) == len(idx['people']))
+        self.assertEqual(len(jdata), len(idx['people']))
 
         # Links:
         self.assertIn('links', r.json)
@@ -108,7 +108,7 @@ class TestJsonApi(unittest.TestCase):
 
             with self.subTest(name=item['attributes']['name']):
                 # Name as expected.
-                self.assertTrue(item['attributes']['name'] in idx['people'])
+                self.assertIn(item['attributes']['name'], idx['people'])
                 # Has a blogs relationship.
                 self.assertIn('blogs', item['relationships'])
                 # Has a posts relationship.
