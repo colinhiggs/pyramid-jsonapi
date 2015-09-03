@@ -13,13 +13,19 @@ import datetime
 
 # Some initial data in a handy form.
 data = {
-    'people': [{'name': 'alice'}, {'name': 'bob'}],
+    'people': [{'name': 'alice'}, {'name': 'bob'}, {'name': 'deleteme'}],
     'blogs': [{'title': 'main'}, {'title': 'second'}]
 }
 # Indexes for later tests.
 idx = {}
 idx['people'] = {obj['name']: obj for obj in data['people']}
 idx['blogs'] = {obj['title']: obj for obj in data['blogs']}
+
+npeople = len(data['people'])
+nblogs_per_person = len(data['blogs'])
+nblogs = npeople * nblogs_per_person
+nposts_per_blog = 2
+nposts = nblogs * nposts_per_blog
 
 def add_to_db():
     '''Add some basic test data.'''

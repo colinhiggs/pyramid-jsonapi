@@ -660,7 +660,7 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                     )
                     for dbitem in results
                 ]
-                if results[0].__jsonapi__['meta_callback'] is not None:
+                if results and results[0].__jsonapi__['meta_callback'] is not None:
                     meta = results[0].__jsonapi__['meta_callback'](
                         section='toplevel',
                         request=req,
@@ -672,7 +672,7 @@ class JSONAPIFromSqlAlchemyRenderer(JSON):
                             ret['meta'].update(meta)
                         else:
                             ret['meta'] = meta
-                if results[0].__jsonapi__['links_callback'] is not None:
+                if results and results[0].__jsonapi__['links_callback'] is not None:
                     ret['links'].update(
                         results[0].__jsonapi__['links_callback'](
                             section='toplevel',

@@ -16,7 +16,12 @@ from .models import (
 )
 
 from . import test_data
-from .test_data import data, idx
+from .test_data import (
+    data,
+    idx,
+    npeople, nblogs, nposts,
+    nblogs_per_person, nposts_per_blog
+)
 
 class TestJsonApi(unittest.TestCase):
     '''Unit test suite for jsonapi.
@@ -114,6 +119,12 @@ class TestJsonApi(unittest.TestCase):
                 # Has a posts relationship.
                 self.assertIn('posts', item['relationships'])
 
+    def test_api_empty_get(self):
+        '''Should return an empty list of results.'''
+        r = self.test_app.get('/people?filter[name:eq]=doesnotexist')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json['data']), 0)
+
     def test_api_person_get(self):
         '''Should return a specific person.'''
         # Find the id of alice.
@@ -137,17 +148,33 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json['data']), 1)
 
+    @unittest.skip('wait to sort out cascading deletes')
     def test_api_person_delete(self):
-        ''''''
-        pass
+        '''Should delete person "deleteme".'''
+        # Find the person first.
+        r = self.test_app.get('/people?filter[name:eq]=deleteme')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json['data']),1)
+        dm_id = r.json['data'][0]['id']
+
+        # Delete them.
+        r = self.test_app.delete('/people/' + str(dm_id))
+        self.assertEqual(r.status_code, 200)
+
+        # Try to find them again.
+        r = self.test_app.get('/people?filter[name:eq]=deleteme')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json['data']),0)
+
+
 
     def test_api_posts_get(self):
         '''Should return all posts.'''
-        r = self.test_app.get('/posts')
+        r = self.test_app.get('/posts?page[limit]=100')
         self.assertEqual(r.status_code, 200)
         d = r.json
         data = d['data']
-        self.assertEqual(len(data), 8)
+        self.assertEqual(len(data), nposts)
 
     def test_api_blogs_get(self):
         '''Should return all blogs.'''
@@ -155,7 +182,7 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         d = r.json
         data = d['data']
-        self.assertEqual(len(data), 4)
+        self.assertEqual(len(data), nblogs)
 
     def test_api_relationships(self):
         '''Should return relationships from blog.'''
@@ -169,7 +196,7 @@ class TestJsonApi(unittest.TestCase):
         # blogs
         self.assertIsInstance(posts['data'], list)
         # Every blog should have 2 posts.
-        self.assertEqual(len(posts['data']), 2)
+        self.assertEqual(len(posts['data']), nposts_per_blog)
         # Follow posts link and check ids
         post_ids = [str(item['id']) for item in posts['data']]
         r = self.test_app.get(posts['links']['self'])
@@ -220,13 +247,15 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(len(ids), 3)
         self.assertEqual(ids[0], post_ids[0])
 
-        # Check that 'last' link gets a page of 2 starting at post_ids[6]
+        # Check that 'last' link gets last page.
+        last_offset = ((nposts - 1) // 3) * 3
+        nlast_results = nposts - last_offset
         r = self.test_app.get(links['last'])
         self.assertEqual(r.status_code, 200)
         ids = [int(post['id']) for post in r.json['data']]
         ids.sort()
-        self.assertEqual(len(ids), 2)
-        self.assertEqual(ids[0], post_ids[6])
+        self.assertEqual(len(ids), nlast_results)
+        self.assertEqual(ids[0], post_ids[last_offset])
 
         # Check that 'prev' link gets a page of 3 starting at post_ids[0]
         r = self.test_app.get(links['prev'])
