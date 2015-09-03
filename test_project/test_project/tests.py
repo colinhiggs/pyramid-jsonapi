@@ -29,10 +29,6 @@ class TestJsonApi(unittest.TestCase):
         cls.postgresql = testing.postgresql.Postgresql(port=7654)
         cls.engine = create_engine(cls.postgresql.url())
         DBSession.configure(bind=cls.engine)
-        Base.metadata.create_all(cls.engine)
-
-        # Add some basic test data.
-        test_data.add_to_db()
 
         cls.app = get_app('testing.ini')
         cls.test_app = webtest.TestApp(cls.app)
@@ -40,21 +36,24 @@ class TestJsonApi(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         '''Throw away test DB.'''
-        Base.metadata.drop_all(cls.engine)
         DBSession.close()
         cls.postgresql.stop()
 
     def setUp(self):
+        Base.metadata.create_all(self.engine)
+        # Add some basic test data.
+        test_data.add_to_db()
         transaction.begin()
 
     def tearDown(self):
         transaction.abort()
+        Base.metadata.drop_all(self.engine)
 
     def test_db_people(self):
         '''Should return initial list of people direct from DB.'''
         results = DBSession.query(Person).all()
         self.assertIsInstance(results, list)
-        self.assertTrue(len(results) == len(data['people']))
+        self.assertEqual(len(results), len(data['people']))
         for item in results:
             self.assertIsInstance(item, Person)
             self.assertTrue(item.name in idx['people'])
@@ -130,7 +129,6 @@ class TestJsonApi(unittest.TestCase):
 
     def test_api_person_post(self):
         '''Should add a new person.'''
-        return None
         # Add a person.
         r = self.test_app.post('/people', '{"attributes": {"name": "george"}}')
         self.assertEqual(r.status_code, 201)
@@ -139,6 +137,9 @@ class TestJsonApi(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json['data']), 1)
 
+    def test_api_person_delete(self):
+        ''''''
+        pass
 
     def test_api_posts_get(self):
         '''Should return all posts.'''
