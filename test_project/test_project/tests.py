@@ -196,7 +196,7 @@ class TestJsonApi(unittest.TestCase):
         data = d['data']
         self.assertEqual(len(data), nblogs)
 
-    def test_api_relationships(self):
+    def test_api_relationships_get(self):
         '''Should return relationships from blog.'''
         # Follow relationship links from first blog returned.
         r = self.test_app.get('/blogs')
@@ -287,15 +287,43 @@ class TestJsonApi(unittest.TestCase):
 
     def test_api_filters(self):
         '''Should return filtered search results.'''
-        pass
+        r = self.test_app.get('/posts?filter[title:eq]=first post')
+        self.assertEqual(len(r.json['data']), npeople * nblogs_per_person)
+        r = self.test_app.get('/posts?filter[title:eq]=first post&filter[content:endswith]=main')
+        self.assertEqual(len(r.json['data']), npeople)
 
     def test_api_sorting(self):
         '''Should return sorted results.'''
-        pass
+        # Basic sorting.
+        r = self.test_app.get('/posts?sort=id')
+        lst = [int(item['id']) for item in r.json['data']]
+        self.assertEqual(sorted(lst), lst)
+        r = self.test_app.get('/posts?sort=title')
+        lst = [item['attributes']['title'] for item in r.json['data']]
+        self.assertEqual(sorted(lst), lst)
+        # Reverse sort.
+        r = self.test_app.get('/posts?sort=-title')
+        lst = [item['attributes']['title'] for item in r.json['data']]
+        self.assertEqual(sorted(lst, reverse=True), lst)
+        # Sort by following author relationship (default to id)
+        r = self.test_app.get('/posts?sort=author')
+        lst = [int(item['attributes']['author_id']) for item in r.json['data']]
+        self.assertEqual(sorted(lst), lst)
+        # Sort on author name
+        r = self.test_app.get('/posts?sort=author.name')
+        lst = [
+            self.test_app.get(
+                '/people/' + str(item['relationships']['author']['data']['id'])
+            ).json['data']['attributes']['name']
+            for item in r.json['data']
+        ]
+        self.assertEqual(sorted(lst), lst)
 
     def test_api_sparse_fields(self):
         '''Should return sparse results.'''
-        pass
+        r = self.test_app.get('/posts?fields[posts]=title')
+        self.assertIn('title', r.json['data'][0]['attributes'])
+        self.assertNotIn('content', r.json['data'][0]['attributes'])
 
     def test_api_includes(self):
         '''Should return compound documents.'''
