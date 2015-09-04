@@ -327,7 +327,16 @@ class TestJsonApi(unittest.TestCase):
 
     def test_api_includes(self):
         '''Should return compound documents.'''
-        pass
+        r = self.test_app.get('/posts?include=author')
+        self.assertIn('included', r.json)
+        included = r.json['included']
+        self.assertGreater(len(included), 0)
+        self.assertEqual(included[0]['type'],'people')
+        r = self.test_app.get('/posts?include=author,author.blogs')
+        types = {item["type"] for item in r.json['included']}
+        self.assertIn('people', types)
+        self.assertIn('blogs', types)
+
 
     def test_resource_decorator(self):
         pass
