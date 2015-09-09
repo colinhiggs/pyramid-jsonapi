@@ -3,13 +3,16 @@ import json
 #from sqlalchemy import inspect
 import transaction
 import sqlalchemy
-from pyramid.view import view_config
+from pyramid.view import view_config, notfound_view_config, forbidden_view_config
 from pyramid.renderers import JSON
+from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest
+import pyramid
 import cornice.resource
 import sys
 import inspect
 import re
 from collections import namedtuple
+import psycopg2
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -22,6 +25,19 @@ DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 route_prefix = 'jsonapi'
 model_map = {}
 relationship_map = {}
+
+def error(e, request):
+    request.response.content_type = 'application/vnd.api+json'
+    request.response.status_code = e.code
+    return {
+        'error': e.detail,
+        'title': e.title,
+        'status': str(e.code)
+    }
+
+notfound_view_config(renderer='json')(error)
+forbidden_view_config(renderer='json')(error)
+view_config(context=HTTPClientError, renderer='json')(error)
 
 class Resource:
     '''Base class for JSON-API RESTful resources.
@@ -208,11 +224,21 @@ class Resource:
             elif op == 'like' or op == 'ilike':
                 op_func = getattr(prop, op)
                 val = re.sub(r'\*', '%', val)
+            else:
+                raise HTTPBadRequest("No such filter operator: '{}'".format(op))
             q = q.filter(op_func(val))
 
         ret = {}
-        # Full count
-        ret['count'] = q.count()
+        # Full count.
+        try:
+            ret['count'] = q.count()
+        except sqlalchemy.exc.ProgrammingError as e:
+            raise HTTPBadRequest(
+                "Could not use operator '{}' with field '{}'".format(
+                    op, prop.name
+                )
+            )
+
 
         # Paging
         q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
@@ -230,9 +256,10 @@ class Resource:
         try:
             item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
         except NoResultFound:
-            self.request.response.status_code = 404
-            return self.request.response
-            raise ResourceNotFoundError('No such {} item: {}.'.format(self.model.__tablename__, self.request.matchdict['id']))
+            raise HTTPNotFound('No id {} in collection {}'.format(
+                self.request.matchdict['id'],
+                self.model.__tablename__
+            ))
         return item
 
     def collection_post(self):
