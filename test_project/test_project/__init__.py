@@ -49,7 +49,7 @@ def main(global_config, **settings):
     config.add_renderer('jsonapi', renderer)
     config.add_renderer(None, renderer)
     # Create the routes and views automagically.
-    jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
+    jsonapi.create_jsonapi_using_magic_and_pixie_dust(models, allow_client_id=True)
     # Make sure we scan the *jsonapi* package.
     config.scan(package=jsonapi)
 

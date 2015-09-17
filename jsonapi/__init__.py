@@ -5,7 +5,7 @@ import transaction
 import sqlalchemy
 from pyramid.view import view_config, notfound_view_config, forbidden_view_config
 from pyramid.renderers import JSON
-from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest
+from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict
 import pyramid
 import cornice.resource
 import sys
@@ -268,20 +268,28 @@ class Resource:
         Returns:
             created item.
         '''
-        data = self.request.json_body
+        data = self.request.json_body['data']
+        # Check to see if we're allowing client ids
+        if not self.allow_client_id and 'id' in data:
+            raise HTTPForbidden('Client generated ids are not supported.')
+        # Type should be correct or raise 409 Conflict
+        datatype = data.get('type')
+        if datatype != self.model.__tablename__:
+            raise HTTPConflict("Unsupported type '{}'".format(datatype))
         atts = data['attributes']
-        # Delete id key to force creation of a new item
+        if 'id' in data:
+            atts['id'] = data['id']
+        item = self.model(**atts)
         try:
-            del(atts['id'])
-        except KeyError:
-            pass
-        item = DBSession.merge(self.model(**atts))
-        DBSession.flush()
+            DBSession.add(item)
+            DBSession.flush()
+        except sqlalchemy.exc.IntegrityError as e:
+            raise HTTPConflict(e.args[0])
         self.request.response.status_code = 201
         return item
 
-    def patch(self):
-        '''Update an existing item with information in PATCH request.
+    def patch_partial(self):
+        '''Update an existing item from a partially defined representation.
 
         Returns:
             altered item.
@@ -296,6 +304,22 @@ class Resource:
         item = DBSession.merge(self.model(**data))
         DBSession.flush()
         return item
+
+    def patch_jsonpatch(self):
+        '''Update an existing item using JSON Patch (rfc6902) message.
+
+        Returns:
+            altered item.
+        '''
+        data = self.request.json_body
+        req_id = self.request.matchdict['id']
+        data_id = data.get('id')
+        if data_id is not None and data_id != req_id:
+            raise KeyError('JSON id ({}) does not match URL id ({}).'.
+            format(data_id, req_id))
+        data['id'] = req_id
+
+    patch = patch_partial
 
     def delete(self):
         '''Delete an existing item.'''
@@ -419,7 +443,10 @@ def test_links(section, request, results, **options):
             ret['schema'] = '/schemas/{}'.format(rc.relationship)
     return ret
 
-def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
+def create_jsonapi(models,
+    links_callback=test_links,
+    meta_callback=std_meta,
+    **options):
     '''Auto-create jsonapi from module with sqlAlchemy models.
 
     Arguments:
@@ -443,7 +470,8 @@ def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
                 create_resource(
                     model_class, bases=(Resource,),
                     links_callback=links_callback,
-                    meta_callback=meta_callback
+                    meta_callback=meta_callback,
+                    **options
                 )
             )
             for relname, rel in\
@@ -452,7 +480,8 @@ def create_jsonapi(models, links_callback=test_links, meta_callback=std_meta):
                     create_resource(
                         rel, bases=(Resource,),
                         links_callback=links_callback,
-                        meta_callback=meta_callback
+                        meta_callback=meta_callback,
+                        **options
                     )
                 )
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
@@ -484,11 +513,13 @@ def create_resource(model,
         bases (tuple): tuple of base classes for autonstructed cls.
         links_callback (function): function which returns a links dictionary. Signature as described in :meth:`std_meta`.
         meta_callback (function): function which returns a meta dictionary. Signature as described in :meth:`std_meta`.
+        client_id (bool): whether or not to allow clients to specify ids.
         depth (int): depth passed to cornice.resource.resource.
         **options (dict): options attached to cls for later rendering.
             In the form::
 
                 {
+                    'allow_client_id': whether or not to allow clients to specify ids,
                     'default_limit': default no of results per page,
                     'max_limit': maximum no of results per page
                 }
@@ -541,7 +572,7 @@ def create_resource(model,
     info.model_class.__jsonapi__['meta_callback'] = meta_callback
 
     # Merge in options from model_class, if any.
-    my_opts = {'default_limit': 10, 'max_limit': 100}
+    my_opts = {'allow_client_id': False, 'default_limit': 10, 'max_limit': 100}
     try:
         my_opts.update(info.model_class.__jsonapi__['options'])
     except (AttributeError, KeyError):
@@ -561,6 +592,7 @@ def create_resource(model,
     cls.model = info.model_class
     cls.default_limit = my_opts['default_limit']
     cls.max_limit = my_opts['max_limit']
+    cls.allow_client_id = my_opts['allow_client_id']
     # Add the cls to our module so that a scan will find it.
     setattr(sys.modules[__name__], cls.__name__, cls)
     # Add cls to model_map or relationship_map.

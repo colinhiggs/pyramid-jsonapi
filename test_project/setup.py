@@ -18,6 +18,7 @@ requires = [
     'psycopg2',
     'testing.postgresql',
     'webtest',
+    'jsonpatch',
     ]
 
 setup(name='test_project',
