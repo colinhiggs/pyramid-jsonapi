@@ -13,6 +13,7 @@ import inspect
 import re
 from collections import namedtuple
 import psycopg2
+import pprint
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -39,8 +40,8 @@ notfound_view_config(renderer='json')(error)
 forbidden_view_config(renderer='json')(error)
 view_config(context=HTTPClientError, renderer='json')(error)
 
-class Resource:
-    '''Base class for JSON-API RESTful resources.
+class EndPoint:
+    '''Base class for JSON-API RESTful end point (URL).
 
     Args:
         request (pyramid.request): request object.
@@ -141,6 +142,22 @@ class Resource:
 
         return info
 
+
+class RelationshipResource(EndPoint):
+    ''''''
+    pass
+
+
+
+class Resource(EndPoint):
+    '''Base class for JSON-API RESTful resources.
+
+    Args:
+        request (pyramid.request): request object.
+
+    Attributes:
+        request (pyramid.request): request object.
+    '''
 
     def collection_get(self):
         '''Get items from the collection.
@@ -279,6 +296,8 @@ class Resource:
         atts = data['attributes']
         if 'id' in data:
             atts['id'] = data['id']
+        for relname in data.get('relationships', []):
+            pass
         item = self.model(**atts)
         try:
             DBSession.add(item)
@@ -294,7 +313,7 @@ class Resource:
         Returns:
             altered item.
         '''
-        data = self.request.json_body
+        data = self.request.json_body['data']
         req_id = self.request.matchdict['id']
         data_id = data.get('id')
         if data_id is not None and data_id != req_id:
@@ -478,7 +497,7 @@ def create_jsonapi(models,
                 sqlalchemy.inspect(model_class).relationships.items():
                 setattr(module, '{}_{}Relationship'.format(k, relname),
                     create_resource(
-                        rel, bases=(Resource,),
+                        rel, bases=(RelationshipResource,),
                         links_callback=links_callback,
                         meta_callback=meta_callback,
                         **options

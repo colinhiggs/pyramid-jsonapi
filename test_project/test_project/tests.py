@@ -141,7 +141,7 @@ class TestJsonApi(unittest.TestCase):
     def test_api_person_post(self):
         '''Should add a new person.'''
         # Add a person.
-        r = self.test_app.post('/people', '{"attributes": {"name": "george"}}')
+        r = self.test_app.post('/people', '{"data": {"attributes": {"name": "george"}, "type": "people"}}')
         self.assertEqual(r.status_code, 201)
         # Find them to make sure they exist.
         r = self.test_app.get('/people?filter[name:eq]=george')
