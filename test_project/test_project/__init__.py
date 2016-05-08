@@ -1,5 +1,6 @@
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
+from pyramid.renderers import JSON
 from . import views
 
 # The jsonapi module.
@@ -31,9 +32,6 @@ def main(global_config, **settings):
     config.add_route('echo', '/echo/{type}')
     config.scan(views)
 
-    # jsonapi requires cornice.
-    config.include('cornice')
-
     # Since this is just a test app we'll do a sort of idempotent intialisation
     # each time we start.
     #
@@ -44,19 +42,12 @@ def main(global_config, **settings):
 
     # Lines specific to jsonapi.
     # Set up the renderer.
-    renderer = jsonapi.JSONAPIFromSqlAlchemyRenderer()
+    renderer = JSON()
     renderer.add_adapter(datetime.date, datetime_adapter)
-    config.add_renderer('jsonapi', renderer)
+    config.add_renderer('json', renderer)
     config.add_renderer(None, renderer)
     # Create the routes and views automagically.
-    jsonapi.create_jsonapi_using_magic_and_pixie_dust(models, allow_client_id=True)
-    # Make sure we scan the *jsonapi* package.
-    config.scan(package=jsonapi)
-
-    for intro in config.introspector.get_category('routes'):
-        if intro['introspectable']['name'] in {'params', '__static/'}:
-            continue
-        #print('{}:'.format(intro['introspectable']['name']))
+    jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models)
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()
