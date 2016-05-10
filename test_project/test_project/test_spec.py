@@ -251,6 +251,24 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(item['id'], alice_id)
         self.assertEqual(item['attributes']['name'], 'alice')
 
+    def test_spec_no_forreign_keys(self):
+        '''No forreign keys in attributes.
+
+        Although has-one foreign keys (e.g. author_id) are often stored
+        internally alongside other information to be represented in a resource
+        object, these keys SHOULD NOT appear as attributes.
+        '''
+        # posts have author_id and blog_id as has-one forreign keys. Check that
+        # they don't make it into the JSON representation (they should be in
+        # relationships instead).
+
+        # Fetch a single post.
+        r = self.test_app.get('/posts?page[limit]=1')
+        item = r.json['data'][0]
+        # Check for forreign keys.
+        self.assertNotIn('author_id', item['attributes'])
+        self.assertNotIn('blog_id', item['attributes'])
+
 
 
     def test_api_errors_structure(self):

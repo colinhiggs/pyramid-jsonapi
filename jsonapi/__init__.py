@@ -272,12 +272,15 @@ def CollectionViewFactory(model, collection_name=None):
             # JSON API type.
             type_name = self.collection_name
 
-            atts = {c: getattr(item, c) for c in mapper.columns.keys()}
-            # make sure that 'id' doesn't end up in attributes
-            try:
-                del(atts['id'])
-            except KeyError:
-                pass
+            atts = {}
+            for key, col in mapper.columns.items():
+                if key == 'id':
+                    continue
+                if len(col.foreign_keys) > 0:
+                    continue
+                atts[key] = getattr(item, key)
+
+            rels = {}
 
             ret = {
                 'id': str(item_id),
@@ -288,7 +291,8 @@ def CollectionViewFactory(model, collection_name=None):
                         self.item_route_name,
                         **{'id': getattr(item, 'id')}
                     )
-                }
+                },
+                'relationships': rels
             }
 
             return ret
