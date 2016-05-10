@@ -5,7 +5,7 @@ import transaction
 import sqlalchemy
 from pyramid.view import view_config, notfound_view_config, forbidden_view_config
 from pyramid.renderers import JSON
-from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict
+from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict, HTTPUnsupportedMediaType, HTTPNotAcceptable
 import pyramid
 import sys
 import inspect
@@ -28,14 +28,14 @@ def error(e, request):
     request.response.content_type = 'application/vnd.api+json'
     request.response.status_code = e.code
     return {
-        'error': e.detail,
-        'title': e.title,
-        'status': str(e.code)
+        'errors': [
+            {
+                'code': str(e.code),
+                'detail': e.detail,
+                'title': e.title,
+            }
+        ]
     }
-
-#notfound_view_config(renderer='json', error)
-forbidden_view_config(renderer='json')(error)
-view_config(context=HTTPClientError, renderer='json')(error)
 
 def create_jsonapi(config, models):
     '''Auto-create jsonapi from module with sqlAlchemy models.
@@ -44,6 +44,8 @@ def create_jsonapi(config, models):
         models (module): a module with model classes derived from sqlalchemy.ext.declarative.declarative_base().
     '''
     config.add_notfound_view(error, renderer='json')
+    config.add_forbidden_view(error, renderer='json')
+    config.add_view(error, context=HTTPClientError, renderer='json')
     # Loop through the models module looking for declaratively defined model
     # classes (inherit DeclarativeMeta). Create resource endpoints for these and
     # any relationships found.
@@ -94,7 +96,28 @@ def CollectionViewFactory(model, collection_name=None):
         def jsonapi_view(f):
             '''Decorator for view functions. Adds jsonapi boilerplate.'''
             def new_f(self, *args):
+                # Spec says to reject (with 415) any request with media type
+                # params.
+                cth = self.request.headers.get('content-type','').split(';')
+                content_type = cth[0]
+                params = None
+                if len(cth) > 1:
+                    raise HTTPUnsupportedMediaType('Media Type parameters not allowed by JSONAPI spec (http://jsonapi.org/format).')
+                    params = cth[1].lstrip();
+
+                # Spec says throw 406 Not Acceptable if Accept header has no
+                # application/vnd.api+json entry without parameters.
+                accepts = re.split(
+                    r',\s*',
+                    self.request.headers.get('accept','')
+                )
+                jsonapi_accepts = {a for a in accepts if a.startswith('application/vnd.api')}
+                if jsonapi_accepts and 'application/vnd.api+json' not in jsonapi_accepts:
+                    raise HTTPNotAcceptable('application/vnd.api+json must appear with no parameters in Accepts header (http://jsonapi.org/format).')
+
+                # Spec says set Content-Type to application/vnd.api+json.
                 self.request.response.content_type = 'application/vnd.api+json'
+
                 ret = {
                     'links': {},
                     'meta': {}
@@ -104,6 +127,12 @@ def CollectionViewFactory(model, collection_name=None):
 
                 ret['links'].update({
                     'self': self.request.url
+                })
+
+                ret['meta'].update({
+                    'debug': {
+                        'accept_header': {a:None for a in jsonapi_accepts},
+                    }
                 })
 
                 return ret
@@ -207,7 +236,7 @@ def CollectionViewFactory(model, collection_name=None):
 
 
             # Paging
-            print("page[limit]: " + str(qinfo['page[limit]']))
+            #print("page[limit]: " + str(qinfo['page[limit]']))
             q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
 
