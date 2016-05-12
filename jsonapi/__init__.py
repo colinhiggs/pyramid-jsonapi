@@ -271,6 +271,10 @@ def CollectionViewFactory(model, collection_name=None):
             item_id = getattr(item, 'id')
             # JSON API type.
             type_name = self.collection_name
+            item_url = self.request.route_url(
+                self.item_route_name,
+                **{'id': getattr(item, 'id')}
+            )
 
             atts = {}
             for key, col in mapper.columns.items():
@@ -281,16 +285,35 @@ def CollectionViewFactory(model, collection_name=None):
                 atts[key] = getattr(item, key)
 
             rels = {}
+            for key, rel in mapper.relationships.items():
+                rels[key] = {
+                    'links': {
+                        'self': '{}/relationships/{}'.format(item_url, key),
+                        'related': '{}/{}'.format(item_url, key)
+                    },
+                    'meta': {
+                        'direction': rel.direction.name,
+                    }
+                }
+                rel_class = rel.mapper.class_
+                local_col, rem_col = rel.local_remote_pairs[0]
+                q = DBSession.query(rel_class.id)
+                q = q.filter(item.id == rem_col)
+                if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                    rels[key]['meta']['count'] = q.count()
+                    rels[key]['data'] = [
+                        {'type': key, 'id': str(ritem.id)}
+                        for ritem in q.all()
+                    ]
+                else:
+                    rels[key]['data'] = { 'type': key,'id': str(q.one().id) }
 
             ret = {
                 'id': str(item_id),
                 'type': type_name,
                 'attributes': atts,
                 'links': {
-                    'self': self.request.route_url(
-                        self.item_route_name,
-                        **{'id': getattr(item, 'id')}
-                    )
+                    'self': item_url
                 },
                 'relationships': rels
             }
