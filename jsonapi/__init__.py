@@ -13,6 +13,7 @@ import re
 from collections import namedtuple
 import psycopg2
 import pprint
+import functools
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -132,6 +133,7 @@ def CollectionViewFactory(model, collection_name=None):
                 ret['meta'].update({
                     'debug': {
                         'accept_header': {a:None for a in jsonapi_accepts},
+                        'qinfo_page': self.collection_query_info(self.request)['_page']
                     }
                 })
 
@@ -297,16 +299,33 @@ def CollectionViewFactory(model, collection_name=None):
                 }
                 rel_class = rel.mapper.class_
                 local_col, rem_col = rel.local_remote_pairs[0]
-                q = DBSession.query(rel_class.id)
-                q = q.filter(item.id == rem_col)
                 if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                    qinfo = self.collection_query_info(self.request)
+                    limit_comps = [ 'limit', 'relationships', key ]
+                    limit = self.default_limit
+                    while limit_comps:
+                        if '.'.join(limit_comps) in qinfo['_page']:
+                            limit = int(qinfo['_page']['.'.join(limit_comps)])
+                            break
+                        limit_comps.pop()
+                    limit = min(limit, self.max_limit)
+                    rels[key]['meta']['limit'] = limit
+                    q = DBSession.query(rel_class.id)
+                    q = q.filter(item.id == rem_col)
                     rels[key]['meta']['count'] = q.count()
+                    q = q.limit(limit)
                     rels[key]['data'] = [
                         {'type': key, 'id': str(ritem.id)}
                         for ritem in q.all()
                     ]
                 else:
-                    rels[key]['data'] = { 'type': key,'id': str(q.one().id) }
+                    try:
+                        rels[key]['data'] = {
+                            'type': key,
+                            'id': str(getattr(item, local_col.name))
+                        }
+                    except sqlalchemy.orm.exc.NoResultFound:
+                        rels[key]['data'] = None
 
             ret = {
                 'id': str(item_id),
@@ -321,6 +340,7 @@ def CollectionViewFactory(model, collection_name=None):
             return ret
 
         @classmethod
+        @functools.lru_cache(maxsize=128)
         def collection_query_info(cls, request):
             '''Return dictionary of information used during DB query.
 
@@ -378,35 +398,45 @@ def CollectionViewFactory(model, collection_name=None):
             info['_sort']['key'] = sort_key
             info['_sort']['ascending'] = ascending
 
-            # Filtering.
-            # Use 'filter[<condition>]' param.
-            # Format:
-            #   filter[<column_spec>:<operator>] = <value>
-            #   where:
-            #     <column_spec> is either:
-            #       <column_name> for an attribute, or
-            #       <relationship_name>.<column_name> for a relationship.
-            # Examples:
-            #   filter[name:eq]=Fred
-            #      would find all objects with a 'name' attribute of 'Fred'
-            #   filter[author.name:eq]=Fred
-            #      would find all objects where the relationship author pointed
-            #      to an object with 'name' 'Fred'
-            #
-            # Find all the filters.
+
+
+            # Find all parametrised parameters ( :) )
             info['_filters'] = {}
+            info['_page'] = {}
             for p in request.params.keys():
-                match = re.match(r'filter\[(.*?)\]', p)
+                match = re.match(r'(.*?)\[(.*?)\]', p)
                 if not match:
                     continue
                 val = request.params.get(p)
-                colspec, op = match.group(1).split(':')
-                colspec = colspec.split('.')
-                info['_filters'][p] = {
-                    'colspec': colspec,
-                    'op': op,
-                    'value': val
-                }
+
+                # Filtering.
+                # Use 'filter[<condition>]' param.
+                # Format:
+                #   filter[<column_spec>:<operator>] = <value>
+                #   where:
+                #     <column_spec> is either:
+                #       <column_name> for an attribute, or
+                #       <relationship_name>.<column_name> for a relationship.
+                # Examples:
+                #   filter[name:eq]=Fred
+                #      would find all objects with a 'name' attribute of 'Fred'
+                #   filter[author.name:eq]=Fred
+                #      would find all objects where the relationship author pointed
+                #      to an object with 'name' 'Fred'
+                #
+                # Find all the filters.
+                if match.group(1) == 'filter':
+                    colspec, op = match.group(2).split(':')
+                    colspec = colspec.split('.')
+                    info['_filters'][p] = {
+                        'colspec': colspec,
+                        'op': op,
+                        'value': val
+                    }
+
+                # Paging.
+                elif match.group(1) == 'page':
+                    info['_page'][match.group(2)] = val
 
             return info
 
