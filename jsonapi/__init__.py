@@ -225,10 +225,10 @@ def CollectionViewFactory(model, collection_name=None):
                     raise HTTPBadRequest("No such filter operator: '{}'".format(op))
                 q = q.filter(op_func(val))
 
-            ret = {}
+            ret = { 'meta': {'results': {} } }
             # Full count.
             try:
-                ret['meta'] = { 'count': q.count() }
+                ret['meta']['results']['available'] = q.count()
             except sqlalchemy.exc.ProgrammingError as e:
                 raise HTTPBadRequest(
                     "Could not use operator '{}' with field '{}'".format(
@@ -240,6 +240,11 @@ def CollectionViewFactory(model, collection_name=None):
             # Paging
             #print("page[limit]: " + str(qinfo['page[limit]']))
             q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
+            ret['links'] = self.pagination_links(
+                count=ret['meta']['results']['available']
+            )
+            ret['meta']['results']['limit'] = qinfo['page[limit]']
+            ret['meta']['results']['offset'] = qinfo['page[offset]']
 
 
             ret['data'] = [
@@ -248,6 +253,8 @@ def CollectionViewFactory(model, collection_name=None):
                 )
                 for dbitem in q.all()
             ]
+
+            ret['meta']['results']['returned'] = len(ret['data'])
 
             return ret
 
@@ -295,6 +302,7 @@ def CollectionViewFactory(model, collection_name=None):
                     },
                     'meta': {
                         'direction': rel.direction.name,
+                        'results': {}
                     }
                 }
                 rel_class = rel.mapper.class_
@@ -309,15 +317,17 @@ def CollectionViewFactory(model, collection_name=None):
                             break
                         limit_comps.pop()
                     limit = min(limit, self.max_limit)
-                    rels[key]['meta']['limit'] = limit
+                    rels[key]['meta']['results']['limit'] = limit
                     q = DBSession.query(rel_class.id)
                     q = q.filter(item.id == rem_col)
-                    rels[key]['meta']['count'] = q.count()
+                    rels[key]['meta']['results']['available'] = q.count()
                     q = q.limit(limit)
                     rels[key]['data'] = [
                         {'type': key, 'id': str(ritem.id)}
                         for ritem in q.all()
                     ]
+                    rels[key]['meta']['results']['returned'] =\
+                        len(rels[key]['data'])
                 else:
                     try:
                         rels[key]['data'] = {
@@ -439,6 +449,48 @@ def CollectionViewFactory(model, collection_name=None):
                     info['_page'][match.group(2)] = val
 
             return info
+
+        def pagination_links(self, count=0):
+            '''Return a dictionary of pagination links.
+
+            Args:
+                count (int): total number of results available.
+
+            Returns:
+                dict: dictionary of named links.
+            '''
+            links = {}
+            req = self.request
+            route_name = req.matched_route.name
+            rc = RouteComponents.from_route(route_name)
+            qinfo = self.collection_query_info(req)
+            _query = { 'page[{}]'.format(k): v for k,v in qinfo['_page'].items() }
+            _query['sort'] = qinfo['sort']
+            for f in sorted(qinfo['_filters']):
+                _query[f] = qinfo['_filters'][f]['value']
+
+            # First link.
+            _query['page[offset]'] = 0
+            links['first'] = req.route_url(route_name,_query=_query, **req.matchdict)
+
+            # Next link.
+            next_offset = qinfo['page[offset]'] + qinfo['page[limit]']
+            if next_offset < count:
+                _query['page[offset]'] = next_offset
+                links['next'] = req.route_url(route_name,_query=_query,**req.matchdict)
+
+            # Previous link.
+            if qinfo['page[offset]'] > 0:
+                prev_offset = qinfo['page[offset]'] - qinfo['page[limit]']
+                if prev_offset < 0:
+                    prev_offset = 0
+                _query['page[offset]'] = prev_offset
+                links['prev'] = req.route_url(route_name, _query=_query, **req.matchdict)
+
+            # Last link.
+            _query['page[offset]'] = ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
+            links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
+            return links
 
 
     CollectionView.model = model
