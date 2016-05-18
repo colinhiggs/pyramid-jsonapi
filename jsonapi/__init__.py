@@ -179,7 +179,10 @@ def CollectionViewFactory(
             '''Get multiple items from the collection.'''
             # Figure out whether this is a direct model route or a relationship one.
             rc = RouteComponents.from_route(self.request.matched_route.name)
-            q = DBSession.query(self.model)
+            q = DBSession.query(
+                self.model.id,
+                *self.requested_query_columns.values()
+            )
 
             # Get info for query.
             qinfo = self.collection_query_info(self.request)
@@ -264,7 +267,7 @@ def CollectionViewFactory(
 
             ret['data'] = [
                 self.serialise_db_item(
-                    dbitem
+                    dbitem, self.model
                 )
                 for dbitem in q.all()
             ]
