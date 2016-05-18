@@ -305,14 +305,6 @@ def CollectionViewFactory(
                 **{'id': getattr(item, 'id')}
             )
 
-#            atts = {}
-#            for key, col in mapper.columns.items():
-#                if key == 'id':
-#                    continue
-#                if len(col.foreign_keys) > 0:
-#                    continue
-#                atts[key] = getattr(item, key)
-
             atts = { key: getattr(item, key)
                 for key in self.requested_attributes.keys() }
 
@@ -575,8 +567,6 @@ def CollectionViewFactory(
             )
             return ret
 
-
-
     CollectionView.model = model
     CollectionView.collection_name = collection_name
     CollectionView.collection_route_name =\
@@ -595,7 +585,6 @@ def CollectionViewFactory(
         if len(col.foreign_keys) > 0:
             continue
         if allowed_fields is None or key in allowed_fields:
-#            atts[key] = getattr(model, key)
             atts[key] = col
     CollectionView.attributes = atts
     rels = {}
@@ -603,7 +592,6 @@ def CollectionViewFactory(
         if allowed_fields is None or key in allowed_fields:
             rels[key] = rel
     CollectionView.relationships = rels
-
 
     return CollectionView
 
