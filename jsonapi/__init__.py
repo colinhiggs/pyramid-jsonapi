@@ -59,7 +59,10 @@ def create_jsonapi(config, models):
                 create_relationship_resource(config, rel, relname)
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
-def create_resource(config, model, collection_name=None):
+def create_resource(config, model,
+        collection_name = None,
+        allowed_fields = None,
+    ):
     '''Produce a set of resource endpoints.
 
     Arguments:
@@ -72,7 +75,8 @@ def create_resource(config, model, collection_name=None):
     if collection_name is None:
         collection_name = info.table_name
 
-    view = CollectionViewFactory(model, collection_name)
+    view = CollectionViewFactory(model, collection_name,
+        allowed_fields = allowed_fields)
     config.add_route(view.item_route_name, view.item_route_pattern)
     config.add_view(view, attr='get', request_method='GET',
         route_name=view.item_route_name, renderer='json')
@@ -84,8 +88,12 @@ def create_resource(config, model, collection_name=None):
 def create_relationship_resource(config, model, name):
     pass
 
-def CollectionViewFactory(model, collection_name=None):
-    '''Build a class to handle requests for model'''
+def CollectionViewFactory(
+        model,
+        collection_name = None,
+        allowed_fields = None
+    ):
+    '''Build a class to handle requests for model.'''
     if collection_name is None:
         collection_name = model.__tablename__
 
@@ -133,7 +141,8 @@ def CollectionViewFactory(model, collection_name=None):
                 ret['meta'].update({
                     'debug': {
                         'accept_header': {a:None for a in jsonapi_accepts},
-                        'qinfo_page': self.collection_query_info(self.request)['_page']
+                        'qinfo_page': self.collection_query_info(self.request)['_page'],
+                        'atts': { k: None for k in self.attributes.keys() }
                     }
                 })
 
@@ -149,14 +158,20 @@ def CollectionViewFactory(model, collection_name=None):
                 single item dictionary.
             '''
             try:
-                item = DBSession.query(self.model).filter(self.model.id == self.request.matchdict['id']).one()
+                item = DBSession.query(
+                    self.model.id,
+                    *self.requested_query_columns.values()
+                ).filter(
+                    self.model.id == self.request.matchdict['id']
+                ).one()
             except NoResultFound:
                 raise HTTPNotFound('No id {} in collection {}'.format(
                     self.request.matchdict['id'],
-                    self.model.__tablename__
+                    self.collection_name
                 ))
             return {
-                'data': self.serialise_db_item(item),
+                'data': self.serialise_db_item(item, self.model),
+                'debug': item.__class__.__name__
             }
 
         @jsonapi_view
@@ -258,7 +273,7 @@ def CollectionViewFactory(model, collection_name=None):
 
             return ret
 
-        def serialise_db_item(self, item):
+        def serialise_db_item(self, item, model = None):
             '''Serialise an individual database item to JSON-API.
 
             Args:
@@ -271,8 +286,10 @@ def CollectionViewFactory(model, collection_name=None):
             Returns:
                 dict: item dictionary.
             '''
+            if model is None:
+                model = item.__class__
             # Required for some introspection.
-            mapper = sqlalchemy.inspect(item).mapper
+            mapper = sqlalchemy.inspect(model).mapper
 
             # Item's id and type are required at the top level of json-api
             # objects.
@@ -285,16 +302,19 @@ def CollectionViewFactory(model, collection_name=None):
                 **{'id': getattr(item, 'id')}
             )
 
-            atts = {}
-            for key, col in mapper.columns.items():
-                if key == 'id':
-                    continue
-                if len(col.foreign_keys) > 0:
-                    continue
-                atts[key] = getattr(item, key)
+#            atts = {}
+#            for key, col in mapper.columns.items():
+#                if key == 'id':
+#                    continue
+#                if len(col.foreign_keys) > 0:
+#                    continue
+#                atts[key] = getattr(item, key)
+
+            atts = { key: getattr(item, key)
+                for key in self.requested_attributes.keys() }
 
             rels = {}
-            for key, rel in mapper.relationships.items():
+            for key, rel in self.requested_relationships.items():
                 rels[key] = {
                     'links': {
                         'self': '{}/relationships/{}'.format(item_url, key),
@@ -492,6 +512,67 @@ def CollectionViewFactory(model, collection_name=None):
             links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
             return links
 
+        @functools.lru_cache(maxsize=128)
+        def requested_field_names(self, request):
+            '''Get the sparse field names as a set from req params for type_name.
+
+            Return None if there was no sparse field param.
+            '''
+            param = request.params.get(
+                'fields[{}]'.format(self.collection_name)
+            )
+            if param is None:
+                return self.attributes.keys() | self.relationships.keys()
+            return set(param.split(','))
+
+        @property
+        def requested_attributes(self):
+            '''Return a dictionary of attributes: {colname: column}.
+            '''
+            return { k:v for k,v in self.attributes.items()
+                if k in self.requested_field_names(self.request)}
+
+        @property
+        def requested_relationships(self):
+            '''Return a dictionary of relationships: {relname: rel}.
+            '''
+            return { k:v for k,v in self.relationships.items()
+                if k in self.requested_field_names(self.request)}
+
+        @property
+        def requested_fields(self):
+            '''Union of attributes and relationships.
+            '''
+            ret = self.requested_attributes
+            ret.update(
+                self.requested_relationships
+            )
+            return ret
+
+        @property
+        def requested_relationships_local_columns(self):
+            '''Finds all the local columns for MANYTOONE relationships.
+
+            Returns:
+                dict: local columns indexed by column name.
+            '''
+            return { pair[0].name: pair[0]
+                for rel in self.requested_relationships.values()
+                    for pair in rel.local_remote_pairs
+                        if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE
+            }
+
+        @property
+        def requested_query_columns(self):
+            '''Union of requested_attributes and requested_relationships_local_columns
+            '''
+            ret = self.requested_attributes
+            ret.update(
+                self.requested_relationships_local_columns
+            )
+            return ret
+
+
 
     CollectionView.model = model
     CollectionView.collection_name = collection_name
@@ -503,6 +584,23 @@ def CollectionViewFactory(model, collection_name=None):
     CollectionView.item_route_pattern = collection_name + '/{id}'
     CollectionView.default_limit = 10
     CollectionView.max_limit = 100
+    CollectionView.class_allowed_fields = allowed_fields
+    atts = {}
+    for key, col in sqlalchemy.inspect(model).mapper.columns.items():
+        if key == 'id':
+            continue
+        if len(col.foreign_keys) > 0:
+            continue
+        if allowed_fields is None or key in allowed_fields:
+#            atts[key] = getattr(model, key)
+            atts[key] = col
+    CollectionView.attributes = atts
+    rels = {}
+    for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
+        if allowed_fields is None or key in allowed_fields:
+            rels[key] = rel
+    CollectionView.relationships = rels
+
 
     return CollectionView
 

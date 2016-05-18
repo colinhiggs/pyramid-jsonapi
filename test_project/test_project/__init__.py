@@ -48,6 +48,7 @@ def main(global_config, **settings):
     config.add_renderer(None, renderer)
     # Create the routes and views automagically.
     jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models)
+    jsonapi.create_resource(config, models.Post, collection_name = 'posts2', allowed_fields = {'title', 'published_at'})
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()
