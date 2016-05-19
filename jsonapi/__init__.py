@@ -24,6 +24,7 @@ from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 route_prefix = 'jsonapi'
+view_classes = {}
 
 def error(e, request):
     request.response.content_type = 'application/vnd.api+json'
@@ -77,6 +78,8 @@ def create_resource(config, model,
 
     view = CollectionViewFactory(model, collection_name,
         allowed_fields = allowed_fields)
+    view_classes['collection_name'] = view
+    view_classes[model] = view
     config.add_route(view.item_route_name, view.item_route_pattern)
     config.add_view(view, attr='get', request_method='GET',
         route_name=view.item_route_name, renderer='json')
@@ -101,6 +104,7 @@ def CollectionViewFactory(
         '''Implement view methods.'''
         def __init__(self, request):
             self.request = request
+            self.views = {}
 
         def jsonapi_view(f):
             '''Decorator for view functions. Adds jsonapi boilerplate.'''
@@ -142,7 +146,8 @@ def CollectionViewFactory(
                     'debug': {
                         'accept_header': {a:None for a in jsonapi_accepts},
                         'qinfo_page': self.collection_query_info(self.request)['_page'],
-                        'atts': { k: None for k in self.attributes.keys() }
+                        'atts': { k: None for k in self.attributes.keys() },
+                        'includes': {k:None for k in self.requested_include_names()}
                     }
                 })
 
@@ -155,7 +160,7 @@ def CollectionViewFactory(
             '''Get a single item.
 
             Returns:
-                single item dictionary.
+                dict: single item.
             '''
             try:
                 item = DBSession.query(
@@ -169,15 +174,25 @@ def CollectionViewFactory(
                     self.request.matchdict['id'],
                     self.collection_name
                 ))
-            return {
-                'data': self.serialise_db_item(item, self.model),
-                'debug': item.__class__.__name__
+
+            included = {}
+            ret = {
+                'data': self.serialise_db_item(item, included),
+                'debug': item.__class__.__name__,
             }
+
+            if self.requested_include_names():
+                ret['included'] = [obj for obj in included.values()]
+
+            return ret
 
         @jsonapi_view
         def collection_get(self):
-            '''Get multiple items from the collection.'''
-            # Figure out whether this is a direct model route or a relationship one.
+            '''Get multiple items from the collection.
+
+            Returns:
+                list: list of items.
+            '''
             rc = RouteComponents.from_route(self.request.matched_route.name)
             q = DBSession.query(
                 self.model.id,
@@ -266,9 +281,7 @@ def CollectionViewFactory(
 
 
             ret['data'] = [
-                self.serialise_db_item(
-                    dbitem, self.model
-                )
+                self.serialise_db_item(dbitem, {})
                 for dbitem in q.all()
             ]
 
@@ -276,12 +289,11 @@ def CollectionViewFactory(
 
             return ret
 
-        def serialise_db_item(self, item, model = None):
+        def serialise_db_item(self, item, included, include_path = None):
             '''Serialise an individual database item to JSON-API.
 
             Args:
                 item: item from query to serialise.
-                system (dict): information passed by pyramid.
                 requested_includes (set): to be included as per request.
                 include_path (list):
                 included (dict): tracking included items.
@@ -289,10 +301,12 @@ def CollectionViewFactory(
             Returns:
                 dict: item dictionary.
             '''
-            if model is None:
-                model = item.__class__
+            if include_path is None:
+                include_path = []
+            model = self.model
             # Required for some introspection.
             mapper = sqlalchemy.inspect(model).mapper
+            ispector = self.request.registry.introspector
 
             # Item's id and type are required at the top level of json-api
             # objects.
@@ -310,6 +324,7 @@ def CollectionViewFactory(
 
             rels = {}
             for key, rel in self.requested_relationships.items():
+                rel_path_str = '.'.join(include_path + [key])
                 rels[key] = {
                     'links': {
                         'self': '{}/relationships/{}'.format(item_url, key),
@@ -321,6 +336,10 @@ def CollectionViewFactory(
                     }
                 }
                 rel_class = rel.mapper.class_
+                rel_view = None
+                print('rel_path_str: ' + rel_path_str)
+                if rel_path_str in self.requested_include_names():
+                    rel_view = self.view_instance(rel_class)
                 local_col, rem_col = rel.local_remote_pairs[0]
                 if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
                     qinfo = self.collection_query_info(self.request)
@@ -333,24 +352,53 @@ def CollectionViewFactory(
                         limit_comps.pop()
                     limit = min(limit, self.max_limit)
                     rels[key]['meta']['results']['limit'] = limit
-                    q = DBSession.query(rel_class.id)
+                    if rel_view:
+                        q = DBSession.query(
+                            rel_class.id,
+                            *rel_view.requested_query_columns.values()
+                        )
+                    else:
+                        q = DBSession.query(rel_class.id)
                     q = q.filter(item.id == rem_col)
                     rels[key]['meta']['results']['available'] = q.count()
                     q = q.limit(limit)
-                    rels[key]['data'] = [
-                        {'type': key, 'id': str(ritem.id)}
-                        for ritem in q.all()
-                    ]
+                    rels[key]['data'] = []
+                    for ritem in q.all():
+                        rels[key]['data'].append(
+                            {'type': key, 'id': str(ritem.id)}
+                        )
+                        if rel_view:
+                            included[(rel_view.collection_name, ritem.id)] =\
+                                rel_view.serialise_db_item(
+                                    ritem,
+                                    included, include_path + [key]
+                                )
                     rels[key]['meta']['results']['returned'] =\
                         len(rels[key]['data'])
                 else:
-                    try:
+                    if rel_view:
+                        q = DBSession.query(
+                            rel_class.id,
+                            *rel_view.requested_query_columns.values()
+                        )
+                        q = q.filter(rel_class.id == getattr(item, local_col.name))
+                        ritem = None
+                        try:
+                            ritem = q.one()
+                        except sqlalchemy.orm.exc.NoResultFound:
+                            rels[key]['data'] = None
+                        if ritem:
+                            included[(rel_view.collection_name, ritem.id)] =\
+                                rel_view.serialise_db_item(
+                                    ritem,
+                                    included, include_path + [key]
+                                )
+
+                    else:
                         rels[key]['data'] = {
                             'type': key,
                             'id': str(getattr(item, local_col.name))
                         }
-                    except sqlalchemy.orm.exc.NoResultFound:
-                        rels[key]['data'] = None
 
             ret = {
                 'id': str(item_id),
@@ -390,6 +438,10 @@ def CollectionViewFactory(
                                 'value': value of filter param,
                             }
                         },
+                        '_page': {
+                            paging_param_name: value,
+                            ...
+                        }
                     }
 
                 Keys beginning with '_' are derived.
@@ -559,13 +611,45 @@ def CollectionViewFactory(
 
         @property
         def requested_query_columns(self):
-            '''Union of requested_attributes and requested_relationships_local_columns
+            '''All columns required in query to fetch requested fields from db.
+
+            Returns:
+                dict: Union of requested_attributes and requested_relationships_local_columns
             '''
             ret = self.requested_attributes
             ret.update(
                 self.requested_relationships_local_columns
             )
             return ret
+
+        @functools.lru_cache(maxsize=128)
+        def requested_include_names(self):
+            '''Parse any 'include' param in http request.
+
+            Returns:
+                set: names of all requested includes.
+
+            Default:
+                set: names of all direct relationships of self.model.
+            '''
+            inc = set()
+            param = self.request.params.get('include')
+
+            if param is None:
+                return inc
+
+            for i in param.split(','):
+                curname = []
+                for name in i.split('.'):
+                    curname.append(name)
+                    inc.add('.'.join(curname))
+            return inc
+
+        @functools.lru_cache(maxsize=128)
+        def view_instance(self, model):
+            '''(memoised) get an instance of view class for model.
+            '''
+            return view_classes[model](self.request)
 
     CollectionView.model = model
     CollectionView.collection_name = collection_name
