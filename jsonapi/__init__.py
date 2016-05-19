@@ -80,12 +80,21 @@ def create_resource(config, model,
         allowed_fields = allowed_fields)
     view_classes['collection_name'] = view
     view_classes[model] = view
+
+    # GET individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
     config.add_view(view, attr='get', request_method='GET',
         route_name=view.item_route_name, renderer='json')
+
+    # GET collection
     config.add_route(view.collection_route_name, view.collection_route_pattern)
     config.add_view(view, attr='collection_get', request_method='GET',
         route_name=view.collection_route_name, renderer='json')
+
+    # GET related
+    config.add_route(view.related_route_name, view.related_route_pattern)
+    config.add_view(view, attr='related_get', request_method='GET',
+        route_name=view.related_route_name, renderer='json')
 
 
 def create_relationship_resource(config, model, name):
@@ -287,6 +296,80 @@ def CollectionViewFactory(
             ret['meta']['results']['returned'] = len(ret['data'])
 
             return ret
+
+        @jsonapi_view
+        def related_get(self):
+            '''GET object(s) related to a specified object.
+            '''
+            obj_id = self.request.matchdict['id']
+            relname = self.request.matchdict['relationship']
+            mapper = sqlalchemy.inspect(self.model).mapper
+            try:
+                rel = mapper.relationships[relname]
+            except KeyError:
+                raise HTTPNotFound('No relationship {} in collection {}'.format(
+                    relname,
+                    self.collection_name
+                ))
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            q = self.related_query(obj_id, rel)
+            q.limit(self.related_limit(rel))
+            ret = {}
+            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                ret['data'] = [
+                    rel_view.serialise_db_item(dbitem, {})
+                    for dbitem in q.all()
+                ]
+            else:
+                try:
+                    item = q.one()
+                except NoResultFound:
+                    raise HTTPNotFound('No id {} in collection {} relationship {}'.format(
+                        obj_id,
+                        self.collection_name,
+                        relname
+                    ))
+                ret['data'] = rel_view.serialise_db_item(item, {})
+
+            return ret
+
+        def related_limit(self, relationship):
+            '''Paging limit for related resources.
+            '''
+            limit_comps = [ 'limit', 'relationships', relationship.key ]
+            limit = self.default_limit
+            qinfo = self.collection_query_info(self.request)
+            while limit_comps:
+                if '.'.join(limit_comps) in qinfo['_page']:
+                    limit = int(qinfo['_page']['.'.join(limit_comps)])
+                    break
+                limit_comps.pop()
+            return min(limit, self.max_limit)
+
+
+        def related_query(self, obj_id, relationship):
+            '''Construct query for related objects.
+            '''
+            rel = relationship
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            local_col, rem_col = rel.local_remote_pairs[0]
+            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                q = DBSession.query(
+                    rel_class.id,
+                    *rel_view.requested_query_columns.values()
+                )
+                q = q.filter(obj_id == rem_col)
+            else:
+                q = DBSession.query(
+                    rel_class.id,
+                    *rel_view.requested_query_columns.values()
+                )
+                q = q.filter(rel_class.id == local_col)
+                q = q.filter(self.model.id == obj_id)
+
+            return q
 
         def serialise_db_item(self, item, included, include_path = None):
             '''Serialise an individual database item to JSON-API.
@@ -649,14 +732,29 @@ def CollectionViewFactory(
             '''
             return view_classes[model](self.request)
 
+#        def related_route_name(self, relationship_name):
+#            return self.collection_route_name + ':related:' + relationship_name
+
+#        def relationship_route_name(self, relationship_name):
+#            return self.collection_route_name +\
+#                ':relationships:' + relationship_name
+
     CollectionView.model = model
     CollectionView.collection_name = collection_name
+
     CollectionView.collection_route_name =\
         ':'.join((route_prefix, collection_name))
     CollectionView.collection_route_pattern = collection_name
+
     CollectionView.item_route_name =\
-        ':'.join((route_prefix, collection_name, 'item'))
+        CollectionView.collection_route_name + '[item]'
     CollectionView.item_route_pattern = collection_name + '/{id}'
+
+    CollectionView.related_route_name =\
+        CollectionView.collection_route_name + ':related'
+    CollectionView.related_route_pattern =\
+        collection_name + '/{id}/{relationship}'
+
     CollectionView.default_limit = 10
     CollectionView.max_limit = 100
     CollectionView.class_allowed_fields = allowed_fields
