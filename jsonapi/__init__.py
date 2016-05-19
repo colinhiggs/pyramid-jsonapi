@@ -193,7 +193,6 @@ def CollectionViewFactory(
             Returns:
                 list: list of items.
             '''
-            rc = RouteComponents.from_route(self.request.matched_route.name)
             q = DBSession.query(
                 self.model.id,
                 *self.requested_query_columns.values()
@@ -529,7 +528,6 @@ def CollectionViewFactory(
             links = {}
             req = self.request
             route_name = req.matched_route.name
-            rc = RouteComponents.from_route(route_name)
             qinfo = self.collection_query_info(req)
             _query = { 'page[{}]'.format(k): v for k,v in qinfo['_page'].items() }
             _query['sort'] = qinfo['sort']
@@ -714,44 +712,3 @@ class ModelInfo:
         else:
             raise ValueError("Don't know how to deal with model_part class {}".format(model_part.__class__))
         return info
-
-
-class RouteComponents(namedtuple('RouteComponents', ('prefix', 'resource', 'relationship'))):
-    '''The components of a jsonapi route.
-
-    **Inherits:** :class:`namedtuple`
-
-    pyramid-jsonapi routes are in the form prefix:resource:relationship.
-
-    Attributes:
-        prefix (str): route prefix (from jsonapi.route_prefix)
-        resource (str): resource collection name.
-        relationship (str): relationship_name.
-
-    '''
-
-    @classmethod
-    def from_route(cls, route):
-        '''Construct an instance by splitting a route string.'''
-        comps = route.split(':')
-        if len(comps) == 2:
-            comps.append(None)
-        return cls(*comps)
-
-    @classmethod
-    def from_components(cls, resource, relationship=None):
-        '''Construct an instance from resource and/or relationship names.'''
-        return cls(route_prefix, resource, relationship)
-
-    @classmethod
-    def from_request(cls, request):
-        '''Construct an instance from a request object.'''
-        return cls.from_route(request.matched_route.name)
-
-    @property
-    def route(self):
-        '''route string evaluated from components.'''
-        if self.relationship is None:
-            return ':'.join(self[:-1])
-        else:
-            return ':'.join(self)
