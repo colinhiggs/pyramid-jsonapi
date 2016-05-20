@@ -56,8 +56,6 @@ def create_jsonapi(config, models):
             sqlalchemy.ext.declarative.api.DeclarativeMeta)\
                 and hasattr(model_class, 'id'):
             create_resource(config, model_class)
-            for relname, rel in sqlalchemy.inspect(model_class).relationships.items():
-                create_relationship_resource(config, rel, relname)
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
 def create_resource(config, model,
@@ -96,9 +94,14 @@ def create_resource(config, model,
     config.add_view(view, attr='related_get', request_method='GET',
         route_name=view.related_route_name, renderer='json')
 
+    # GET relationships
+    config.add_route(
+        view.relationships_route_name,
+        view.relationships_route_pattern
+    )
+    config.add_view(view, attr='relationships_get', request_method='GET',
+        route_name=view.relationships_route_name, renderer='json')
 
-def create_relationship_resource(config, model, name):
-    pass
 
 def CollectionViewFactory(
         model,
@@ -171,29 +174,20 @@ def CollectionViewFactory(
             Returns:
                 dict: single item.
             '''
-            try:
-                item = DBSession.query(
-                    self.model.id,
-                    *self.requested_query_columns.values()
-                ).filter(
-                    self.model.id == self.request.matchdict['id']
-                ).one()
-            except NoResultFound:
-                raise HTTPNotFound('No id {} in collection {}'.format(
+            q = DBSession.query(
+                self.model.id,
+                *self.requested_query_columns.values()
+            ).filter(
+                self.model.id == self.request.matchdict['id']
+            )
+
+            return self.single_return(
+                q,
+                'No id {} in collection {}'.format(
                     self.request.matchdict['id'],
                     self.collection_name
-                ))
-
-            included = {}
-            ret = {
-                'data': self.serialise_db_item(item, included),
-                'debug': item.__class__.__name__,
-            }
-
-            if self.requested_include_names():
-                ret['included'] = [obj for obj in included.values()]
-
-            return ret
+                )
+            )
 
         @jsonapi_view
         def collection_get(self):
@@ -202,11 +196,158 @@ def CollectionViewFactory(
             Returns:
                 list: list of items.
             '''
+
+            # Set up the query
             q = DBSession.query(
                 self.model.id,
                 *self.requested_query_columns.values()
             )
+            q = self.query_add_sorting(q)
+            q = self.query_add_filtering(q)
+            qinfo = self.collection_query_info(self.request)
+            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
+            return self.collection_return(q)
+
+        @jsonapi_view
+        def related_get(self):
+            '''GET object(s) related to a specified object.
+            '''
+            obj_id = self.request.matchdict['id']
+            relname = self.request.matchdict['relationship']
+            mapper = sqlalchemy.inspect(self.model).mapper
+            try:
+                rel = mapper.relationships[relname]
+            except KeyError:
+                raise HTTPNotFound('No relationship {} in collection {}'.format(
+                    relname,
+                    self.collection_name
+                ))
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+
+            # Set up the query
+            q = self.related_query(obj_id, rel)
+            q = rel_view.query_add_sorting(q)
+            q = rel_view.query_add_filtering(q)
+            qinfo = rel_view.collection_query_info(self.request)
+            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
+
+            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                return rel_view.collection_return(q)
+            else:
+                return rel_view.single_return(
+                    q,
+                    'No id {} in collection {} relationship {}'.format(
+                        obj_id,
+                        self.collection_name,
+                        relname
+                    )
+                )
+
+        @jsonapi_view
+        def relationships_get(self):
+            '''GET resource identifiers for members in a relationship.
+            '''
+            obj_id = self.request.matchdict['id']
+            relname = self.request.matchdict['relationship']
+            mapper = sqlalchemy.inspect(self.model).mapper
+            try:
+                rel = mapper.relationships[relname]
+            except KeyError:
+                raise HTTPNotFound('No relationship {} in collection {}'.format(
+                    relname,
+                    self.collection_name
+                ))
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+
+            # Set up the query
+            q = self.related_query(obj_id, rel, id_only = True)
+            q = rel_view.query_add_sorting(q)
+            q = rel_view.query_add_filtering(q)
+            qinfo = rel_view.collection_query_info(self.request)
+            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
+
+            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                return rel_view.collection_return(q, identifiers = True)
+            else:
+                return rel_view.single_return(
+                    q,
+                    'No id {} in collection {} relationship {}'.format(
+                        obj_id,
+                        self.collection_name,
+                        relname
+                    ),
+                    identifier = True
+                )
+
+
+        def single_return(self, q, not_found_message, identifier = False):
+            '''Populate return dictionary for single items.
+            '''
+            included = {}
+            ret = {}
+            try:
+                item = q.one()
+            except NoResultFound:
+                raise HTTPNotFound(not_found_message)
+            if identifier:
+                ret['data'] = { 'type': self.collection_name, 'id': item.id }
+            else:
+                ret['data'] = self.serialise_db_item(item, included)
+                if self.requested_include_names():
+                    ret['included'] = [obj for obj in included.values()]
+            return ret
+
+        def collection_return(self, q, identifiers = False):
+            '''Populate return dictionary for collections.
+            '''
+            # Get info for query.
+            qinfo = self.collection_query_info(self.request)
+
+            # Add information to the return dict
+            ret = { 'meta': {'results': {} } }
+
+            # Full count.
+            try:
+                ret['meta']['results']['available'] = q.count()
+            except sqlalchemy.exc.ProgrammingError as e:
+                raise HTTPBadRequest(
+                    "Could not use operator '{}' with field '{}'".format(
+                        op, prop.name
+                    )
+                )
+
+            # Pagination links
+            ret['links'] = self.pagination_links(
+                count=ret['meta']['results']['available']
+            )
+            ret['meta']['results']['limit'] = qinfo['page[limit]']
+            ret['meta']['results']['offset'] = qinfo['page[offset]']
+
+            # Primary data
+            if identifiers:
+                ret['data'] = [
+                    { 'type': self.collection_name, 'id': dbitem.id }
+                    for dbitem in q.all()
+                ]
+            else:
+                included = {}
+                ret['data'] = [
+                    self.serialise_db_item(dbitem, included)
+                    for dbitem in q.all()
+                ]
+                # Included objects
+                if self.requested_include_names():
+                    ret['included'] = [obj for obj in included.values()]
+
+            ret['meta']['results']['returned'] = len(ret['data'])
+            return ret
+
+        def query_add_sorting(self, q):
+            '''Add sorting to query.
+            '''
             # Get info for query.
             qinfo = self.collection_query_info(self.request)
 
@@ -218,9 +359,9 @@ def CollectionViewFactory(
             # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
             # is the name of a relationship.
             if isinstance(order_att.property, RelationshipProperty):
-                # If order_att is a relationship then we need to add a join to the
-                # query and order_by the sort_keys[1] column of the relationship's
-                # target. The default target column is 'id'.
+                # If order_att is a relationship then we need to add a join to
+                # the query and order_by the sort_keys[1] column of the
+                # relationship's target. The default target column is 'id'.
                 q = q.join(order_att)
                 try:
                     sub_key = sort_keys[1]
@@ -232,6 +373,12 @@ def CollectionViewFactory(
             else:
                 q = q.order_by(order_att.desc())
 
+            return q
+
+        def query_add_filtering(self, q):
+            '''Add filtering clauses to query.
+            '''
+            qinfo = self.collection_query_info(self.request)
             # Filters
             for p, finfo in qinfo['_filters'].items():
                 val = finfo['value']
@@ -266,73 +413,8 @@ def CollectionViewFactory(
                     raise HTTPBadRequest("No such filter operator: '{}'".format(op))
                 q = q.filter(op_func(val))
 
-            ret = { 'meta': {'results': {} } }
-            # Full count.
-            try:
-                ret['meta']['results']['available'] = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
-                )
+            return q
 
-
-            # Paging
-            #print("page[limit]: " + str(qinfo['page[limit]']))
-            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
-            ret['links'] = self.pagination_links(
-                count=ret['meta']['results']['available']
-            )
-            ret['meta']['results']['limit'] = qinfo['page[limit]']
-            ret['meta']['results']['offset'] = qinfo['page[offset]']
-
-
-            ret['data'] = [
-                self.serialise_db_item(dbitem, {})
-                for dbitem in q.all()
-            ]
-
-            ret['meta']['results']['returned'] = len(ret['data'])
-
-            return ret
-
-        @jsonapi_view
-        def related_get(self):
-            '''GET object(s) related to a specified object.
-            '''
-            obj_id = self.request.matchdict['id']
-            relname = self.request.matchdict['relationship']
-            mapper = sqlalchemy.inspect(self.model).mapper
-            try:
-                rel = mapper.relationships[relname]
-            except KeyError:
-                raise HTTPNotFound('No relationship {} in collection {}'.format(
-                    relname,
-                    self.collection_name
-                ))
-            rel_class = rel.mapper.class_
-            rel_view = self.view_instance(rel_class)
-            q = self.related_query(obj_id, rel)
-            q.limit(self.related_limit(rel))
-            ret = {}
-            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
-                ret['data'] = [
-                    rel_view.serialise_db_item(dbitem, {})
-                    for dbitem in q.all()
-                ]
-            else:
-                try:
-                    item = q.one()
-                except NoResultFound:
-                    raise HTTPNotFound('No id {} in collection {} relationship {}'.format(
-                        obj_id,
-                        self.collection_name,
-                        relname
-                    ))
-                ret['data'] = rel_view.serialise_db_item(item, {})
-
-            return ret
 
         def related_limit(self, relationship):
             '''Paging limit for related resources.
@@ -348,30 +430,32 @@ def CollectionViewFactory(
             return min(limit, self.max_limit)
 
 
-        def related_query(self, obj_id, relationship):
+        def related_query(self, obj_id, relationship, id_only = False):
             '''Construct query for related objects.
             '''
             rel = relationship
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
             local_col, rem_col = rel.local_remote_pairs[0]
-            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
-                q = DBSession.query(
-                    rel_class.id,
-                    *rel_view.requested_query_columns.values()
-                )
-                q = q.filter(obj_id == rem_col)
+            if id_only:
+                q = DBSession.query(rel_class.id)
             else:
                 q = DBSession.query(
                     rel_class.id,
                     *rel_view.requested_query_columns.values()
                 )
+            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                q = q.filter(obj_id == rem_col)
+            else:
                 q = q.filter(rel_class.id == local_col)
                 q = q.filter(self.model.id == obj_id)
 
             return q
 
-        def serialise_db_item(self, item, included, include_path = None):
+        def serialise_db_item(
+            self, item,
+            included, include_path = None,
+            ):
             '''Serialise an individual database item to JSON-API.
 
             Args:
@@ -651,6 +735,8 @@ def CollectionViewFactory(
             )
             if param is None:
                 return self.attributes.keys() | self.relationships.keys()
+            if param == '':
+                return set()
             return set(param.split(','))
 
         @property
@@ -747,13 +833,18 @@ def CollectionViewFactory(
     CollectionView.collection_route_pattern = collection_name
 
     CollectionView.item_route_name =\
-        CollectionView.collection_route_name + '[item]'
+        CollectionView.collection_route_name + ':item'
     CollectionView.item_route_pattern = collection_name + '/{id}'
 
     CollectionView.related_route_name =\
         CollectionView.collection_route_name + ':related'
     CollectionView.related_route_pattern =\
         collection_name + '/{id}/{relationship}'
+
+    CollectionView.relationships_route_name =\
+        CollectionView.collection_route_name + ':relationships'
+    CollectionView.relationships_route_pattern =\
+        collection_name + '/{id}/relationships/{relationship}'
 
     CollectionView.default_limit = 10
     CollectionView.max_limit = 100
