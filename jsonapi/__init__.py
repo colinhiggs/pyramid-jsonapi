@@ -5,7 +5,7 @@ import transaction
 import sqlalchemy
 from pyramid.view import view_config, notfound_view_config, forbidden_view_config
 from pyramid.renderers import JSON
-from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict, HTTPUnsupportedMediaType, HTTPNotAcceptable
+from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict, HTTPUnsupportedMediaType, HTTPNotAcceptable, HTTPNotImplemented, HTTPError
 import pyramid
 import sys
 import inspect
@@ -47,7 +47,7 @@ def create_jsonapi(config, models):
     '''
     config.add_notfound_view(error, renderer='json')
     config.add_forbidden_view(error, renderer='json')
-    config.add_view(error, context=HTTPClientError, renderer='json')
+    config.add_view(error, context=HTTPError, renderer='json')
     # Loop through the models module looking for declaratively defined model
     # classes (inherit DeclarativeMeta). Create resource endpoints for these and
     # any relationships found.
@@ -79,27 +79,49 @@ def create_resource(config, model,
     view_classes['collection_name'] = view
     view_classes[model] = view
 
-    # GET individual item
+    # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
+    # GET
     config.add_view(view, attr='get', request_method='GET',
         route_name=view.item_route_name, renderer='json')
+    # DELETE
+    config.add_view(view, attr='delete', request_method='DELETE',
+        route_name=view.item_route_name, renderer='json')
+    # PATCH
+    config.add_view(view, attr='patch', request_method='PATCH',
+        route_name=view.item_route_name, renderer='json')
 
-    # GET collection
+    # collection
     config.add_route(view.collection_route_name, view.collection_route_pattern)
+    # GET
     config.add_view(view, attr='collection_get', request_method='GET',
         route_name=view.collection_route_name, renderer='json')
+    # POST
+    config.add_view(view, attr='collection_post', request_method='POST',
+        route_name=view.collection_route_name, renderer='json')
 
-    # GET related
+    # related
     config.add_route(view.related_route_name, view.related_route_pattern)
+    # GET
     config.add_view(view, attr='related_get', request_method='GET',
         route_name=view.related_route_name, renderer='json')
 
-    # GET relationships
+    # relationships
     config.add_route(
         view.relationships_route_name,
         view.relationships_route_pattern
     )
+    # GET
     config.add_view(view, attr='relationships_get', request_method='GET',
+        route_name=view.relationships_route_name, renderer='json')
+    # POST
+    config.add_view(view, attr='relationships_post', request_method='POST',
+        route_name=view.relationships_route_name, renderer='json')
+    # PATCH
+    config.add_view(view, attr='relationships_patch', request_method='PATCH',
+        route_name=view.relationships_route_name, renderer='json')
+    # DELETE
+    config.add_view(view, attr='relationships_delete', request_method='DELETE',
         route_name=view.relationships_route_name, renderer='json')
 
 
@@ -190,6 +212,14 @@ def CollectionViewFactory(
             )
 
         @jsonapi_view
+        def patch(self):
+            raise HTTPNotImplemented
+
+        @jsonapi_view
+        def delete(self):
+            raise HTTPNotImplemented
+
+        @jsonapi_view
         def collection_get(self):
             '''Get multiple items from the collection.
 
@@ -208,6 +238,10 @@ def CollectionViewFactory(
             q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
             return self.collection_return(q)
+
+        @jsonapi_view
+        def collection_post(self):
+            raise HTTPNotImplemented
 
         @jsonapi_view
         def related_get(self):
@@ -282,6 +316,17 @@ def CollectionViewFactory(
                     identifier = True
                 )
 
+        @jsonapi_view
+        def relationships_post(self):
+            raise HTTPNotImplemented
+
+        @jsonapi_view
+        def relationships_patch(self):
+            raise HTTPNotImplemented
+
+        @jsonapi_view
+        def relationships_delete(self):
+            raise HTTPNotImplemented
 
         def single_return(self, q, not_found_message, identifier = False):
             '''Populate return dictionary for single items.
