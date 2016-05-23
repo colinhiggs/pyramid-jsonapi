@@ -217,7 +217,16 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def delete(self):
-            raise HTTPNotImplemented
+            item = DBSession.query(self.model).get(self.request.matchdict['id'])
+            if item:
+                DBSession.delete(item)
+                DBSession.flush()
+                return {'data': {
+                    'type': self.collection_name,
+                    'id': self.request.matchdict['id'] }
+                }
+            else:
+                return {'data': None}
 
         @jsonapi_view
         def collection_get(self):
