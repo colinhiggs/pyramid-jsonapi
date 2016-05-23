@@ -241,7 +241,50 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def collection_post(self):
-            raise HTTPNotImplemented
+            '''Create a new object in collection.
+
+            Returns:
+                Resource identifier for created item.
+            '''
+            data = self.request.json_body['data']
+            # Check to see if we're allowing client ids
+#            if not self.allow_client_id and 'id' in data:
+#                raise HTTPForbidden('Client generated ids are not supported.')
+            # Type should be correct or raise 409 Conflict
+            datatype = data.get('type')
+            if datatype != self.collection_name:
+                raise HTTPConflict("Unsupported type '{}'".format(datatype))
+            atts = data['attributes']
+            if 'id' in data:
+                atts['id'] = data['id']
+            item = self.model(**atts)
+            mapper = sqlalchemy.inspect(self.model).mapper
+            for relname, reldata in data.get('relationships', {}).items():
+                try:
+                    rel = mapper.relationships[relname]
+                except KeyError:
+                    raise HTTPNotFound(
+                        'No relationship {} in collection {}'.format(
+                            relname,
+                            self.collection_name
+                        )
+                    )
+                rel_class = rel.mapper.class_
+                if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                    setattr(item, relname, [
+                        DBSession.query(rel_class).get(rel_identifier['id'])
+                            for rel_identifier in reldata
+                    ])
+                else:
+                    setattr(item, relname,
+                        DBSession.query(rel_class).get(reldata['id']))
+            try:
+                DBSession.add(item)
+                DBSession.flush()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise HTTPConflict(e.args[0])
+            self.request.response.status_code = 201
+            return {'data': { 'type': self.collection_name, 'id': item.id } }
 
         @jsonapi_view
         def related_get(self):
