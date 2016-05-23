@@ -213,10 +213,28 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def patch(self):
-            raise HTTPNotImplemented
+            '''Update an existing item from a partially defined representation.
+            '''
+            data = self.request.json_body['data']
+            req_id = self.request.matchdict['id']
+            data_id = data.get('id')
+            if data_id is not None and data_id != req_id:
+                raise HTTPConflict('JSON id ({}) does not match URL id ({}).'.
+                format(data_id, req_id))
+            atts = data['attributes']
+            atts['id'] = req_id
+            # TODO(Colin): deal with relationships
+            item = DBSession.merge(self.model(**atts))
+            DBSession.flush()
+            return self.serialise_db_item(item, {})
 
         @jsonapi_view
         def delete(self):
+            '''Delete an item.
+
+            Returns:
+                dict: resource identifier for deleted object.
+            '''
             item = DBSession.query(self.model).get(self.request.matchdict['id'])
             if item:
                 try:
