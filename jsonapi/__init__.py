@@ -5,7 +5,7 @@ import transaction
 import sqlalchemy
 from pyramid.view import view_config, notfound_view_config, forbidden_view_config
 from pyramid.renderers import JSON
-from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict, HTTPUnsupportedMediaType, HTTPNotAcceptable, HTTPNotImplemented, HTTPError
+from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict, HTTPUnsupportedMediaType, HTTPNotAcceptable, HTTPNotImplemented, HTTPError, HTTPFailedDependency
 import pyramid
 import sys
 import inspect
@@ -219,8 +219,11 @@ def CollectionViewFactory(
         def delete(self):
             item = DBSession.query(self.model).get(self.request.matchdict['id'])
             if item:
-                DBSession.delete(item)
-                DBSession.flush()
+                try:
+                    DBSession.delete(item)
+                    DBSession.flush()
+                except sqlalchemy.exc.IntegrityError as e:
+                    raise HTTPFailedDependency(str(e))
                 return {'data': {
                     'type': self.collection_name,
                     'id': self.request.matchdict['id'] }
