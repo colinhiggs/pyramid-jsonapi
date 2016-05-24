@@ -396,7 +396,30 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def relationships_post(self):
-            raise HTTPNotImplemented
+            obj_id = self.request.matchdict['id']
+            relname = self.request.matchdict['relationship']
+            mapper = sqlalchemy.inspect(self.model).mapper
+            try:
+                rel = mapper.relationships[relname]
+            except KeyError:
+                raise HTTPNotFound('No relationship {} in collection {}'.format(
+                    relname,
+                    self.collection_name
+                ))
+            if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE:
+                raise HTTPNotFound('Cannot POST to TOONE relationship link.')
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            obj = DBSession.query(self.model).get(obj_id)
+            items = []
+            for resid in self.request.json_body['data']:
+                if resid['type'] != rel_view.collection_name:
+                    raise HTTPConflict(
+                        "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    )
+                items.append(DBSession.query(rel_class).get(resid['id']))
+            getattr(obj, relname).extend(items)
+            return {}
 
         @jsonapi_view
         def relationships_patch(self):
