@@ -425,7 +425,45 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def relationships_patch(self):
-            raise HTTPNotImplemented
+            '''Replace relationship collection.
+            '''
+            obj_id = self.request.matchdict['id']
+            relname = self.request.matchdict['relationship']
+            mapper = sqlalchemy.inspect(self.model).mapper
+            try:
+                rel = mapper.relationships[relname]
+            except KeyError:
+                raise HTTPNotFound('No relationship {} in collection {}'.format(
+                    relname,
+                    self.collection_name
+                ))
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            obj = DBSession.query(self.model).get(obj_id)
+            if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE:
+                resid = self.request.json_body['data']
+                if resid['type'] != rel_view.collection_name:
+                    raise HTTPConflict(
+                        "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    )
+                if resid is None:
+                    setattr(obj, relname, None)
+                else:
+                    setattr(
+                        obj,
+                        relname,
+                        DBSession.query(rel_class).get(resid['id'])
+                    )
+                return {}
+            items = []
+            for resid in self.request.json_body['data']:
+                if resid['type'] != rel_view.collection_name:
+                    raise HTTPConflict(
+                        "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    )
+                items.append(DBSession.query(rel_class).get(resid['id']))
+            setattr(obj, relname, items)
+            return {}
 
         @jsonapi_view
         def relationships_delete(self):
