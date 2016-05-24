@@ -475,7 +475,35 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def relationships_delete(self):
-            raise HTTPNotImplemented
+            '''Delete items from relationship collection.
+            '''
+            obj_id = self.request.matchdict['id']
+            relname = self.request.matchdict['relationship']
+            mapper = sqlalchemy.inspect(self.model).mapper
+            try:
+                rel = mapper.relationships[relname]
+            except KeyError:
+                raise HTTPNotFound('No relationship {} in collection {}'.format(
+                    relname,
+                    self.collection_name
+                ))
+            if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE:
+                raise HTTPNotFound('Cannot DELETE to TOONE relationship link.')
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            obj = DBSession.query(self.model).get(obj_id)
+            for resid in self.request.json_body['data']:
+                if resid['type'] != rel_view.collection_name:
+                    raise HTTPConflict(
+                        "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    )
+                getattr(obj, relname).\
+                    remove(DBSession.query(rel_class).get(resid['id']))
+            try:
+                DBSession.flush()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise HTTPFailedDependency(str(e))
+            return {}
 
         def single_return(self, q, not_found_message, identifier = False):
             '''Populate return dictionary for single items.
