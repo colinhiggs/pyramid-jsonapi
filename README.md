@@ -4,8 +4,6 @@ Create a [JSON-API](http://jsonapi.org/) standard api from a database using the 
 
 # Status
 
-**I've just updated the way that pyramid-jsonapi works: it is no longer based around a renderer. This documentation should be considered out of date until this notice is removed.**
-
 New and still being developed. There are bugs: some known (see the [issues](https://github.com/colinhiggs/pyramid-jsonapi/issues) page), doubtless many unknown.
 
 Right now it will take a typical sqlalchemy declarative-style models file and produce a working REST-ful web api conforming to the JSON-API standard, pretty much with the invocation of one function.
@@ -25,14 +23,13 @@ Functionality already added (works modulo bugs):
 * Sorting of collection gets via `sort` parameter.
 * Sparse field returns
   * via `fields[]` parameter and/or
-  * limiting field visibility in the model.
+  * limiting field visibility in the constructor.
 * Included documents via `include` parameter.
-* Customisation of `links` and `meta` sections.
 
 I tend to keep track of TODOs in the [github issue list](https://github.com/colinhiggs/pyramid-jsonapi/issues). Biggies that don't work for now:
 
-* `PATCH` should really work with [JSON Patch](http://tools.ietf.org/html/rfc6902); right now it works more the way one might expect a partial `PUT` to work.
-* Modify (`POST`, `PATCH`?, `DELETE`) relationships.
+* Multiple views onto the same model (planned for some point in the future)
+* Proper handling of many error cases.
 
 Definitely at the stage where you can play with it; don't use it in production.
 
@@ -55,14 +52,16 @@ import jsonapi
 from . import models # Your models module.
 
 # In the main function:
-  renderer = jsonapi.JSONAPIFromSqlAlchemyRenderer()
-  # JSONAPIFromSqlAlchemyRenderer inherits pyramid.renderers.JSON
-  # so you can add JSON adapters in the same way:
-  # renderer.add_adapter(datetime.date, datetime_adapter)
-  config.add_renderer('jsonapi', renderer)
-  jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
-  # Make sure we scan the *jsonapi* package.
-  config.scan(package=jsonapi)
+  # Use the standard JSON renderer...
+  renderer = JSON()
+  # ...so adding adapters works fine.
+  renderer.add_adapter(datetime.date, datetime_adapter)
+  config.add_renderer('json', renderer)
+  config.add_renderer(None, renderer)
+  # Create the routes and views automagically.
+  jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models)
+  # Routes and views are added imperatively, so no need for a scan - unless you
+  # have defined other routes and views declaratively.
 ```
 
 You should now have a working JSON-API.
@@ -126,17 +125,6 @@ More or less the same as the quick preview above. Spelled out in a bit more deta
       blogs = relationship('Blog', backref='owner')
       posts = relationship('Post', backref='author')
     ```
-  * Some options can be set which will be used by the default query functions
-    and renderer. They should be set in a dictionary stored in the `__jsonapi__`
-    attribute of a model class:
-
-    ```python
-    Person.__jsonapi__ = {
-      'options': {
-        'default_limit': 2
-      }
-    }
-    ```
 
 1. Create the API end points from the model:
 
@@ -144,34 +132,18 @@ More or less the same as the quick preview above. Spelled out in a bit more deta
   jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
   ```
 
-1. Use the jsonapi renderer for renderer type 'jsonapi':
-
-  ```python
-  renderer = jsonapi.JSONAPIFromSqlAlchemyRenderer()
-  config.add_renderer('jsonapi', renderer)
-  ```
-
-1. Use pyramid/venusian to scan the jsonapi package:
-
-  ```python
-  config.scan(package=jsonapi)
-  ```
+That's pretty much it.
 
 ### Auto-create Assumptions
 
 1. Your model classes all inherit from a base class returned by sqlalchemy's `declarative-base()`.
 1. Each model has a primary_key called 'id'.
-1. You are happy to give your collection end-points the same name as the corresponding database table.
+1. You are happy to give your collection end-points the same name as the corresponding database table (for now...).
 1. You are happy to expose every model class defined in `models` as a resource collection.
 1. You have defined any relationships to exposed via the API using `sqlalchemy.orm.relationship()` (or `backref()`).
 1. You are happy to expose any so defined relationship via a relationship URL.
 
 ### Customising the Generated API
-
-#### Information Callbacks
-
-There are two optional parameters to `create_api_using_magic_and_pixie_dust()`:
-`links_callback` and `meta_callback`. These are passed on to [create_resource()](#create_resource).
 
 #### Selectively Passing Models for API Generation
 
@@ -180,38 +152,11 @@ Your database may have some tables which you do not wish to expose as collection
 * writing a models module with only the model classes you wish to expose; or
 * [not yet] passing an iterable of model classes to `create_jsonapi_using_magic_and_pixie_dust()`.
 
-#### `__jsonapi__` Attribute of Models
 
-The behaviour of the jsonapi renderer can be influenced by options stored the `__jsonapi__` attribute (a `dict`) of a model class.
-
-
-
-If you need deeper customisation of your JSON-API, you will need to construct it using the building blocks that `create_api_using_magic_and_pixie_dust()` uses. Start with [create_resource()](#create_resource) or [the @resource class decorator](#resource_decorator)
+If you need deeper customisation of your JSON-API, you will need to construct it using the building blocks that `create_api_using_magic_and_pixie_dust()` uses. Start with [create_resource()](#create_resource).
 
 ## Creating Individual JSON-API Resources from Models
-
-Documentation from this point on should be considered a work in progress...
 
 ### <a name="create_resource"></a>Resource Creation On-the-fly: `create_resource()`
 
 #### `create_resource()` Parameters
-
-* `links_callback` and `meta_callback`:
-
-  `xxxx_callback(section, request, results, **options)`
-
-  These are functions which should return dictionaries.
-
-  In the case of links, the returned links dictionary will be merged (via
-  `dict.update()`) with the default one generated within the jsonapi renderer
-  (which will certainly contain `self`, possibly some pagination links).
-
-  There is no default meta dictionary created within the renderer, though there
-  is a default implementation of `meta_callback`: `jsonapi.std_meta()`, which
-  adds some information to meta. If you pass your own `meta_callback` and you'd
-  like to retain the values provided by `std_meta()` you will need to call
-  `jsonapi.std_meta()` yourself and `update()` your own dictionary with the
-  results.
-
-
-### <a name="resource_decorator"></a>Decorating Class Definitions

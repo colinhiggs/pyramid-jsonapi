@@ -66,6 +66,7 @@ def create_resource(config, model,
 
     Arguments:
         collectiona_name (str): name of collection. Defaults to table name from model.
+        allowed_fields (set): set of allowed field names.
     '''
 
     # Figure out what table model is from
