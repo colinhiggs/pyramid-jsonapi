@@ -421,6 +421,10 @@ def CollectionViewFactory(
                     )
                 items.append(DBSession.query(rel_class).get(resid['id']))
             getattr(obj, relname).extend(items)
+            try:
+                DBSession.flush()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise HTTPFailedDependency(str(e))
             return {}
 
         @jsonapi_view
@@ -463,6 +467,10 @@ def CollectionViewFactory(
                     )
                 items.append(DBSession.query(rel_class).get(resid['id']))
             setattr(obj, relname, items)
+            try:
+                DBSession.flush()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise HTTPFailedDependency(str(e))
             return {}
 
         @jsonapi_view
