@@ -396,6 +396,8 @@ def CollectionViewFactory(
 
         @jsonapi_view
         def relationships_post(self):
+            '''Add new items to a relationship collection.
+            '''
             obj_id = self.request.matchdict['id']
             relname = self.request.matchdict['relationship']
             mapper = sqlalchemy.inspect(self.model).mapper
