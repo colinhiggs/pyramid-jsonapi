@@ -79,6 +79,10 @@ def create_resource(config, model,
         allowed_fields = allowed_fields)
     view_classes['collection_name'] = view
     view_classes[model] = view
+    view.default_limit =\
+        int(config.registry.settings.get('jsonapi.paging.default_limit', 10))
+    view.max_limit =\
+        int(config.registry.settings.get('jsonapi.paging.max_limit', 100))
 
     # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
@@ -1069,8 +1073,6 @@ def CollectionViewFactory(
     CollectionView.relationships_route_pattern =\
         collection_name + '/{id}/relationships/{relationship}'
 
-    CollectionView.default_limit = 10
-    CollectionView.max_limit = 100
     CollectionView.class_allowed_fields = allowed_fields
     atts = {}
     for key, col in sqlalchemy.inspect(model).mapper.columns.items():
