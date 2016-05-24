@@ -289,25 +289,30 @@ def CollectionViewFactory(
                 atts['id'] = data['id']
             item = self.model(**atts)
             mapper = sqlalchemy.inspect(self.model).mapper
-            for relname, reldata in data.get('relationships', {}).items():
-                try:
-                    rel = mapper.relationships[relname]
-                except KeyError:
-                    raise HTTPNotFound(
-                        'No relationship {} in collection {}'.format(
-                            relname,
-                            self.collection_name
+            with DBSession.no_autoflush:
+                for relname, reldata in data.get('relationships', {}).items():
+                    try:
+                        rel = mapper.relationships[relname]
+                    except KeyError:
+                        raise HTTPNotFound(
+                            'No relationship {} in collection {}'.format(
+                                relname,
+                                self.collection_name
+                            )
                         )
-                    )
-                rel_class = rel.mapper.class_
-                if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
-                    setattr(item, relname, [
-                        DBSession.query(rel_class).get(rel_identifier['id'])
-                            for rel_identifier in reldata
-                    ])
-                else:
-                    setattr(item, relname,
-                        DBSession.query(rel_class).get(reldata['id']))
+                    rel_class = rel.mapper.class_
+                    if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                        setattr(item, relname, [
+                            DBSession.query(rel_class).get(rel_identifier['id'])
+                                for rel_identifier in reldata['data']
+                        ])
+                    else:
+                        setattr(
+                            item,
+                            relname,
+                            DBSession.query(rel_class).get(
+                                reldata['data']['id'])
+                            )
             try:
                 DBSession.add(item)
                 DBSession.flush()
