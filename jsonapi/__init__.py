@@ -777,7 +777,6 @@ def CollectionViewFactory(
                 }
                 rel_class = rel.mapper.class_
                 rel_view = None
-                print('rel_path_str: ' + rel_path_str)
                 if rel_path_str in self.requested_include_names():
                     rel_view = self.view_instance(rel_class)
                 local_col, rem_col = rel.local_remote_pairs[0]
