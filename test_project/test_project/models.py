@@ -42,7 +42,7 @@ class Blog(Base):
     __tablename__ = 'blogs'
     id = IdColumn()
     title = Column(Text)
-    owner_id = IdRefColumn('people.id', nullable=False)
+    owner_id = IdRefColumn('people.id')
     posts = relationship('Post', backref='blog')
 
 
@@ -52,5 +52,5 @@ class Post(Base):
     title = Column(Text)
     content = Column(Text)
     published_at = Column(DateTime, nullable=False)
-    blog_id = IdRefColumn('blogs.id', nullable=False)
+    blog_id = IdRefColumn('blogs.id')
     author_id = IdRefColumn('people.id', nullable=False)
