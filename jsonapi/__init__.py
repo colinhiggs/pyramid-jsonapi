@@ -14,6 +14,7 @@ from collections import namedtuple
 import psycopg2
 import pprint
 import functools
+import types
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -71,7 +72,7 @@ def create_jsonapi(config, models, engine = None, test_data = None):
     '''Auto-create jsonapi from module with sqlAlchemy models.
 
     Arguments:
-        models (module): a module with model classes derived from sqlalchemy.ext.declarative.declarative_base().
+        models (iterable): an iterable (or module) of model classes derived from DeclarativeMeta.
     '''
     config.add_notfound_view(error, renderer='json')
     config.add_forbidden_view(error, renderer='json')
@@ -93,7 +94,11 @@ def create_jsonapi(config, models, engine = None, test_data = None):
     # Loop through the models module looking for declaratively defined model
     # classes (inherit DeclarativeMeta). Create resource endpoints for these and
     # any relationships found.
-    for k, model_class in models.__dict__.items():
+    if isinstance(models, types.ModuleType):
+        iterable = models.__dict__.values()
+    else:
+        iterable = models
+    for model_class in iterable:
         if isinstance(model_class,
             sqlalchemy.ext.declarative.api.DeclarativeMeta)\
                 and hasattr(model_class, 'id'):
