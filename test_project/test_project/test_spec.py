@@ -319,6 +319,27 @@ class TestSpec(unittest.TestCase):
         self.assertIn('type', posts['data'][0])
         self.assertIn('id', posts['data'][0])
 
+    def test_spec_relationships_links(self):
+        '''Relationships links object should have 'self' and 'related' links.
+        '''
+        # Fetch a single blog (has to-one and to-many realtionships)
+        r = self.test_app.get('/blogs?page[limit]=1')
+        item = r.json['data'][0]
+        # Should have relationships key
+        links = item['relationships']['owner']['links']
+        self.assertIn('self', links)
+        self.assertTrue(
+            links['self'].endswith(
+                '/blogs/{}/relationships/owner'.format(item['id'])
+            )
+        )
+        self.assertIn('related', links)
+        self.assertTrue(
+            links['related'].endswith(
+                '/blogs/{}/owner'.format(item['id'])
+            )
+        )
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
