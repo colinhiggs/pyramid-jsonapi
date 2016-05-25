@@ -39,7 +39,35 @@ def error(e, request):
         ]
     }
 
-def create_jsonapi(config, models):
+class DebugView:
+    '''Some API operations available if jsonapi.debug.debug_endpoints == 'true'.
+    '''
+    def __init__(self, request):
+        self.request = request
+
+    def drop(self):
+        '''Drop all tables from the database!!!
+        '''
+        self.models.Base.metadata.drop_all(self.engine)
+        return 'dropped'
+
+    def populate(self):
+        '''Create tables and populate with test data.
+        '''
+        # Create or update tables and schema. Safe if tables already exist.
+        self.models.Base.metadata.create_all(self.engine)
+        # Add test data. Safe if test data already exists.
+        self.test_data.add_to_db()
+        return 'populated'
+
+    def reset(self):
+        '''The same as 'drop' and then 'reset'.
+        '''
+        self.drop()
+        self.populate()
+        return "reset"
+
+def create_jsonapi(config, models, engine = None, test_data = None):
     '''Auto-create jsonapi from module with sqlAlchemy models.
 
     Arguments:
@@ -48,6 +76,20 @@ def create_jsonapi(config, models):
     config.add_notfound_view(error, renderer='json')
     config.add_forbidden_view(error, renderer='json')
     config.add_view(error, context=HTTPError, renderer='json')
+
+    settings = config.registry.settings
+    if settings.get('jsonapi.debug.debug_endpoints', 'false') == 'true':
+        DebugView.models = models
+        DebugView.engine = engine
+        DebugView.test_data = test_data
+        config.add_route('debug', '/debug/{action}')
+        config.add_view(DebugView, attr='drop',
+            route_name='debug', match_param='action=drop', renderer='json')
+        config.add_view(DebugView, attr='populate',
+            route_name='debug', match_param='action=populate', renderer='json')
+        config.add_view(DebugView, attr='reset',
+            route_name='debug', match_param='action=reset', renderer='json')
+
     # Loop through the models module looking for declaratively defined model
     # classes (inherit DeclarativeMeta). Create resource endpoints for these and
     # any relationships found.
