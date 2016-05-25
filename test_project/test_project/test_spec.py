@@ -251,6 +251,24 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(item['id'], alice_id)
         self.assertEqual(item['attributes']['name'], 'alice')
 
+    def test_spec_attributes(self):
+        '''attributes key should be an object.
+
+        The value of the attributes key MUST be an object (an “attributes
+        object”). Members of the attributes object (“attributes”) represent
+        information about the resource object in which it’s defined.
+        '''
+        # Fetch a single post.
+        r = self.test_app.get('/posts?page[limit]=1')
+        item = r.json['data'][0]
+        # Check attributes.
+        self.assertIn('attributes', item)
+        atts = item['attributes']
+        self.assertIn('title', atts)
+        self.assertIn('content', atts)
+        self.assertIn('published_at', atts)
+
+
     def test_spec_no_forreign_keys(self):
         '''No forreign keys in attributes.
 
