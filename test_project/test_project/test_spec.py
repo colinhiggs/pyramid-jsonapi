@@ -268,7 +268,6 @@ class TestSpec(unittest.TestCase):
         self.assertIn('content', atts)
         self.assertIn('published_at', atts)
 
-
     def test_spec_no_forreign_keys(self):
         '''No forreign keys in attributes.
 
@@ -287,7 +286,38 @@ class TestSpec(unittest.TestCase):
         self.assertNotIn('author_id', item['attributes'])
         self.assertNotIn('blog_id', item['attributes'])
 
+    def test_spec_relationships_object(self):
+        '''Relationships key should be object.
 
+        The value of the relationships key MUST be an object (a “relationships
+        object”). Members of the relationships object (“relationships”)
+        represent references from the resource object in which it’s defined to
+        other resource objects.
+        '''
+        # Fetch a single blog (has to-one and to-many realtionships)
+        r = self.test_app.get('/blogs?page[limit]=1')
+        item = r.json['data'][0]
+        # Should have relationships key
+        self.assertIn('relationships', item)
+        rels = item['relationships']
+
+        # owner: to-one
+        self.assertIn('owner', rels)
+        owner = rels['owner']
+        self.assertIn('links', owner)
+        self.assertIn('data', owner)
+        self.assertIsInstance(owner['data'], dict)
+        self.assertIn('type', owner['data'])
+        self.assertIn('id', owner['data'])
+
+        # posts: to-many
+        self.assertIn('posts', rels)
+        posts = rels['posts']
+        self.assertIn('links', posts)
+        self.assertIn('data', posts)
+        self.assertIsInstance(posts['data'], list)
+        self.assertIn('type', posts['data'][0])
+        self.assertIn('id', posts['data'][0])
 
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
