@@ -330,8 +330,8 @@ def CollectionViewFactory(
             '''
             data = self.request.json_body['data']
             # Check to see if we're allowing client ids
-#            if not self.allow_client_id and 'id' in data:
-#                raise HTTPForbidden('Client generated ids are not supported.')
+            if self.request.registry.settings.get('jsonapi.allow_client_ids', 'false') != 'true' and 'id' in data:
+                raise HTTPForbidden('Client generated ids are not supported.')
             # Type should be correct or raise 409 Conflict
             datatype = data.get('type')
             if datatype != self.collection_name:
