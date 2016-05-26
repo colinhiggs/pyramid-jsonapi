@@ -37,6 +37,7 @@ class Person(Base):
     name = Column(Text)
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
+    comments = relationship('Comment', backref='author')
 
 class Blog(Base):
     __tablename__ = 'blogs'
@@ -54,3 +55,11 @@ class Post(Base):
     published_at = Column(DateTime, nullable=False)
     blog_id = IdRefColumn('blogs.id')
     author_id = IdRefColumn('people.id', nullable=False)
+    comments = relationship('Comment', backref = 'post')
+
+class Comment(Base):
+    __tablename__ = 'comments'
+    comments_id = IdColumn()
+    content = Column(Text)
+    author_id = IdRefColumn('people.id')
+    post_id = IdRefColumn('posts.id')

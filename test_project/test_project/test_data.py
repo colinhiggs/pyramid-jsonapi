@@ -7,14 +7,16 @@ from .models import (
     Base,
     Person,
     Blog,
-    Post
+    Post,
+    Comment
 )
 import datetime
 
 # Some initial data in a handy form.
 data = {
     'people': [{'name': 'alice'}, {'name': 'bob'}, {'name': 'deleteme'}],
-    'blogs': [{'title': 'main'}, {'title': 'second'}]
+    'blogs': [{'title': 'main'}, {'title': 'second'}],
+    'comments': [{'content': 'first post!'}, ]
 }
 # Indexes for later tests.
 idx = {}
@@ -58,6 +60,15 @@ def add_to_db():
                         published_at=datetime.datetime(2015,1,1)
                         )
                     DBSession.add(post1)
+                for cdata in data['comments']:
+                    cdata['post'] = post1
+                    try:
+                        comment = DBSession.query(Comment)\
+                            .filter_by(content=cdata['content'], post=post1)\
+                                .one()
+                    except sqlalchemy.orm.exc.NoResultFound:
+                        comment = Comment(**cdata)
+                        DBSession.add(comment)
                 try:
                     post2 = DBSession.query(Post)\
                         .filter_by(title='also ran', author=person, blog=blog).one()
