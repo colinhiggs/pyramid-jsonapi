@@ -322,7 +322,7 @@ class TestSpec(unittest.TestCase):
     def test_spec_relationships_links(self):
         '''Relationships links object should have 'self' and 'related' links.
         '''
-        # Fetch a single blog (has to-one and to-many realtionships)
+        # Fetch a single blog (has to-one and to-many relationships)
         r = self.test_app.get('/blogs?page[limit]=1')
         item = r.json['data'][0]
         # Should have relationships key
