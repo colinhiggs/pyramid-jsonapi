@@ -99,10 +99,12 @@ def create_jsonapi(config, models, engine = None, test_data = None):
     else:
         iterable = models
     for model_class in iterable:
-        if isinstance(model_class,
-            sqlalchemy.ext.declarative.api.DeclarativeMeta)\
-                and hasattr(model_class, 'id'):
+        if isinstance(
+            model_class,
+            sqlalchemy.ext.declarative.api.DeclarativeMeta
+        ):
             create_resource(config, model_class)
+
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
 def create_resource(config, model,
@@ -116,6 +118,19 @@ def create_resource(config, model,
         allowed_fields (set): set of allowed field names.
     '''
 
+    try:
+        keycols = sqlalchemy.inspect(model).primary_key
+    except sqlalchemy.exc.NoInspectionAvailable:
+        # Trying to inspect the declarative_base() raises this exception. We
+        # don't want to add it to the API.
+        return
+
+    # Only deal with one primary key column.
+    if len(keycols) > 1:
+        raise Exception(
+            'Model {} has more than one primary key.'.format(model_class.__name__)
+        )
+
     # Figure out what table model is from
     info = ModelInfo.construct(model)
 
@@ -126,6 +141,8 @@ def create_resource(config, model,
         allowed_fields = allowed_fields)
     view_classes['collection_name'] = view
     view_classes[model] = view
+
+    view.key_column = keycols[0]
     view.default_limit =\
         int(config.registry.settings.get('jsonapi.paging.default_limit', 10))
     view.max_limit =\
