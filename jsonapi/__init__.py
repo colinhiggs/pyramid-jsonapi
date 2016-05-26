@@ -130,6 +130,7 @@ def create_resource(config, model,
         raise Exception(
             'Model {} has more than one primary key.'.format(model_class.__name__)
         )
+    model._jsonapi_id = getattr(model, keycols[0].name)
 
     # Figure out what table model is from
     info = ModelInfo.construct(model)
@@ -266,10 +267,10 @@ def CollectionViewFactory(
                 dict: single item.
             '''
             q = DBSession.query(
-                self.model.id,
+                self.model._jsonapi_id,
                 *self.requested_query_columns.values()
             ).filter(
-                self.model.id == self.request.matchdict['id']
+                self.model._jsonapi_id == self.request.matchdict['id']
             )
 
             return self.single_return(
@@ -291,7 +292,7 @@ def CollectionViewFactory(
                 raise HTTPConflict('JSON id ({}) does not match URL id ({}).'.
                 format(data_id, req_id))
             atts = data['attributes']
-            atts['id'] = req_id
+            atts[self.key_column.name] = req_id
             # TODO(Colin): deal with relationships
             item = DBSession.merge(self.model(**atts))
             DBSession.flush()
@@ -328,7 +329,7 @@ def CollectionViewFactory(
 
             # Set up the query
             q = DBSession.query(
-                self.model.id,
+                self.model._jsonapi_id,
                 *self.requested_query_columns.values()
             )
             q = self.query_add_sorting(q)
@@ -388,7 +389,7 @@ def CollectionViewFactory(
             except sqlalchemy.exc.IntegrityError as e:
                 raise HTTPConflict(e.args[0])
             self.request.response.status_code = 201
-            return {'data': { 'type': self.collection_name, 'id': item.id } }
+            return {'data': { 'type': self.collection_name, 'id': item._jsonapi_id } }
 
         @jsonapi_view
         def related_get(self):
@@ -584,7 +585,7 @@ def CollectionViewFactory(
             except NoResultFound:
                 raise HTTPNotFound(not_found_message)
             if identifier:
-                ret['data'] = { 'type': self.collection_name, 'id': item.id }
+                ret['data'] = { 'type': self.collection_name, 'id': item._jsonapi_id }
             else:
                 ret['data'] = self.serialise_db_item(item, included)
                 if self.requested_include_names():
@@ -620,7 +621,7 @@ def CollectionViewFactory(
             # Primary data
             if identifiers:
                 ret['data'] = [
-                    { 'type': self.collection_name, 'id': dbitem.id }
+                    { 'type': self.collection_name, 'id': dbitem._jsonapi_id }
                     for dbitem in q.all()
                 ]
             else:
@@ -729,17 +730,17 @@ def CollectionViewFactory(
             rel_view = self.view_instance(rel_class)
             local_col, rem_col = rel.local_remote_pairs[0]
             if id_only:
-                q = DBSession.query(rel_class.id)
+                q = DBSession.query(rel_class._jsonapi_id)
             else:
                 q = DBSession.query(
-                    rel_class.id,
+                    rel_class._jsonapi_id,
                     *rel_view.requested_query_columns.values()
                 )
             if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
                 q = q.filter(obj_id == rem_col)
             else:
-                q = q.filter(rel_class.id == local_col)
-                q = q.filter(self.model.id == obj_id)
+                q = q.filter(rel_class._jsonapi_id == local_col)
+                q = q.filter(self.model._jsonapi_id == obj_id)
 
             return q
 
@@ -768,12 +769,12 @@ def CollectionViewFactory(
             # Item's id and type are required at the top level of json-api
             # objects.
             # The item's id.
-            item_id = getattr(item, 'id')
+            item_id = item._jsonapi_id
             # JSON API type.
             type_name = self.collection_name
             item_url = self.request.route_url(
                 self.item_route_name,
-                **{'id': getattr(item, 'id')}
+                **{'id': item._jsonapi_id}
             )
 
             atts = { key: getattr(item, key)
@@ -810,21 +811,21 @@ def CollectionViewFactory(
                     rels[key]['meta']['results']['limit'] = limit
                     if rel_view:
                         q = DBSession.query(
-                            rel_class.id,
+                            rel_class._jsonapi_id,
                             *rel_view.requested_query_columns.values()
                         )
                     else:
-                        q = DBSession.query(rel_class.id)
-                    q = q.filter(item.id == rem_col)
+                        q = DBSession.query(rel_class._jsonapi_id)
+                    q = q.filter(item._jsonapi_id == rem_col)
                     rels[key]['meta']['results']['available'] = q.count()
                     q = q.limit(limit)
                     rels[key]['data'] = []
                     for ritem in q.all():
                         rels[key]['data'].append(
-                            {'type': key, 'id': str(ritem.id)}
+                            {'type': key, 'id': str(ritem._jsonapi_id)}
                         )
                         if rel_view:
-                            included[(rel_view.collection_name, ritem.id)] =\
+                            included[(rel_view.collection_name, ritem._jsonapi_id)] =\
                                 rel_view.serialise_db_item(
                                     ritem,
                                     included, include_path + [key]
@@ -834,17 +835,17 @@ def CollectionViewFactory(
                 else:
                     if rel_view:
                         q = DBSession.query(
-                            rel_class.id,
+                            rel_class._jsonapi_id,
                             *rel_view.requested_query_columns.values()
                         )
-                        q = q.filter(rel_class.id == getattr(item, local_col.name))
+                        q = q.filter(rel_class._jsonapi_id == getattr(item, local_col.name))
                         ritem = None
                         try:
                             ritem = q.one()
                         except sqlalchemy.orm.exc.NoResultFound:
                             rels[key]['data'] = None
                         if ritem:
-                            included[(rel_view.collection_name, ritem.id)] =\
+                            included[(rel_view.collection_name, ritem._jsonapi_id)] =\
                                 rel_view.serialise_db_item(
                                     ritem,
                                     included, include_path + [key]
@@ -919,7 +920,7 @@ def CollectionViewFactory(
             #   sort=owner.name -> sort on the 'name' column of the target table
             #     of the relationship 'owner'.
             # The default sort column is 'id'.
-            sort_key = request.params.get('sort', 'id')
+            sort_key = request.params.get('sort', cls.key_column.name)
             info['sort'] = sort_key
             # Break sort param down into components and store in _sort.
             info['_sort'] = {}
