@@ -1,0 +1,127 @@
+{
+  "initial": [
+    [ "Person",
+      [
+        {
+          "id": "1",
+          "name": "alice"
+        },
+        {
+          "id": "2",
+          "name": "bob"
+        }
+      ]
+    ],
+    [ "Blog",
+      [
+        {
+          "id": "1",
+          "title": "main: alice",
+          "owner_id": "1"
+        },
+        {
+          "id": "2",
+          "title": "second: alice",
+          "owner_id": "1"
+        },
+        {
+          "id": "3",
+          "title": "main: bob",
+          "owner_id": "2"
+        },
+        {
+          "id": "4",
+          "title": "second: bob",
+          "owner_id": "2"
+        }
+      ]
+    ],
+    [ "Post",
+      [
+        {
+          "id": "1",
+          "title": "post1: alice.main",
+          "content": "something insightful",
+          "published_at": "2015-01-01",
+          "author_id": "1",
+          "blog_id": "1"
+        },
+        {
+          "id": "2",
+          "title": "post2: alice.main",
+          "content": "something trivial",
+          "published_at": "2015-01-02",
+          "author_id": "1",
+          "blog_id": "1"
+        },
+        {
+          "id": "3",
+          "title": "post1: alice.second",
+          "content": "truthful",
+          "published_at": "2015-01-03",
+          "author_id": "1",
+          "blog_id": "2"
+        },
+        {
+          "id": "4",
+          "title": "post1: bob.main",
+          "content": "something insightful",
+          "published_at": "2015-01-04",
+          "author_id": "2",
+          "blog_id": "3"
+        },
+        {
+          "id": "5",
+          "title": "post2: bob.main",
+          "content": "something trivial",
+          "published_at": "2015-01-05",
+          "author_id": "2",
+          "blog_id": "3"
+        },
+        {
+          "id": "6",
+          "title": "post1: bob.second",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "2",
+          "blog_id": "4"
+        }
+      ]
+    ],
+    [ "Comment",
+      [
+        {
+          "comments_id": "1",
+          "content": "comment1: bob.main.post1 by alice",
+          "author_id": "1",
+          "post_id": "4"
+        },
+        {
+          "comments_id": "2",
+          "content": "comment2: bob.main.post1 by bob",
+          "author_id": "2",
+          "post_id": "4"
+        },
+        {
+          "comments_id": "3",
+          "content": "comment1: alice.second.post1 by alice",
+          "author_id": "1",
+          "post_id": "3"
+        },
+        {
+          "comments_id": "4",
+          "content": "comment1: alice.second.post1 by bob",
+          "author_id": "2",
+          "post_id": "3"
+        },
+        {
+          "comments_id": "5",
+          "content": "comment1: bob.main.post1 anonymous",
+          "author_id": null,
+          "post_id": "4"
+        }
+
+      ]
+    ]
+  ]
+}

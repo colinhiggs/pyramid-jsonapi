@@ -5,23 +5,12 @@ import webtest
 from pyramid.paster import get_app
 from sqlalchemy import create_engine
 
-#from pyramid import testing
-
 from .models import (
     DBSession,
-    Base,
-    Person,
-    Blog,
-    Post
+    Base
 )
 
 from . import test_data
-from .test_data import (
-    data,
-    idx,
-    npeople, nblogs, nposts,
-    nblogs_per_person, nposts_per_blog
-)
 
 class TestSpec(unittest.TestCase):
     '''Test compliance against jsonapi spec.
