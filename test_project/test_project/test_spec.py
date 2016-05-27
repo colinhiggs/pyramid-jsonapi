@@ -456,6 +456,26 @@ class TestSpec(unittest.TestCase):
             id_ = item['id']
             self.assertIn((type_, id_), rids)
 
+    def test_spec_compound_no_linkage_sparse(self):
+        '''Included resources not referenced if referencing field not included.
+
+        The only exception to the full linkage requirement is when relationship
+        fields that would otherwise contain linkage data are excluded via sparse
+        fieldsets.
+        '''
+        person = self.test_app.get(
+            '/people/1?include=blogs&fields[people]=name,comments'
+        ).json
+        # Find all the resource identifiers.
+        rids = set()
+        for rel in person['data']['relationships'].values():
+            for item in rel['data']:
+                rids.add((item['type'], item['id']))
+        self.assertGreater(len(person['included']), 0)
+        for blog in person['included']:
+            self.assertEqual(blog['type'], 'blogs')
+
+
 
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
