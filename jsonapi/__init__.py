@@ -233,7 +233,10 @@ def CollectionViewFactory(
                 content_type = cth[0]
                 params = None
                 if len(cth) > 1:
-                    raise HTTPUnsupportedMediaType('Media Type parameters not allowed by JSONAPI spec (http://jsonapi.org/format).')
+                    raise HTTPUnsupportedMediaType(
+                        'Media Type parameters not allowed by JSONAPI ' +
+                        'spec (http://jsonapi.org/format).'
+                    )
                     params = cth[1].lstrip();
 
                 # Spec says throw 406 Not Acceptable if Accept header has no
@@ -242,9 +245,17 @@ def CollectionViewFactory(
                     r',\s*',
                     self.request.headers.get('accept','')
                 )
-                jsonapi_accepts = {a for a in accepts if a.startswith('application/vnd.api')}
-                if jsonapi_accepts and 'application/vnd.api+json' not in jsonapi_accepts:
-                    raise HTTPNotAcceptable('application/vnd.api+json must appear with no parameters in Accepts header (http://jsonapi.org/format).')
+                jsonapi_accepts = {
+                    a for a in accepts
+                    if a.startswith('application/vnd.api')
+                }
+                if jsonapi_accepts and\
+                    'application/vnd.api+json' not in jsonapi_accepts:
+                    raise HTTPNotAcceptable(
+                        'application/vnd.api+json must appear with no ' +
+                        'parameters in Accepts header ' +
+                        '(http://jsonapi.org/format).'
+                    )
 
                 # Spec says set Content-Type to application/vnd.api+json.
                 self.request.response.content_type = 'application/vnd.api+json'
