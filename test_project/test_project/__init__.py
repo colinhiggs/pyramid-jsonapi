@@ -9,11 +9,6 @@ import jsonapi
 # Import models as a module: needed for create_jsonapi...
 from . import models
 
-# This is just a module that defines some initial data and a method to
-# auto-populate the DB with it.
-from . import test_data
-
-
 # Used to test that adding JSON adapters works.
 import datetime
 def datetime_adapter(obj, request):
@@ -32,26 +27,14 @@ def main(global_config, **settings):
     config.add_route('echo', '/echo/{type}')
     config.scan(views)
 
-    # Since this is just a test app we'll do a sort of idempotent intialisation
-    # each time we start.
-    #
-    # Create or update tables and schema. Safe if tables already exist.
-    models.Base.metadata.create_all(engine)
-    # Add test data. Safe if test data already exists.
-    test_data.add_to_db()
-
-    # Lines specific to jsonapi.
     # Set up the renderer.
     renderer = JSON()
     renderer.add_adapter(datetime.date, datetime_adapter)
     config.add_renderer('json', renderer)
-    config.add_renderer(None, renderer)
+
+    # Lines specific to jsonapi.
     # Create the routes and views automagically.
-    jsonapi.create_jsonapi_using_magic_and_pixie_dust(
-        config, models,
-        # the following parameters are only needed for debug functionality
-        engine = engine, test_data = test_data
-    )
+    jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models)
 #    jsonapi.create_resource(config, models.Post, collection_name = 'posts2', allowed_fields = {'title', 'published_at'})
 
     # Back to the usual pyramid stuff.

@@ -15,6 +15,7 @@ import psycopg2
 import pprint
 import functools
 import types
+import importlib
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -49,14 +50,14 @@ class DebugView:
     def drop(self):
         '''Drop all tables from the database!!!
         '''
-        self.models.Base.metadata.drop_all(self.engine)
+        self.metadata.drop_all(self.engine)
         return 'dropped'
 
     def populate(self):
         '''Create tables and populate with test data.
         '''
         # Create or update tables and schema. Safe if tables already exist.
-        self.models.Base.metadata.create_all(self.engine)
+        self.metadata.create_all(self.engine)
         # Add test data. Safe if test data already exists.
         self.test_data.add_to_db()
         return 'populated'
@@ -78,10 +79,31 @@ def create_jsonapi(config, models, engine = None, test_data = None):
     config.add_forbidden_view(error, renderer='json')
     config.add_view(error, context=HTTPError, renderer='json')
 
+    if isinstance(models, types.ModuleType):
+        model_list = []
+        for attr in models.__dict__.values():
+            if isinstance(attr, DeclarativeMeta):
+                try:
+                    keycols = sqlalchemy.inspect(attr).primary_key
+                except sqlalchemy.exc.NoInspectionAvailable:
+                    # Trying to inspect the declarative_base() raises this
+                    # exception. We don't want to add it to the API.
+                    continue
+                model_list.append(attr)
+    else:
+        model_list = list(models)
+
     settings = config.registry.settings
     if settings.get('jsonapi.debug.debug_endpoints', 'false') == 'true':
-        DebugView.models = models
-        DebugView.engine = engine
+        if engine is None:
+            DebugView.engine = model_list[0].metadata.bind
+        else:
+            DebugView.engine = engine
+        DebugView.metadata = model_list[0].metadata
+        if test_data is None:
+            test_data = importlib.import_module(
+                settings.get('jsonapi.debug.test_data_module', 'test_data')
+            )
         DebugView.test_data = test_data
         config.add_route('debug', '/debug/{action}')
         config.add_view(DebugView, attr='drop',
@@ -94,16 +116,8 @@ def create_jsonapi(config, models, engine = None, test_data = None):
     # Loop through the models module looking for declaratively defined model
     # classes (inherit DeclarativeMeta). Create resource endpoints for these and
     # any relationships found.
-    if isinstance(models, types.ModuleType):
-        iterable = models.__dict__.values()
-    else:
-        iterable = models
-    for model_class in iterable:
-        if isinstance(
-            model_class,
-            sqlalchemy.ext.declarative.api.DeclarativeMeta
-        ):
-            create_resource(config, model_class)
+    for model_class in model_list:
+        create_resource(config, model_class)
 
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
