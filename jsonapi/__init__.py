@@ -260,14 +260,21 @@ def CollectionViewFactory(
                     'self': self.request.url
                 })
 
-                ret['meta'].update({
-                    'debug': {
-                        'accept_header': {a:None for a in jsonapi_accepts},
-                        'qinfo_page': self.collection_query_info(self.request)['_page'],
+                if self.request.registry.settings.get(
+                    'jsonapi.debug.meta', 'false'
+                ) == 'true':
+                    debug = {
+                        'accept_header': {
+                                a:None for a in jsonapi_accepts
+                            },
+                        'qinfo_page':\
+                            self.collection_query_info(self.request)['_page'],
                         'atts': { k: None for k in self.attributes.keys() },
-                        'includes': {k:None for k in self.requested_include_names()}
+                        'includes': {
+                            k:None for k in self.requested_include_names()
+                        }
                     }
-                })
+                    ret['meta'].update({'debug': debug})
 
                 return ret
             return new_f
