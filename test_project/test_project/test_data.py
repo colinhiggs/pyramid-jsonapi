@@ -33,12 +33,11 @@ def add_to_db():
     '''Add some basic test data.'''
     with transaction.manager:
         for pdata in data['people']:
-            try:
-                person = DBSession.query(Person)\
-                    .filter_by(name=pdata['name']).one()
-            except sqlalchemy.orm.exc.NoResultFound:
-                person = Person(**pdata)
-                DBSession.add(person)
+            person = idempotent_add(
+                Person,
+                query_data = {'name': pdata['name']},
+                create_data = pdata
+            )
             for bdata in data['blogs']:
                 bdata['owner'] = person
                 try:
@@ -81,3 +80,13 @@ def add_to_db():
                         published_at=datetime.datetime.today()
                         )
                     DBSession.add(post1)
+
+def idempotent_add(model, query_data, create_data):
+    '''Add an item only if it doesn't exist (according to query).
+    '''
+    try:
+        item = DBSession.query(model).filter_by(**query_data).one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        item = model(**create_data)
+        DBSession.add(item)
+    return item
