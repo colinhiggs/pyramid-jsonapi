@@ -475,6 +475,24 @@ class TestSpec(unittest.TestCase):
         for blog in person['included']:
             self.assertEqual(blog['type'], 'blogs')
 
+    def test_spec_compound_unique_resources(self):
+        '''Each resource object should appear only once.
+
+        A compound document MUST NOT include more than one resource object for
+        each type and id pair.
+        '''
+        # get some people with included blogs and comments.
+        people = self.test_app.get('/people?include=blogs,comments').json
+        # Check that each resource only appears once.
+        seen = set()
+        # Add the main resource objects.
+        for person in people['data']:
+            self.assertNotIn((person['type'], person['id']), seen)
+            seen.add((person['type'], person['id']))
+        # Check the included resources.
+        for obj in people['included']:
+            self.assertNotIn((obj['type'], obj['id']), seen)
+            seen.add((obj['type'], obj['id']))
 
 
     def test_api_errors_structure(self):
