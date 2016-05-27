@@ -433,6 +433,30 @@ class TestSpec(unittest.TestCase):
             self.assertEqual(blog['type'], 'blogs')
             self.assertIn('attributes', blog)
 
+    def test_spec_compound_full_linkage(self):
+        '''All included resources should be referenced by a resource link.
+
+        Compound documents require "full linkage", meaning that every included
+        resource MUST be identified by at least one resource identifier object
+        in the same document. These resource identifier objects could either be
+        primary data or represent resource linkage contained within primary or
+        included resources.
+        '''
+        # get a person with included blogs and comments.
+        person = self.test_app.get('/people/1?include=blogs,comments').json
+        # Find all the resource identifiers.
+        rids = set()
+        for rel in person['data']['relationships'].values():
+            for item in rel['data']:
+                rids.add((item['type'], item['id']))
+
+        # Every included item should have an identifier somewhere.
+        for item in person['included']:
+            type_ = item['type']
+            id_ = item['id']
+            self.assertIn((type_, id_), rids)
+
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
