@@ -854,7 +854,10 @@ def CollectionViewFactory(
                     rels[key]['data'] = []
                     for ritem in q.all():
                         rels[key]['data'].append(
-                            {'type': key, 'id': str(ritem._jsonapi_id)}
+                            {
+                                'type': rel_class.__tablename__,
+                                'id': str(ritem._jsonapi_id)
+                            }
                         )
                         if rel_view:
                             included[(rel_view.collection_name, ritem._jsonapi_id)] =\
@@ -884,10 +887,14 @@ def CollectionViewFactory(
                                 )
 
                     else:
-                        rels[key]['data'] = {
-                            'type': key,
-                            'id': str(getattr(item, local_col.name))
-                        }
+                        rel_id = getattr(item, local_col.name)
+                        if rel_id is None:
+                            rels[key]['data'] = None
+                        else:
+                            rels[key]['data'] = {
+                                'type': rel_class.__tablename__,
+                                'id': str(rel_id)
+                            }
 
             ret = {
                 'id': str(item_id),
