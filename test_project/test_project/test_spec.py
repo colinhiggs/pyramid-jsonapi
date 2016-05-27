@@ -354,6 +354,47 @@ class TestSpec(unittest.TestCase):
         for post in posts_data:
             self.assertEqual(post['type'], 'posts')
 
+    def test_spec_resource_linkage(self):
+        '''Appropriate related resource identifiers in relationship.
+
+        Resource linkage in a compound document allows a client to link together
+        all of the included resource objects without having to GET any URLs via
+        links.
+
+        Resource linkage MUST be represented as one of the following:
+
+            * null for empty to-one relationships.
+            * an empty array ([]) for empty to-many relationships.
+            * a single resource identifier object for non-empty to-one
+             relationships.
+            * an array of resource identifier objects for non-empty to-many
+             relationships.
+        '''
+        # An anonymous comment.
+        # 'null for empty to-one relationships.'
+        comment = self.test_app.get('/comments/5').json['data']
+        self.assertIsNone(comment['relationships']['author']['data'])
+
+        # A comment with an author.
+        # 'a single resource identifier object for non-empty to-one
+        # relationships.'
+        comment = self.test_app.get('/comments/1').json['data']
+        author = comment['relationships']['author']['data']
+        self.assertIsEqual(author['type'], 'people')
+
+        # A post with no comments.
+        # 'an empty array ([]) for empty to-many relationships.'
+        post = self.test_app.get('/posts/1').json['data']
+        comments = post['relatioships']['comments']['data']
+        self.assertEqual(len(comments), 0)
+
+        # A post with comments.
+        # 'an array of resource identifier objects for non-empty to-many
+        # relationships.'
+        post = self.test_app.get('/posts/4').json['data']
+        comments = post['relatioships']['comments']['data']
+        self.assertGreater(len(comments), 0)
+        self.assertEqual(comments[0]['type'], 'comments')
 
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
