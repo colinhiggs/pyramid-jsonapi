@@ -380,19 +380,19 @@ class TestSpec(unittest.TestCase):
         # relationships.'
         comment = self.test_app.get('/comments/1').json['data']
         author = comment['relationships']['author']['data']
-        self.assertIsEqual(author['type'], 'people')
+        self.assertEqual(author['type'], 'people')
 
         # A post with no comments.
         # 'an empty array ([]) for empty to-many relationships.'
         post = self.test_app.get('/posts/1').json['data']
-        comments = post['relatioships']['comments']['data']
+        comments = post['relationships']['comments']['data']
         self.assertEqual(len(comments), 0)
 
         # A post with comments.
         # 'an array of resource identifier objects for non-empty to-many
         # relationships.'
         post = self.test_app.get('/posts/4').json['data']
-        comments = post['relatioships']['comments']['data']
+        comments = post['relationships']['comments']['data']
         self.assertGreater(len(comments), 0)
         self.assertEqual(comments[0]['type'], 'comments')
 
