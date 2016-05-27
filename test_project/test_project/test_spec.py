@@ -418,6 +418,21 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(person_again['type'], 'people')
         self.assertEqual(person_again['id'], '1')
 
+    def test_spec_included_array(self):
+        '''Included resources should be in an array under 'included' member.
+
+        In a compound document, all included resources MUST be represented as an
+        array of resource objects in a top-level included member.
+        '''
+        person = self.test_app.get('/people/1?include=blogs').json
+        self.assertIsInstance(person['included'], list)
+        # Each item in the list should be a resource object: we'll look for
+        # type, id and attributes.
+        for blog in person['included']:
+            self.assertIn('id', blog)
+            self.assertEqual(blog['type'], 'blogs')
+            self.assertIn('attributes', blog)
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
