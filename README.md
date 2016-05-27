@@ -137,9 +137,9 @@ That's pretty much it.
 ### Auto-create Assumptions
 
 1. Your model classes all inherit from a base class returned by sqlalchemy's `declarative-base()`.
-1. Each model has a primary_key called 'id'.
+1. Each model has a single primary_key column. This will be auto-detected and copied to an attribute called `_jsonapi_id`, so...
+1. ... don't create any columns called `_jsonapi_id`.  
 1. You are happy to give your collection end-points the same name as the corresponding database table (for now...).
-1. You are happy to expose every model class defined in `models` as a resource collection.
 1. You have defined any relationships to exposed via the API using `sqlalchemy.orm.relationship()` (or `backref()`).
 1. You are happy to expose any so defined relationship via a relationship URL.
 
