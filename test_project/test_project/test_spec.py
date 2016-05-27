@@ -396,6 +396,28 @@ class TestSpec(unittest.TestCase):
         self.assertGreater(len(comments), 0)
         self.assertEqual(comments[0]['type'], 'comments')
 
+    def test_spec_links_self(self):
+        ''''self' link should fetch same object.
+
+        The optional links member within each resource object contains links
+        related to the resource.
+
+        If present, this links object MAY contain a self link that identifies
+        the resource represented by the resource object.
+
+        A server MUST respond to a GET request to the specified URL with a
+        response that includes the resource as the primary data.
+        '''
+        person = self.test_app.get('/people/1').json['data']
+        # Make sure we got the expected person.
+        self.assertEqual(person['type'], 'people')
+        self.assertEqual(person['id'], '1')
+        # Now fetch the self link.
+        person_again = self.test_app.get(person['links']['self']).json['data']
+        # Make sure we got the same person.
+        self.assertEqual(person_again['type'], 'people')
+        self.assertEqual(person_again['id'], '1')
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
