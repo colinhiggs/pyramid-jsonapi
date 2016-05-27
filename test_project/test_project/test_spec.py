@@ -329,6 +329,32 @@ class TestSpec(unittest.TestCase):
             )
         )
 
+    def test_spec_related_get(self):
+        ''''related' link should fetch related resource(s).
+
+        If present, a related resource link MUST reference a valid URL, even if
+        the relationship isn’t currently associated with any target resources.
+        '''
+        # Fetch a single blog (has to-one and to-many relationships)
+        r = self.test_app.get('/blogs/1')
+        item = r.json['data']
+        owner_url = item['relationships']['owner']['links']['related']
+        posts_url = item['relationships']['posts']['links']['related']
+
+        owner_data = self.test_app.get(owner_url).json['data']
+        # owner should be a single object.
+        self.assertIsInstance(owner_data, dict)
+        # owner should be of type 'people'
+        self.assertEqual(owner_data['type'], 'people')
+
+        posts_data = self.test_app.get(posts_url).json['data']
+        # posts should be a collection.
+        self.assertIsInstance(posts_data, list)
+        # each post should be of type 'posts'
+        for post in posts_data:
+            self.assertEqual(post['type'], 'posts')
+
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
