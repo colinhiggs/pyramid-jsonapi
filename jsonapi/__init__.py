@@ -450,14 +450,7 @@ def CollectionViewFactory(
             if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
                 return rel_view.collection_return(q)
             else:
-                return rel_view.single_return(
-                    q,
-                    'No id {} in collection {} relationship {}'.format(
-                        obj_id,
-                        self.collection_name,
-                        relname
-                    )
-                )
+                return rel_view.single_return(q)
 
         @jsonapi_view
         def relationships_get(self):
@@ -607,7 +600,7 @@ def CollectionViewFactory(
                 raise HTTPFailedDependency(str(e))
             return {}
 
-        def single_return(self, q, not_found_message, identifier = False):
+        def single_return(self, q, not_found_message = None, identifier = False):
             '''Populate return dictionary for single items.
             '''
             included = {}
@@ -615,7 +608,10 @@ def CollectionViewFactory(
             try:
                 item = q.one()
             except NoResultFound:
-                raise HTTPNotFound(not_found_message)
+                if not_found_message:
+                    raise HTTPNotFound(not_found_message)
+                else:
+                    return {'data': None}
             if identifier:
                 ret['data'] = { 'type': self.collection_name, 'id': item._jsonapi_id }
             else:
