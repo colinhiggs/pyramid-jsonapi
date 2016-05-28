@@ -63,7 +63,7 @@ class DebugView:
         return 'populated'
 
     def reset(self):
-        '''The same as 'drop' and then 'reset'.
+        '''The same as 'drop' and then 'populate'.
         '''
         self.drop()
         self.populate()
