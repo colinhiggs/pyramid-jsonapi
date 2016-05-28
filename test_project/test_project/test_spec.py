@@ -516,6 +516,23 @@ class TestSpec(unittest.TestCase):
         self.assertIsInstance(links['first'], str)
         self.assertIsInstance(links['last'], str)
 
+    def test_spec_fetch_non_existent(self):
+        '''Should 404 when fetching non existent resource.
+
+        A server MUST respond with 404 Not Found when processing a request to
+        fetch a single resource that does not exist,
+        '''
+        r = self.test_app.get('/people/1000', status=404)
+
+    def test_spec_fetch_non_existent_related(self):
+        '''Should return primary data of null, not 404.
+
+        null is only an appropriate response when the requested URL is one that
+        might correspond to a single resource, but doesn’t currently.
+        '''
+        data = self.test_app.get('/comments/5/author').json['data']
+        self.assertIsNone(data)
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
