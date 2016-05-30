@@ -23,7 +23,7 @@ def add_to_db():
                 set_item(model, item)
 
 def set_item(model, data):
-    '''Make sure item exists in the db with attributes as specified in item.
+    '''Make sure item exists in the db with attributes as specified in data.
     '''
     # Assume only one primary key
     keycols = sqlalchemy.inspect(model).primary_key
