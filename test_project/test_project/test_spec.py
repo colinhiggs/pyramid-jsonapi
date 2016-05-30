@@ -556,6 +556,8 @@ class TestSpec(unittest.TestCase):
         self.assertEqual('people', owner_data['type'])
         self.assertIn('id', owner_data)
 
+        # to one, empty relationship
+
         # to many
         posts_url = blog1['relationships']['posts']['links']['self']
         # A server MUST support fetching relationship data...
@@ -568,6 +570,36 @@ class TestSpec(unittest.TestCase):
         for post in posts_data:
             self.assertEqual('posts', post['type'])
             self.assertIn('id', post)
+
+    def test_spec_fetch_relationship_to_one_empty(self):
+        '''Fetching empty relationships link should give null data.
+
+        If [a to-one] relationship is empty, then a GET request to the
+        [relationship] URL would return:
+
+            "data": null
+        '''
+        # comment 5 has no author
+        comment5 = self.test_app.get('/comments/5').json['data']
+        author = self.test_app.get(
+            comment5['relationships']['author']['links']['self']
+        ).json['data']
+        self.assertIsNone(author)
+
+    def test_spec_fetch_relationship_to_many_empty(self):
+        '''Fetching empty relationships link should give empty array.
+
+        If [a to-many] relationship is empty, then a GET request to the
+        [relationship] URL would return:
+
+            "data": []
+        '''
+        # post 1 has no comments
+        post1 = self.test_app.get('/posts/1').json['data']
+        comments = self.test_app.get(
+            post1['relationships']['comments']['links']['self']
+        ).json['data']
+        self.assertEqual(len(comments), 0)
 
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
