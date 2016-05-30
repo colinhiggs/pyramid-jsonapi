@@ -10,10 +10,10 @@ Right now it will take a typical sqlalchemy declarative-style models file and pr
 
 Functionality already added (works modulo bugs):
 
-* `GET`ing of resource collections and individual resources.
-* `POST`ing new resources.
-* `PATCH`ing existing resources.
-* `DELETE`ing resources.
+* `GET`ing, `PATCH`ing and `DELETE`ing individual resources.
+* `GET`ing and `POST`ing to resource collections.
+* `GET`ing related resources via `related` links.
+* `GET`ing, `POST`ing, `PATCH`ing and `DELETE`ing `relationships` links - i.e. viewing and changing relationship linkage.
 * There is no `PUT` in JSON-API.
 * `links` section auto-populated with some standard links.
 * `relationships` section auto-populated from relationships defined in sqlalchemy model.
