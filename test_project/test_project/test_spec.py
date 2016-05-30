@@ -601,6 +601,15 @@ class TestSpec(unittest.TestCase):
         ).json['data']
         self.assertEqual(len(comments), 0)
 
+    def test_spec_fetch_not_found_relationship(self):
+        '''Should 404 when fetching a relationship that does not exist.
+
+        A server MUST return 404 Not Found when processing a request to fetch a
+        relationship link URL that does not exist.
+        '''
+        # Try to get the author of a non existent post.
+        r = self.test_app.get('/posts/1000/relationships/author', status=404)
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
