@@ -433,6 +433,16 @@ class TestSpec(unittest.TestCase):
             self.assertEqual(blog['type'], 'blogs')
             self.assertIn('attributes', blog)
 
+    def test_spec_bad_include(self):
+        '''Should 400 error on attempt to fetch non existent relationship path.
+
+        If a server is unable to identify a relationship path or does not
+        support inclusion of resources from a path, it MUST respond with 400 Bad
+        Request.
+        '''
+        # Try to include a relationship that doesn't exist.
+        r = self.test_app.get('/people/1?include=frogs', status=400)
+
     def test_spec_compound_full_linkage(self):
         '''All included resources should be referenced by a resource link.
 
