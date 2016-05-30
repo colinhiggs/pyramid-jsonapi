@@ -257,7 +257,7 @@ class TestSpec(unittest.TestCase):
         self.assertIn('content', atts)
         self.assertIn('published_at', atts)
 
-    def test_spec_no_forreign_keys(self):
+    def test_spec_no_foreign_keys(self):
         '''No forreign keys in attributes.
 
         Although has-one foreign keys (e.g. author_id) are often stored
