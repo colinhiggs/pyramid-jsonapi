@@ -533,6 +533,42 @@ class TestSpec(unittest.TestCase):
         data = self.test_app.get('/comments/5/author').json['data']
         self.assertIsNone(data)
 
+    def test_spec_fetch_relationship_link(self):
+        '''relationships links should return linkage information.
+
+        A server MUST support fetching relationship data for every relationship
+        URL provided as a self link as part of a relationship’s links object
+
+        The primary data in the response document MUST match the appropriate
+        value for resource linkage, as described above for relationship objects.
+        '''
+        # Blogs have both many to one and one to many relationships.
+        blog1 = self.test_app.get('/blogs/1').json['data']
+
+        # to one
+        owner_url = blog1['relationships']['owner']['links']['self']
+        # A server MUST support fetching relationship data...
+        owner_data = self.test_app.get(owner_url).json['data']
+        # the response document MUST match the appropriate value for resource
+        # linkage...
+        #
+        # In this case a resource identifier with type = 'people' and an id.
+        self.assertEqual('people', owner_data['type'])
+        self.assertIn('id', owner_data)
+
+        # to many
+        posts_url = blog1['relationships']['posts']['links']['self']
+        # A server MUST support fetching relationship data...
+        posts_data = self.test_app.get(posts_url).json['data']
+        # the response document MUST match the appropriate value for resource
+        # linkage...
+        #
+        # In this case an array of 'posts' resource identifiers.
+        self.assertIsInstance(posts_data, list)
+        for post in posts_data:
+            self.assertEqual('posts', post['type'])
+            self.assertIn('id', post)
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
