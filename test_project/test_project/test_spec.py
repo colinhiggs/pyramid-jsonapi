@@ -620,6 +620,17 @@ class TestSpec(unittest.TestCase):
         # Try to get the author of a non existent post.
         r = self.test_app.get('/posts/1000/relationships/author', status=404)
 
+    def test_spec_filter(self):
+        '''Should return collection with just the alice people object.
+
+        The filter query parameter is reserved for filtering data. Servers and
+        clients SHOULD use this key for filtering operations.
+        '''
+        data = self.test_app.get('/people?filter[name:eq]=alice').json['data']
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['type'], 'people')
+        self.assertEqual(data[0]['attributes']['name'], 'alice')
+
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
