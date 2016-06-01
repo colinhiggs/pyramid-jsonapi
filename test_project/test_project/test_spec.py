@@ -443,6 +443,25 @@ class TestSpec(unittest.TestCase):
         # Try to include a relationship that doesn't exist.
         r = self.test_app.get('/people/1?include=frogs', status=400)
 
+    def test_spec_nested_include(self):
+        '''Should return includes for nested resources.
+
+        In order to request resources related to other resources, a
+        dot-separated path for each relationship name can be specified:
+
+            * GET /articles/1?include=comments.author
+        '''
+        # TODO(Colin) implement
+
+    def test_spec_multiple_include(self):
+        '''Should return multiple related resource types.
+
+        Multiple related resources can be requested in a comma-separated list:
+
+            * GET /articles/1?include=author,comments.author
+        '''
+        # TODO(Colin) implement
+
     def test_spec_compound_full_linkage(self):
         '''All included resources should be referenced by a resource link.
 
@@ -620,6 +639,99 @@ class TestSpec(unittest.TestCase):
         # Try to get the author of a non existent post.
         r = self.test_app.get('/posts/1000/relationships/author', status=404)
 
+    def test_spec_sparse_fields(self):
+        '''Should return only requested fields.
+
+        A client MAY request that an endpoint return only specific fields in the
+        response on a per-type basis by including a fields[TYPE] parameter.
+
+        The value of the fields parameter MUST be a comma-separated (U+002C
+        COMMA, ",") list that refers to the name(s) of the fields to be
+        returned.
+
+        If a client requests a restricted set of fields for a given resource
+        type, an endpoint MUST NOT include additional fields in resource objects
+        of that type in its response.
+        '''
+        # TODO(Colin) implement
+
+    def test_spec_single_sort(self):
+        '''Should return  collection sorted by correct field.
+
+        An endpoint MAY support requests to sort the primary data with a sort
+        query parameter. The value for sort MUST represent sort fields.
+
+            * GET /people?sort=age
+        '''
+        # TODO(Colin) implement
+
+    def test_spec_multiple_sort(self):
+        '''Should return collection sorted by multiple fields, applied in order.
+
+        An endpoint MAY support multiple sort fields by allowing comma-separated
+        (U+002C COMMA, ",") sort fields. Sort fields SHOULD be applied in the
+        order specified.
+
+            * GET /people?sort=age,name
+        '''
+        # TODO(Colin) implement
+
+    def test_spec_descending_sort(self):
+        '''Should return results sorted by field in reverse order.
+
+        The sort order for each sort field MUST be ascending unless it is
+        prefixed with a minus (U+002D HYPHEN-MINUS, "-"), in which case it MUST
+        be descending.
+
+            * GET /articles?sort=-created,title
+        '''
+        # TODO(Colin) implement
+
+    # TODO(Colin) repeat sort tests for other collection returning endpoints,
+    # because: Note: This section applies to any endpoint that responds with a
+    # resource collection as primary data, regardless of the request type
+
+    def test_spec_pagination_links(self):
+        '''
+
+        A server MAY provide links to traverse a paginated data set ("pagination
+        links").
+
+        Pagination links MUST appear in the links object that corresponds to a
+        collection. To paginate the primary data, supply pagination links in the
+        top-level links object. To paginate an included collection returned in a
+        compound document, supply pagination links in the corresponding links
+        object.
+
+        The following keys MUST be used for pagination links:
+
+            * first: the first page of data
+            * last: the last page of data
+            * prev: the previous page of data
+            * next: the next page of data
+        '''
+        # TODO(Colin) implement
+
+    def test_spec_pagination_unavailable_links(self):
+        '''Next page link should not be available
+
+        Keys MUST either be omitted or have a null value to indicate that a
+        particular link is unavailable.
+        '''
+        # TODO(Colin) implement
+
+    def test_spec_pagination_order(self):
+        '''Pages (and results) should order restults as per order param.
+
+        Concepts of order, as expressed in the naming of pagination links, MUST
+        remain consistent with JSON API’s sorting rules.
+        '''
+        # TODO(Colin) implement
+
+    # TODO(Colin) repeat sort tests for other collection returning endpoints,
+    # because: Note: This section applies to any endpoint that responds with a
+    # resource collection as primary data, regardless of the request type
+
     def test_spec_filter(self):
         '''Should return collection with just the alice people object.
 
@@ -630,6 +742,8 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['type'], 'people')
         self.assertEqual(data[0]['attributes']['name'], 'alice')
+
+    # TODO(Colin) more filter coverage.
 
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
