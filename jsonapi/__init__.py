@@ -24,7 +24,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+#DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 route_prefix = 'jsonapi'
 view_classes = {}
 
@@ -69,12 +69,14 @@ class DebugView:
         self.populate()
         return "reset"
 
-def create_jsonapi(config, models, engine = None, test_data = None):
+def create_jsonapi(config, models, get_dbsession,
+    engine = None, test_data = None):
     '''Auto-create jsonapi from module with sqlAlchemy models.
 
     Arguments:
         models (iterable): an iterable (or module) of model classes derived from DeclarativeMeta.
     '''
+
     config.add_notfound_view(error, renderer='json')
     config.add_forbidden_view(error, renderer='json')
     config.add_view(error, context=HTTPError, renderer='json')
@@ -117,11 +119,11 @@ def create_jsonapi(config, models, engine = None, test_data = None):
     # classes (inherit DeclarativeMeta). Create resource endpoints for these and
     # any relationships found.
     for model_class in model_list:
-        create_resource(config, model_class)
+        create_resource(config, model_class, get_dbsession = get_dbsession)
 
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
-def create_resource(config, model,
+def create_resource(config, model, get_dbsession,
         collection_name = None,
         allowed_fields = None,
     ):
@@ -152,7 +154,7 @@ def create_resource(config, model,
     if collection_name is None:
         collection_name = info.table_name
 
-    view = CollectionViewFactory(model, collection_name,
+    view = CollectionViewFactory(model, get_dbsession, collection_name,
         allowed_fields = allowed_fields)
     view_classes['collection_name'] = view
     view_classes[model] = view
@@ -211,6 +213,7 @@ def create_resource(config, model,
 
 def CollectionViewFactory(
         model,
+        get_dbsession,
         collection_name = None,
         allowed_fields = None
     ):
@@ -298,6 +301,7 @@ def CollectionViewFactory(
             Returns:
                 dict: single item.
             '''
+            DBSession = self.get_dbsession()
             q = DBSession.query(
                 self.model._jsonapi_id,
                 *self.requested_query_columns.values()
@@ -317,6 +321,7 @@ def CollectionViewFactory(
         def patch(self):
             '''Update an existing item from a partially defined representation.
             '''
+            DBSession = self.get_dbsession()
             data = self.request.json_body['data']
             req_id = self.request.matchdict['id']
             data_id = data.get('id')
@@ -337,6 +342,7 @@ def CollectionViewFactory(
             Returns:
                 dict: resource identifier for deleted object.
             '''
+            DBSession = self.get_dbsession()
             item = DBSession.query(self.model).get(self.request.matchdict['id'])
             if item:
                 try:
@@ -358,6 +364,7 @@ def CollectionViewFactory(
             Returns:
                 list: list of items.
             '''
+            DBSession = self.get_dbsession()
 
             # Set up the query
             q = DBSession.query(
@@ -378,6 +385,7 @@ def CollectionViewFactory(
             Returns:
                 Resource identifier for created item.
             '''
+            DBSession = self.get_dbsession()
             data = self.request.json_body['data']
             # Check to see if we're allowing client ids
             if self.request.registry.settings.get('jsonapi.allow_client_ids', 'false') != 'true' and 'id' in data:
@@ -493,6 +501,7 @@ def CollectionViewFactory(
         def relationships_post(self):
             '''Add new items to a relationship collection.
             '''
+            DBSession = self.get_dbsession()
             obj_id = self.request.matchdict['id']
             relname = self.request.matchdict['relationship']
             mapper = sqlalchemy.inspect(self.model).mapper
@@ -526,6 +535,7 @@ def CollectionViewFactory(
         def relationships_patch(self):
             '''Replace relationship collection.
             '''
+            DBSession = self.get_dbsession()
             obj_id = self.request.matchdict['id']
             relname = self.request.matchdict['relationship']
             mapper = sqlalchemy.inspect(self.model).mapper
@@ -572,6 +582,7 @@ def CollectionViewFactory(
         def relationships_delete(self):
             '''Delete items from relationship collection.
             '''
+            DBSession = self.get_dbsession()
             obj_id = self.request.matchdict['id']
             relname = self.request.matchdict['relationship']
             mapper = sqlalchemy.inspect(self.model).mapper
@@ -753,6 +764,7 @@ def CollectionViewFactory(
         def related_query(self, obj_id, relationship, id_only = False):
             '''Construct query for related objects.
             '''
+            DBSession = self.get_dbsession()
             rel = relationship
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
@@ -787,6 +799,7 @@ def CollectionViewFactory(
             Returns:
                 dict: item dictionary.
             '''
+            DBSession = self.get_dbsession()
             if include_path is None:
                 include_path = []
             model = self.model
@@ -1153,6 +1166,7 @@ def CollectionViewFactory(
 
     CollectionView.model = model
     CollectionView.collection_name = collection_name
+    CollectionView.get_dbsession = get_dbsession
 
     CollectionView.collection_route_name =\
         ':'.join((route_prefix, collection_name))

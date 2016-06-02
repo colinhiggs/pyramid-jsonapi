@@ -19,7 +19,7 @@ def main(global_config, **settings):
     """
     # The usual stuff from the pyramid alchemy scaffold.
     engine = engine_from_config(settings, 'sqlalchemy.')
-    jsonapi.DBSession.configure(bind=engine)
+    models.DBSession.configure(bind=engine)
     models.Base.metadata.bind = engine
     config = Configurator(settings=settings)
     config.add_static_view('static', 'static', cache_max_age=3600)
@@ -34,7 +34,9 @@ def main(global_config, **settings):
 
     # Lines specific to jsonapi.
     # Create the routes and views automagically.
-    jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models)
+    jsonapi.create_jsonapi_using_magic_and_pixie_dust(
+        config, models, lambda view: models.DBSession
+    )
 #    jsonapi.create_resource(config, models.Post, collection_name = 'posts2', allowed_fields = {'title', 'published_at'})
 
     # Back to the usual pyramid stuff.
