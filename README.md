@@ -59,9 +59,17 @@ from . import models # Your models module.
   # ...so adding adapters works fine.
   renderer.add_adapter(datetime.date, datetime_adapter)
   config.add_renderer('json', renderer)
-  config.add_renderer(None, renderer)
-  # Create the routes and views automagically.
-  jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models)
+  # Create the routes and views automagically:
+  jsonapi.create_jsonapi_using_magic_and_pixie_dust(
+    config, models, lambda view: models.DBSession
+  )
+  # The third argument above should be a callable which accepts a CollectionView
+  # instance as an argument and returns a database session. Notably the request
+  # is available as view.request, so if you're doing something like this post
+  # [https://metaclassical.com/what-the-zope-transaction-manager-means-to-me-and-you/]
+  # you can return the per-request session. In this case we just return the
+  # usual DBSession from the models module.
+
   # Routes and views are added imperatively, so no need for a scan - unless you
   # have defined other routes and views declaratively.
 ```
@@ -131,7 +139,7 @@ More or less the same as the quick preview above. Spelled out in a bit more deta
 1. Create the API end points from the model:
 
   ```python
-  jsonapi.create_jsonapi_using_magic_and_pixie_dust(models)
+  jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models, callback)
   ```
 
 That's pretty much it.
