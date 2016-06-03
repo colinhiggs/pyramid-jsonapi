@@ -451,7 +451,25 @@ class TestSpec(unittest.TestCase):
 
             * GET /articles/1?include=comments.author
         '''
-        # TODO(Colin) implement
+        r = self.test_app.get('/people/1?include=comments.author')
+        people_seen = set()
+        types_expected = {'people', 'comments'}
+        types_seen = set()
+        for item in r.json['included']:
+            # Shouldn't see any types other than comments and people.
+            self.assertIn(item['type'], types_expected)
+            types_seen.add(item['type'])
+
+            # We should only see people 1, and only once.
+            if item['type'] == 'people':
+                self.assertNotIn(item['id'], people_seen)
+                people_seen.add(item['id'])
+
+        # We should have seen at least one of each type.
+        self.assertIn('people', types_seen)
+        self.assertIn('comments', types_seen)
+
+
 
     def test_spec_multiple_include(self):
         '''Should return multiple related resource types.
