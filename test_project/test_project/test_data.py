@@ -17,10 +17,16 @@ def add_to_db():
     with open(str(module_file.parent / 'test_data.json')) as f:
         data = json.load(f)
     with transaction.manager:
-        for dataset in data['initial']:
+        for dataset in data['models']:
             model = getattr(models, dataset[0])
             for item in dataset[1]:
                 set_item(model, item)
+        for assoc_data in data['associations']:
+            table = getattr(models, assoc_data[0])
+            for assoc in assoc_data[1]:
+                rows = DBSession.query(table).filter_by(**assoc).all()
+                if not rows:
+                    DBSession.execute(table.insert(), assoc)
 
 def set_item(model, data):
     '''Make sure item exists in the db with attributes as specified in data.

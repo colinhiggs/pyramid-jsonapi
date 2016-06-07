@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    Table,
     Column,
     Index,
     Integer,
@@ -31,6 +32,13 @@ def IdRefColumn(reference, *args, **kwargs):
     '''Convenience function: the default Column for references to object ids.'''
     return Column(IdType, ForeignKey(reference), *args, **kwargs)
 
+authors_articles_assoc = Table(
+    'authors_articles_assoc',
+    Base.metadata,
+    IdRefColumn('people.id', name='author_id', primary_key=True),
+    IdRefColumn('articles_by_assoc.articles_by_assoc_id', name='article_id', primary_key=True)
+)
+
 class Person(Base):
     __tablename__ = 'people'
     id = IdColumn()
@@ -38,6 +46,11 @@ class Person(Base):
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
     comments = relationship('Comment', backref='author')
+    articles_by_assoc = relationship(
+        "ArticleByAssoc",
+        secondary=authors_articles_assoc,
+        backref="authors"
+    )
 
 class Blog(Base):
     __tablename__ = 'blogs'
@@ -63,3 +76,10 @@ class Comment(Base):
     content = Column(Text)
     author_id = IdRefColumn('people.id')
     post_id = IdRefColumn('posts.id')
+
+class ArticleByAssoc(Base):
+    __tablename__ = 'articles_by_assoc'
+    articles_by_assoc_id = IdColumn()
+    title = Column(Text, nullable=False)
+    content = Column(Text)
+    published_at = Column(DateTime)

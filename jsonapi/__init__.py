@@ -24,6 +24,10 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
+ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
+MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
+MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
+
 #DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 route_prefix = 'jsonapi'
 view_classes = {}
@@ -413,7 +417,8 @@ def CollectionViewFactory(
                             )
                         )
                     rel_class = rel.mapper.class_
-                    if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                    if rel.direction is ONETOMANY\
+                        or rel.direction is MANYTOMANY:
                         setattr(item, relname, [
                             DBSession.query(rel_class).get(rel_identifier['id'])
                                 for rel_identifier in reldata['data']
@@ -457,7 +462,7 @@ def CollectionViewFactory(
             qinfo = rel_view.collection_query_info(self.request)
             q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
-            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+            if rel.direction is ONETOMANY:
                 return rel_view.collection_return(q)
             else:
                 return rel_view.single_return(q)
@@ -486,7 +491,7 @@ def CollectionViewFactory(
             qinfo = rel_view.collection_query_info(self.request)
             q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
-            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+            if rel.direction is ONETOMANY:
                 return rel_view.collection_return(q, identifiers = True)
             else:
                 return rel_view.single_return(
@@ -514,7 +519,7 @@ def CollectionViewFactory(
                     relname,
                     self.collection_name
                 ))
-            if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE:
+            if rel.direction is MANYTOONE:
                 raise HTTPNotFound('Cannot POST to TOONE relationship link.')
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
@@ -551,7 +556,7 @@ def CollectionViewFactory(
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
             obj = DBSession.query(self.model).get(obj_id)
-            if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE:
+            if rel.direction is MANYTOONE:
                 resid = self.request.json_body['data']
                 if resid['type'] != rel_view.collection_name:
                     raise HTTPConflict(
@@ -595,7 +600,7 @@ def CollectionViewFactory(
                     relname,
                     self.collection_name
                 ))
-            if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE:
+            if rel.direction is MANYTOONE:
                 raise HTTPNotFound('Cannot DELETE to TOONE relationship link.')
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
@@ -778,7 +783,7 @@ def CollectionViewFactory(
                 q = q.options(
                     load_only(*rel_view.requested_query_columns.keys())
                 )
-            if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+            if rel.direction is ONETOMANY:
                 q = q.filter(obj_id == rem_col)
             else:
                 q = q.filter(rel_class._jsonapi_id == local_col)
@@ -841,7 +846,8 @@ def CollectionViewFactory(
                 if rel_path_str in self.requested_include_names():
                     rel_view = self.view_instance(rel_class)
                 local_col, rem_col = rel.local_remote_pairs[0]
-                if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
+                if rel.direction is ONETOMANY\
+                    or rel.direction is MANYTOMANY:
                     qinfo = self.collection_query_info(self.request)
                     limit_comps = [ 'limit', 'relationships', key ]
                     limit = self.default_limit
@@ -1118,7 +1124,7 @@ def CollectionViewFactory(
             return { pair[0].name: pair[0]
                 for rel in self.requested_relationships.values()
                     for pair in rel.local_remote_pairs
-                        if rel.direction is sqlalchemy.orm.interfaces.MANYTOONE
+                        if rel.direction is MANYTOONE
             }
 
         @property

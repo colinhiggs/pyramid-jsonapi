@@ -1,5 +1,5 @@
 {
-  "initial": [
+  "models": [
     [ "Person",
       [
         {
@@ -121,6 +121,32 @@
           "post_id": "4"
         }
 
+      ]
+    ],
+    [ "ArticleByAssoc",
+      [
+        {
+          "articles_by_assoc_id": "1",
+          "title": "Collaborative one.",
+          "content": "something important.",
+          "published_at": "2016-01-01"
+        },
+        {
+          "articles_by_assoc_id": "2",
+          "title": "Collaborative two.",
+          "content": "something important.",
+          "published_at": "2016-01-02"
+        }
+      ]
+    ]
+  ],
+  "associations": [
+    ["authors_articles_assoc",
+      [
+        { "author_id": "1", "article_id": "1" },
+        { "author_id": "2", "article_id": "1" },
+        { "author_id": "1", "article_id": "2" },
+        { "author_id": "2", "article_id": "2" }
       ]
     ]
   ]
