@@ -18,7 +18,7 @@ import types
 import importlib
 
 from zope.sqlalchemy import ZopeTransactionExtension
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, load_only
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
@@ -303,8 +303,9 @@ def CollectionViewFactory(
             '''
             DBSession = self.get_dbsession()
             q = DBSession.query(
-                self.model._jsonapi_id,
-                *self.requested_query_columns.values()
+                self.model
+            ).options(
+                load_only(*self.requested_query_columns.keys())
             ).filter(
                 self.model._jsonapi_id == self.request.matchdict['id']
             )
@@ -368,8 +369,9 @@ def CollectionViewFactory(
 
             # Set up the query
             q = DBSession.query(
-                self.model._jsonapi_id,
-                *self.requested_query_columns.values()
+                self.model
+            ).options(
+                load_only(*self.requested_query_columns.keys())
             )
             q = self.query_add_sorting(q)
             q = self.query_add_filtering(q)
@@ -769,12 +771,12 @@ def CollectionViewFactory(
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
             local_col, rem_col = rel.local_remote_pairs[0]
+            q = DBSession.query(rel_class)
             if id_only:
-                q = DBSession.query(rel_class._jsonapi_id)
+                q = q.options(load_only())
             else:
-                q = DBSession.query(
-                    rel_class._jsonapi_id,
-                    *rel_view.requested_query_columns.values()
+                q = q.options(
+                    load_only(*rel_view.requested_query_columns.keys())
                 )
             if rel.direction is sqlalchemy.orm.interfaces.ONETOMANY:
                 q = q.filter(obj_id == rem_col)
@@ -852,11 +854,14 @@ def CollectionViewFactory(
                     rels[key]['meta']['results']['limit'] = limit
                     if rel_view:
                         q = DBSession.query(
-                            rel_class._jsonapi_id,
-                            *rel_view.requested_query_columns.values()
+                            rel_class
+                        ).options(
+                            load_only(*rel_view.requested_query_columns.keys())
                         )
                     else:
-                        q = DBSession.query(rel_class._jsonapi_id)
+                        q = DBSession.query(
+                            rel_class
+                        ).options(load_only())
                     q = q.filter(item._jsonapi_id == rem_col)
                     rels[key]['meta']['results']['available'] = q.count()
                     q = q.limit(limit)
@@ -879,8 +884,9 @@ def CollectionViewFactory(
                 else:
                     if rel_view:
                         q = DBSession.query(
-                            rel_class._jsonapi_id,
-                            *rel_view.requested_query_columns.values()
+                            rel_class
+                        ).options(
+                            load_only(*rel_view.requested_query_columns.keys())
                         )
                         q = q.filter(rel_class._jsonapi_id == getattr(item, local_col.name))
                         ritem = None
