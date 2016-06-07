@@ -21,7 +21,7 @@ def add_to_db():
             model = getattr(models, dataset[0])
             for item in dataset[1]:
                 set_item(model, item)
-        for assoc_data in data['associations']:
+        for assoc_data in data.get('associations',[]):
             table = getattr(models, assoc_data[0])
             for assoc in assoc_data[1]:
                 rows = DBSession.query(table).filter_by(**assoc).all()
