@@ -671,7 +671,19 @@ class TestSpec(unittest.TestCase):
         type, an endpoint MUST NOT include additional fields in resource objects
         of that type in its response.
         '''
-        # TODO(Colin) implement
+        # Ask for just the title, content and author fields of a post.
+        r = self.test_app.get('/posts/1?fields[posts]=title,content,author')
+        data = r.json['data']
+
+        atts = data['attributes']
+        self.assertEqual(len(atts), 2)
+        self.assertIn('title', atts)
+        self.assertIn('content', atts)
+
+        rels = data['relationships']
+        self.assertEqual(len(rels), 1)
+        self.assertIn('author', rels)
+
 
     def test_spec_single_sort(self):
         '''Should return  collection sorted by correct field.
