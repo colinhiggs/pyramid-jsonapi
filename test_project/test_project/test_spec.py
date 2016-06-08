@@ -731,7 +731,11 @@ class TestSpec(unittest.TestCase):
 
             * GET /articles?sort=-created,title
         '''
-        # TODO(Colin) implement
+        data = self.test_app.get('/posts?sort=-content').json['data']
+        prev = 'zzz'
+        for item in data:
+            self.assertLessEqual(item['attributes']['content'], prev)
+            prev = item['attributes']['content']
 
     # TODO(Colin) repeat sort tests for other collection returning endpoints,
     # because: Note: This section applies to any endpoint that responds with a
