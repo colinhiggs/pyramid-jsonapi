@@ -6,7 +6,7 @@ Create a [JSON-API](http://jsonapi.org/) standard api from a database using the 
 
 New and still being developed. There are bugs: some known (see the [issues](https://github.com/colinhiggs/pyramid-jsonapi/issues) page), doubtless many unknown.
 
-**Currently working on:** unit tests representing the specification.
+**Currently working on:** unit tests representing the specification (`test_spec.py`).
 
 Right now it will take a typical sqlalchemy declarative-style models file and produce a working REST-ful web api conforming to the JSON-API standard, pretty much with the invocation of one function.
 
