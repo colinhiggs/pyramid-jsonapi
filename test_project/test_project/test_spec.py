@@ -693,7 +693,12 @@ class TestSpec(unittest.TestCase):
 
             * GET /people?sort=age
         '''
-        # TODO(Colin) implement
+        prev = ''
+        data = self.test_app.get('/posts?sort=content').json['data']
+        for item in data:
+            self.assertGreaterEqual(item['attributes']['content'], prev)
+            prev = item['attributes']['content']
+
 
     def test_spec_multiple_sort(self):
         '''Should return collection sorted by multiple fields, applied in order.
