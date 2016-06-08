@@ -693,8 +693,8 @@ class TestSpec(unittest.TestCase):
 
             * GET /people?sort=age
         '''
-        prev = ''
         data = self.test_app.get('/posts?sort=content').json['data']
+        prev = ''
         for item in data:
             self.assertGreaterEqual(item['attributes']['content'], prev)
             prev = item['attributes']['content']
@@ -709,7 +709,18 @@ class TestSpec(unittest.TestCase):
 
             * GET /people?sort=age,name
         '''
-        # TODO(Colin) implement
+        data = self.test_app.get('/posts?sort=content,id').json['data']
+        prev_content = ''
+        prev_id = 0
+        for item in data:
+            self.assertGreaterEqual(
+                item['attributes']['content'],
+                prev_content
+            )
+            self.assertGreaterEqual(item['id'], prev_id)
+            prev_content = item['attributes']['content']
+            prev_id = item['id']
+
 
     def test_spec_descending_sort(self):
         '''Should return results sorted by field in reverse order.
