@@ -138,6 +138,50 @@
           "published_at": "2016-01-02"
         }
       ]
+    ],
+    [ "ArticleByObj",
+      [
+        {
+          "articles_by_obj_id": "1",
+          "title": "Collaborative by obj one.",
+          "content": "something important.",
+          "published_at": "2016-02-01"
+        },
+        {
+          "articles_by_obj_id": "2",
+          "title": "Collaborative by obj two.",
+          "content": "something important.",
+          "published_at": "2016-02-02"
+        }
+      ]
+    ],
+    [ "ArticleAuthorAssociation",
+      [
+        {
+          "article_author_associations_id": "1",
+          "article_id": "1",
+          "author_id": "1",
+          "date_joined": "2016-01-01"
+        },
+        {
+          "article_author_associations_id": "2",
+          "article_id": "1",
+          "author_id": "2",
+          "date_joined": "2016-01-01"
+        },
+        {
+          "article_author_associations_id": "3",
+          "article_id": "2",
+          "author_id": "1",
+          "date_joined": "2016-01-01"
+        },
+        {
+          "article_author_associations_id": "4",
+          "article_id": "2",
+          "author_id": "2",
+          "date_joined": "2016-01-01"
+        }
+      ]
     ]
   ],
   "associations": [

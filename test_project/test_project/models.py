@@ -51,6 +51,10 @@ class Person(Base):
         secondary=authors_articles_assoc,
         backref="authors"
     )
+    articles_by_obj = relationship(
+        'ArticleAuthorAssociation',
+        backref='author'
+    )
 
 class Blog(Base):
     __tablename__ = 'blogs'
@@ -83,3 +87,27 @@ class ArticleByAssoc(Base):
     title = Column(Text, nullable=False)
     content = Column(Text)
     published_at = Column(DateTime)
+
+class ArticleAuthorAssociation(Base):
+    __tablename__ = 'article_author_associations'
+    article_author_associations_id = IdColumn()
+    article_id = IdRefColumn(
+        'articles_by_obj.articles_by_obj_id',
+        nullable=False
+    )
+    author_id = IdRefColumn(
+        'people.id',
+        nullable=False
+    )
+    date_joined = Column(DateTime)
+    __table_args__ = (
+        UniqueConstraint('article_id', 'author_id'),
+    )
+
+class ArticleByObj(Base):
+    __tablename__ = 'articles_by_obj'
+    articles_by_obj_id = IdColumn()
+    title = Column(Text, nullable=False)
+    content = Column(Text)
+    published_at = Column(DateTime)
+    authors = relationship('ArticleAuthorAssociation', backref='article')
