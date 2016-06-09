@@ -832,6 +832,14 @@ class TestSpec(unittest.TestCase):
         for item in data:
             self.assertTrue(item['attributes']['title'].endswith('main'))
 
+    def test_spec_filterop_contains(self):
+        '''Should return collection where titles contain "bob".'''
+        data = self.test_app.get(
+            '/posts?filter[title:contains]=bob'
+        ).json['data']
+        for item in data:
+            self.assertTrue('bob' in item['attributes']['title'])
+
     # TODO(Colin) more filter coverage.
 
     def test_api_errors_structure(self):
