@@ -810,6 +810,12 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(data[0]['type'], 'people')
         self.assertEqual(data[0]['attributes']['name'], 'alice')
 
+    def test_spec_filterop_ne(self):
+        '''Should return collection of people whose name is not alice.'''
+        data = self.test_app.get('/people?filter[name:ne]=alice').json['data']
+        for item in data:
+            self.assertNotEqual('alice', item['attributes']['name'])
+
     # TODO(Colin) more filter coverage.
 
     def test_api_errors_structure(self):
