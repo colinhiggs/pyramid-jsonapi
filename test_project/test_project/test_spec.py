@@ -772,7 +772,13 @@ class TestSpec(unittest.TestCase):
         Keys MUST either be omitted or have a null value to indicate that a
         particular link is unavailable.
         '''
-        # TODO(Colin) implement
+        r = self.test_app.get('/posts?page[limit]=1')
+        available = r.json['meta']['results']['available']
+        json = self.test_app.get(
+            '/posts?page[limit]=2&page[offset]=' + str(available - 2)
+        ).json
+        self.assertEqual(len(json['data']), 2)
+        self.assertNotIn('next', json['links'])
 
     def test_spec_pagination_order(self):
         '''Pages (and results) should order restults as per order param.
