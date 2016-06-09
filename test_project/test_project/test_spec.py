@@ -786,7 +786,14 @@ class TestSpec(unittest.TestCase):
         Concepts of order, as expressed in the naming of pagination links, MUST
         remain consistent with JSON API’s sorting rules.
         '''
-        # TODO(Colin) implement
+        data = self.test_app.get(
+            '/posts?page[limit]=4&sort=content&fields[posts]=content'
+        ).json['data']
+        self.assertEqual(len(data), 4)
+        prev = ''
+        for item in data:
+            self.assertGreaterEqual(item['attributes']['content'], prev)
+            prev = item['attributes']['content']
 
     # TODO(Colin) repeat sort tests for other collection returning endpoints,
     # because: Note: This section applies to any endpoint that responds with a
