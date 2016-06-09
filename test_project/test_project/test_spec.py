@@ -721,7 +721,6 @@ class TestSpec(unittest.TestCase):
             prev_content = item['attributes']['content']
             prev_id = item['id']
 
-
     def test_spec_descending_sort(self):
         '''Should return results sorted by field in reverse order.
 
@@ -742,7 +741,7 @@ class TestSpec(unittest.TestCase):
     # resource collection as primary data, regardless of the request type
 
     def test_spec_pagination_links(self):
-        '''
+        '''Should provide correct pagination links.
 
         A server MAY provide links to traverse a paginated data set ("pagination
         links").
@@ -760,7 +759,12 @@ class TestSpec(unittest.TestCase):
             * prev: the previous page of data
             * next: the next page of data
         '''
-        # TODO(Colin) implement
+        json = self.test_app.get('/posts?page[limit]=2&page[offset]=2').json
+        self.assertEqual(len(json['data']), 2)
+        self.assertIn('first', json['links'])
+        self.assertIn('last', json['links'])
+        self.assertIn('prev', json['links'])
+        self.assertIn('next', json['links'])
 
     def test_spec_pagination_unavailable_links(self):
         '''Next page link should not be available
