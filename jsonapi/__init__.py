@@ -380,9 +380,18 @@ def CollectionViewFactory(
             q = self.query_add_sorting(q)
             q = self.query_add_filtering(q)
             qinfo = self.collection_query_info(self.request)
-            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
+            try:
+                count = q.count()
+            except sqlalchemy.exc.ProgrammingError as e:
+                raise HTTPBadRequest(
+                    "Could not use operator '{}' with field '{}'".format(
+                        op, prop.name
+                    )
+                )
+            q = (qinfo['page[offset]'])
+            q = q.limit(qinfo['page[limit]'])
 
-            return self.collection_return(q)
+            return self.collection_return(q, count=count)
 
         @jsonapi_view
         def collection_post(self):
@@ -457,13 +466,22 @@ def CollectionViewFactory(
 
             # Set up the query
             q = self.related_query(obj_id, rel)
-            q = rel_view.query_add_sorting(q)
-            q = rel_view.query_add_filtering(q)
-            qinfo = rel_view.collection_query_info(self.request)
-            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
             if rel.direction is ONETOMANY:
-                return rel_view.collection_return(q)
+                q = rel_view.query_add_sorting(q)
+                q = rel_view.query_add_filtering(q)
+                qinfo = rel_view.collection_query_info(self.request)
+                try:
+                    count = q.count()
+                except sqlalchemy.exc.ProgrammingError as e:
+                    raise HTTPBadRequest(
+                        "Could not use operator '{}' with field '{}'".format(
+                            op, prop.name
+                        )
+                    )
+                q = q.offset(qinfo['page[offset]'])
+                q = q.limit(qinfo['page[limit]'])
+                return rel_view.collection_return(q, count=count)
             else:
                 return rel_view.single_return(q)
 
@@ -486,13 +504,26 @@ def CollectionViewFactory(
 
             # Set up the query
             q = self.related_query(obj_id, rel, id_only = True)
-            q = rel_view.query_add_sorting(q)
-            q = rel_view.query_add_filtering(q)
-            qinfo = rel_view.collection_query_info(self.request)
-            q = q.offset(qinfo['page[offset]']).limit(qinfo['page[limit]'])
 
             if rel.direction is ONETOMANY:
-                return rel_view.collection_return(q, identifiers = True)
+                q = rel_view.query_add_sorting(q)
+                q = rel_view.query_add_filtering(q)
+                qinfo = rel_view.collection_query_info(self.request)
+                try:
+                    count = q.count()
+                except sqlalchemy.exc.ProgrammingError as e:
+                    raise HTTPBadRequest(
+                        "Could not use operator '{}' with field '{}'".format(
+                            op, prop.name
+                        )
+                    )
+                q = q.offset(qinfo['page[offset]'])
+                q = q.limit(qinfo['page[limit]'])
+                return rel_view.collection_return(
+                    q,
+                    count=count,
+                    identifiers = True
+                )
             else:
                 return rel_view.single_return(
                     q,
@@ -638,7 +669,7 @@ def CollectionViewFactory(
                     ret['included'] = [obj for obj in included.values()]
             return ret
 
-        def collection_return(self, q, identifiers = False):
+        def collection_return(self, q, count = None, identifiers = False):
             '''Populate return dictionary for collections.
             '''
             # Get info for query.
@@ -647,15 +678,16 @@ def CollectionViewFactory(
             # Add information to the return dict
             ret = { 'meta': {'results': {} } }
 
-            # Full count.
-            try:
-                ret['meta']['results']['available'] = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
+            if count is None:
+                try:
+                    count = q.count()
+                except sqlalchemy.exc.ProgrammingError as e:
+                    raise HTTPBadRequest(
+                        "Could not use operator '{}' with field '{}'".format(
+                            op, prop.name
+                        )
                     )
-                )
+            ret['meta']['results']['available'] = count
 
             # Pagination links
             ret['links'] = self.pagination_links(
@@ -1058,7 +1090,7 @@ def CollectionViewFactory(
 
             # Next link.
             next_offset = qinfo['page[offset]'] + qinfo['page[limit]']
-            if next_offset < count:
+            if count is None or next_offset < count:
                 _query['page[offset]'] = next_offset
                 links['next'] = req.route_url(route_name,_query=_query,**req.matchdict)
 
@@ -1071,8 +1103,10 @@ def CollectionViewFactory(
                 links['prev'] = req.route_url(route_name, _query=_query, **req.matchdict)
 
             # Last link.
-            _query['page[offset]'] = ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
-            links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
+            if count is not None:
+                _query['page[offset]'] =\
+                    ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
+                links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
             return links
 
         @functools.lru_cache(maxsize=128)
