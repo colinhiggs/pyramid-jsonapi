@@ -816,6 +816,15 @@ class TestSpec(unittest.TestCase):
         for item in data:
             self.assertNotEqual('alice', item['attributes']['name'])
 
+    def test_spec_filterop_startswith(self):
+        '''Should return collection where titles start with "post1".'''
+        data = self.test_app.get(
+            '/posts?filter[title:startswith]=post1'
+        ).json['data']
+        for item in data:
+            self.assertTrue(item['attributes']['title'].startswith('post1'))
+
+
     # TODO(Colin) more filter coverage.
 
     def test_api_errors_structure(self):
