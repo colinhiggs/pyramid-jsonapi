@@ -388,7 +388,7 @@ def CollectionViewFactory(
                         op, prop.name
                     )
                 )
-            q = (qinfo['page[offset]'])
+            q = q.offset(qinfo['page[offset]'])
             q = q.limit(qinfo['page[limit]'])
 
             return self.collection_return(q, count=count)
