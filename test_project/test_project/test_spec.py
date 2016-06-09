@@ -799,7 +799,7 @@ class TestSpec(unittest.TestCase):
     # because: Note: This section applies to any endpoint that responds with a
     # resource collection as primary data, regardless of the request type
 
-    def test_spec_filter(self):
+    def test_spec_filterop_eq(self):
         '''Should return collection with just the alice people object.
 
         The filter query parameter is reserved for filtering data. Servers and
