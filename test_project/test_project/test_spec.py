@@ -824,6 +824,13 @@ class TestSpec(unittest.TestCase):
         for item in data:
             self.assertTrue(item['attributes']['title'].startswith('post1'))
 
+    def test_spec_filterop_endswith(self):
+        '''Should return collection where titles end with "main".'''
+        data = self.test_app.get(
+            '/posts?filter[title:endswith]=main'
+        ).json['data']
+        for item in data:
+            self.assertTrue(item['attributes']['title'].endswith('main'))
 
     # TODO(Colin) more filter coverage.
 
