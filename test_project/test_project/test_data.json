@@ -10,7 +10,8 @@
           "id": "2",
           "name": "bob"
         }
-      ]
+      ],
+      {"id_seq": "*"}
     ],
     [ "Blog",
       [
@@ -34,7 +35,8 @@
           "title": "second: bob",
           "owner_id": "2"
         }
-      ]
+      ],
+      {"id_seq": "*"}
     ],
     [ "Post",
       [
@@ -86,7 +88,8 @@
           "author_id": "2",
           "blog_id": "4"
         }
-      ]
+      ],
+      {"id_seq": "*"}
     ],
     [ "Comment",
       [
@@ -120,8 +123,8 @@
           "author_id": null,
           "post_id": "4"
         }
-
-      ]
+      ],
+      {"id_seq": "*"}
     ],
     [ "ArticleByAssoc",
       [
@@ -137,7 +140,8 @@
           "content": "something important.",
           "published_at": "2016-01-02"
         }
-      ]
+      ],
+      {"id_seq": "*"}
     ],
     [ "ArticleByObj",
       [
@@ -153,7 +157,8 @@
           "content": "something important.",
           "published_at": "2016-02-02"
         }
-      ]
+      ],
+      {"id_seq": "*"}
     ],
     [ "ArticleAuthorAssociation",
       [
@@ -181,7 +186,8 @@
           "author_id": "2",
           "date_joined": "2016-01-01"
         }
-      ]
+      ],
+      {"id_seq": "*"}
     ]
   ],
   "associations": [
