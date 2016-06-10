@@ -1105,7 +1105,8 @@ def CollectionViewFactory(
             # Last link.
             if count is not None:
                 _query['page[offset]'] =\
-                    ((count - 1) // qinfo['page[limit]']) * qinfo['page[limit]']
+                    (max((count - 1),0) // qinfo['page[limit]'])\
+                    * qinfo['page[limit]']
                 links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
             return links
 
