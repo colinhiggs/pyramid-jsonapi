@@ -931,7 +931,18 @@ class TestSpec(unittest.TestCase):
 
     def test_spec_post_must_have_type(self):
         '''Server should respond with 409 (Conflict) if type not specified.'''
-        self.test_app.post_json('/people', '')
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
 
     ###############################################
     # PATCH tests.
