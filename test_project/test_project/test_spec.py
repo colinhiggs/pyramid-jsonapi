@@ -905,6 +905,34 @@ class TestSpec(unittest.TestCase):
     # POST tests.
     ###############################################
 
+    def test_spec_post_collection(self):
+        '''Should create a new person object.'''
+        # Make sure there is no test person.
+        data = self.test_app.get('/people?filter[name:eq]=test').json['data']
+        self.assertEqual(len(data),0)
+
+        # Try adding a test person.
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        )
+
+        # Make sure they are there.
+        data = self.test_app.get('/people?filter[name:eq]=test').json['data']
+        self.assertEqual(len(data),1)
+
+    def test_spec_post_must_have_type(self):
+        '''Server should respond with 409 (Conflict) if type not specified.'''
+        self.test_app.post_json('/people', '')
+
     ###############################################
     # PATCH tests.
     ###############################################
