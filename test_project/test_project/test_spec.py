@@ -930,8 +930,28 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(len(data),1)
 
     def test_spec_post_must_have_type(self):
-        '''Server should respond with 409 (Conflict) if type not specified.'''
-        self.test_app.post_json('/people', '')
+        '''Server should respond with 409 (Conflict) if type not specified.
+
+        Note: The type member is required in every resource object throughout
+        requests and responses in JSON API. There are some cases, such as when
+        POSTing to an endpoint representing heterogenous data, when the type
+        could not be inferred from the endpoint. However, picking and choosing
+        when it is required would be confusing; it would be hard to remember
+        when it was required and when it was not. Therefore, to improve
+        consistency and minimize confusion, type is always required.
+        '''
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
 
     ###############################################
     # PATCH tests.
