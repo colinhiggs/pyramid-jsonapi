@@ -855,6 +855,20 @@ class TestSpec(unittest.TestCase):
             )
             self.assertLess(date, ref_date)
 
+    def test_spec_filterop_gt(self):
+        '''Should return posts with published_at greater than 2015-01-03.'''
+        data = self.test_app.get(
+            '/posts?filter[published_at:gt]=2015-01-03'
+        ).json['data']
+        ref_date = datetime.datetime(2015,1,3)
+        for item in data:
+            #TODO(Colin) investigate more robust way of parsing date.
+            date = datetime.datetime.strptime(
+                item['attributes']['published_at'],
+                "%Y-%m-%dT%H:%M:%S"
+            )
+            self.assertGreater(date, ref_date)
+
     # TODO(Colin) more filter coverage.
 
     def test_api_errors_structure(self):
