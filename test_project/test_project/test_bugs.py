@@ -45,3 +45,19 @@ class TestBugs(unittest.TestCase):
     def tearDown(self):
         transaction.abort()
         Base.metadata.drop_all(self.engine)
+
+    def test_19_last_negative_offset(self):
+        '''last link should not have negative offset.
+
+        'last' link has negative offset if zero results are returned
+        '''
+        # Need an empty collection: use a filter that will not match.
+        last = self.test_app.get(
+            '/posts?filter[title:eq]=frog'
+        ).json['links']['last']
+        offset = int(
+            urllib.parse.parse_qs(
+                urllib.parse.urlparse(last).query
+            )['page[offset]'][0]
+        )
+        self.assertGreaterEqual(offset, 0)
