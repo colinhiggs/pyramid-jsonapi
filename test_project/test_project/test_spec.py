@@ -897,8 +897,6 @@ class TestSpec(unittest.TestCase):
             )
             self.assertGreaterEqual(date, ref_date)
 
-    # TODO(Colin) more filter coverage.
-
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
