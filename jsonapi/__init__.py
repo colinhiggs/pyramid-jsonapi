@@ -445,7 +445,12 @@ def CollectionViewFactory(
             except sqlalchemy.exc.IntegrityError as e:
                 raise HTTPConflict(e.args[0])
             self.request.response.status_code = 201
-            return {'data': { 'type': self.collection_name, 'id': item._jsonapi_id } }
+            return {
+                'data': {
+                    'type': self.collection_name,
+                    'id': str(item._jsonapi_id)
+                }
+            }
 
         @jsonapi_view
         def related_get(self):

@@ -49,7 +49,7 @@ class TestBugs(unittest.TestCase):
     def test_19_last_negative_offset(self):
         '''last link should not have negative offset.
 
-        'last' link has negative offset if zero results are returned
+        #19: 'last' link has negative offset if zero results are returned
         '''
         # Need an empty collection: use a filter that will not match.
         last = self.test_app.get(
@@ -61,3 +61,22 @@ class TestBugs(unittest.TestCase):
             )['page[offset]'][0]
         )
         self.assertGreaterEqual(offset, 0)
+
+    def test_20_non_string_id(self):
+        '''Creating single object should not result in integer id.
+
+        #20: creating single object returns non string id
+        '''
+        data = self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']
+        self.assertIsInstance(data['id'], str)
