@@ -2,6 +2,7 @@ import unittest
 import transaction
 import testing.postgresql
 import webtest
+import datetime
 from pyramid.paster import get_app
 from sqlalchemy import create_engine
 
@@ -839,6 +840,20 @@ class TestSpec(unittest.TestCase):
         ).json['data']
         for item in data:
             self.assertTrue('bob' in item['attributes']['title'])
+
+    def test_spec_filterop_lt(self):
+        '''Should return posts with published_at less than 2015-01-03.'''
+        data = self.test_app.get(
+            '/posts?filter[published_at:lt]=2015-01-03'
+        ).json['data']
+        ref_date = datetime.datetime(2015,1,3)
+        for item in data:
+            #TODO(Colin) investigate more robust way of parsing date.
+            date = datetime.datetime.strptime(
+                item['attributes']['published_at'],
+                "%Y-%m-%dT%H:%M:%S"
+            )
+            self.assertLess(date, ref_date)
 
     # TODO(Colin) more filter coverage.
 
