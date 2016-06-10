@@ -91,8 +91,3 @@ def set_item(model, data, opts):
                         )
                 ).scalar()
                 seqval = seqval - 1
-            print('*************************************')
-            print('item added as ' + str(item_id))
-            print('seq {} at {}'.format(
-                seq_name, seqval
-            ))
