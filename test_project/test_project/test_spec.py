@@ -953,6 +953,39 @@ class TestSpec(unittest.TestCase):
             status=409
         )
 
+    def test_spec_post_with_relationships(self):
+        '''Should create a blog belonging to alice.
+
+        If a relationship is provided in the relationships member of the
+        resource object, its value MUST be a relationship object with a data
+        member. The value of this key represents the linkage the new resource is
+        to have.
+        '''
+        # Add a test blog with owner alice.
+        created_id = self.test_app.post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'owner': {
+                            'data': {'type': 'people', 'id': '1'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
+        # Make sure they are there.
+        data = self.test_app.get(
+            '/blogs/{}'.format(created_id)
+        ).json['data']
+        self.assertEqual(data['id'], created_id)
+
     ###############################################
     # PATCH tests.
     ###############################################
