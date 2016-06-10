@@ -46,6 +46,10 @@ class TestSpec(unittest.TestCase):
         transaction.abort()
         Base.metadata.drop_all(self.engine)
 
+    ###############################################
+    # GET tests.
+    ###############################################
+
     def test_spec_server_content_type(self):
         '''Response should have correct content type.
 
@@ -896,6 +900,22 @@ class TestSpec(unittest.TestCase):
                 "%Y-%m-%dT%H:%M:%S"
             )
             self.assertGreaterEqual(date, ref_date)
+
+    ###############################################
+    # POST tests.
+    ###############################################
+
+    ###############################################
+    # PATCH tests.
+    ###############################################
+
+    ###############################################
+    # DELETE tests.
+    ###############################################
+
+    ###############################################
+    # Error tests.
+    ###############################################
 
     def test_api_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
