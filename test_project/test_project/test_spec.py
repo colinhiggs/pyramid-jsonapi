@@ -986,6 +986,34 @@ class TestSpec(unittest.TestCase):
         ).json['data']
         self.assertEqual(data['id'], created_id)
 
+    def test_spec_post_with_id(self):
+        '''Should create a person object with id 1000.
+
+        A server MAY accept a client-generated ID along with a request to create
+        a resource. An ID MUST be specified with an id key. The client SHOULD
+        use a properly generated and formatted UUID as described in RFC 4122
+
+        Comment: jsonapi.allow_client_ids is set in the ini file, so we should
+        be able to create objects with ids.  The id strategy in test_project
+        isn't RFC4122 UUID, but we're not enforcing that since there may be
+        other globally unique id strategies in use.
+        '''
+        data = self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'id': '1000',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']
+        self.assertEqual(data['id'],'1000')
+        self.assertEqual(data['type'],'people')
+
     ###############################################
     # PATCH tests.
     ###############################################
