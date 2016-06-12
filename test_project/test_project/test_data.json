@@ -9,6 +9,10 @@
         {
           "id": "2",
           "name": "bob"
+        },
+        {
+          "id": "3",
+          "name": "mcguffin"
         }
       ],
       {"id_seq": "*"}
