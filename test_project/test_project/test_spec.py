@@ -1053,6 +1053,41 @@ class TestSpec(unittest.TestCase):
             found_blog_ids.add(blog['id'])
         self.assertEqual(created_blog_ids, found_blog_ids)
 
+    def test_spec_post_with_relationships_manytomany_table(self):
+        '''Should create an article_by_assoc with two authors.
+        '''
+        # Create article_by_assoc with authors alice and bob.
+        article_id = self.test_app.post_json(
+            '/articles_by_assoc',
+            {
+                'data': {
+                    "type": "articles_by_assoc",
+                    "attributes": {
+                        "title": "test1"
+                    },
+                    "relationships": {
+                        "authors": {
+                            "data": [
+                                {"type": "people", "id": "1"},
+                                {"type": "people", "id": "2"}
+                            ]
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
+        # GET it back and check that authors is correct.
+        data = self.test_app.get(
+            '/articles_by_assoc/{}'.format(article_id)
+        ).json['data']
+        created_people_ids = {"1", "2"}
+        found_people_ids = {
+            person['id'] for person in data['relationships']['authors']['data']
+        }
+        self.assertEqual(created_people_ids, found_people_ids)
+
     def test_spec_post_with_id(self):
         '''Should create a person object with id 1000.
 
