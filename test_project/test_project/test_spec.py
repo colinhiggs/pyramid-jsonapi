@@ -953,7 +953,7 @@ class TestSpec(unittest.TestCase):
             status=409
         )
 
-    def test_spec_post_with_relationships(self):
+    def test_spec_post_with_relationships_manytoone(self):
         '''Should create a blog belonging to alice.
 
         If a relationship is provided in the relationships member of the
