@@ -986,6 +986,73 @@ class TestSpec(unittest.TestCase):
         ).json['data']
         self.assertEqual(data['id'], created_id)
 
+    def test_spec_post_with_relationships_onetomany(self):
+        '''Should create a two new blogs and a user who owns them.
+
+        If a relationship is provided in the relationships member of the
+        resource object, its value MUST be a relationship object with a data
+        member. The value of this key represents the linkage the new resource is
+        to have.
+        '''
+        # Add two test blogs first.
+        blog1_id = self.test_app.post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test1'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+        blog2_id = self.test_app.post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
+        # Add a test user who owns both blogs.
+        person_id = self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    },
+                    'relationships': {
+                        'blogs': {
+                            'data': [
+                                {'type': 'blogs', 'id': str(blog1_id)},
+                                {'type': 'blogs', 'id': str(blog2_id)}
+                            ]
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
+        # Make sure the person exists and does own the blogs.
+        data = self.test_app.get(
+            '/people/{}'.format(person_id)
+        ).json['data']
+        self.assertEqual(data['id'], person_id)
+        created_blog_ids = {blog1_id, blog2_id}
+        found_blog_ids = set()
+        for blog in data['relationships']['blogs']['data']:
+            found_blog_ids.add(blog['id'])
+        self.assertEqual(created_blog_ids, found_blog_ids)
+
     def test_spec_post_with_id(self):
         '''Should create a person object with id 1000.
 
