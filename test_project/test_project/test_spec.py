@@ -1088,6 +1088,79 @@ class TestSpec(unittest.TestCase):
         }
         self.assertEqual(created_people_ids, found_people_ids)
 
+    def test_spec_post_with_relationships_manytomany_object(self):
+        '''Should create an article_by_obj with two authors.
+        '''
+        # Create the article_by_obj.
+        article_id = self.test_app.post_json(
+            '/articles_by_obj',
+            {
+                'data': {
+                    "type": "articles_by_obj",
+                    "attributes": {
+                        "title": "test1"
+                    },
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
+        # Create the relationships to the two authors.
+        rel1_id = self.test_app.post_json(
+            '/article_author_associations',
+            {
+                'data': {
+                    "type": "article_author_associations",
+                    "attributes": {
+                        "date_joined": "2016-01-03"
+                    },
+                    "relationships": {
+                        "author": {
+                            "data": {"type": "people", "id": "3"}
+                        },
+                        "article": {
+                            "data": {"type": "articles", "id": article_id}
+                        }
+                    }
+                }
+            }
+        ).json['data']['id']
+        rel2_id = self.test_app.post_json(
+            '/article_author_associations',
+            {
+                'data': {
+                    "type": "article_author_associations",
+                    "attributes": {
+                        "date_joined": "2016-01-02"
+                    },
+                    "relationships": {
+                        "author": {
+                            "data": {"type": "people", "id": "2"}
+                        },
+                        "article": {
+                            "data": {"type": "articles", "id": article_id}
+                        }
+                    }
+                }
+            }
+        ).json['data']['id']
+
+        # Check that the article has authors 1 and 3
+        data = self.test_app.get(
+            '/articles_by_obj/{}'.format(article_id)
+        ).json['data']
+        assoc_ids = {
+            ass['id'] for ass in
+                data['relationships']['author_associations']['data']
+        }
+        author_ids = set()
+        for assoc_id in assoc_ids:
+            data = self.test_app.get(
+                '/article_author_associations/{}'.format(assoc_id)
+            ).json['data']
+            author_ids.add(data['relationships']['author']['data']['id'])
+        self.assertEqual(author_ids, {'3', '2'})
+
     def test_spec_post_with_id(self):
         '''Should create a person object with id 1000.
 
