@@ -905,7 +905,10 @@ def CollectionViewFactory(
                         q = DBSession.query(
                             rel_class
                         ).options(load_only())
-                    q = q.filter(item._jsonapi_id == rem_col)
+                    if rel.direction is ONETOMANY:
+                        q = q.filter(item._jsonapi_id == rem_col)
+                    else:
+                        q = q.filter(rel_class._jsonapi_id == rel.secondaryjoin.right)
                     rels[key]['meta']['results']['available'] = q.count()
                     q = q.limit(limit)
                     rels[key]['data'] = []
