@@ -51,7 +51,7 @@ class Person(Base):
         secondary=authors_articles_assoc,
         backref="authors"
     )
-    articles_by_obj = relationship(
+    article_associations = relationship(
         'ArticleAuthorAssociation',
         backref='author'
     )
@@ -110,4 +110,7 @@ class ArticleByObj(Base):
     title = Column(Text, nullable=False)
     content = Column(Text)
     published_at = Column(DateTime)
-    authors = relationship('ArticleAuthorAssociation', backref='article')
+    author_associations = relationship(
+        'ArticleAuthorAssociation',
+        backref='article'
+    )
