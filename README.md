@@ -337,4 +337,63 @@ Sorting by multiple attributes (e.g. `sort=title,content`) and sorting by attrib
 
 A sort on id is assumed unless the sort parameter is specified.
 
-## `GET` a Resource
+### Pagination
+
+You can specify the pagination limit and offset:
+
+```bash
+$ http GET http://localhost:6543/posts?fields[posts]=title\&page[limit]=2\&page[offset]=2
+```
+We asked for only the `title` field above so that the results would be more compact...
+
+```json
+{
+  "data": [
+    {
+      "attributes": {
+        "title": "post1: alice.second"
+      },
+      "id": "3",
+      "links": {
+        "self": "http://localhost:6543/posts/3"
+      },
+      "relationships": {},
+      "type": "posts"
+    },
+    {
+      "attributes": {
+        "title": "post1: bob.main"
+      },
+      "id": "4",
+      "links": {
+        "self": "http://localhost:6543/posts/4"
+      },
+      "relationships": {},
+      "type": "posts"
+    }
+  ],
+  "links": {
+    "first": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=0",
+    "last": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=4",
+    "next": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=4",
+    "prev": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=0",
+    "self": "http://localhost:6543/posts?fields[posts]=title&page[limit]=2&page[offset]=2"
+  },
+  "meta": {
+    "results": {
+      "available": 6,
+      "limit": 2,
+      "offset": 2,
+      "returned": 2
+    }
+  }
+}
+```
+
+There's a default page limit which is used if the limit is not specified and a maximum limit that the server will allow. Both of these can be set in the ini file.
+
+### Filtering
+
+
+
+## `GET` a Single Resource
