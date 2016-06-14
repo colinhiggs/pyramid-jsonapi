@@ -6,7 +6,7 @@ Create a [JSON-API](http://jsonapi.org/) standard api from a database using the 
 
 New and still being developed. There are bugs: some known (see the [issues](https://github.com/colinhiggs/pyramid-jsonapi/issues) page), doubtless many unknown.
 
-**Currently working on:** unit tests representing the specification (`test_spec.py`).
+**Currently working on:** unit tests representing the specification (`test_spec.py`); fixing some bugs found via failed tests.
 
 Right now it will take a typical sqlalchemy declarative-style models file and produce a working REST-ful web api conforming to the JSON-API standard, pretty much with the invocation of one function.
 
@@ -118,7 +118,7 @@ You don't need a views.py unless you have some other routes and views.
 
 Yes, there really is a method called `create_jsonapi_using_magic_and_pixie_dust()`. No, you don't *have* to call it that. If you are feeling more sensible you can use the synonym `create_jsonapi()`.
 
-# Usage
+# Building the API at the Server End.
 
 ## Auto-creating a JSON-API
 
@@ -170,3 +170,171 @@ If you need deeper customisation of your JSON-API, you will need to construct it
 ### <a name="create_resource"></a>Resource Creation On-the-fly: `create_resource()`
 
 #### `create_resource()` Parameters
+
+# <a name="client"></a>Consuming the API from the Client End
+
+## `GET` a Collection
+
+### Basic Fetching
+
+```bash
+$ http --verbose GET http://localhost:6543/posts
+```
+
+```json
+{
+  "data": [
+    {
+      "attributes": {
+        "content": "something insightful",
+        "published_at": "2015-01-01T00:00:00",
+        "title": "post1: alice.main"
+      },
+      "id": "1",
+      "links": {
+        "self": "http://localhost:6543/posts/1"
+      },
+      "relationships": {
+        "author": {
+          "data": {
+            "id": "1",
+            "type": "people"
+          },
+          "links": {
+            "related": "http://localhost:6543/posts/1/author",
+            "self": "http://localhost:6543/posts/1/relationships/author"
+          },
+          "meta": {
+            "direction": "MANYTOONE",
+            "results": {}
+          }
+        },
+        "blog": {
+          "data": {
+            "id": "1",
+            "type": "blogs"
+          },
+          "links": {
+            "related": "http://localhost:6543/posts/1/blog",
+            "self": "http://localhost:6543/posts/1/relationships/blog"
+          },
+          "meta": {
+            "direction": "MANYTOONE",
+            "results": {}
+          }
+        },
+        "comments": {
+          "data": [],
+          "links": {
+            "related": "http://localhost:6543/posts/1/comments",
+            "self": "http://localhost:6543/posts/1/relationships/comments"
+          },
+          "meta": {
+            "direction": "ONETOMANY",
+            "results": {
+              "available": 0,
+              "limit": 10,
+              "returned": 0
+            }
+          }
+        }
+      },
+      "type": "posts"
+    },
+    ... 6 results ...
+  ],
+  "links": {
+    "first": "http://localhost:6543/posts?sort=id&page%5Boffset%5D=0",
+    "last": "http://localhost:6543/posts?sort=id&page%5Boffset%5D=0",
+    "self": "http://localhost:6543/posts"
+  },
+  "meta": {
+    "results": {
+      "available": 6,
+      "limit": 10,
+      "offset": 0,
+      "returned": 6
+    }
+  }
+}  
+```
+
+Note that we have:
+* `data` which is an array of comments objects, each with:
+  * `attributes`, as expected
+  * a `links` object with:
+    * a `self` link
+  * relationship objects for each relationship with:
+    * `data` with resource identifiers for related objects
+    * `self` and `related` links
+    * some other information about the relationship in `meta`
+* `links` with:
+  * `self` and
+  * `pagination` links
+* `meta` with:
+  * some extra information about the number of results returned.
+
+### Sparse Fieldsets
+
+We can ask only for certain fields (attributes and relationships are collectively known as fields).
+
+Use the `fields` parameter, parameterized by collection name (fields[collection]), with the value set as a comma separated list of field names.
+
+So, to return only the title attribute and author relationship of each post:
+
+```bash
+$ http GET http://localhost:6543/posts?fields[posts]=title,author
+```
+
+The resulting json has a `data` element with a list of objects something like this:
+
+```json
+{
+  "attributes": {
+    "title": "post1: bob.second"
+  },
+  "id": "6",
+  "links": {
+    "self": "http://localhost:6543/posts/6"
+  },
+  "relationships": {
+    "author": {
+      "data": {
+        "id": "2",
+        "type": "people"
+      },
+      "links": {
+        "related": "http://localhost:6543/posts/6/author",
+        "self": "http://localhost:6543/posts/6/relationships/author"
+      },
+      "meta": {
+        "direction": "MANYTOONE",
+        "results": {}
+      }
+    }
+  },
+  "type": "posts"
+}
+```
+
+### Sorting
+
+You can specify a sorting attribute and order with the sort query parameter.
+
+Sort posts by title:
+
+```bash
+$ http GET http://localhost:6543/posts?sort=title
+```
+
+and in reverse:
+
+```bash
+$ http GET http://localhost:6543/posts?sort=-title
+```
+
+Sorting by multiple attributes (e.g. `sort=title,content`) and sorting by attributes of related objects (`sort=authot.name`) are not currently supported.
+
+A sort on id is assumed unless the sort parameter is specified.
+
+## `GET` a Resource
