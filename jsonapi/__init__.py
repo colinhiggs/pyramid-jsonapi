@@ -855,9 +855,12 @@ class CollectionViewBase:
             for key in self.requested_attributes.keys() }
 
         rels = {}
-        for key, rel in self.requested_relationships.items():
+        for key, rel in self.relationships.items():
             rel_path_str = '.'.join(include_path + [key])
-            rels[key] = {
+            if key not in self.requested_relationships and\
+                rel_path_str not in self.requested_include_names():
+                continue
+            rel_dict = {
                 'links': {
                     'self': '{}/relationships/{}'.format(item_url, key),
                     'related': '{}/{}'.format(item_url, key)
@@ -883,7 +886,7 @@ class CollectionViewBase:
                         break
                     limit_comps.pop()
                 limit = min(limit, self.max_limit)
-                rels[key]['meta']['results']['limit'] = limit
+                rel_dict['meta']['results']['limit'] = limit
                 if rel_view:
                     q = DBSession.query(
                         rel_class
@@ -898,11 +901,11 @@ class CollectionViewBase:
                     q = q.filter(item._jsonapi_id == rem_col)
                 else:
                     q = q.filter(rel_class._jsonapi_id == rel.secondaryjoin.right)
-                rels[key]['meta']['results']['available'] = q.count()
+                rel_dict['meta']['results']['available'] = q.count()
                 q = q.limit(limit)
-                rels[key]['data'] = []
+                rel_dict['data'] = []
                 for ritem in q.all():
-                    rels[key]['data'].append(
+                    rel_dict['data'].append(
                         {
                             'type': rel_class.__tablename__,
                             'id': str(ritem._jsonapi_id)
@@ -914,8 +917,8 @@ class CollectionViewBase:
                                 ritem,
                                 included, include_path + [key]
                             )
-                rels[key]['meta']['results']['returned'] =\
-                    len(rels[key]['data'])
+                rel_dict['meta']['results']['returned'] =\
+                    len(rel_dict['data'])
             else:
                 if rel_view:
                     q = DBSession.query(
@@ -928,7 +931,7 @@ class CollectionViewBase:
                     try:
                         ritem = q.one()
                     except sqlalchemy.orm.exc.NoResultFound:
-                        rels[key]['data'] = None
+                        rel_dict['data'] = None
                     if ritem:
                         included[(rel_view.collection_name, ritem._jsonapi_id)] =\
                             rel_view.serialise_db_item(
@@ -939,12 +942,14 @@ class CollectionViewBase:
                 else:
                     rel_id = getattr(item, local_col.name)
                     if rel_id is None:
-                        rels[key]['data'] = None
+                        rel_dict['data'] = None
                     else:
-                        rels[key]['data'] = {
+                        rel_dict['data'] = {
                             'type': rel_class.__tablename__,
                             'id': str(rel_id)
                         }
+            if key in self.requested_relationships:
+                rels[key] = rel_dict
 
         ret = {
             'id': str(item_id),
