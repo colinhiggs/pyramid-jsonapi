@@ -163,7 +163,6 @@ def create_resource(config, model, get_dbsession,
     view_classes['collection_name'] = view
     view_classes[model] = view
 
-    view.key_column = keycols[0]
     view.default_limit =\
         int(config.registry.settings.get('jsonapi.paging.default_limit', 10))
     view.max_limit =\
@@ -1233,6 +1232,7 @@ def CollectionViewFactory(
     )
 
     CollectionView.model = model
+    CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
     CollectionView.collection_name = collection_name
     CollectionView.get_dbsession = get_dbsession
 
@@ -1257,7 +1257,7 @@ def CollectionViewFactory(
     CollectionView.class_allowed_fields = allowed_fields
     atts = {}
     for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-        if key == 'id':
+        if key == CollectionView.key_column.name:
             continue
         if len(col.foreign_keys) > 0:
             continue
