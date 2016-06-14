@@ -241,7 +241,7 @@ $ http --verbose GET http://localhost:6543/posts
       },
       "type": "posts"
     },
-    ... 6 results ...
+    "... 6 results ..."
   ],
   "links": {
     "first": "http://localhost:6543/posts?sort=id&page%5Boffset%5D=0",
@@ -333,7 +333,7 @@ and in reverse:
 $ http GET http://localhost:6543/posts?sort=-title
 ```
 
-Sorting by multiple attributes (e.g. `sort=title,content`) and sorting by attributes of related objects (`sort=authot.name`) are not currently supported.
+Sorting by multiple attributes (e.g. `sort=title,content`) and sorting by attributes of related objects (`sort=author.name`) are not currently supported.
 
 A sort on id is assumed unless the sort parameter is specified.
 
