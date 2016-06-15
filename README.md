@@ -173,24 +173,27 @@ If you need deeper customisation of your JSON-API, you will need to construct it
 
 # <a name="client"></a>Consuming the API from the Client End
 
-## `GET` a Collection
+## `GET` Resources
 
 ### Basic Fetching
 
+#### A Collection
+
 ```bash
-$ http --verbose GET http://localhost:6543/posts
+$ http GET http://localhost:6543/posts
 ```
 
 ```json
 {
   "data": [
     {
+      "type": "posts",
+      "id": "1",
       "attributes": {
         "content": "something insightful",
         "published_at": "2015-01-01T00:00:00",
         "title": "post1: alice.main"
       },
-      "id": "1",
       "links": {
         "self": "http://localhost:6543/posts/1"
       },
@@ -238,10 +241,9 @@ $ http --verbose GET http://localhost:6543/posts
             }
           }
         }
-      },
-      "type": "posts"
+      }
     },
-    "... 6 results ..."
+    "... 5 more results ..."
   ],
   "links": {
     "first": "http://localhost:6543/posts?sort=id&page%5Boffset%5D=0",
