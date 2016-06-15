@@ -481,6 +481,8 @@ where:
 * `operator` is one of the list of supported operators ([#filter-ops](#filter-ops)).
 * `value` is the value to match on.
 
+This is simple and reasonably effective. It's a little awkward on readability though. If you feel that you have a syntax that is more readable, more powerful, easier to parse or has some other advantage, let me know - I'd be interested in any thoughts.
+
 #### <a name='filter-ops'></a> Filter Operators
 
 * `eq`
@@ -498,14 +500,18 @@ where:
 
 Find all the people with name 'alice':
 
-```
+```bash
 http GET http://localhost:6543/people?filter[name:eq]=alice
 ```
 
-Find all the posts published after 2015-01-03
+Find all the posts published after 2015-01-03:
 
-```
+```bash
 http GET http://localhost:6543/posts?filter[published_at:gt]=2015-01-03
 ```
 
-## `GET` a Single Resource
+Find all the posts with 'bob' somewhere in the title:
+
+```bash
+http GET http://localhost:6543/posts?filter[title:like]=*bob*
+```
