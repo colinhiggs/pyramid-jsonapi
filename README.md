@@ -394,6 +394,42 @@ There's a default page limit which is used if the limit is not specified and a m
 
 ### Filtering
 
+The JSON API spec doesn't say much about filtering syntax, other than that it should use the parameter key `filter`. In this implementation, we use syntax like the following:
 
+```
+filter[<attribute_spec>:<operator>]=<value>
+```
+
+where:
+* `attribute_spec` is either a direct attribute name or a dotted path to an attribute via relationhips.
+* `operator` is one of the list of supported operators ([#filter-ops](#filter-ops)).
+* `value` is the value to match on.
+
+#### <a name='filter-ops'></a> Filter Operators
+
+* `eq`
+* `ne`
+* `startswith`
+* `endswith`
+* `contains`
+* `lt`
+* `gt`
+* `le`
+* `ge`
+* `like` or `ilike`. Note that both of these use '*' in place of '%' to avoid much URL escaping.
+
+#### Filter Examples
+
+Find all the people with name 'alice':
+
+```
+http GET http://localhost:6543/people?filter[name:eq]=alice
+```
+
+Find all the posts published after 2015-01-03
+
+```
+http GET http://localhost:6543/posts?filter[published_at:gt]=2015-01-03
+```
 
 ## `GET` a Single Resource
