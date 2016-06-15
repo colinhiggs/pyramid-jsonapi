@@ -276,6 +276,80 @@ Note that we have:
 * `meta` with:
   * some extra information about the number of results returned.
 
+#### A Single Resource
+
+```bash
+$ http GET http://localhost:6543/posts/1
+```
+
+Returns a single resource object in `data` and no pagination links.
+
+```json
+{
+  "data": {
+    "type": "posts",
+    "id": "1",
+    "attributes": {
+      "content": "something insightful",
+      "published_at": "2015-01-01T00:00:00",
+      "title": "post1: alice.main"
+    },
+    "links": {
+      "self": "http://localhost:6543/posts/1"
+    },
+    "relationships": {
+      "author": {
+        "data": {
+          "id": "1",
+          "type": "people"
+        },
+        "links": {
+          "related": "http://localhost:6543/posts/1/author",
+          "self": "http://localhost:6543/posts/1/relationships/author"
+        },
+        "meta": {
+          "direction": "MANYTOONE",
+          "results": {}
+        }
+      },
+      "blog": {
+        "data": {
+          "id": "1",
+          "type": "blogs"
+        },
+        "links": {
+          "related": "http://localhost:6543/posts/1/blog",
+          "self": "http://localhost:6543/posts/1/relationships/blog"
+        },
+        "meta": {
+          "direction": "MANYTOONE",
+          "results": {}
+        }
+      },
+      "comments": {
+        "data": [],
+        "links": {
+          "related": "http://localhost:6543/posts/1/comments",
+          "self": "http://localhost:6543/posts/1/relationships/comments"
+        },
+        "meta": {
+          "direction": "ONETOMANY",
+          "results": {
+            "available": 0,
+            "limit": 10,
+            "returned": 0
+          }
+        }
+      }
+    }
+  },
+  "links": {
+    "self": "http://localhost:6543/posts/1"
+  },
+  "meta": {}
+}
+```
+
 ### Sparse Fieldsets
 
 We can ask only for certain fields (attributes and relationships are collectively known as fields).
