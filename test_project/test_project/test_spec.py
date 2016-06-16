@@ -1241,6 +1241,27 @@ class TestSpec(unittest.TestCase):
             status=403
         )
 
+    def test_spec_post_with_id_conflicts(self):
+        '''Should 409 if id exists.
+
+        A server MUST return 409 Conflict when processing a POST request to
+        create a resource with a client-generated ID that already exists.
+        '''
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409 # Test the status code.
+        )
+
     ###############################################
     # PATCH tests.
     ###############################################
