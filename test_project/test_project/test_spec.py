@@ -1262,6 +1262,29 @@ class TestSpec(unittest.TestCase):
             status=409 # Test the status code.
         )
 
+    def test_spec_post_type_conflicts(self):
+        '''Should 409 if type does not exist.
+
+        A server MUST return 409 Conflict when processing a POST request in
+        which the resource object’s type is not among the type(s) that
+        constitute the collection represented by the endpoint.
+        '''
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'id': '1000',
+                    'type': 'frogs',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409 # Test the status code.
+        )
+
+
     ###############################################
     # PATCH tests.
     ###############################################
