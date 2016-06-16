@@ -1357,6 +1357,30 @@ class TestSpec(unittest.TestCase):
             status=409
         )
 
+    def test_spec_patch_empty_success(self):
+        '''Should return only meta, not data or links.
+
+        A server MUST return a 200 OK status code if an update is successful,
+        the client’s current attributes remain up to date, and the server
+        responds only with top-level meta data. In this case the server MUST NOT
+        include a representation of the updated resource(s).
+        '''
+        json = self.test_app.patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json
+        self.assertIn('meta',json)
+        self.assertEqual(len(json),1)
+
     ###############################################
     # DELETE tests.
     ###############################################
