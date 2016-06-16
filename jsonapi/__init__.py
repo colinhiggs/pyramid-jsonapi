@@ -263,15 +263,13 @@ class CollectionViewBase:
             self.request.response.content_type = 'application/vnd.api+json'
 
             ret = {
-                'links': {},
                 'meta': {}
             }
 
             ret.update(f(self, *args))
 
-            ret['links'].update({
-                'self': self.request.url
-            })
+            if self.request.method != 'PATCH':
+                ret['links'] = {'self': self.request.url}
 
             if self.request.registry.settings.get(
                 'jsonapi.debug.meta', 'false'
@@ -336,7 +334,11 @@ class CollectionViewBase:
         # TODO(Colin): deal with relationships
         item = DBSession.merge(self.model(**atts))
         DBSession.flush()
-        return self.serialise_db_item(item, {})
+        return {
+            'meta': {
+                'updated': [att for att in atts if att != self.key_column.name]
+            }
+        }
 
     @jsonapi_view
     def delete(self):
