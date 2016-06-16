@@ -325,7 +325,10 @@ class CollectionViewBase:
         data = self.request.json_body['data']
         req_id = self.request.matchdict['id']
         data_id = data.get('id')
-        if data_id is not None and data_id != req_id:
+        if self.collection_name != data.get('type'):
+            raise HTTPConflict('JSON type ({}) does not match URL type ({}).'.
+            format(data.get('type'), self.collection_name))
+        if data_id != req_id:
             raise HTTPConflict('JSON id ({}) does not match URL id ({}).'.
             format(data_id, req_id))
         atts = data['attributes']
