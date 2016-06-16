@@ -722,9 +722,11 @@ class TestSpec(unittest.TestCase):
                 item['attributes']['content'],
                 prev_content
             )
-            self.assertGreaterEqual(item['id'], prev_id)
+            if item['attributes']['content'] != prev_content:
+                prev_id = 0
+            self.assertGreaterEqual(int(item['id']), prev_id)
             prev_content = item['attributes']['content']
-            prev_id = item['id']
+            prev_id = int(item['id'])
 
     def test_spec_descending_sort(self):
         '''Should return results sorted by field in reverse order.

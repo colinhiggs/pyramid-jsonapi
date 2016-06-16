@@ -718,26 +718,36 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
 
         # Sorting.
-        sort_keys = qinfo['_sort']['key'].split('.')
-        order_att = getattr(self.model, sort_keys[0])
-        # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
-        # sort_keys[0] is the name of an attribute or a
-        # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
-        # is the name of a relationship.
-        if isinstance(order_att.property, RelationshipProperty):
-            # If order_att is a relationship then we need to add a join to
-            # the query and order_by the sort_keys[1] column of the
-            # relationship's target. The default target column is 'id'.
-            q = q.join(order_att)
-            try:
-                sub_key = sort_keys[1]
-            except IndexError:
-                sub_key = 'id'
-            order_att = getattr(order_att.property.mapper.entity, sub_key)
-        if qinfo['_sort']['ascending']:
-            q = q.order_by(order_att)
-        else:
-            q = q.order_by(order_att.desc())
+        for key_info in qinfo['_sort']:
+            sort_keys = key_info['key'].split('.')
+            # We are using 'id' to stand in for the key column, whatever that
+            # is.
+            main_key = sort_keys[0]
+            if main_key == 'id':
+                main_key = self.key_column.name
+            order_att = getattr(self.model, main_key)
+            # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
+            # sort_keys[0] is the name of an attribute or a
+            # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
+            # is the name of a relationship.
+            if isinstance(order_att.property, RelationshipProperty):
+                # If order_att is a relationship then we need to add a join to
+                # the query and order_by the sort_keys[1] column of the
+                # relationship's target. The default target column is 'id'.
+                q = q.join(order_att)
+                rel = order_att.property
+                try:
+                    sub_key = sort_keys[1]
+                except IndexError:
+                    # Use the relationship
+                    sub_key = self.view_instance(
+                        rel.mapper.class_
+                    ).key_column.name
+                order_att = getattr(rel.mapper.entity, sub_key)
+            if key_info['ascending']:
+                q = q.order_by(order_att)
+            else:
+                q = q.order_by(order_att.desc())
 
         return q
 
@@ -980,9 +990,12 @@ class CollectionViewBase:
                     'page[limit]': maximum items per page,
                     'page[offset]': offset for current page (in items),
                     'sort': sort param from request,
-                    '_sort': {
-                        'key': sort key ('field' or 'relationship.field'),
-                        'ascending': sort ascending or descending (bool)
+                    '_sort': [
+                        {
+                            'key': sort key ('field' or 'relationship.field'),
+                            'ascending': sort ascending or descending (bool)
+                        },
+                        ...
                     },
                     '_filters': {
                         filter_param_name: {
@@ -1016,17 +1029,22 @@ class CollectionViewBase:
         #   sort=owner.name -> sort on the 'name' column of the target table
         #     of the relationship 'owner'.
         # The default sort column is 'id'.
-        sort_key = request.params.get('sort', cls.key_column.name)
-        info['sort'] = sort_key
+        sort_param = request.params.get('sort', cls.key_column.name)
+        info['sort'] = sort_param
+
         # Break sort param down into components and store in _sort.
-        info['_sort'] = {}
-        # Check to see if it starts with '-', which indicates a reverse sort.
-        ascending = True
-        if sort_key.startswith('-'):
-            ascending = False
-            sort_key = sort_key[1:]
-        info['_sort']['key'] = sort_key
-        info['_sort']['ascending'] = ascending
+        info['_sort'] = []
+        for sort_key in sort_param.split(','):
+            key_info = {}
+            # Check to see if it starts with '-', which indicates a reverse
+            # sort.
+            ascending = True
+            if sort_key.startswith('-'):
+                ascending = False
+                sort_key = sort_key[1:]
+            key_info['key'] = sort_key
+            key_info['ascending'] = ascending
+            info['_sort'].append(key_info)
 
 
 
