@@ -525,15 +525,7 @@ class CollectionViewBase:
                 identifiers = True
             )
         else:
-            return rel_view.single_return(
-                q,
-                'No id {} in collection {} relationship {}'.format(
-                    obj_id,
-                    self.collection_name,
-                    relname
-                ),
-                identifier = True
-            )
+            return rel_view.single_return(q, identifier = True)
 
     @jsonapi_view
     def relationships_post(self):
