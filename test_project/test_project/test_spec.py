@@ -1309,6 +1309,53 @@ class TestSpec(unittest.TestCase):
         # ...should now be alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
 
+    def test_spec_patch_no_type_id(self):
+        '''Should 409 if id or type do not exist.
+
+        The PATCH request MUST include a single resource object as primary data.
+        The resource object MUST contain type and id members.
+        '''
+        # No id.
+        self.test_app.patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
+        # No type.
+        self.test_app.patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'id': '1',
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
+        # No type or id.
+        self.test_app.patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
 
     ###############################################
     # DELETE tests.
