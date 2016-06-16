@@ -1191,6 +1191,30 @@ class TestSpec(unittest.TestCase):
         self.assertEqual(data['id'],'1000')
         self.assertEqual(data['type'],'people')
 
+    def test_spec_post_with_id_disallowed(self):
+        '''Should 403 when attempting to create object with id.
+
+        A server MUST return 403 Forbidden in response to an unsupported request
+        to create a resource with a client-generated ID.
+        '''
+        # We need a test_app with different settings.
+        app = get_app('testing.ini', options={'jsonapi.allow_client_ids': 'false'})
+        test_app = webtest.TestApp(app)
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'id': '1000',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+
     ###############################################
     # PATCH tests.
     ###############################################
