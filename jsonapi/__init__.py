@@ -502,6 +502,10 @@ class CollectionViewBase:
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
 
+        # Check that the original resource exists. The following will raise an
+        # exception for us if it doesn't
+        self.get()
+
         # Set up the query
         q = self.related_query(obj_id, rel, id_only = True)
 
