@@ -1284,10 +1284,31 @@ class TestSpec(unittest.TestCase):
             status=409 # Test the status code.
         )
 
-
     ###############################################
     # PATCH tests.
     ###############################################
+
+    def test_spec_patch(self):
+        '''Should change alice's name to alice2'''
+        # Patch alice.
+        self.test_app.patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Fetch alice back...
+        data = self.test_app.get('/people/1').json['data']
+        # ...should now be alice2.
+        self.assertEqual(data['attributes']['name'], 'alice2')
+
 
     ###############################################
     # DELETE tests.
