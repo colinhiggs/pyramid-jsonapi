@@ -1170,12 +1170,26 @@ class TestSpec(unittest.TestCase):
         a resource. An ID MUST be specified with an id key. The client SHOULD
         use a properly generated and formatted UUID as described in RFC 4122
 
+        If a POST request did not include a Client-Generated ID and the
+        requested resource has been created successfully, the server MUST return
+        a 201 Created status code.
+
+        The response SHOULD include a Location header identifying the location
+        of the newly created resource.
+
+        The response MUST also include a document that contains the primary
+        resource created.
+
+        If the resource object returned by the response contains a self key in
+        its links member and a Location header is provided, the value of the
+        self member MUST match the value of the Location header.
+
         Comment: jsonapi.allow_client_ids is set in the ini file, so we should
         be able to create objects with ids.  The id strategy in test_project
         isn't RFC4122 UUID, but we're not enforcing that since there may be
         other globally unique id strategies in use.
         '''
-        data = self.test_app.post_json(
+        r = self.test_app.post_json(
             '/people',
             {
                 'data': {
@@ -1186,10 +1200,22 @@ class TestSpec(unittest.TestCase):
                     }
                 }
             },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=201 # Test the status code.
+        )
+
+        # Test for Location header.
+        location = r.headers.get('Location')
+        self.assertIsNotNone(location)
+
+        # Test that json is a resource object
+        data = r.json['data']
         self.assertEqual(data['id'],'1000')
         self.assertEqual(data['type'],'people')
+        self.assertEqual(data['attributes']['name'], 'test')
+
+        # Test that the Location header and the self link match.
+        self.assertEqual(data['links']['self'], location)
 
     def test_spec_post_with_id_disallowed(self):
         '''Should 403 when attempting to create object with id.

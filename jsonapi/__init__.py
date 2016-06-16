@@ -440,11 +440,12 @@ class CollectionViewBase:
         except sqlalchemy.exc.IntegrityError as e:
             raise HTTPConflict(e.args[0])
         self.request.response.status_code = 201
+        self.request.response.headers['Location'] = self.request.route_url(
+            self.item_route_name,
+            **{'id': item._jsonapi_id}
+        )
         return {
-            'data': {
-                'type': self.collection_name,
-                'id': str(item._jsonapi_id)
-            }
+            'data': self.serialise_db_item(item, {})
         }
 
     @jsonapi_view
