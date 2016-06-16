@@ -252,6 +252,13 @@ class CollectionViewBase:
                     '(http://jsonapi.org/format).'
                 )
 
+            if self.bad_include_paths:
+                raise HTTPBadRequest(
+                    "Bad include paths {}".format(
+                        self.bad_include_paths
+                    )
+                )
+
             # Spec says set Content-Type to application/vnd.api+json.
             self.request.response.content_type = 'application/vnd.api+json'
 
@@ -1198,6 +1205,31 @@ class CollectionViewBase:
                 curname.append(name)
                 inc.add('.'.join(curname))
         return inc
+
+    @property
+    def bad_include_paths(self):
+        '''Return a set of invalid 'include' parameters.'''
+        param = self.request.params.get('include')
+        bad = set()
+        if param is None:
+            return bad
+        for i in param.split(','):
+            curname = []
+            curview = self
+            tainted = False
+            for name in i.split('.'):
+                curname.append(name)
+                if tainted:
+                    bad.add('.'.join(curname))
+                else:
+                    if name in curview.relationships.keys():
+                        curview = curview.view_instance(
+                            curview.relationships[name].mapper.class_
+                        )
+                    else:
+                        tainted = True
+                        bad.add('.'.join(curname))
+        return bad
 
     @functools.lru_cache(maxsize=128)
     def view_instance(self, model):
