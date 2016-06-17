@@ -289,6 +289,8 @@ class CollectionViewBase:
                     '(http://jsonapi.org/format).'
                 )
 
+            # Spec says throw BadRequest if any include paths reference non
+            # existent attributes or relationships.
             if self.bad_include_paths:
                 raise HTTPBadRequest(
                     "Bad include paths {}".format(
@@ -299,15 +301,20 @@ class CollectionViewBase:
             # Spec says set Content-Type to application/vnd.api+json.
             self.request.response.content_type = 'application/vnd.api+json'
 
+            # Eventually each method will return a dictionary to be rendered
+            # using the JSON renderer.
             ret = {
                 'meta': {}
             }
 
+            # Update the dictionary with the reults of the wrapped method.
             ret.update(f(self, *args))
 
+            # Include a self link unless the method is PATCH.
             if self.request.method != 'PATCH':
                 ret['links'] = {'self': self.request.url}
 
+            # Potentially add some debug information.
             if self.request.registry.settings.get(
                 'jsonapi.debug.meta', 'false'
             ) == 'true':
