@@ -249,7 +249,7 @@ class CollectionViewBase:
     '''Base class for all view classes.
 
     Arguments:
-        request: ``pyramid.request`` passed by framework.
+        request (pyramid.request): passed by framework.
     '''
     def __init__(self, request):
         self.request = request
@@ -338,6 +338,9 @@ class CollectionViewBase:
     @jsonapi_view
     def get(self):
         '''Get a single item.
+
+        Other Parameters:
+            id (str): from matchdict
 
         Returns:
             dict: single resource object.
