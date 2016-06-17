@@ -246,7 +246,11 @@ def create_resource(config, model, get_dbsession,
         route_name=view.relationships_route_name, renderer='json')
 
 class CollectionViewBase:
-    '''Implement view methods.'''
+    '''Base class for all view classes.
+
+    Arguments:
+        request: ``pyramid.request`` passed by framework.
+    '''
     def __init__(self, request):
         self.request = request
         self.views = {}
