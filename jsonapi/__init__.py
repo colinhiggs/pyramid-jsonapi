@@ -162,9 +162,9 @@ def create_resource(config, model, get_dbsession,
 
     Keyword Args:
         collection_name: string name of collection. Passed through to
-            ``CollectionViewFactory()``
+            ``collection_view_factory()``
         allowed_fields: set of allowed field names. Passed through to
-            ``CollectionViewFactory()``
+            ``collection_view_factory()``
     '''
 
     # Find the primary key column from the model and add it as _jsonapi_id.
@@ -190,7 +190,7 @@ def create_resource(config, model, get_dbsession,
         collection_name = info.table_name
 
     # Create a view class for use in the various add_view() calls below.
-    view = CollectionViewFactory(model, get_dbsession, collection_name,
+    view = collection_view_factory(model, get_dbsession, collection_name,
         allowed_fields = allowed_fields)
     view_classes['collection_name'] = view
     view_classes[model] = view
@@ -1302,7 +1302,7 @@ class CollectionViewBase:
 
 
 
-def CollectionViewFactory(
+def collection_view_factory(
         model,
         get_dbsession,
         collection_name = None,
