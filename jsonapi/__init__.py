@@ -46,7 +46,16 @@ def error(e, request):
     }
 
 class DebugView:
-    '''Some API operations available if jsonapi.debug.debug_endpoints == 'true'.
+    '''Pyramid view class defining a debug API.
+
+    These are available as ``/debug/{action}`` if
+    ``jsonapi.debug.debug_endpoints == 'true'``.
+
+    Attributes:
+        engine: sqlalchemy engine with connection to the db.
+        metadata: sqlalchemy model metadata
+        test_data: module with an ``add_to_db()`` method which will populate the
+            database
     '''
     def __init__(self, request):
         self.request = request
