@@ -298,17 +298,8 @@ class CollectionViewBase:
         Returns:
             dict: single item.
         '''
-        DBSession = self.get_dbsession()
-        q = DBSession.query(
-            self.model
-        ).options(
-            load_only(*self.requested_query_columns.keys())
-        ).filter(
-            self.model._jsonapi_id == self.request.matchdict['id']
-        )
-
         return self.single_return(
-            q,
+            self.single_item_query,
             'No id {} in collection {}'.format(
                 self.request.matchdict['id'],
                 self.collection_name
@@ -319,6 +310,14 @@ class CollectionViewBase:
     def patch(self):
         '''Update an existing item from a partially defined representation.
         '''
+        try:
+            self.single_item_query.one()
+        except NoResultFound:
+            raise HTTPNotFound(
+                'Cannot PATCH a non existent resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
         DBSession = self.get_dbsession()
         data = self.request.json_body['data']
         req_id = self.request.matchdict['id']
@@ -650,6 +649,18 @@ class CollectionViewBase:
         except sqlalchemy.exc.IntegrityError as e:
             raise HTTPFailedDependency(str(e))
         return {}
+
+    @property
+    def single_item_query(self):
+        DBSession = self.get_dbsession()
+        q = DBSession.query(
+            self.model
+        ).options(
+            load_only(*self.requested_query_columns.keys())
+        ).filter(
+            self.model._jsonapi_id == self.request.matchdict['id']
+        )
+        return q
 
     def single_return(self, q, not_found_message = None, identifier = False):
         '''Populate return dictionary for single items.
