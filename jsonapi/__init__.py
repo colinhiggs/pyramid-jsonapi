@@ -84,7 +84,7 @@ class DebugView:
 
 def create_jsonapi(config, models, get_dbsession,
     engine = None, test_data = None):
-    '''Auto-create jsonapi from module with sqlAlchemy models.
+    '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
     Arguments:
         config: ``pyramid.config.Configurator`` object from current app.
