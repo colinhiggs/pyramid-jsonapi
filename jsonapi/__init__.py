@@ -87,13 +87,24 @@ def create_jsonapi(config, models, get_dbsession,
     '''Auto-create jsonapi from module with sqlAlchemy models.
 
     Arguments:
-        models (iterable): an iterable (or module) of model classes derived from DeclarativeMeta.
+        config: ``pyramid.config.Configurator`` object from current app.
+        models: an iterable (or module) of model classes derived
+            from DeclarativeMeta.
+        get_dbsession: a callable shich returns a
+            sqlalchemy.orm.session.Session or equivalent.
+
+    Keyword Args:
+        engine: a sqlalchemy.engine.Engine instance. Only required if using the
+            debug view.
+        test_data: a module with an ``add_to_db()`` method which will populate
+            the database.
     '''
 
     config.add_notfound_view(error, renderer='json')
     config.add_forbidden_view(error, renderer='json')
     config.add_view(error, context=HTTPError, renderer='json')
 
+    # Build a list of declarative models to add as collections.
     if isinstance(models, types.ModuleType):
         model_list = []
         for attr in models.__dict__.values():
@@ -109,6 +120,8 @@ def create_jsonapi(config, models, get_dbsession,
         model_list = list(models)
 
     settings = config.registry.settings
+
+    # Add the debug endpoints if required.
     if settings.get('jsonapi.debug.debug_endpoints', 'false') == 'true':
         if engine is None:
             DebugView.engine = model_list[0].metadata.bind
@@ -128,8 +141,7 @@ def create_jsonapi(config, models, get_dbsession,
         config.add_view(DebugView, attr='reset',
             route_name='debug', match_param='action=reset', renderer='json')
 
-    # Loop through the models module looking for declaratively defined model
-    # classes (inherit DeclarativeMeta). Create resource endpoints for these and
+    # Loop through the models list. Create resource endpoints for these and
     # any relationships found.
     for model_class in model_list:
         create_resource(config, model_class, get_dbsession = get_dbsession)
@@ -143,21 +155,31 @@ def create_resource(config, model, get_dbsession,
     '''Produce a set of resource endpoints.
 
     Arguments:
-        collectiona_name (str): name of collection. Defaults to table name from model.
-        allowed_fields (set): set of allowed field names.
+        config: ``pyramid.config.Configurator`` object from current app.
+        model: a model class derived from DeclarativeMeta.
+        get_dbsession: a callable shich returns a
+            sqlalchemy.orm.session.Session or equivalent.
+
+    Keyword Args:
+        collection_name: string name of collection. Passed through to
+            ``CollectionViewFactory()``
+        allowed_fields: set of allowed field names. Passed through to
+            ``CollectionViewFactory()``
     '''
 
+    # Find the primary key column from the model and add it as _jsonapi_id.
     try:
         keycols = sqlalchemy.inspect(model).primary_key
     except sqlalchemy.exc.NoInspectionAvailable:
         # Trying to inspect the declarative_base() raises this exception. We
         # don't want to add it to the API.
         return
-
     # Only deal with one primary key column.
     if len(keycols) > 1:
         raise Exception(
-            'Model {} has more than one primary key.'.format(model_class.__name__)
+            'Model {} has more than one primary key.'.format(
+                model_class.__name__
+            )
         )
     model._jsonapi_id = getattr(model, keycols[0].name)
 
@@ -167,6 +189,7 @@ def create_resource(config, model, get_dbsession,
     if collection_name is None:
         collection_name = info.table_name
 
+    # Create a view class for use in the various add_view() calls below.
     view = CollectionViewFactory(model, get_dbsession, collection_name,
         allowed_fields = allowed_fields)
     view_classes['collection_name'] = view
