@@ -257,6 +257,7 @@ class CollectionViewBase:
 
     def jsonapi_view(f):
         '''Decorator for view functions. Adds jsonapi boilerplate.'''
+        @functools.wraps(f)
         def new_f(self, *args):
             # Spec says to reject (with 415) any request with media type
             # params.
