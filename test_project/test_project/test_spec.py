@@ -1381,6 +1381,27 @@ class TestSpec(unittest.TestCase):
         self.assertIn('meta',json)
         self.assertEqual(len(json),1)
 
+    def test_spec_patch_nonexistent(self):
+        '''Should 404 when patching non existent resource.
+
+        A server MUST return 404 Not Found when processing a request to modify a
+        resource that does not exist.
+        '''
+        self.test_app.patch_json(
+            '/people/1000',
+            {
+                'data': {
+                    'id': '1000',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
     ###############################################
     # DELETE tests.
     ###############################################
