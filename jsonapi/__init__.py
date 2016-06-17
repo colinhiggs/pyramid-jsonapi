@@ -340,7 +340,7 @@ class CollectionViewBase:
         '''Get a single item.
 
         Returns:
-            dict: single item.
+            dict: single resource object.
         '''
         return self.single_return(
             self.single_item_query,
@@ -353,6 +353,26 @@ class CollectionViewBase:
     @jsonapi_view
     def patch(self):
         '''Update an existing item from a partially defined representation.
+
+        Raises:
+            HTTPNotFound
+
+        Todo:
+            Currently does not deal with relationships.
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    'meta': {
+                        'updated': [
+                            <attribute_name>,
+                            <attribute_name>
+                        ]
+                    }
+                }
         '''
         try:
             self.single_item_query.one()
