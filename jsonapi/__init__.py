@@ -357,6 +357,10 @@ class CollectionViewBase:
     def patch(self):
         '''Update an existing item from a partially defined representation.
 
+        Other Parameters:
+            id (str): from matchdict
+            partial Resource Object (json): from request body
+
         Raises:
             HTTPNotFound
 
