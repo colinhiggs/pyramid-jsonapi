@@ -1,6 +1,7 @@
 # pyramid-jsonapi
 
-Create a [JSON-API](http://jsonapi.org/) standard api from a database using the sqlAlchemy ORM and pyramid framework.
+Create a [JSON-API](http://jsonapi.org/) standard API from a database using the sqlAlchemy ORM and pyramid framework.
+
 
 # Status
 
@@ -119,6 +120,8 @@ You don't need a views.py unless you have some other routes and views.
 Yes, there really is a method called `create_jsonapi_using_magic_and_pixie_dust()`. No, you don't *have* to call it that. If you are feeling more sensible you can use the synonym `create_jsonapi()`.
 
 # Building the API at the Server End.
+
+Python API documentation available at https://colinhiggs.github.io/pyramid-jsonapi/
 
 ## Auto-creating a JSON-API
 
