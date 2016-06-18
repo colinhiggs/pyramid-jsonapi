@@ -337,7 +337,17 @@ class CollectionViewBase:
 
     @jsonapi_view
     def get(self):
-        '''Get a single item.
+        '''Handle GET request for a single item.
+
+        Get a single item from the collection, referenced by id.
+
+        Example:
+
+            Get person 1:
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/people/1
 
         Other Parameters:
             id (str): from matchdict
@@ -355,7 +365,22 @@ class CollectionViewBase:
 
     @jsonapi_view
     def patch(self):
-        '''Update an existing item from a partially defined representation.
+        '''Handle PATCH request for a single item.
+
+        Update an existing item from a partially defined representation.
+
+        Example:
+            PATCH person 1, changing name to alicia:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/people/1 data:='
+                {
+                    "type":"people", "id": "1",
+                    "attributes": {
+                        "name": "alicia"
+                    }
+                }' Content-Type:application/vnd.api+json
 
         Other Parameters:
             id (str): from matchdict
@@ -412,10 +437,25 @@ class CollectionViewBase:
 
     @jsonapi_view
     def delete(self):
-        '''Delete an item.
+        '''Handle DELETE request for single item.
+
+        Delete the referenced item from the collection.
+
+        Example:
+            delete person 1:
+
+            .. parsed-literal::
+
+                http DELETE http://localhost:6543/people/1
+
+        Other Parameters:
+            id (str): from matchdict
+
+        Raises:
+            HTTPFailedDependency: if collection/id does not exist
 
         Returns:
-            dict: resource identifier for deleted object.
+            dict: Resource Identifier for deleted object.
         '''
         DBSession = self.get_dbsession()
         item = DBSession.query(self.model).get(self.request.matchdict['id'])
