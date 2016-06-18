@@ -474,10 +474,53 @@ class CollectionViewBase:
 
     @jsonapi_view
     def collection_get(self):
-        '''Get multiple items from the collection.
+        '''Handle GET requests for the collection.
+
+        **Query Parameters**
+
+            **include:** comma separated list of related resources to include in
+            the include section.
+
+            **fields[<collection>]:** comma separated list of fields (attributes
+            or relationships) to include in data.
+
+            **sort:** comma separated list of sort keys.
+
+            **page[limit]:** number of results to return per page.
+
+            **page[offset]:** starting index for current page.
+
+            **filter[<attribute>:<op>]:** filter operation.
+
+
+        Examples:
+            Get up to default page limit people resources:
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/people
+
+            Get the second page of two people, reverse sorted by name and
+            include the related posts as included documents:
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/people?page[limit]=2&page[offset]=2&sort=-name&include=posts
+
+        Raises:
+            HTTPBadRequest
 
         Returns:
-            list: list of items.
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": [ list of resource objects ],
+                    "links": { links object },
+                    "include": [ optional list of included resource objects ],
+                    "meta": { implementation specific information }
+                }
         '''
         DBSession = self.get_dbsession()
 
