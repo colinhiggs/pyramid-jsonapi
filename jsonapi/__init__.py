@@ -870,7 +870,58 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_post(self):
-        '''Add new items to a relationship collection.
+        '''Handle POST requests for TOMANY relationships.
+
+        Add the specified member to the relationship.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+            **relname** (*str*): relationship name
+
+        **Request Body**
+
+            **resource identifier list** (*json*) in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": [ { resource identifier },... ]
+                }
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPNotFound: if there is no <relname> relationship.
+
+            HTTPNotFound: if an attempt is made to modify a TOONE relationship.
+
+            HTTPConflict: if a resource identifier is specified with a different
+            type than that which the collection holds.
+
+            HTTPFailedDependency: if a database constraint would be broken by
+            adding the specified resource to the relationship.
+
+        Examples:
+            Add comments/1 as a comment of posts/1
+
+            .. parsed-literal::
+
+                http POST http://localhost:6543/posts/1/relationships/comments data:='
+                [
+                    { "type": "comments", "id": "1" }
+                ]' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
         obj_id = self.request.matchdict['id']
