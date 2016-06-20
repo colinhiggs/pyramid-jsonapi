@@ -342,7 +342,11 @@ class CollectionViewBase:
 
             # Include a self link unless the method is PATCH.
             if self.request.method != 'PATCH':
-                ret['links'] = {'self': self.request.url}
+                selfie = {'self': self.request.url}
+                if 'links' in ret:
+                    ret['links'].update(selfie)
+                else:
+                    ret['links'] = selfie 
 
             # Potentially add some debug information.
             if self.request.registry.settings.get(
