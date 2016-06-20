@@ -1197,7 +1197,17 @@ class CollectionViewBase:
         return q
 
     def single_return(self, q, not_found_message = None, identifier = False):
-        '''Populate return dictionary for single items.
+        '''Populate return dictionary for a single item.
+
+        Arguments:
+            q (sqlalchemy.orm.query.Query): query designed to return one item.
+
+        Keyword Arguments:
+            not_found_message (str or None): if an item is not found either:
+
+                * raise 404 with ``not_found_message`` if it is a str;
+
+                * or return ``{"data": None}`` if ``not_found_message`` is None.
         '''
         included = {}
         ret = {}
