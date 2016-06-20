@@ -1670,7 +1670,16 @@ class CollectionViewBase:
 
     @property
     def requested_attributes(self):
-        '''Return a dictionary of attributes: {colname: column}.
+        '''Return a dictionary of attributes.
+
+        Returns:
+            dict: dict in the form:
+
+                .. parsed-literal::
+
+                    {
+                        <colname>: <column_object>
+                    }
         '''
         return { k:v for k,v in self.attributes.items()
             if k in self.requested_field_names(self.request)}
