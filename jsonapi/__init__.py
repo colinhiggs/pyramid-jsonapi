@@ -682,7 +682,60 @@ class CollectionViewBase:
 
     @jsonapi_view
     def related_get(self):
-        '''GET object(s) related to a specified object.
+        '''Handle GET requests for related URLs.
+
+        Get object(s) related to a specified object.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+            **relname** (*str*): relationship name
+
+        **Query Parameters**
+            **sort:** comma separated list of sort keys.
+
+            **filter[<attribute>:<op>]:** filter operation.
+
+        Returns:
+            dict: dict in the form:
+
+            For a TOONE relationship (return one object):
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource object },
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+            For a TOMANY relationship (return multiple objects):
+
+            .. parsed-literal::
+
+                {
+                    "data": [ { resource object }, ... ]
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPNotFound: if `relname` is not found as a relationship.
+
+            HTTPBadRequest: if a bad filter is used.
+
+        Examples:
+            Get the author of post 1:
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/posts/1/author
         '''
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
