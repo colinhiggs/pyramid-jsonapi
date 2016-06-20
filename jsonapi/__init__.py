@@ -773,7 +773,58 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_get(self):
-        '''GET resource identifiers for members in a relationship.
+        '''Handle GET requests for relationships URLs.
+
+        Get object identifiers for items referred to by a relationship.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+            **relname** (*str*): relationship name
+
+        **Query Parameters**
+            **sort:** comma separated list of sort keys.
+
+            **filter[<attribute>:<op>]:** filter operation.
+
+        Returns:
+            dict: dict in the form:
+
+            For a TOONE relationship (return one identifier):
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource identifier },
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+            For a TOMANY relationship (return multiple identifier):
+
+            .. parsed-literal::
+
+                {
+                    "data": [ { resource identifier }, ... ]
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPBadRequest: if a bad filter is used.
+
+        Examples:
+            Get an identifer for the author of post 1:
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/posts/1/relationships/author
         '''
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
