@@ -571,10 +571,61 @@ class CollectionViewBase:
 
     @jsonapi_view
     def collection_post(self):
-        '''Create a new object in collection.
+        '''Handle POST requests for the collection.
+
+        Create a new object in collection.
+
+        **Request Body**
+
+            **resource object** (*json*) in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource object }
+                }
 
         Returns:
-            Resource identifier for created item.
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource object },
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPForbidden: if an id is presented in "data" and client ids are
+            not supported.
+
+            HTTPConflict: if type is not present or is different from the
+            collection name.
+
+            HTTPNotFound: if a non existent relationship is referenced in the
+            supplied resource object.
+
+            HTTPConflict: if creating the object would break a database
+            constraint (most commonly if an id is supplied by the client and
+            an item with that id already exists).
+
+        Examples:
+            Create a new person with name 'monty' and let the server pick the
+            id:
+
+            .. parsed-literal::
+
+                http POST http://localhost:6543/people data:='
+                {
+                    "type":"people",
+                    "attributes": {
+                        "name": "monty"
+                    }
+                }' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
         data = self.request.json_body['data']
