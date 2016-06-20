@@ -45,43 +45,6 @@ def error(e, request):
         ]
     }
 
-class DebugView:
-    '''Pyramid view class defining a debug API.
-
-    These are available as ``/debug/{action}`` if
-    ``jsonapi.debug.debug_endpoints == 'true'``.
-
-    Attributes:
-        engine: sqlalchemy engine with connection to the db.
-        metadata: sqlalchemy model metadata
-        test_data: module with an ``add_to_db()`` method which will populate the
-            database
-    '''
-    def __init__(self, request):
-        self.request = request
-
-    def drop(self):
-        '''Drop all tables from the database!!!
-        '''
-        self.metadata.drop_all(self.engine)
-        return 'dropped'
-
-    def populate(self):
-        '''Create tables and populate with test data.
-        '''
-        # Create or update tables and schema. Safe if tables already exist.
-        self.metadata.create_all(self.engine)
-        # Add test data. Safe if test data already exists.
-        self.test_data.add_to_db()
-        return 'populated'
-
-    def reset(self):
-        '''The same as 'drop' and then 'populate'.
-        '''
-        self.drop()
-        self.populate()
-        return "reset"
-
 def create_jsonapi(config, models, get_dbsession,
     engine = None, test_data = None):
     '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
@@ -244,6 +207,63 @@ def create_resource(config, model, get_dbsession,
     # DELETE
     config.add_view(view, attr='relationships_delete', request_method='DELETE',
         route_name=view.relationships_route_name, renderer='json')
+
+def collection_view_factory(
+        model,
+        get_dbsession,
+        collection_name = None,
+        allowed_fields = None
+    ):
+    '''Build a class to handle requests for model.'''
+    if collection_name is None:
+        collection_name = model.__tablename__
+
+    CollectionView = type(
+        'CollectionView<{}>'.format(collection_name),
+        (CollectionViewBase, ),
+        {}
+    )
+
+    CollectionView.model = model
+    CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
+    CollectionView.collection_name = collection_name
+    CollectionView.get_dbsession = get_dbsession
+
+    CollectionView.collection_route_name =\
+        ':'.join((route_prefix, collection_name))
+    CollectionView.collection_route_pattern = collection_name
+
+    CollectionView.item_route_name =\
+        CollectionView.collection_route_name + ':item'
+    CollectionView.item_route_pattern = collection_name + '/{id}'
+
+    CollectionView.related_route_name =\
+        CollectionView.collection_route_name + ':related'
+    CollectionView.related_route_pattern =\
+        collection_name + '/{id}/{relationship}'
+
+    CollectionView.relationships_route_name =\
+        CollectionView.collection_route_name + ':relationships'
+    CollectionView.relationships_route_pattern =\
+        collection_name + '/{id}/relationships/{relationship}'
+
+    CollectionView.class_allowed_fields = allowed_fields
+    atts = {}
+    for key, col in sqlalchemy.inspect(model).mapper.columns.items():
+        if key == CollectionView.key_column.name:
+            continue
+        if len(col.foreign_keys) > 0:
+            continue
+        if allowed_fields is None or key in allowed_fields:
+            atts[key] = col
+    CollectionView.attributes = atts
+    rels = {}
+    for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
+        if allowed_fields is None or key in allowed_fields:
+            rels[key] = rel
+    CollectionView.relationships = rels
+
+    return CollectionView
 
 class CollectionViewBase:
     '''Base class for all view classes.
@@ -1802,72 +1822,42 @@ class CollectionViewBase:
         '''
         return view_classes[model](self.request)
 
+class DebugView:
+    '''Pyramid view class defining a debug API.
 
+    These are available as ``/debug/{action}`` if
+    ``jsonapi.debug.debug_endpoints == 'true'``.
 
-def collection_view_factory(
-        model,
-        get_dbsession,
-        collection_name = None,
-        allowed_fields = None
-    ):
-    '''Build a class to handle requests for model.'''
-    if collection_name is None:
-        collection_name = model.__tablename__
+    Attributes:
+        engine: sqlalchemy engine with connection to the db.
+        metadata: sqlalchemy model metadata
+        test_data: module with an ``add_to_db()`` method which will populate the
+            database
+    '''
+    def __init__(self, request):
+        self.request = request
 
+    def drop(self):
+        '''Drop all tables from the database!!!
+        '''
+        self.metadata.drop_all(self.engine)
+        return 'dropped'
 
-#        def related_route_name(self, relationship_name):
-#            return self.collection_route_name + ':related:' + relationship_name
+    def populate(self):
+        '''Create tables and populate with test data.
+        '''
+        # Create or update tables and schema. Safe if tables already exist.
+        self.metadata.create_all(self.engine)
+        # Add test data. Safe if test data already exists.
+        self.test_data.add_to_db()
+        return 'populated'
 
-#        def relationship_route_name(self, relationship_name):
-#            return self.collection_route_name +\
-#                ':relationships:' + relationship_name
-
-    CollectionView = type(
-        'CollectionView<{}>'.format(collection_name),
-        (CollectionViewBase, ),
-        {}
-    )
-
-    CollectionView.model = model
-    CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
-    CollectionView.collection_name = collection_name
-    CollectionView.get_dbsession = get_dbsession
-
-    CollectionView.collection_route_name =\
-        ':'.join((route_prefix, collection_name))
-    CollectionView.collection_route_pattern = collection_name
-
-    CollectionView.item_route_name =\
-        CollectionView.collection_route_name + ':item'
-    CollectionView.item_route_pattern = collection_name + '/{id}'
-
-    CollectionView.related_route_name =\
-        CollectionView.collection_route_name + ':related'
-    CollectionView.related_route_pattern =\
-        collection_name + '/{id}/{relationship}'
-
-    CollectionView.relationships_route_name =\
-        CollectionView.collection_route_name + ':relationships'
-    CollectionView.relationships_route_pattern =\
-        collection_name + '/{id}/relationships/{relationship}'
-
-    CollectionView.class_allowed_fields = allowed_fields
-    atts = {}
-    for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-        if key == CollectionView.key_column.name:
-            continue
-        if len(col.foreign_keys) > 0:
-            continue
-        if allowed_fields is None or key in allowed_fields:
-            atts[key] = col
-    CollectionView.attributes = atts
-    rels = {}
-    for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
-        if allowed_fields is None or key in allowed_fields:
-            rels[key] = rel
-    CollectionView.relationships = rels
-
-    return CollectionView
+    def reset(self):
+        '''The same as 'drop' and then 'populate'.
+        '''
+        self.drop()
+        self.populate()
+        return "reset"
 
 class ModelInfo:
     '''Information about a model class (either table or relationship).
