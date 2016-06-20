@@ -496,6 +496,10 @@ class CollectionViewBase:
     def collection_get(self):
         '''Handle GET requests for the collection.
 
+        Get a set of items from the collection, possibly matching search/filter
+        parameters. Optionally sort the results, page them, return only certain
+        fields, and include related resources.
+
         **Query Parameters**
 
             **include:** comma separated list of related resources to include in
