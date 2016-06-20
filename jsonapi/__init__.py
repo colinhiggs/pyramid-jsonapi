@@ -458,6 +458,33 @@ class CollectionViewBase:
                         "name": "alicia"
                     }
                 }' Content-Type:application/vnd.api+json
+
+            Change the author of posts/1 to people/2:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1 data:='
+                {
+                    "type":"posts", "id": "1",
+                    "relationships": {
+                        "author": {"type": "people", "id": "2"}
+                    }
+                }' Content-Type:application/vnd.api+json
+
+            Set the comments on posts/1 to be [comments/4, comments/5]:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1 data:='
+                {
+                    "type":"posts", "id": "1",
+                    "relationships": {
+                        "comments": [
+                            {"type": "comments", "id": "4"},
+                            {"type": "comments", "id": "5"}
+                        ]
+                    }
+                }' Content-Type:application/vnd.api+json
         '''
         try:
             self.single_item_query.one()
