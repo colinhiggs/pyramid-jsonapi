@@ -1062,7 +1062,58 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_delete(self):
-        '''Delete items from relationship collection.
+        '''Handle DELETE requests for TOMANY relationships.
+
+        Delete the specified member from the relationship.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+            **relname** (*str*): relationship name
+
+        **Request Body**
+
+            **resource identifier list** (*json*) in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": [ { resource identifier },... ]
+                }
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPNotFound: if there is no <relname> relationship.
+
+            HTTPNotFound: if an attempt is made to modify a TOONE relationship.
+
+            HTTPConflict: if a resource identifier is specified with a different
+            type than that which the collection holds.
+
+            HTTPFailedDependency: if a database constraint would be broken by
+            adding the specified resource to the relationship.
+
+        Examples:
+            Delete comments/1 from posts/1 comments:
+
+            .. parsed-literal::
+
+                http DELETE http://localhost:6543/posts/1/relationships/comments data:='
+                [
+                    { "type": "comments", "id": "1" }
+                ]' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
         obj_id = self.request.matchdict['id']
