@@ -1672,13 +1672,19 @@ class CollectionViewBase:
     def requested_attributes(self):
         '''Return a dictionary of attributes.
 
+        **Query Parameters**
+
+            **fields[<collection>]:** comma separated list of fields (attributes
+            or relationships) to include in data.
+
         Returns:
             dict: dict in the form:
 
                 .. parsed-literal::
 
                     {
-                        <colname>: <column_object>
+                        <colname>: <column_object>,
+                        ...
                     }
         '''
         return { k:v for k,v in self.attributes.items()
@@ -1686,7 +1692,22 @@ class CollectionViewBase:
 
     @property
     def requested_relationships(self):
-        '''Return a dictionary of relationships: {relname: rel}.
+        '''Return a dictionary of relationships.
+
+        **Query Parameters**
+
+            **fields[<collection>]:** comma separated list of fields (attributes
+            or relationships) to include in data.
+
+        Returns:
+            dict: dict in the form:
+
+                .. parsed-literal::
+
+                    {
+                        <relname>: <relationship_object>,
+                        ...
+                    }
         '''
         return { k:v for k,v in self.relationships.items()
             if k in self.requested_field_names(self.request)}
