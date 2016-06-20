@@ -1402,6 +1402,64 @@ class TestSpec(unittest.TestCase):
             status=404
         )
 
+    def test_spec_patch_resources_relationships_toone(self):
+        '''Should replace a post's author and no other relationship.
+
+        Any or all of a resource’s relationships MAY be included in the resource
+        object included in a PATCH request.
+
+        If a request does not include all of the relationships for a resource,
+        the server MUST interpret the missing relationships as if they were
+        included with their current values. It MUST NOT interpret them as null
+        or empty values.
+
+        If a relationship is provided in the relationships member of a resource
+        object in a PATCH request, its value MUST be a relationship object with
+        a data member. The relationship’s value will be replaced with the value
+        specified in this member.
+        '''
+        # Check that posts/1 does not have people/2 as an author.
+        data = self.test_app.get('/posts/1').json['data']
+        author_data = data['relationships']['author']['data']
+        if author_data:
+            self.assertNotEqual(author_data['id'], '2')
+
+        # Store the blog and comments values so we can make sure that they
+        # didn't change later.
+        orig_blog = data['relationships']['blog']['data']
+        orig_comments = data['relationships']['comments']['data']
+
+        # PATCH posts/1 to have author people/2.
+        r = self.test_app.patch_json(
+            '/posts/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'posts',
+                    'relationships': {
+                        'author': {
+                            'type': 'people', 'id': '2'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Check that posts/1 now has people/2 as an author.
+        data = self.test_app.get('/posts/1').json['data']
+        author_data = data['relationships']['author']['data']
+        self.assertEqual(author_data['id'], '2')
+
+        # Check that it has the same blog and comments.
+        new_blog = data['relationships']['blog']['data']
+        self.assertEqual(orig_blog['id'], new_blog['id'])
+        new_comments = data['relationships']['comments']['data']
+        self.assertEqual(
+            {item['id'] for item in orig_comments},
+            {item['id'] for item in new_comments}
+        )
+
     ###############################################
     # DELETE tests.
     ###############################################
