@@ -955,7 +955,67 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_patch(self):
-        '''Replace relationship collection.
+        '''Handle PATCH requests for relationships (TOMANY or TOONE).
+
+        Completely replace the raltionship membership.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+            **relname** (*str*): relationship name
+
+        **Request Body**
+
+            **resource identifier list** (*json*) in the form:
+
+            TOONE relationship:
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource identifier }
+                }
+
+            TOMANY relationship:
+
+            .. parsed-literal::
+
+                {
+                    "data": [ { resource identifier },... ]
+                }
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPNotFound: if there is no <relname> relationship.
+
+            HTTPConflict: if a resource identifier is specified with a different
+            type than that which the collection holds.
+
+            HTTPFailedDependency: if a database constraint would be broken by
+            adding the specified resource to the relationship.
+
+        Examples:
+            Replace comments list of posts/1:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1/relationships/comments data:='
+                [
+                    { "type": "comments", "id": "1" },
+                    { "type": "comments", "id": "2" }
+                ]' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
         obj_id = self.request.matchdict['id']
