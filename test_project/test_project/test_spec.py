@@ -1402,7 +1402,7 @@ class TestSpec(unittest.TestCase):
             status=404
         )
 
-    def test_spec_patch_resources_relationships_toone(self):
+    def test_spec_patch_resources_relationships_manytoone(self):
         '''Should replace a post's author and no other relationship.
 
         Any or all of a resource’s relationships MAY be included in the resource
@@ -1459,6 +1459,40 @@ class TestSpec(unittest.TestCase):
             {item['id'] for item in orig_comments},
             {item['id'] for item in new_comments}
         )
+
+    def test_spec_patch_resources_relationships_onetomany(self):
+        '''Should replace a post's comments.
+        '''
+        # Check that posts/1 does not have comments/4 or comments/5.
+        data = self.test_app.get('/posts/1').json['data']
+        comments = data['relationships']['comments']['data']
+        comment_ids = {'4', '5'}
+        for comment in comments:
+            self.assertNotIn(comment['id'], comment_ids)
+
+        # PATCH posts/1 to have comments/4 and 5.
+        self.test_app.patch_json(
+            '/posts/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'posts',
+                    'relationships': {
+                        'comments': [
+                            {'type': 'comments', 'id': '4'},
+                            {'type': 'comments', 'id': '5'}
+                        ]
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Check that posts/1 now has comments/4 and comments/5.
+        data = self.test_app.get('/posts/1').json['data']
+        comments = data['relationships']['comments']['data']
+        found_ids = {comment['id'] for comment in comments}
+        self.assertEqual(comment_ids, found_ids)   
 
     ###############################################
     # DELETE tests.
