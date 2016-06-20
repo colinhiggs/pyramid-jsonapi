@@ -341,6 +341,27 @@ class CollectionViewBase:
 
         Get a single item from the collection, referenced by id.
 
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource object },
+                    "links": {
+                        "self": self url,
+                        maybe other links...
+                    },
+                    "meta": { jsonapi specific information }
+                }
+
+        Raises:
+            HTTPNotFound
+
         Example:
 
             Get person 1:
@@ -348,12 +369,6 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http GET http://localhost:6543/people/1
-
-        Other Parameters:
-            id (str): from matchdict
-
-        Returns:
-            dict: single resource object.
         '''
         return self.single_return(
             self.single_item_query,
@@ -369,28 +384,13 @@ class CollectionViewBase:
 
         Update an existing item from a partially defined representation.
 
-        Example:
-            PATCH person 1, changing name to alicia:
+        **URL (matchdict) Parameters**
 
-            .. parsed-literal::
+            **id** (*str*): resource id
 
-                http PATCH http://localhost:6543/people/1 data:='
-                {
-                    "type":"people", "id": "1",
-                    "attributes": {
-                        "name": "alicia"
-                    }
-                }' Content-Type:application/vnd.api+json
+        **Request Body**
 
-        Other Parameters:
-            id (str): from matchdict
-            partial Resource Object (json): from request body
-
-        Raises:
-            HTTPNotFound
-
-        Todo:
-            Currently does not deal with relationships.
+            **Partial resource object** (*json*)
 
         Returns:
             dict: dict in the form:
@@ -405,6 +405,25 @@ class CollectionViewBase:
                         ]
                     }
                 }
+
+        Raises:
+            HTTPNotFound
+
+        Todo:
+            Currently does not deal with relationships.
+
+        Example:
+            PATCH person 1, changing name to alicia:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/people/1 data:='
+                {
+                    "type":"people", "id": "1",
+                    "attributes": {
+                        "name": "alicia"
+                    }
+                }' Content-Type:application/vnd.api+json
         '''
         try:
             self.single_item_query.one()
@@ -441,21 +460,22 @@ class CollectionViewBase:
 
         Delete the referenced item from the collection.
 
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+
+        Returns:
+            dict: Resource Identifier for deleted object.
+
+        Raises:
+            HTTPFailedDependency: if collection/id does not exist
+
         Example:
             delete person 1:
 
             .. parsed-literal::
 
                 http DELETE http://localhost:6543/people/1
-
-        Other Parameters:
-            id (str): from matchdict
-
-        Raises:
-            HTTPFailedDependency: if collection/id does not exist
-
-        Returns:
-            dict: Resource Identifier for deleted object.
         '''
         DBSession = self.get_dbsession()
         item = DBSession.query(self.model).get(self.request.matchdict['id'])
@@ -492,6 +512,20 @@ class CollectionViewBase:
 
             **filter[<attribute>:<op>]:** filter operation.
 
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": [ list of resource objects ],
+                    "links": { links object },
+                    "include": [ optional list of included resource objects ],
+                    "meta": { implementation specific information }
+                }
+
+        Raises:
+            HTTPBadRequest
 
         Examples:
             Get up to default page limit people resources:
@@ -506,21 +540,6 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http GET http://localhost:6543/people?page[limit]=2&page[offset]=2&sort=-name&include=posts
-
-        Raises:
-            HTTPBadRequest
-
-        Returns:
-            dict: dict in the form:
-
-            .. parsed-literal::
-
-                {
-                    "data": [ list of resource objects ],
-                    "links": { links object },
-                    "include": [ optional list of included resource objects ],
-                    "meta": { implementation specific information }
-                }
         '''
         DBSession = self.get_dbsession()
 
