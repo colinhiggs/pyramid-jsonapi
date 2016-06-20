@@ -803,7 +803,7 @@ class CollectionViewBase:
                     "meta": { jsonapi specific information }
                 }
 
-            For a TOMANY relationship (return multiple identifier):
+            For a TOMANY relationship (return multiple identifiers):
 
             .. parsed-literal::
 
