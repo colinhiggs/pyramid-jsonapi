@@ -346,7 +346,7 @@ class CollectionViewBase:
                 if 'links' in ret:
                     ret['links'].update(selfie)
                 else:
-                    ret['links'] = selfie 
+                    ret['links'] = selfie
 
             # Potentially add some debug information.
             if self.request.registry.settings.get(
@@ -477,14 +477,75 @@ class CollectionViewBase:
         if data_id != req_id:
             raise HTTPConflict('JSON id ({}) does not match URL id ({}).'.
             format(data_id, req_id))
-        atts = data['attributes']
+        atts = data.get('attributes',{})
         atts[self.key_column.name] = req_id
-        # TODO(Colin): deal with relationships
         item = DBSession.merge(self.model(**atts))
+
+        rels = data.get('relationships', {})
+        for relname, data in rels.items():
+            if relname not in self.relationships:
+                raise HTTPNotFound(
+                    'Collection {} has no relationship {}'.format(
+                        self.collection_name, relname
+                    )
+                )
+            rel = self.relationships[relname]
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            if data is None:
+                setattr(item, relname, None)
+            elif isinstance(data, dict):
+                if data.get('type') != rel_view.collection_name:
+                    raise HTTPConflict(
+                        'Type {} does not match relationship type {}'.format(
+                            data.get('type', None), rel_view.collection_name
+                        )
+                    )
+                if data.get('id') is None:
+                    raise HTTPBadRequest(
+                        'An id is required in a resource identifier.'
+                    )
+                try:
+                    rel_item = DBSession.query(
+                        rel_class
+                    ).options(
+                        load_only(rel_view.key_column.name)
+                    ).filter(
+                        rel_view.key_column == data['id']
+                    ).one()
+                except NoResultFound:
+                    raise HTTPNotFound('{}/{} not found'.format(
+                        rel_view.collection_name, data['id']
+                    ))
+                setattr(item, relname, rel_item)
+            elif isinstance(data, list):
+                rel_items = []
+                for res_ident in data:
+                    try:
+                        rel_item = DBSession.query(
+                            rel_class
+                        ).options(
+                            load_only(rel_view.key_column.name)
+                        ).filter(
+                            rel_view.key_column == res_ident['id']
+                        ).one()
+                    except NoResultFound:
+                        raise HTTPNotFound('{}/{} not found'.format(
+                            rel_view.collection_name, res_ident['id']
+                        ))
+                    rel_items.append(rel_item)
+                setattr(item, relname, rel_items)
+
         DBSession.flush()
         return {
             'meta': {
-                'updated': [att for att in atts if att != self.key_column.name]
+                'updated': {
+                    'attributes': [
+                        att for att in atts
+                            if att != self.key_column.name
+                    ],
+                    'relationships': [r for r in rels]
+                }
             }
         }
 
