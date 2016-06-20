@@ -214,7 +214,17 @@ def collection_view_factory(
         collection_name = None,
         allowed_fields = None
     ):
-    '''Build a class to handle requests for model.'''
+    '''Build a class to handle requests for model.
+
+    Arguments:
+        model: a model class derived from DeclarativeMeta.
+        get_dbsession: a callable shich returns a
+            sqlalchemy.orm.session.Session or equivalent.
+
+    Keyword Args:
+        collection_name: string name of collection.
+        allowed_fields: set of allowed field names.
+    '''
     if collection_name is None:
         collection_name = model.__tablename__
 
