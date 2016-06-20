@@ -20,6 +20,7 @@ Reference Documentation
 
 .. automodule:: jsonapi
   :members:
+  :member-order: bysource
 
 
 Indices and tables
