@@ -1146,6 +1146,16 @@ class CollectionViewBase:
 
     @property
     def single_item_query(self):
+        '''A query representing the single item referenced by the request.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+
+        Returns:
+            sqlalchemy.orm.query.Query: query which will fetch item with id
+            'id'.
+        '''
         DBSession = self.get_dbsession()
         q = DBSession.query(
             self.model
