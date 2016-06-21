@@ -1369,7 +1369,46 @@ class TestSpec(unittest.TestCase):
         are already present. If a given type and id is already in the
         relationship, the server MUST NOT add it again.
         '''
-        raise NotImplementedError
+        # Make sure that people/2,3 are not attached to articles_by_assoc/1.
+        author_ids = {
+            author['id'] for author in
+                self.test_app.get(
+                    '/articles_by_assoc/1/relationships/authors'
+                ).json['data']
+        }
+        self.assertNotIn('2', author_ids)
+        self.assertNotIn('3', author_ids)
+
+        # Add people/2.
+        self.test_app.post_json(
+            '/articles_by_assoc/1/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '2'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Make sure people/2 has been added.
+        author_ids = {
+            author['id'] for author in
+                self.test_app.get(
+                    '/articles_by_assoc/1/relationships/authors'
+                ).json['data']
+        }
+        self.assertEqual(author_ids, {'1', '2'})
+
+        # Make sure adding people/2 again doesn't result in multiple entries.
+        self.test_app.post_json(
+            '/articles_by_assoc/1/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '2'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
 
 
     ###############################################
