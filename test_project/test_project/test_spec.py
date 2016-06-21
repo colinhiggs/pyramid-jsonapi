@@ -1284,6 +1284,27 @@ class TestSpec(unittest.TestCase):
             status=409 # Test the status code.
         )
 
+    def test_spec_post_relationships_onetomany(self):
+        '''Should add a comment to a blog.
+
+        If a client makes a POST request to a URL from a relationship link, the
+        server MUST add the specified members to the relationship unless they
+        are already present. If a given type and id is already in the
+        relationship, the server MUST NOT add it again.
+        '''
+        raise NotImplementedError
+
+    def test_spec_post_relationships_manytomany_assoc(self):
+        '''Should add an author to an article_by_assoc.
+
+        If a client makes a POST request to a URL from a relationship link, the
+        server MUST add the specified members to the relationship unless they
+        are already present. If a given type and id is already in the
+        relationship, the server MUST NOT add it again.
+        '''
+        raise NotImplementedError
+
+
     ###############################################
     # PATCH tests.
     ###############################################
@@ -1526,11 +1547,69 @@ class TestSpec(unittest.TestCase):
         data = self.test_app.get('/articles_by_assoc/2').json['data']
         authors = data['relationships']['authors']['data']
         found_ids = {author['id'] for author in authors}
-        self.assertEqual(author_ids, found_ids)   
+        self.assertEqual(author_ids, found_ids)
+
+    def test_spec_patch_relationships_toone(self):
+        '''Should update the author of a post.
+
+        The PATCH request MUST include a top-level member named data containing
+        one of:
+
+            * a resource identifier object corresponding to the new related
+              resource.
+
+            * null, to remove the relationship.
+
+        '''
+        raise NotImplementedError
+
+    def test_spec_patch_relationships_onetomany(self):
+        '''Should replace the comments for a post.
+
+        If a client makes a PATCH request to a URL from a to-many relationship
+        link, the server MUST either completely replace every member of the
+        relationship, return an appropriate error response if some resources can
+        not be found or accessed, or return a 403 Forbidden response if complete
+        replacement is not allowed by the server.
+        '''
+        raise NotImplementedError
+
+    def test_spec_patch_relationships_manytomany_assoc(self):
+        '''Should replace the authors for an article_by_assoc.
+
+        If a client makes a PATCH request to a URL from a to-many relationship
+        link, the server MUST either completely replace every member of the
+        relationship, return an appropriate error response if some resources can
+        not be found or accessed, or return a 403 Forbidden response if complete
+        replacement is not allowed by the server.
+        '''
+        raise NotImplementedError
 
     ###############################################
     # DELETE tests.
     ###############################################
+
+    def test_spec_patch_relationships_delete_onetomany(self):
+        '''Should remove a comment from a post.
+
+        If the client makes a DELETE request to a URL from a relationship link
+        the server MUST delete the specified members from the relationship or
+        return a 403 Forbidden response. If all of the specified resources are
+        able to be removed from, or are already missing from, the relationship
+        then the server MUST return a successful response
+        '''
+        raise NotImplementedError
+
+    def test_spec_patch_relationships_delete_manytomany_assoc(self):
+        '''Should remove an author from an artile_by_assoc.
+
+        If the client makes a DELETE request to a URL from a relationship link
+        the server MUST delete the specified members from the relationship or
+        return a 403 Forbidden response. If all of the specified resources are
+        able to be removed from, or are already missing from, the relationship
+        then the server MUST return a successful response
+        '''
+        raise NotImplementedError
 
     ###############################################
     # Error tests.
