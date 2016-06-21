@@ -968,7 +968,7 @@ class CollectionViewBase:
         # Set up the query
         q = self.related_query(obj_id, rel, id_only = True)
 
-        if rel.direction is ONETOMANY:
+        if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
             q = rel_view.query_add_sorting(q)
             q = rel_view.query_add_filtering(q)
             qinfo = rel_view.collection_query_info(self.request)
@@ -1477,8 +1477,11 @@ class CollectionViewBase:
         if rel.direction is ONETOMANY:
             q = q.filter(obj_id == rem_col)
         else:
-            q = q.filter(rel_class._jsonapi_id == local_col)
-            q = q.filter(self.model._jsonapi_id == obj_id)
+            q = q.filter(
+                obj_id == rel.primaryjoin.right
+            ).filter(
+                rel_class._jsonapi_id == rel.secondaryjoin.right
+            )
 
         return q
 
