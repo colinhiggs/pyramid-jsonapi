@@ -1348,7 +1348,7 @@ class CollectionViewBase:
         # Primary data
         if identifiers:
             ret['data'] = [
-                { 'type': self.collection_name, 'id': dbitem._jsonapi_id }
+                { 'type': self.collection_name, 'id': str(dbitem._jsonapi_id) }
                 for dbitem in q.all()
             ]
         else:
