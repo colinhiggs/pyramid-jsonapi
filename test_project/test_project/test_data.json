@@ -199,7 +199,6 @@
       [
         { "author_id": "1", "article_id": "1" },
         { "author_id": "2", "article_id": "1" },
-        { "author_id": "1", "article_id": "2" },
         { "author_id": "2", "article_id": "2" }
       ]
     ]
