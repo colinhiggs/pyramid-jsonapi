@@ -1369,22 +1369,22 @@ class TestSpec(unittest.TestCase):
         are already present. If a given type and id is already in the
         relationship, the server MUST NOT add it again.
         '''
-        # Make sure that people/2,3 are not attached to articles_by_assoc/1.
+        # Make sure that people/1,3 are not attached to articles_by_assoc/2.
         author_ids = {
             author['id'] for author in
                 self.test_app.get(
-                    '/articles_by_assoc/1/relationships/authors'
+                    '/articles_by_assoc/2/relationships/authors'
                 ).json['data']
         }
-        self.assertNotIn('2', author_ids)
+        self.assertNotIn('1', author_ids)
         self.assertNotIn('3', author_ids)
 
-        # Add people/2.
+        # Add people/1.
         self.test_app.post_json(
-            '/articles_by_assoc/1/relationships/authors',
+            '/articles_by_assoc/2/relationships/authors',
             {
                 'data': [
-                    { 'type': 'people', 'id': '2'}
+                    { 'type': 'people', 'id': '1'}
                 ]
             },
             headers={'Content-Type': 'application/vnd.api+json'},
@@ -1394,17 +1394,17 @@ class TestSpec(unittest.TestCase):
         author_ids = {
             author['id'] for author in
                 self.test_app.get(
-                    '/articles_by_assoc/1/relationships/authors'
+                    '/articles_by_assoc/2/relationships/authors'
                 ).json['data']
         }
         self.assertEqual(author_ids, {'1', '2'})
 
-        # Make sure adding people/2 again doesn't result in multiple entries.
+        # Make sure adding people/1 again doesn't result in multiple entries.
         self.test_app.post_json(
-            '/articles_by_assoc/1/relationships/authors',
+            '/articles_by_assoc/2/relationships/authors',
             {
                 'data': [
-                    { 'type': 'people', 'id': '2'}
+                    { 'type': 'people', 'id': '1'}
                 ]
             },
             headers={'Content-Type': 'application/vnd.api+json'},
