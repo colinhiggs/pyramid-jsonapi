@@ -1409,7 +1409,13 @@ class TestSpec(unittest.TestCase):
             },
             headers={'Content-Type': 'application/vnd.api+json'},
         )
-
+        author_ids = [
+            author['id'] for author in
+                self.test_app.get(
+                    '/articles_by_assoc/2/relationships/authors'
+                ).json['data']
+        ]
+        self.assertEqual(author_ids, ['1', '2'])
 
     ###############################################
     # PATCH tests.
