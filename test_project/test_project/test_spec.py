@@ -1492,7 +1492,41 @@ class TestSpec(unittest.TestCase):
         data = self.test_app.get('/posts/1').json['data']
         comments = data['relationships']['comments']['data']
         found_ids = {comment['id'] for comment in comments}
-        self.assertEqual(comment_ids, found_ids)   
+        self.assertEqual(comment_ids, found_ids)
+
+    def test_spec_patch_resources_relationships_manytomany_assoc(self):
+        '''Change the authors of articles_by_assoc/2.
+        '''
+        author_ids = {'1', '3'}
+        # Check that articles_by_assoc/2 does not have author ids 1 and 3
+        data = self.test_app.get('/articles_by_assoc/2').json['data']
+        authors = data['relationships']['authors']['data']
+        found_ids = {author['id'] for author in authors}
+        self.assertNotEqual(author_ids, found_ids)
+
+        # PATCH articles_by_assoc/2 to have authors 1 and 3
+        self.test_app.patch_json(
+            '/articles_by_assoc/2',
+            {
+                'data': {
+                    'id': '2',
+                    'type': 'articles_by_assoc',
+                    'relationships': {
+                        'authors': [
+                            {'type': 'authors', 'id': '1'},
+                            {'type': 'authors', 'id': '3'}
+                        ]
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Check that articles_by_assoc/2 now has authors 1 and 3
+        data = self.test_app.get('/articles_by_assoc/2').json['data']
+        authors = data['relationships']['authors']['data']
+        found_ids = {author['id'] for author in authors}
+        self.assertEqual(author_ids, found_ids)   
 
     ###############################################
     # DELETE tests.
