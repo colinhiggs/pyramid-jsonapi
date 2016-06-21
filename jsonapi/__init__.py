@@ -875,7 +875,7 @@ class CollectionViewBase:
         # Set up the query
         q = self.related_query(obj_id, rel)
 
-        if rel.direction is ONETOMANY:
+        if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
             q = rel_view.query_add_sorting(q)
             q = rel_view.query_add_filtering(q)
             qinfo = rel_view.collection_query_info(self.request)
