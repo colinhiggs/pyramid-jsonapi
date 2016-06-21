@@ -1285,14 +1285,81 @@ class TestSpec(unittest.TestCase):
         )
 
     def test_spec_post_relationships_onetomany(self):
-        '''Should add a comment to a blog.
+        '''Should add two comments to a blog.
 
         If a client makes a POST request to a URL from a relationship link, the
         server MUST add the specified members to the relationship unless they
         are already present. If a given type and id is already in the
         relationship, the server MUST NOT add it again.
         '''
-        raise NotImplementedError
+        # Make sure that comments/4,5 are not attached to posts/1.
+        comment_ids = {
+            comment['id'] for comment in
+                self.test_app.get(
+                    '/posts/1/relationships/comments'
+                ).json['data']
+        }
+        self.assertNotIn('4', comment_ids)
+        self.assertNotIn('5', comment_ids)
+
+        # Add comments 4 and 5.
+        self.test_app.post_json(
+            '/posts/1/relationships/comments',
+            {
+                'data': [
+                    { 'type': 'comments', 'id': '4'},
+                    { 'type': 'comments', 'id': '5'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Make sure they are there.
+        comment_ids = {
+            comment['id'] for comment in
+                self.test_app.get(
+                    '/posts/1/relationships/comments'
+                ).json['data']
+        }
+        self.assertEqual(comment_ids, {'4', '5'})
+
+        # Make sure adding comments/4 again doesn't result in two comments/4.
+        self.test_app.post_json(
+            '/posts/1/relationships/comments',
+            {
+                'data': [
+                    { 'type': 'comments', 'id': '4'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        comment_ids = [
+            comment['id'] for comment in
+                self.test_app.get(
+                    '/posts/1/relationships/comments'
+                ).json['data']
+        ]
+        self.assertEqual(comment_ids, ['4', '5'])
+
+        # Make sure adding comments/1 adds to the comments list, rather than
+        # replacing it.
+        self.test_app.post_json(
+            '/posts/1/relationships/comments',
+            {
+                'data': [
+                    { 'type': 'comments', 'id': '1'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        comment_ids = [
+            comment['id'] for comment in
+                self.test_app.get(
+                    '/posts/1/relationships/comments'
+                ).json['data']
+        ]
+        self.assertEqual(comment_ids, ['1', '4', '5'])
+
 
     def test_spec_post_relationships_manytomany_assoc(self):
         '''Should add an author to an article_by_assoc.
