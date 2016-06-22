@@ -1646,8 +1646,8 @@ class TestSpec(unittest.TestCase):
                     'type': 'articles_by_assoc',
                     'relationships': {
                         'authors': [
-                            {'type': 'authors', 'id': '1'},
-                            {'type': 'authors', 'id': '3'}
+                            {'type': 'people', 'id': '1'},
+                            {'type': 'people', 'id': '3'}
                         ]
                     }
                 }
