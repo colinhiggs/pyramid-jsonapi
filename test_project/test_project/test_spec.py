@@ -1840,6 +1840,54 @@ class TestSpec(unittest.TestCase):
         }
         self.assertEqual(comment_ids, {'5'})
 
+    def test_spec_delete_relationships_onetomany_double_delete(self):
+        '''Should remove a comment from a post twice.
+
+        If all of the specified resources are... already missing from, the
+        relationship then the server MUST return a successful response
+        '''
+        # Get the current set of comments for posts/4.
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/4/relationships/comments').json['data']
+        }
+        self.assertEqual(comment_ids, {'1', '2', '5'})
+
+        # DELETE comments/1.
+        self.test_app.delete_json(
+            '/posts/4/relationships/comments',
+            {
+                'data': [
+                    {'type': 'comments', 'id': '1'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Test that comments/1 has been deleted.
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/4/relationships/comments').json['data']
+        }
+        self.assertEqual(comment_ids, {'2', '5'})
+
+        # DELETE comments/1 again.
+        self.test_app.delete_json(
+            '/posts/4/relationships/comments',
+            {
+                'data': [
+                    {'type': 'comments', 'id': '1'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Test that we still have the same list of comments.
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/4/relationships/comments').json['data']
+        }
+        self.assertEqual(comment_ids, {'2', '5'})
+
     def test_spec_delete_relationships_manytomany_assoc(self):
         '''Should remove an author from an artile_by_assoc.
 
