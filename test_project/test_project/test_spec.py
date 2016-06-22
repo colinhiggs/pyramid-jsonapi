@@ -1720,10 +1720,10 @@ class TestSpec(unittest.TestCase):
         )
 
         # Now the post should be None.
-        comment_id = self.test_app.get(
+        comment = self.test_app.get(
             '/comments/1/relationships/post'
-        ).json['data']['id']
-        self.assertEqual(comment_id, None)
+        ).json['data']
+        self.assertEqual(comment, None)
 
     def test_spec_patch_relationships_onetomany(self):
         '''Should replace the comments for a post.
