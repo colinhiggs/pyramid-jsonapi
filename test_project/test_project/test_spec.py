@@ -1840,7 +1840,7 @@ class TestSpec(unittest.TestCase):
         }
         self.assertEqual(comment_ids, {'5'})
 
-    def test_spec_patch_relationships_delete_manytomany_assoc(self):
+    def test_spec_delete_relationships_manytomany_assoc(self):
         '''Should remove an author from an artile_by_assoc.
 
         If the client makes a DELETE request to a URL from a relationship link
@@ -1849,7 +1849,33 @@ class TestSpec(unittest.TestCase):
         able to be removed from, or are already missing from, the relationship
         then the server MUST return a successful response
         '''
-        raise NotImplementedError
+        found_ids = {
+            author['id'] for author in
+            self.test_app.get(
+                '/articles_by_assoc/1/relationships/authors'
+            ).json['data']
+        }
+        self.assertEqual(found_ids, {'1', '2'})
+
+        # DELETE people/1 from rel.
+        self.test_app.delete_json(
+            '/articles_by_assoc/1/relationships/authors',
+            {
+                'data': [
+                    {'type': 'people', 'id': '1'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Check that articles_by_assoc/2 now has authors 2
+        found_ids = {
+            author['id'] for author in
+            self.test_app.get(
+                '/articles_by_assoc/1/relationships/authors'
+            ).json['data']
+        }
+        self.assertEqual(found_ids, {'2'})
 
     ###############################################
     # Error tests.
