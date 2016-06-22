@@ -1805,6 +1805,22 @@ class TestSpec(unittest.TestCase):
     # DELETE tests.
     ###############################################
 
+    def test_spec_delete_item(self):
+        '''Should delete comments/5
+
+        An individual resource can be deleted by making a DELETE request to the
+        resource’s URL
+        '''
+
+        # Check that comments/5 exists.
+        self.test_app.get('/comments/5')
+
+        # Delete comments/5.
+        self.test_app.delete('/comments/5')
+
+        # Check that comments/5 no longer exists.
+        self.test_app.get('/comments/5', status=404)
+
     def test_spec_delete_relationships_onetomany(self):
         '''Should remove a comment from a post.
 
