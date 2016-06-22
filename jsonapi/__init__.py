@@ -1476,12 +1476,22 @@ class CollectionViewBase:
             )
         if rel.direction is ONETOMANY:
             q = q.filter(obj_id == rem_col)
-        else:
+        elif rel.direction is MANYTOMANY:
             q = q.filter(
                 obj_id == rel.primaryjoin.right
             ).filter(
                 rel_class._jsonapi_id == rel.secondaryjoin.right
             )
+        elif rel.direction is MANYTOONE:
+            q = q.filter(
+                local_col == rel_class._jsonapi_id
+            ).filter(
+                self.model._jsonapi_id == obj_id
+            )
+        else:
+            raise HTTPError('Unknown relationships direction, "{}".'.format(
+                rel.direction.name
+            ))
 
         return q
 
