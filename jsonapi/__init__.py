@@ -1258,8 +1258,15 @@ class CollectionViewBase:
                 raise HTTPConflict(
                     "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
                 )
-            getattr(obj, relname).\
-                remove(DBSession.query(rel_class).get(resid['id']))
+            try:
+                getattr(obj, relname).\
+                    remove(DBSession.query(rel_class).get(resid['id']))
+            except ValueError as e:
+                if e.args[0].endswith(': x not in list'):
+                    # The item we were asked to remove is not there.
+                    pass
+                else:
+                    raise
         try:
             DBSession.flush()
         except sqlalchemy.exc.IntegrityError as e:
