@@ -1155,13 +1155,13 @@ class CollectionViewBase:
         obj = DBSession.query(self.model).get(obj_id)
         if rel.direction is MANYTOONE:
             resid = self.request.json_body['data']
-            if resid['type'] != rel_view.collection_name:
-                raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
-                )
             if resid is None:
                 setattr(obj, relname, None)
             else:
+                if resid['type'] != rel_view.collection_name:
+                    raise HTTPConflict(
+                        "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    )
                 setattr(
                     obj,
                     relname,
