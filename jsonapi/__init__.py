@@ -1311,7 +1311,10 @@ class CollectionViewBase:
             else:
                 return {'data': None}
         if identifier:
-            ret['data'] = { 'type': self.collection_name, 'id': item._jsonapi_id }
+            ret['data'] = {
+                'type': self.collection_name,
+                'id': str(item._jsonapi_id)
+            }
         else:
             ret['data'] = self.serialise_db_item(item, included)
             if self.requested_include_names():
