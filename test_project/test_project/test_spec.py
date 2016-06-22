@@ -1805,7 +1805,7 @@ class TestSpec(unittest.TestCase):
     # DELETE tests.
     ###############################################
 
-    def test_spec_patch_relationships_delete_onetomany(self):
+    def test_spec_delete_relationships_onetomany(self):
         '''Should remove a comment from a post.
 
         If the client makes a DELETE request to a URL from a relationship link
@@ -1814,7 +1814,31 @@ class TestSpec(unittest.TestCase):
         able to be removed from, or are already missing from, the relationship
         then the server MUST return a successful response
         '''
-        raise NotImplementedError
+        # Get the current set of comments for posts/4.
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/4/relationships/comments').json['data']
+        }
+        self.assertEqual(comment_ids, {'1', '2', '5'})
+
+        # DELETE comments/1 and 2
+        self.test_app.delete_json(
+            '/posts/4/relationships/comments',
+            {
+                'data': [
+                    {'type': 'comments', 'id': '1'},
+                    {'type': 'comments', 'id': '2'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Test that posts/4 now only has comments/5
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/4/relationships/comments').json['data']
+        }
+        self.assertEqual(comment_ids, {'5'})
 
     def test_spec_patch_relationships_delete_manytomany_assoc(self):
         '''Should remove an author from an artile_by_assoc.
