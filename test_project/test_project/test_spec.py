@@ -1734,7 +1734,32 @@ class TestSpec(unittest.TestCase):
         not be found or accessed, or return a 403 Forbidden response if complete
         replacement is not allowed by the server.
         '''
-        raise NotImplementedError
+        # Check that posts/1 does not have comments/4 or comments/5.
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/1/relationships/comments').json['data']
+        }
+        for cid in comment_ids:
+            self.assertNotIn(cid, {'4', '5'})
+
+        # PATCH posts/1 to have comments/4 and 5.
+        self.test_app.patch_json(
+            '/posts/1/relationships/comments',
+            {
+                'data': [
+                    {'type': 'comments', 'id': '4'},
+                    {'type': 'comments', 'id': '5'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Test that posts/1 has comments/4 and 5 (and only those).
+        comment_ids = {
+            comment['id'] for comment in
+            self.test_app.get('/posts/1/relationships/comments').json['data']
+        }
+        self.assertEqual(comment_ids, {'4', '5'})
 
     def test_spec_patch_relationships_manytomany_assoc(self):
         '''Should replace the authors for an article_by_assoc.
