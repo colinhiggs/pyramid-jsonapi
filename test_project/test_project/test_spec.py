@@ -1770,7 +1770,36 @@ class TestSpec(unittest.TestCase):
         not be found or accessed, or return a 403 Forbidden response if complete
         replacement is not allowed by the server.
         '''
-        raise NotImplementedError
+        author_ids = {'1', '3'}
+        # Check that articles_by_assoc/2 does not have author ids 1 and 3
+        found_ids = {
+            author['id'] for author in
+            self.test_app.get(
+                '/articles_by_assoc/2/relationships/authors'
+            ).json['data']
+        }
+        self.assertNotEqual(author_ids, found_ids)
+
+        # PATCH articles_by_assoc/2 to have authors 1 and 3
+        self.test_app.patch_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    {'type': 'people', 'id': '1'},
+                    {'type': 'people', 'id': '3'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Check that articles_by_assoc/2 now has authors 1 and 3
+        found_ids = {
+            author['id'] for author in
+            self.test_app.get(
+                '/articles_by_assoc/2/relationships/authors'
+            ).json['data']
+        }
+        self.assertEqual(author_ids, found_ids)
 
     ###############################################
     # DELETE tests.
