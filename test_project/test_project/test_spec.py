@@ -1670,10 +1670,60 @@ class TestSpec(unittest.TestCase):
             * a resource identifier object corresponding to the new related
               resource.
 
+            ...
+        '''
+        # Make sure the current author of post/1 is not people/3
+        author_id = self.test_app.get(
+            '/posts/1/relationships/author'
+        ).json['data']['id']
+        self.assertNotEqual(author_id, '3')
+
+        # Set the author to be people/3
+        self.test_app.patch_json(
+            '/posts/1/relationships/author',
+            {
+                'data': {'type': 'people', 'id': '3'}
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Now the author should be people/3
+        author_id = self.test_app.get(
+            '/posts/1/relationships/author'
+        ).json['data']['id']
+        self.assertEqual(author_id, '3')
+
+    def test_spec_patch_relationships_toone_null(self):
+        '''Should set the post of a comment to null.
+
+        The PATCH request MUST include a top-level member named data containing
+        one of:
+
+            ...
+
             * null, to remove the relationship.
 
         '''
-        raise NotImplementedError
+        # Make sure the current post of comment/1 is not null.
+        comment_id = self.test_app.get(
+            '/comments/1/relationships/post'
+        ).json['data']['id']
+        self.assertNotEqual(comment_id, None)
+
+        # Set the post to None.
+        self.test_app.patch_json(
+            '/comments/1/relationships/post',
+            {
+                'data': None
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Now the post should be None.
+        comment_id = self.test_app.get(
+            '/comments/1/relationships/post'
+        ).json['data']['id']
+        self.assertEqual(comment_id, None)
 
     def test_spec_patch_relationships_onetomany(self):
         '''Should replace the comments for a post.
