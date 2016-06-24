@@ -1584,6 +1584,18 @@ class CollectionViewBase:
 
     def related_limit(self, relationship):
         '''Paging limit for related resources.
+
+        **Query Parameters**
+
+            **page[limit:relationships:<relname>]:** number of results to return
+            per page for related resource <relname>.
+
+        Parameters:
+            relationship(sqlalchemy.orm.relationships.RelationshipProperty):
+            the relationship to get the limit for.
+
+        Returns:
+            int: paging limit for related resources.
         '''
         limit_comps = [ 'limit', 'relationships', relationship.key ]
         limit = self.default_limit
