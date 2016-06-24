@@ -1664,14 +1664,17 @@ class CollectionViewBase:
         ):
         '''Serialise an individual database item to JSON-API.
 
-        Args:
-            item: item from query to serialise.
-            requested_includes (set): to be included as per request.
-            include_path (list):
-            included (dict): tracking included items.
+        Arguments:
+            item: item to serialise.
+
+        Keyword Arguments:
+            included (dict): dictionary to be filled with included resource
+                objects.
+            include_path (list): list tracking current include path for
+                recursive calls.
 
         Returns:
-            dict: item dictionary.
+            dict: resource object dictionary.
         '''
         DBSession = self.get_dbsession()
         if include_path is None:
