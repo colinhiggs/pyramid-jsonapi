@@ -146,11 +146,8 @@ def create_resource(config, model, get_dbsession,
         )
     model._jsonapi_id = getattr(model, keycols[0].name)
 
-    # Figure out what table model is from
-    info = ModelInfo.construct(model)
-
     if collection_name is None:
-        collection_name = info.table_name
+        collection_name = sqlalchemy.inspect(model).tables[0].name
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(model, get_dbsession, collection_name,
@@ -2148,6 +2145,12 @@ class CollectionViewBase:
     @functools.lru_cache(maxsize=128)
     def view_instance(self, model):
         '''(memoised) get an instance of view class for model.
+
+        Args:
+            model (DeclarativeMeta): model class.
+
+        Returns:
+            class: subclass of CollectionViewBase providing view for ``model``.
         '''
         return view_classes[model](self.request)
 
@@ -2187,39 +2190,3 @@ class DebugView:
         self.drop()
         self.populate()
         return "reset"
-
-class ModelInfo:
-    '''Information about a model class (either table or relationship).
-
-    Use the :meth:`construct` factory method to create one.
-
-    Attributes:
-        is_relationship (bool): True if info is for relationship.
-        model_class (class): sqlalchemy class which represents the table.
-        table_name (str): database table name.
-        relationship_name (str): (relationships only) name of relationship.
-    '''
-
-    @classmethod
-    def construct(cls, model_part):
-        '''Construct a ModelInfo instance from a model or relationship class.
-
-        Args:
-            model_part (class): model or relationship class.
-
-        Returns:
-            ModelInfo: ModelInfo class instance.
-        '''
-        info = cls()
-        if isinstance(model_part, DeclarativeMeta):
-            info.is_relationship = False
-            info.table_name = sqlalchemy.inspect(model_part).tables[0].name
-            info.model_class = model_part
-        elif isinstance(model_part, RelationshipProperty):
-            info.is_relationship = True
-            info.relationship_name = model_part.key
-            info.table_name = model_part.parent.tables[0].name
-            info.model_class = model_part.parent.class_
-        else:
-            raise ValueError("Don't know how to deal with model_part class {}".format(model_part.__class__))
-        return info
