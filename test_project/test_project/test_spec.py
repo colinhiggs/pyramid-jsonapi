@@ -202,7 +202,7 @@ class TestSpec(unittest.TestCase):
         self.assertIsInstance(item['type'], str)
         self.assertIsInstance(item['id'], str)
 
-    def test_spec_resource_object_must(self):
+    def test_spec_resource_object_should(self):
         '''Fetched resource should have attributes, relationships, links, meta.
 
         a resource object MAY contain any of these top-level members:
