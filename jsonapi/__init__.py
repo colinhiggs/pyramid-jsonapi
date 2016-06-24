@@ -1592,7 +1592,7 @@ class CollectionViewBase:
 
         Parameters:
             relationship(sqlalchemy.orm.relationships.RelationshipProperty):
-            the relationship to get the limit for.
+                the relationship to get the limit for.
 
         Returns:
             int: paging limit for related resources.
