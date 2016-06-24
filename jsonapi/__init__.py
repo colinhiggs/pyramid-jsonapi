@@ -1968,13 +1968,14 @@ class CollectionViewBase:
             links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
         return links
 
+    @property
     @functools.lru_cache(maxsize=128)
-    def requested_field_names(self, request):
-        '''Get the sparse field names as a set from req params for type_name.
+    def requested_field_names(self):
+        '''Get the sparse field names from req params for type_name.
 
         Return None if there was no sparse field param.
         '''
-        param = request.params.get(
+        param = self.request.params.get(
             'fields[{}]'.format(self.collection_name)
         )
         if param is None:
@@ -2003,7 +2004,7 @@ class CollectionViewBase:
                     }
         '''
         return { k:v for k,v in self.attributes.items()
-            if k in self.requested_field_names(self.request)}
+            if k in self.requested_field_names}
 
     @property
     def requested_relationships(self):
@@ -2025,7 +2026,7 @@ class CollectionViewBase:
                     }
         '''
         return { k:v for k,v in self.relationships.items()
-            if k in self.requested_field_names(self.request)}
+            if k in self.requested_field_names}
 
     @property
     def requested_fields(self):
