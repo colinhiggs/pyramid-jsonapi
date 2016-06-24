@@ -1307,6 +1307,29 @@ class CollectionViewBase:
                 * raise 404 with ``not_found_message`` if it is a str;
 
                 * or return ``{"data": None}`` if ``not_found_message`` is None.
+
+            identifier: return identifier if True, object if false.
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": { resource object }
+
+                    optionally...
+                    "included": [ included objects ]
+                }
+
+            or
+
+            .. parsed-literal::
+
+                { resource identifier }
+
+        Raises:
+            HTTPNotFound: if the item is not found.
         '''
         included = {}
         ret = {}
@@ -1330,6 +1353,36 @@ class CollectionViewBase:
 
     def collection_return(self, q, count = None, identifiers = False):
         '''Populate return dictionary for collections.
+
+        Arguments:
+            q (sqlalchemy.orm.query.Query): query designed to return multiple items.
+
+        Keyword Arguments:
+            count(int): Number of items the query will return (if known).
+
+            identifiers(bool): return identifiers if True, objects if false.
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    "data": [ resource objects ]
+
+                    optionally...
+                    "included": [ included objects ]
+                }
+
+            or
+
+            .. parsed-literal::
+
+                [ resource identifiers ]
+
+        Raises:
+            HTTPBadRequest: If a count was not supplied and an attempt to call
+            q.count() failed.
         '''
         # Get info for query.
         qinfo = self.collection_query_info(self.request)
