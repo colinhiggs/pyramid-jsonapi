@@ -1971,9 +1971,15 @@ class CollectionViewBase:
     @property
     @functools.lru_cache(maxsize=128)
     def requested_field_names(self):
-        '''Get the sparse field names from req params for type_name.
+        '''Get the sparse field names from request.
 
-        Return None if there was no sparse field param.
+        **Query Parameters**
+
+            **fields[<collection>]:** comma separated list of fields (attributes
+            or relationships) to include in data.
+
+        Returns:
+            set: set of fields names.
         '''
         param = self.request.params.get(
             'fields[{}]'.format(self.collection_name)
