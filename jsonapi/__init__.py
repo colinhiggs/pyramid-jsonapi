@@ -2037,6 +2037,24 @@ class CollectionViewBase:
     @property
     def requested_fields(self):
         '''Union of attributes and relationships.
+
+        **Query Parameters**
+
+            **fields[<collection>]:** comma separated list of fields (attributes
+            or relationships) to include in data.
+
+        Returns:
+            dict: dict in the form:
+
+                .. parsed-literal::
+
+                    {
+                        <colname>: <column_object>,
+                        ...
+                        <relname>: <relationship_object>,
+                        ...
+                    }
+
         '''
         ret = self.requested_attributes
         ret.update(
