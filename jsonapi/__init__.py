@@ -1435,7 +1435,7 @@ class CollectionViewBase:
         the query.
 
         See Also:
-            :py:func:`collection_query_info`
+            ``_sort`` key from :py:func:`collection_query_info`
 
         **Query Parameters**
             **sort:** comma separated list of sort keys.
@@ -1485,6 +1485,64 @@ class CollectionViewBase:
 
     def query_add_filtering(self, q):
         '''Add filtering clauses to query.
+
+        Use information from the ``filter`` query parameter (via
+        :py:func:`collection_query_info`) to filter query results.
+
+        Filter parameter structure:
+
+            ``filter[<attribute>:<op>]=<value>``
+
+        where:
+
+            ``attribute`` is an attribute of the queried object type.
+
+            ``op`` is the comparison operator.
+
+            ``value`` is the value the comparison operator should compare to.
+
+        Valid comparison operators:
+
+            * ``eq`` as sqlalchemy ``__eq__``
+            * ``ne`` as sqlalchemy ``__ne__``
+            * ``startswith`` as sqlalchemy ``startswith``
+            * ``endswith`` as sqlalchemy ``endswith``
+            * ``contains`` as sqlalchemy ``contains``
+            * ``lt`` as sqlalchemy ``__lt__``
+            * ``gt`` as sqlalchemy ``__gt__``
+            * ``le`` as sqlalchemy ``__le__``
+            * ``ge`` as sqlalchemy ``__ge__``
+            * ``like`` or ``ilike`` as sqlalchemy ``like`` or ``ilike``, except
+              replace any '*' with '%' (so that '*' acts as a wildcard)
+
+        See Also:
+            ``_filters`` key from :py:func:`collection_query_info`
+
+        **Query Parameters**
+            **filter[<attribute>:<op>]:** filter operation.
+
+        Parameters:
+            q (sqlalchemy.orm.query.Query): query
+
+        Returns:
+            sqlalchemy.orm.query.Query: filtered query.
+
+        Examples:
+
+            Get people whose name is 'alice'
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/people?filter[name:eq]=alice
+
+            Get posts published after 2015-01-03:
+
+            .. parsed-literal::
+
+                http GET http://localhost:6543/posts?filter[published_at:gt]=2015-01-03
+
+        Todo:
+            Support dotted (relationship) attribute specifications.
         '''
         qinfo = self.collection_query_info(self.request)
         # Filters
