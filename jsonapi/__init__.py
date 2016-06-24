@@ -1610,6 +1610,20 @@ class CollectionViewBase:
 
     def related_query(self, obj_id, relationship, id_only = False):
         '''Construct query for related objects.
+
+        Parameters:
+            obj_id (str): id of an item in this view's collection.
+
+            relationship (sqlalchemy.orm.relationships.RelationshipProperty):
+                the relationships to get related objects from.
+
+            id_only (bool): if id_only is ``True``, only query for the key
+                column (probably in order to build resource identifiers). If
+                id_only is False, query for all requested columns.
+
+        Returns:
+            sqlalchemy.orm.query.Query: query which will fetch related
+            object(s).
         '''
         DBSession = self.get_dbsession()
         rel = relationship
