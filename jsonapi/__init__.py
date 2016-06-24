@@ -1429,6 +1429,22 @@ class CollectionViewBase:
 
     def query_add_sorting(self, q):
         '''Add sorting to query.
+
+        Use information from the ``sort`` query parameter (via
+        :py:func:`collection_query_info`) to contruct an ``order_by`` clause on
+        the query.
+
+        See Also:
+            :py:func:`collection_query_info`
+
+        **Query Parameters**
+            **sort:** comma separated list of sort keys.
+
+        Parameters:
+            q (sqlalchemy.orm.query.Query): query
+
+        Returns:
+            sqlalchemy.orm.query.Query: query with ``order_by`` clause.
         '''
         # Get info for query.
         qinfo = self.collection_query_info(self.request)
