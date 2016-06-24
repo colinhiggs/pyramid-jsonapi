@@ -2113,7 +2113,16 @@ class CollectionViewBase:
 
     @property
     def bad_include_paths(self):
-        '''Return a set of invalid 'include' parameters.'''
+        '''Return a set of invalid 'include' parameters.
+
+        **Query Parameters**
+
+            **include:** comma separated list of related resources to include in
+            the include section.
+
+        Returns:
+            set: set of requested include paths with no corresponding attribute.
+        '''
         param = self.request.params.get('include')
         bad = set()
         if param is None:
