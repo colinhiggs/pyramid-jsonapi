@@ -41,23 +41,25 @@ Definitely at the stage where you can play with it; don't use it in production.
 # Installation
 
 There is a test release on testpypi:
-https://testpypi.python.org/pypi?:action=display&name=jsonapi. You can install
-that (perhaps into a virtualenv for play purposes) with
+https://testpypi.python.org/pypi?:action=display&name=pyramid_jsonapi. You can
+install that (perhaps into a virtualenv for play purposes) with
 
 ```bash
-pip install -i https://testpypi.python.org/pypi jsonapi
+pip install -i https://testpypi.python.org/pypi pyramid_jsonapi
 ```
 
 or, since there is only one file, you can download the development version from
-github and copy the jsonapi directory into your PYTHONPATH or into your project.
+github and copy the pyramid_jsonapi directory into your PYTHONPATH or into your
+project.
 
 # Quick preview
 
 If you are happy with the defaults, you can get away with the following additions to the standard pyramid alchemy scaffold's top level `__init__.py`:
 
 ```python
-import jsonapi
-# Or 'from . import jsonapi' if you copied jsonapi directly into your project.
+import pyramid_jsonapi
+# Or 'from . import pyramid_jsonapi' if you copied pyramid_jsonapi directly
+# into your project.
 
 from . import models # Your models module.
 
@@ -68,7 +70,7 @@ from . import models # Your models module.
   renderer.add_adapter(datetime.date, datetime_adapter)
   config.add_renderer('json', renderer)
   # Create the routes and views automagically:
-  jsonapi.create_jsonapi_using_magic_and_pixie_dust(
+  pyramid_jsonapi.create_jsonapi_using_magic_and_pixie_dust(
     config, models, lambda view: models.DBSession
   )
   # The third argument above should be a callable which accepts a CollectionView
@@ -149,7 +151,7 @@ More or less the same as the quick preview above. Spelled out in a bit more deta
 1. Create the API end points from the model:
 
   ```python
-  jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models, callback)
+  pyramid_jsonapi.create_jsonapi_using_magic_and_pixie_dust(config, models, callback)
   ```
 
 That's pretty much it.

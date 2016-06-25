@@ -4,7 +4,7 @@ from pyramid.renderers import JSON
 from . import views
 
 # The jsonapi module.
-import jsonapi
+import pyramid_jsonapi
 
 # Import models as a module: needed for create_jsonapi...
 from . import models
@@ -32,12 +32,11 @@ def main(global_config, **settings):
     renderer.add_adapter(datetime.date, datetime_adapter)
     config.add_renderer('json', renderer)
 
-    # Lines specific to jsonapi.
+    # Lines specific to pyramid_jsonapi.
     # Create the routes and views automagically.
-    jsonapi.create_jsonapi_using_magic_and_pixie_dust(
+    pyramid_jsonapi.create_jsonapi_using_magic_and_pixie_dust(
         config, models, lambda view: models.DBSession
     )
-#    jsonapi.create_resource(config, models.Post, collection_name = 'posts2', allowed_fields = {'title', 'published_at'})
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

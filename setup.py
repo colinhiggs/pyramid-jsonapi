@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-version = '0.1'
+version = '0.2'
 
 requires = [
     'pyramid',
@@ -8,8 +8,8 @@ requires = [
     ]
 
 setup(
-  name = 'jsonapi',
-  packages = ['jsonapi'],
+  name = 'pyramid_jsonapi',
+  packages = ['pyramid_jsonapi'],
   version = version,
   description = 'Auto-build JSON API from sqlalchemy models using the pyramid framework',
   author = 'Colin Higgs',
