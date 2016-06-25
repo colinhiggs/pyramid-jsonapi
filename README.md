@@ -40,11 +40,16 @@ Definitely at the stage where you can play with it; don't use it in production.
 
 # Installation
 
-Pretty basic right now: copy the directory jsonapi/ into your PYTHONPATH or into your project. There is only one file.
+There is a test release on testpypi:
+https://testpypi.python.org/pypi?:action=display&name=jsonapi. You can install
+that (perhaps into a virtualenv for play purposes) with
 
-setup.py *should* work but has not really been tested.
+```bash
+pip install -i https://testpypi.python.org/pypi jsonapi
+```
 
-A release worthy of some packaging should come soon.
+or, since there is only one file, you can download the development version from
+github and copy the jsonapi directory into your PYTHONPATH or into your project.
 
 # Quick preview
 
