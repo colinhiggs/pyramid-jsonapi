@@ -1,24 +1,37 @@
 '''Tools for constructing a JSON-API from sqlalchemy models in Pyramid.'''
 import json
-#from sqlalchemy import inspect
 import transaction
 import sqlalchemy
-from pyramid.view import view_config, notfound_view_config, forbidden_view_config
+from pyramid.view import (
+    view_config,
+    notfound_view_config,
+    forbidden_view_config
+)
 from pyramid.renderers import JSON
-from pyramid.httpexceptions import exception_response, HTTPException, HTTPNotFound, HTTPForbidden, HTTPUnauthorized, HTTPClientError, HTTPBadRequest, HTTPConflict, HTTPUnsupportedMediaType, HTTPNotAcceptable, HTTPNotImplemented, HTTPError, HTTPFailedDependency
+from pyramid.httpexceptions import (
+    exception_response,
+    HTTPException,
+    HTTPNotFound,
+    HTTPForbidden,
+    HTTPUnauthorized,
+    HTTPClientError,
+    HTTPBadRequest,
+    HTTPConflict,
+    HTTPUnsupportedMediaType,
+    HTTPNotAcceptable,
+    HTTPNotImplemented,
+    HTTPError,
+    HTTPFailedDependency
+)
 import pyramid
 import sys
-import inspect
 import re
-from collections import namedtuple
 import psycopg2
-import pprint
 import functools
 import types
 import importlib
 
-from zope.sqlalchemy import ZopeTransactionExtension
-from sqlalchemy.orm import sessionmaker, scoped_session, load_only
+from sqlalchemy.orm import load_only
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
@@ -28,9 +41,9 @@ ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
-#DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 route_prefix = 'jsonapi'
 view_classes = {}
+
 
 def error(e, request):
     request.response.content_type = 'application/vnd.api+json'
@@ -45,8 +58,11 @@ def error(e, request):
         ]
     }
 
-def create_jsonapi(config, models, get_dbsession,
-    engine = None, test_data = None):
+
+def create_jsonapi(
+        config, models, get_dbsession,
+        engine=None, test_data=None
+        ):
     '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
     Arguments:
@@ -97,24 +113,40 @@ def create_jsonapi(config, models, get_dbsession,
             )
         DebugView.test_data = test_data
         config.add_route('debug', '/debug/{action}')
-        config.add_view(DebugView, attr='drop',
-            route_name='debug', match_param='action=drop', renderer='json')
-        config.add_view(DebugView, attr='populate',
-            route_name='debug', match_param='action=populate', renderer='json')
-        config.add_view(DebugView, attr='reset',
-            route_name='debug', match_param='action=reset', renderer='json')
+        config.add_view(
+            DebugView,
+            attr='drop',
+            route_name='debug',
+            match_param='action=drop',
+            renderer='json'
+        )
+        config.add_view(
+            DebugView,
+            attr='populate',
+            route_name='debug',
+            match_param='action=populate',
+            renderer='json'
+        )
+        config.add_view(
+            DebugView,
+            attr='reset',
+            route_name='debug',
+            match_param='action=reset',
+            renderer='json'
+        )
 
     # Loop through the models list. Create resource endpoints for these and
     # any relationships found.
     for model_class in model_list:
-        create_resource(config, model_class, get_dbsession = get_dbsession)
+        create_resource(config, model_class, get_dbsession=get_dbsession)
 
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
-def create_resource(config, model, get_dbsession,
-        collection_name = None,
-        allowed_fields = None,
-    ):
+
+def create_resource(
+        config, model, get_dbsession,
+        collection_name=None, allowed_fields=None,
+        ):
     '''Produce a set of resource endpoints.
 
     Arguments:
@@ -150,8 +182,9 @@ def create_resource(config, model, get_dbsession,
         collection_name = sqlalchemy.inspect(model).tables[0].name
 
     # Create a view class for use in the various add_view() calls below.
-    view = collection_view_factory(model, get_dbsession, collection_name,
-        allowed_fields = allowed_fields)
+    view = collection_view_factory(
+        model, get_dbsession, collection_name, allowed_fields=allowed_fields
+    )
     view_classes['collection_name'] = view
     view_classes[model] = view
 
@@ -163,29 +196,41 @@ def create_resource(config, model, get_dbsession,
     # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
     # GET
-    config.add_view(view, attr='get', request_method='GET',
-        route_name=view.item_route_name, renderer='json')
+    config.add_view(
+        view, attr='get', request_method='GET',
+        route_name=view.item_route_name, renderer='json'
+    )
     # DELETE
-    config.add_view(view, attr='delete', request_method='DELETE',
-        route_name=view.item_route_name, renderer='json')
+    config.add_view(
+        view, attr='delete', request_method='DELETE',
+        route_name=view.item_route_name, renderer='json'
+    )
     # PATCH
-    config.add_view(view, attr='patch', request_method='PATCH',
-        route_name=view.item_route_name, renderer='json')
+    config.add_view(
+        view, attr='patch', request_method='PATCH',
+        route_name=view.item_route_name, renderer='json'
+    )
 
     # collection
     config.add_route(view.collection_route_name, view.collection_route_pattern)
     # GET
-    config.add_view(view, attr='collection_get', request_method='GET',
-        route_name=view.collection_route_name, renderer='json')
+    config.add_view(
+        view, attr='collection_get', request_method='GET',
+        route_name=view.collection_route_name, renderer='json'
+    )
     # POST
-    config.add_view(view, attr='collection_post', request_method='POST',
-        route_name=view.collection_route_name, renderer='json')
+    config.add_view(
+        view, attr='collection_post', request_method='POST',
+        route_name=view.collection_route_name, renderer='json'
+    )
 
     # related
     config.add_route(view.related_route_name, view.related_route_pattern)
     # GET
-    config.add_view(view, attr='related_get', request_method='GET',
-        route_name=view.related_route_name, renderer='json')
+    config.add_view(
+        view, attr='related_get', request_method='GET',
+        route_name=view.related_route_name, renderer='json'
+    )
 
     # relationships
     config.add_route(
@@ -193,24 +238,33 @@ def create_resource(config, model, get_dbsession,
         view.relationships_route_pattern
     )
     # GET
-    config.add_view(view, attr='relationships_get', request_method='GET',
-        route_name=view.relationships_route_name, renderer='json')
+    config.add_view(
+        view, attr='relationships_get', request_method='GET',
+        route_name=view.relationships_route_name, renderer='json'
+    )
     # POST
-    config.add_view(view, attr='relationships_post', request_method='POST',
-        route_name=view.relationships_route_name, renderer='json')
+    config.add_view(
+        view, attr='relationships_post', request_method='POST',
+        route_name=view.relationships_route_name, renderer='json'
+    )
     # PATCH
-    config.add_view(view, attr='relationships_patch', request_method='PATCH',
-        route_name=view.relationships_route_name, renderer='json')
+    config.add_view(
+        view, attr='relationships_patch', request_method='PATCH',
+        route_name=view.relationships_route_name, renderer='json'
+    )
     # DELETE
-    config.add_view(view, attr='relationships_delete', request_method='DELETE',
-        route_name=view.relationships_route_name, renderer='json')
+    config.add_view(
+        view, attr='relationships_delete', request_method='DELETE',
+        route_name=view.relationships_route_name, renderer='json'
+    )
+
 
 def collection_view_factory(
         model,
         get_dbsession,
-        collection_name = None,
-        allowed_fields = None
-    ):
+        collection_name=None,
+        allowed_fields=None
+        ):
     '''Build a class to handle requests for model.
 
     Arguments:
@@ -272,6 +326,7 @@ def collection_view_factory(
 
     return CollectionView
 
+
 class CollectionViewBase:
     '''Base class for all view classes.
 
@@ -288,7 +343,7 @@ class CollectionViewBase:
         def new_f(self, *args):
             # Spec says to reject (with 415) any request with media type
             # params.
-            cth = self.request.headers.get('content-type','').split(';')
+            cth = self.request.headers.get('content-type', '').split(';')
             content_type = cth[0]
             params = None
             if len(cth) > 1:
@@ -296,20 +351,19 @@ class CollectionViewBase:
                     'Media Type parameters not allowed by JSONAPI ' +
                     'spec (http://jsonapi.org/format).'
                 )
-                params = cth[1].lstrip();
 
             # Spec says throw 406 Not Acceptable if Accept header has no
             # application/vnd.api+json entry without parameters.
             accepts = re.split(
                 r',\s*',
-                self.request.headers.get('accept','')
+                self.request.headers.get('accept', '')
             )
             jsonapi_accepts = {
                 a for a in accepts
                 if a.startswith('application/vnd.api')
             }
             if jsonapi_accepts and\
-                'application/vnd.api+json' not in jsonapi_accepts:
+                    'application/vnd.api+json' not in jsonapi_accepts:
                 raise HTTPNotAcceptable(
                     'application/vnd.api+json must appear with no ' +
                     'parameters in Accepts header ' +
@@ -351,20 +405,19 @@ class CollectionViewBase:
             ) == 'true':
                 debug = {
                     'accept_header': {
-                            a:None for a in jsonapi_accepts
+                            a: None for a in jsonapi_accepts
                         },
-                    'qinfo_page':\
+                    'qinfo_page':
                         self.collection_query_info(self.request)['_page'],
-                    'atts': { k: None for k in self.attributes.keys() },
+                    'atts': {k: None for k in self.attributes.keys()},
                     'includes': {
-                        k:None for k in self.requested_include_names()
+                        k: None for k in self.requested_include_names()
                     }
                 }
                 ret['meta'].update({'debug': debug})
 
             return ret
         return new_f
-
 
     @jsonapi_view
     def get(self):
@@ -496,12 +549,18 @@ class CollectionViewBase:
         req_id = self.request.matchdict['id']
         data_id = data.get('id')
         if self.collection_name != data.get('type'):
-            raise HTTPConflict('JSON type ({}) does not match URL type ({}).'.
-            format(data.get('type'), self.collection_name))
+            raise HTTPConflict(
+                'JSON type ({}) does not match URL type ({}).'.format(
+                    data.get('type'), self.collection_name
+                )
+            )
         if data_id != req_id:
-            raise HTTPConflict('JSON id ({}) does not match URL id ({}).'.
-            format(data_id, req_id))
-        atts = data.get('attributes',{})
+            raise HTTPConflict(
+                'JSON id ({}) does not match URL id ({}).'.format(
+                    data_id, req_id
+                )
+            )
+        atts = data.get('attributes', {})
         atts[self.key_column.name] = req_id
         item = DBSession.merge(self.model(**atts))
 
@@ -566,7 +625,7 @@ class CollectionViewBase:
                 'updated': {
                     'attributes': [
                         att for att in atts
-                            if att != self.key_column.name
+                        if att != self.key_column.name
                     ],
                     'relationships': [r for r in rels]
                 }
@@ -604,9 +663,11 @@ class CollectionViewBase:
                 DBSession.flush()
             except sqlalchemy.exc.IntegrityError as e:
                 raise HTTPFailedDependency(str(e))
-            return {'data': {
-                'type': self.collection_name,
-                'id': self.request.matchdict['id'] }
+            return {
+                'data': {
+                    'type': self.collection_name,
+                    'id': self.request.matchdict['id']
+                }
             }
         else:
             return {'data': None}
@@ -621,11 +682,11 @@ class CollectionViewBase:
 
         **Query Parameters**
 
-            **include:** comma separated list of related resources to include in
-            the include section.
+            **include:** comma separated list of related resources to include
+            in the include section.
 
-            **fields[<collection>]:** comma separated list of fields (attributes
-            or relationships) to include in data.
+            **fields[<collection>]:** comma separated list of fields
+            (attributes or relationships) to include in data.
 
             **sort:** comma separated list of sort keys.
 
@@ -749,7 +810,9 @@ class CollectionViewBase:
         DBSession = self.get_dbsession()
         data = self.request.json_body['data']
         # Check to see if we're allowing client ids
-        if self.request.registry.settings.get('jsonapi.allow_client_ids', 'false') != 'true' and 'id' in data:
+        if self.request.registry.settings.get(
+                'jsonapi.allow_client_ids',
+                'false') != 'true' and 'id' in data:
             raise HTTPForbidden('Client generated ids are not supported.')
         # Type should be correct or raise 409 Conflict
         datatype = data.get('type')
@@ -772,12 +835,16 @@ class CollectionViewBase:
                         )
                     )
                 rel_class = rel.mapper.class_
-                if rel.direction is ONETOMANY\
-                    or rel.direction is MANYTOMANY:
-                    setattr(item, relname, [
-                        DBSession.query(rel_class).get(rel_identifier['id'])
+                if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
+                    setattr(
+                        item, relname,
+                        [
+                            DBSession.query(rel_class).get(
+                                rel_identifier['id']
+                            )
                             for rel_identifier in reldata['data']
-                    ])
+                        ]
+                    )
                 else:
                     setattr(
                         item,
@@ -963,7 +1030,7 @@ class CollectionViewBase:
         self.get()
 
         # Set up the query
-        q = self.related_query(obj_id, rel, full_object = False)
+        q = self.related_query(obj_id, rel, full_object=False)
 
         if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
             q = rel_view.query_add_sorting(q)
@@ -982,10 +1049,10 @@ class CollectionViewBase:
             return rel_view.collection_return(
                 q,
                 count=count,
-                identifiers = True
+                identifiers=True
             )
         else:
-            return rel_view.single_return(q, identifier = True)
+            return rel_view.single_return(q, identifier=True)
 
     @jsonapi_view
     def relationships_post(self):
@@ -1026,8 +1093,8 @@ class CollectionViewBase:
 
             HTTPNotFound: if an attempt is made to modify a TOONE relationship.
 
-            HTTPConflict: if a resource identifier is specified with a different
-            type than that which the collection holds.
+            HTTPConflict: if a resource identifier is specified with a
+            different type than that which the collection holds.
 
             HTTPFailedDependency: if a database constraint would be broken by
             adding the specified resource to the relationship.
@@ -1062,7 +1129,10 @@ class CollectionViewBase:
         for resid in self.request.json_body['data']:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    "Resource identifier type '{}' " +
+                    "does not match relationship type '{}'.".format(
+                        resid['type'], rel_view.collection_name
+                    )
                 )
             items.append(DBSession.query(rel_class).get(resid['id']))
         getattr(obj, relname).extend(items)
@@ -1119,8 +1189,8 @@ class CollectionViewBase:
         Raises:
             HTTPNotFound: if there is no <relname> relationship.
 
-            HTTPConflict: if a resource identifier is specified with a different
-            type than that which the collection holds.
+            HTTPConflict: if a resource identifier is specified with a
+            different type than that which the collection holds.
 
             HTTPFailedDependency: if a database constraint would be broken by
             adding the specified resource to the relationship.
@@ -1157,7 +1227,11 @@ class CollectionViewBase:
             else:
                 if resid['type'] != rel_view.collection_name:
                     raise HTTPConflict(
-                        "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                        "Resource identifier type '{}' " +
+                        "does not match relationship type '{}'.".format(
+                            resid['type'],
+                            rel_view.collection_name
+                        )
                     )
                 setattr(
                     obj,
@@ -1169,7 +1243,11 @@ class CollectionViewBase:
         for resid in self.request.json_body['data']:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    "Resource identifier type '{}' " +
+                    "does not match relationship type '{}'.".format(
+                        resid['type'],
+                        rel_view.collection_name
+                    )
                 )
             items.append(DBSession.query(rel_class).get(resid['id']))
         setattr(obj, relname, items)
@@ -1218,8 +1296,8 @@ class CollectionViewBase:
 
             HTTPNotFound: if an attempt is made to modify a TOONE relationship.
 
-            HTTPConflict: if a resource identifier is specified with a different
-            type than that which the collection holds.
+            HTTPConflict: if a resource identifier is specified with a
+            different type than that which the collection holds.
 
             HTTPFailedDependency: if a database constraint would be broken by
             adding the specified resource to the relationship.
@@ -1253,7 +1331,10 @@ class CollectionViewBase:
         for resid in self.request.json_body['data']:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(resid['type'], rel_view.collection_name)
+                    "Resource identifier type '{}' " +
+                    "does not match relationship type '{}'.".format(
+                        resid['type'], rel_view.collection_name
+                    )
                 )
             try:
                 getattr(obj, relname).\
@@ -1292,7 +1373,7 @@ class CollectionViewBase:
         )
         return q
 
-    def single_return(self, q, not_found_message = None, identifier = False):
+    def single_return(self, q, not_found_message=None, identifier=False):
         '''Populate return dictionary for a single item.
 
         Arguments:
@@ -1348,11 +1429,12 @@ class CollectionViewBase:
                 ret['included'] = [obj for obj in included.values()]
         return ret
 
-    def collection_return(self, q, count = None, identifiers = False):
+    def collection_return(self, q, count=None, identifiers=False):
         '''Populate return dictionary for collections.
 
         Arguments:
-            q (sqlalchemy.orm.query.Query): query designed to return multiple items.
+            q (sqlalchemy.orm.query.Query): query designed to return multiple
+            items.
 
         Keyword Arguments:
             count(int): Number of items the query will return (if known).
@@ -1385,7 +1467,7 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
 
         # Add information to the return dict
-        ret = { 'meta': {'results': {} } }
+        ret = {'meta': {'results': {}}}
 
         if count is None:
             try:
@@ -1408,7 +1490,7 @@ class CollectionViewBase:
         # Primary data
         if identifiers:
             ret['data'] = [
-                { 'type': self.collection_name, 'id': str(dbitem._jsonapi_id) }
+                {'type': self.collection_name, 'id': str(dbitem._jsonapi_id)}
                 for dbitem in q.all()
             ]
         else:
@@ -1573,19 +1655,20 @@ class CollectionViewBase:
                 op_func = getattr(prop, op)
                 val = re.sub(r'\*', '%', val)
             else:
-                raise HTTPBadRequest("No such filter operator: '{}'".format(op))
+                raise HTTPBadRequest(
+                    "No such filter operator: '{}'".format(op)
+                )
             q = q.filter(op_func(val))
 
         return q
-
 
     def related_limit(self, relationship):
         '''Paging limit for related resources.
 
         **Query Parameters**
 
-            **page[limit:relationships:<relname>]:** number of results to return
-            per page for related resource <relname>.
+            **page[limit:relationships:<relname>]:** number of results to
+            return per page for related resource <relname>.
 
         Parameters:
             relationship(sqlalchemy.orm.relationships.RelationshipProperty):
@@ -1594,7 +1677,7 @@ class CollectionViewBase:
         Returns:
             int: paging limit for related resources.
         '''
-        limit_comps = [ 'limit', 'relationships', relationship.key ]
+        limit_comps = ['limit', 'relationships', relationship.key]
         limit = self.default_limit
         qinfo = self.collection_query_info(self.request)
         while limit_comps:
@@ -1604,8 +1687,7 @@ class CollectionViewBase:
             limit_comps.pop()
         return min(limit, self.max_limit)
 
-
-    def related_query(self, obj_id, relationship, full_object = True):
+    def related_query(self, obj_id, relationship, full_object=True):
         '''Construct query for related objects.
 
         Parameters:
@@ -1657,9 +1739,9 @@ class CollectionViewBase:
         return q
 
     def serialise_db_item(
-        self, item,
-        included, include_path = None,
-        ):
+            self, item,
+            included, include_path=None,
+            ):
         '''Serialise an individual database item to JSON-API.
 
         Arguments:
@@ -1693,14 +1775,16 @@ class CollectionViewBase:
             **{'id': item._jsonapi_id}
         )
 
-        atts = { key: getattr(item, key)
-            for key in self.requested_attributes.keys() }
+        atts = {
+            key: getattr(item, key)
+            for key in self.requested_attributes.keys()
+        }
 
         rels = {}
         for key, rel in self.relationships.items():
             rel_path_str = '.'.join(include_path + [key])
             if key not in self.requested_relationships and\
-                rel_path_str not in self.requested_include_names():
+                    rel_path_str not in self.requested_include_names():
                 continue
             rel_dict = {
                 'links': {
@@ -1717,10 +1801,10 @@ class CollectionViewBase:
             is_included = False
             if rel_path_str in self.requested_include_names():
                 is_included = True
-            q = self.related_query(item._jsonapi_id, rel, full_object=is_included)
-#            local_col, rem_col = rel.local_remote_pairs[0]
-            if rel.direction is ONETOMANY\
-                or rel.direction is MANYTOMANY:
+            q = self.related_query(
+                item._jsonapi_id, rel, full_object=is_included
+            )
+            if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                 qinfo = self.collection_query_info(self.request)
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
@@ -1735,11 +1819,12 @@ class CollectionViewBase:
                         }
                     )
                     if is_included:
-                        included[(rel_view.collection_name, ritem._jsonapi_id)] =\
-                            rel_view.serialise_db_item(
-                                ritem,
-                                included, include_path + [key]
-                            )
+                        included[
+                            (rel_view.collection_name, ritem._jsonapi_id)
+                        ] = rel_view.serialise_db_item(
+                            ritem,
+                            included, include_path + [key]
+                        )
                 rel_dict['meta']['results']['returned'] =\
                     len(rel_dict['data'])
             else:
@@ -1750,11 +1835,12 @@ class CollectionViewBase:
                     except sqlalchemy.orm.exc.NoResultFound:
                         rel_dict['data'] = None
                     if ritem:
-                        included[(rel_view.collection_name, ritem._jsonapi_id)] =\
-                            rel_view.serialise_db_item(
-                                ritem,
-                                included, include_path + [key]
-                            )
+                        included[
+                            (rel_view.collection_name, ritem._jsonapi_id)
+                        ] = rel_view.serialise_db_item(
+                            ritem,
+                            included, include_path + [key]
+                        )
 
                 else:
                     rel_id = getattr(
@@ -1854,8 +1940,6 @@ class CollectionViewBase:
             key_info['ascending'] = ascending
             info['_sort'].append(key_info)
 
-
-
         # Find all parametrised parameters ( :) )
         info['_filters'] = {}
         info['_page'] = {}
@@ -1909,20 +1993,24 @@ class CollectionViewBase:
         req = self.request
         route_name = req.matched_route.name
         qinfo = self.collection_query_info(req)
-        _query = { 'page[{}]'.format(k): v for k,v in qinfo['_page'].items() }
+        _query = {'page[{}]'.format(k): v for k, v in qinfo['_page'].items()}
         _query['sort'] = qinfo['sort']
         for f in sorted(qinfo['_filters']):
             _query[f] = qinfo['_filters'][f]['value']
 
         # First link.
         _query['page[offset]'] = 0
-        links['first'] = req.route_url(route_name,_query=_query, **req.matchdict)
+        links['first'] = req.route_url(
+            route_name, _query=_query, **req.matchdict
+        )
 
         # Next link.
         next_offset = qinfo['page[offset]'] + qinfo['page[limit]']
         if count is None or next_offset < count:
             _query['page[offset]'] = next_offset
-            links['next'] = req.route_url(route_name,_query=_query,**req.matchdict)
+            links['next'] = req.route_url(
+                route_name, _query=_query, **req.matchdict
+            )
 
         # Previous link.
         if qinfo['page[offset]'] > 0:
@@ -1930,14 +2018,19 @@ class CollectionViewBase:
             if prev_offset < 0:
                 prev_offset = 0
             _query['page[offset]'] = prev_offset
-            links['prev'] = req.route_url(route_name, _query=_query, **req.matchdict)
+            links['prev'] = req.route_url(
+                route_name, _query=_query, **req.matchdict
+            )
 
         # Last link.
         if count is not None:
-            _query['page[offset]'] =\
-                (max((count - 1),0) // qinfo['page[limit]'])\
-                * qinfo['page[limit]']
-            links['last'] = req.route_url(route_name,_query=_query, **req.matchdict)
+            _query['page[offset]'] = (
+                max((count - 1), 0) //
+                qinfo['page[limit]']
+            ) * qinfo['page[limit]']
+            links['last'] = req.route_url(
+                route_name, _query=_query, **req.matchdict
+            )
         return links
 
     @property
@@ -1947,8 +2040,8 @@ class CollectionViewBase:
 
         **Query Parameters**
 
-            **fields[<collection>]:** comma separated list of fields (attributes
-            or relationships) to include in data.
+            **fields[<collection>]:** comma separated list of fields
+            (attributes or relationships) to include in data.
 
         Returns:
             set: set of fields names.
@@ -1968,8 +2061,8 @@ class CollectionViewBase:
 
         **Query Parameters**
 
-            **fields[<collection>]:** comma separated list of fields (attributes
-            or relationships) to include in data.
+            **fields[<collection>]:** comma separated list of fields
+            (attributes or relationships) to include in data.
 
         Returns:
             dict: dict in the form:
@@ -1981,8 +2074,10 @@ class CollectionViewBase:
                         ...
                     }
         '''
-        return { k:v for k,v in self.attributes.items()
-            if k in self.requested_field_names}
+        return {
+            k: v for k, v in self.attributes.items()
+            if k in self.requested_field_names
+        }
 
     @property
     def requested_relationships(self):
@@ -1990,8 +2085,8 @@ class CollectionViewBase:
 
         **Query Parameters**
 
-            **fields[<collection>]:** comma separated list of fields (attributes
-            or relationships) to include in data.
+            **fields[<collection>]:** comma separated list of fields
+            (attributes or relationships) to include in data.
 
         Returns:
             dict: dict in the form:
@@ -2003,8 +2098,10 @@ class CollectionViewBase:
                         ...
                     }
         '''
-        return { k:v for k,v in self.relationships.items()
-            if k in self.requested_field_names}
+        return {
+            k: v for k, v in self.relationships.items()
+            if k in self.requested_field_names
+        }
 
     @property
     def requested_fields(self):
@@ -2012,8 +2109,8 @@ class CollectionViewBase:
 
         **Query Parameters**
 
-            **fields[<collection>]:** comma separated list of fields (attributes
-            or relationships) to include in data.
+            **fields[<collection>]:** comma separated list of fields
+            (attributes or relationships) to include in data.
 
         Returns:
             dict: dict in the form:
@@ -2041,10 +2138,11 @@ class CollectionViewBase:
         Returns:
             dict: local columns indexed by column name.
         '''
-        return { pair[0].name: pair[0]
+        return {
+            pair[0].name: pair[0]
             for rel in self.requested_relationships.values()
-                for pair in rel.local_remote_pairs
-                    if rel.direction is MANYTOONE
+            for pair in rel.local_remote_pairs
+            if rel.direction is MANYTOONE
         }
 
     @property
@@ -2052,7 +2150,8 @@ class CollectionViewBase:
         '''All columns required in query to fetch requested fields from db.
 
         Returns:
-            dict: Union of requested_attributes and requested_relationships_local_columns
+            dict: Union of requested_attributes and
+            requested_relationships_local_columns
         '''
         ret = self.requested_attributes
         ret.update(
@@ -2089,11 +2188,12 @@ class CollectionViewBase:
 
         **Query Parameters**
 
-            **include:** comma separated list of related resources to include in
-            the include section.
+            **include:** comma separated list of related resources to include
+            in the include section.
 
         Returns:
-            set: set of requested include paths with no corresponding attribute.
+            set: set of requested include paths with no corresponding
+            attribute.
         '''
         param = self.request.params.get('include')
         bad = set()
@@ -2129,6 +2229,7 @@ class CollectionViewBase:
         '''
         return view_classes[model](self.request)
 
+
 class DebugView:
     '''Pyramid view class defining a debug API.
 
@@ -2138,8 +2239,8 @@ class DebugView:
     Attributes:
         engine: sqlalchemy engine with connection to the db.
         metadata: sqlalchemy model metadata
-        test_data: module with an ``add_to_db()`` method which will populate the
-            database
+        test_data: module with an ``add_to_db()`` method which will populate
+            the database
     '''
     def __init__(self, request):
         self.request = request
