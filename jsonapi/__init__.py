@@ -963,7 +963,7 @@ class CollectionViewBase:
         self.get()
 
         # Set up the query
-        q = self.related_query(obj_id, rel, id_only = True)
+        q = self.related_query(obj_id, rel, full_object = False)
 
         if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
             q = rel_view.query_add_sorting(q)
@@ -1605,7 +1605,7 @@ class CollectionViewBase:
         return min(limit, self.max_limit)
 
 
-    def related_query(self, obj_id, relationship, id_only = False):
+    def related_query(self, obj_id, relationship, full_object = True):
         '''Construct query for related objects.
 
         Parameters:
@@ -1614,9 +1614,10 @@ class CollectionViewBase:
             relationship (sqlalchemy.orm.relationships.RelationshipProperty):
                 the relationships to get related objects from.
 
-            id_only (bool): if id_only is ``True``, only query for the key
-                column (probably in order to build resource identifiers). If
-                id_only is False, query for all requested columns.
+            full_object (bool): if full_object is ``True``, query for all
+                requested columns (probably to build resource objects). If
+                full_object is False, only query for the key column (probably
+                to build resource identifiers).
 
         Returns:
             sqlalchemy.orm.query.Query: query which will fetch related
@@ -1628,12 +1629,12 @@ class CollectionViewBase:
         rel_view = self.view_instance(rel_class)
         local_col, rem_col = rel.local_remote_pairs[0]
         q = DBSession.query(rel_class)
-        if id_only:
-            q = q.options(load_only())
-        else:
+        if full_object:
             q = q.options(
                 load_only(*rel_view.requested_query_columns.keys())
             )
+        else:
+            q = q.options(load_only())
         if rel.direction is ONETOMANY:
             q = q.filter(obj_id == rem_col)
         elif rel.direction is MANYTOMANY:
