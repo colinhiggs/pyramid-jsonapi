@@ -1713,51 +1713,28 @@ class CollectionViewBase:
                 }
             }
             rel_class = rel.mapper.class_
-            rel_view = None
+            rel_view = self.view_instance(rel_class)
+            is_included = False
             if rel_path_str in self.requested_include_names():
-                rel_view = self.view_instance(rel_class)
-            local_col, rem_col = rel.local_remote_pairs[0]
+                is_included = True
+            q = self.related_query(item._jsonapi_id, rel, full_object=is_included)
+#            local_col, rem_col = rel.local_remote_pairs[0]
             if rel.direction is ONETOMANY\
                 or rel.direction is MANYTOMANY:
                 qinfo = self.collection_query_info(self.request)
-                limit_comps = [ 'limit', 'relationships', key ]
-                limit = self.default_limit
-                while limit_comps:
-                    if '.'.join(limit_comps) in qinfo['_page']:
-                        limit = int(qinfo['_page']['.'.join(limit_comps)])
-                        break
-                    limit_comps.pop()
-                limit = min(limit, self.max_limit)
+                limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
-                if rel_view:
-                    q = DBSession.query(
-                        rel_class
-                    ).options(
-                        load_only(*rel_view.requested_query_columns.keys())
-                    )
-                else:
-                    q = DBSession.query(
-                        rel_class
-                    ).options(load_only())
-                if rel.direction is ONETOMANY:
-                    q = q.filter(item._jsonapi_id == rem_col)
-                else:
-                    q = q.filter(
-                        item_id == rel.primaryjoin.right
-                    ).filter(
-                        rel_class._jsonapi_id == rel.secondaryjoin.right
-                    )
                 rel_dict['meta']['results']['available'] = q.count()
                 q = q.limit(limit)
                 rel_dict['data'] = []
                 for ritem in q.all():
                     rel_dict['data'].append(
                         {
-                            'type': rel_class.__tablename__,
+                            'type': rel_view.collection_name,
                             'id': str(ritem._jsonapi_id)
                         }
                     )
-                    if rel_view:
+                    if is_included:
                         included[(rel_view.collection_name, ritem._jsonapi_id)] =\
                             rel_view.serialise_db_item(
                                 ritem,
@@ -1766,13 +1743,7 @@ class CollectionViewBase:
                 rel_dict['meta']['results']['returned'] =\
                     len(rel_dict['data'])
             else:
-                if rel_view:
-                    q = DBSession.query(
-                        rel_class
-                    ).options(
-                        load_only(*rel_view.requested_query_columns.keys())
-                    )
-                    q = q.filter(rel_class._jsonapi_id == getattr(item, local_col.name))
+                if is_included:
                     ritem = None
                     try:
                         ritem = q.one()
@@ -1786,12 +1757,15 @@ class CollectionViewBase:
                             )
 
                 else:
-                    rel_id = getattr(item, local_col.name)
+                    rel_id = getattr(
+                        item,
+                        rel.local_remote_pairs[0][0].name
+                    )
                     if rel_id is None:
                         rel_dict['data'] = None
                     else:
                         rel_dict['data'] = {
-                            'type': rel_class.__tablename__,
+                            'type': rel_view.collection_name,
                             'id': str(rel_id)
                         }
             if key in self.requested_relationships:
