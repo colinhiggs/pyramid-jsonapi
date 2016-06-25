@@ -1634,7 +1634,7 @@ class CollectionViewBase:
                 load_only(*rel_view.requested_query_columns.keys())
             )
         else:
-            q = q.options(load_only())
+            q = q.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
             q = q.filter(obj_id == rem_col)
         elif rel.direction is MANYTOMANY:
