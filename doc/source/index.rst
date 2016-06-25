@@ -15,10 +15,10 @@ pyramid-jsonapi Documentation
 Reference Documentation
 =======================
 
-:mod:`jsonapi` Module
+:mod:`pyramid_jsonapi` Module
 ---------------------------
 
-.. automodule:: jsonapi
+.. automodule:: pyramid_jsonapi
   :members:
   :member-order: bysource
 
