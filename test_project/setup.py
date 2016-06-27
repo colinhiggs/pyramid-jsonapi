@@ -14,11 +14,9 @@ requires = [
     'pyramid_debugtoolbar',
     'zope.sqlalchemy',
     'waitress',
-    'cornice',
     'psycopg2',
     'testing.postgresql',
     'webtest',
-    'jsonpatch',
     ]
 
 setup(name='test_project',
