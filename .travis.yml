@@ -1,0 +1,16 @@
+language: python
+sudo: required
+dist: trusty
+cache:
+  - apt
+  - directories:
+    - "$HOME/.cache/pip"
+    - "$HOME/.pyenv"
+python:
+  - 3.4
+virtualenv:
+  system_site_packages: true
+script:
+  - "PYTHONPATH=. python test_project/test_project/tests.py"
+install:
+  - pip install pep8
