@@ -11,6 +11,6 @@ python:
 virtualenv:
   system_site_packages: true
 script:
-  - "PYTHONPATH=. python test_project/test_project/tests.py"
+  - "python test_project/setup.py test"
 install:
   - pip install pep8
