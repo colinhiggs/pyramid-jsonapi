@@ -5,13 +5,23 @@ import webtest
 import datetime
 from pyramid.paster import get_app
 from sqlalchemy import create_engine
+import test_project
+import inspect
+import os
 
-from .models import (
+from test_project.models import (
     DBSession,
     Base
 )
 
-from . import test_data
+from test_project import test_data
+
+cur_dir = os.path.dirname(
+    os.path.abspath(
+        inspect.getfile(inspect.currentframe())
+    )
+)
+parent_dir = os.path.dirname(cur_dir)
 
 class TestSpec(unittest.TestCase):
     '''Test compliance against jsonapi spec.
@@ -27,7 +37,7 @@ class TestSpec(unittest.TestCase):
         cls.engine = create_engine(cls.postgresql.url())
         DBSession.configure(bind=cls.engine)
 
-        cls.app = get_app('testing.ini')
+        cls.app = get_app('{}/testing.ini'.format(parent_dir))
         cls.test_app = webtest.TestApp(cls.app)
 
     @classmethod
@@ -1224,7 +1234,10 @@ class TestSpec(unittest.TestCase):
         to create a resource with a client-generated ID.
         '''
         # We need a test_app with different settings.
-        app = get_app('testing.ini', options={'jsonapi.allow_client_ids': 'false'})
+        app = get_app(
+            '{}/testing.ini'.format(parent_dir),
+            options={'jsonapi.allow_client_ids': 'false'}
+        )
         test_app = webtest.TestApp(app)
         test_app.post_json(
             '/people',
@@ -2012,3 +2025,6 @@ class TestSpec(unittest.TestCase):
         self.assertIn('code', err)
         self.assertIn('title', err)
         self.assertIn('detail', err)
+
+if __name__ == "__main__":
+    unittest.main()
