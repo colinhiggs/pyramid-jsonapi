@@ -5,10 +5,12 @@ import webtest
 import datetime
 from pyramid.paster import get_app
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SAWarning
 import test_project
 import inspect
 import os
 import urllib
+import warnings
 
 from test_project.models import (
     DBSession,
@@ -47,7 +49,14 @@ class DBTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         '''Create a test app.'''
-        cls.app = get_app('{}/testing.ini'.format(parent_dir))
+        with warnings.catch_warnings():
+            # Suppress SAWarning: about Property _jsonapi_id being replaced by
+            # Propery _jsonapi_id every time a new app is instantiated.
+            warnings.simplefilter(
+                "ignore",
+                category=SAWarning
+            )
+            cls.app = get_app('{}/testing.ini'.format(parent_dir))
         cls.test_app = webtest.TestApp(cls.app)
 
     def setUp(self):
@@ -79,6 +88,7 @@ class TestSpec(DBTestBase):
         parameters.
         '''
         # Fetch a representative page
+
         r = self.test_app.get('/people')
         self.assertEqual(r.content_type, 'application/vnd.api+json')
 
@@ -1245,10 +1255,17 @@ class TestSpec(DBTestBase):
         to create a resource with a client-generated ID.
         '''
         # We need a test_app with different settings.
-        app = get_app(
-            '{}/testing.ini'.format(parent_dir),
-            options={'jsonapi.allow_client_ids': 'false'}
-        )
+        with warnings.catch_warnings():
+            # Suppress SAWarning: about Property _jsonapi_id being replaced by
+            # Propery _jsonapi_id every time a new app is instantiated.
+            warnings.simplefilter(
+                "ignore",
+                category=SAWarning
+            )
+            app = get_app(
+                '{}/testing.ini'.format(parent_dir),
+                options={'jsonapi.allow_client_ids': 'false'}
+            )
         test_app = webtest.TestApp(app)
         test_app.post_json(
             '/people',
