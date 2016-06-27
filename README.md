@@ -8,8 +8,7 @@ Create a [JSON-API](http://jsonapi.org/) standard API from a database using the 
 Now has (and passes) a test suite which covers most of the specification. This
 module has not yet seen widespread use: there are doubtless still many bugs.
 
-**Currently working on:** bug hunting, small code tidies, packaging and some
-continuous integration.
+**Currently working on:** bug hunting, small code tidies, packaging, travis integration.
 
 Right now it will take a typical sqlalchemy declarative-style models file and produce a working REST-ful web api conforming to the JSON-API standard, pretty much with the invocation of one function.
 
