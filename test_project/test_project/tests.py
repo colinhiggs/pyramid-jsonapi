@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 import test_project
 import inspect
 import os
+import urllib
 
 from test_project.models import (
     DBSession,
@@ -23,38 +24,48 @@ cur_dir = os.path.dirname(
 )
 parent_dir = os.path.dirname(cur_dir)
 
-class TestSpec(unittest.TestCase):
-    '''Test compliance against jsonapi spec.
 
-    http://jsonapi.org/format/
-    '''
+def setUpModule():
+    '''Create a test DB and import data.'''
+    # Create a new database somewhere in /tmp
+    global postgresql
+    global engine
+    postgresql = testing.postgresql.Postgresql(port=7654)
+    engine = create_engine(postgresql.url())
+    DBSession.configure(bind=engine)
+
+
+def tearDownModule():
+    '''Throw away test DB.'''
+    global postgresql
+    DBSession.close()
+    postgresql.stop()
+
+
+class DBTestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        '''Create a test DB and import data.'''
-        # Create a new database somewhere in /tmp
-        cls.postgresql = testing.postgresql.Postgresql(port=7654)
-        cls.engine = create_engine(cls.postgresql.url())
-        DBSession.configure(bind=cls.engine)
-
+        '''Create a test app.'''
         cls.app = get_app('{}/testing.ini'.format(parent_dir))
         cls.test_app = webtest.TestApp(cls.app)
 
-    @classmethod
-    def tearDownClass(cls):
-        '''Throw away test DB.'''
-        DBSession.close()
-        cls.postgresql.stop()
-
     def setUp(self):
-        Base.metadata.create_all(self.engine)
+        Base.metadata.create_all(engine)
         # Add some basic test data.
         test_data.add_to_db()
         transaction.begin()
 
     def tearDown(self):
         transaction.abort()
-        Base.metadata.drop_all(self.engine)
+        Base.metadata.drop_all(engine)
+
+
+class TestSpec(DBTestBase):
+    '''Test compliance against jsonapi spec.
+
+    http://jsonapi.org/format/
+    '''
 
     ###############################################
     # GET tests.
@@ -2008,11 +2019,15 @@ class TestSpec(unittest.TestCase):
         }
         self.assertEqual(found_ids, {'2'})
 
+
+class TestErrors(DBTestBase):
+    '''Test that erros are thrown properly.'''
+
     ###############################################
     # Error tests.
     ###############################################
 
-    def test_api_errors_structure(self):
+    def test_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
         r = self.test_app.get(
             '/people',
@@ -2025,6 +2040,45 @@ class TestSpec(unittest.TestCase):
         self.assertIn('code', err)
         self.assertIn('title', err)
         self.assertIn('detail', err)
+
+
+class TestBugs(DBTestBase):
+
+    def test_19_last_negative_offset(self):
+        '''last link should not have negative offset.
+
+        #19: 'last' link has negative offset if zero results are returned
+        '''
+        # Need an empty collection: use a filter that will not match.
+        last = self.test_app.get(
+            '/posts?filter[title:eq]=frog'
+        ).json['links']['last']
+        offset = int(
+            urllib.parse.parse_qs(
+                urllib.parse.urlparse(last).query
+            )['page[offset]'][0]
+        )
+        self.assertGreaterEqual(offset, 0)
+
+    def test_20_non_string_id(self):
+        '''Creating single object should not result in integer id.
+
+        #20: creating single object returns non string id
+        '''
+        data = self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']
+        self.assertIsInstance(data['id'], str)
+
 
 if __name__ == "__main__":
     unittest.main()
