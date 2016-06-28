@@ -3,25 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-*********************************
-pyramid-jsonapi Documentation
-*********************************
-
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
+.. include:: readme.rst
 
-
-Reference Documentation
-=======================
-
-:mod:`pyramid_jsonapi` Module
----------------------------
-
-.. automodule:: pyramid_jsonapi
-  :members:
-  :member-order: bysource
-
+.. include:: reference.rst
 
 Indices and tables
 ==================
