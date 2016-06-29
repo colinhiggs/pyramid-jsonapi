@@ -852,7 +852,8 @@ class TestSpec(DBTestBase):
         '''Should return collection of people whose name is not alice.'''
         data = self.test_app.get('/people?filter[name:ne]=alice').json['data']
         for item in data:
-            self.assertNotEqual('alice', item['attributes']['name'])
+            if not item.get('errors', None):
+                self.assertNotEqual('alice', item['attributes']['name'])
 
     def test_spec_filterop_startswith(self):
         '''Should return collection where titles start with "post1".'''

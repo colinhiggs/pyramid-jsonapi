@@ -13,6 +13,10 @@
         {
           "id": "3",
           "name": "mcguffin"
+        },
+        {
+          "id": "4",
+          "name": "secret_squirrel"
         }
       ],
       {"id_seq": "*"}
