@@ -852,7 +852,9 @@ class TestSpec(DBTestBase):
         '''Should return collection of people whose name is not alice.'''
         data = self.test_app.get('/people?filter[name:ne]=alice').json['data']
         for item in data:
-            if not item.get('errors', None):
+            try:
+                errors = item['meta']['errors']
+            except KeyError:
                 self.assertNotEqual('alice', item['attributes']['name'])
 
     def test_spec_filterop_startswith(self):
