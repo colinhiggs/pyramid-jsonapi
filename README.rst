@@ -181,8 +181,6 @@ You don't need a ``views.py`` unless you have some other routes and views.
 Customising the Generated API
 =============================
 
-
-
 Selectively Passing Models for API Generation
 ---------------------------------------------
 
@@ -191,3 +189,15 @@ Your database may have some tables which you do not wish to expose as collection
 * writing a models module with only the model classes you wish to expose; or
 * passing an iterable of only the model classes you wish to expose to
   :py:func:`pyramid_jsonapi.create_jsonapi`.
+
+Callbacks
+---------
+
+At certain points during the processing of a request, ``pyramid_jsonapi`` will
+invoke any callback functions which have been registered. Callback sequences are
+currently implemented as ordinary lists: you add your callback functions using
+``.append()``, remove them with ``.pop()`` and so on. The functions in each
+callback list will be called in order at the appropriate point.
+
+Callback Lists
+~~~~~~~~~~~~~~
