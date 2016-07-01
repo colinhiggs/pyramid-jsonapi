@@ -9,19 +9,28 @@ The core idea behind pyramid-jsonapi is to create a working JSON-API
 automatically, starting from the sort of ``models.py`` file shipped with a
 typical pyramid + sqlalchemy application.
 
+If you are reading this document directly from the repository on github
+(`<https://github.com/colinhiggs/pyramid-jsonapi>`_) you may notice some
+oddities. In particular, internal links to things like ``:py:func:`blah``` which
+don't work. That's because those directives are designed to be consumed by
+sphinx (`<http://www.sphinx-doc.org/>`_). You can view the same document after
+it has been run through sphinx, as well as the API documentation, at the
+pyramid_jsonapi documentation page
+(`<https://colinhiggs.github.io/pyramid-jsonapi/>`_).
+
 Installation
 ============
 
 There is a test release on testpypi:
-`<https://testpypi.python.org/pypi?:action=display&name=pyramid_jsonapi/>`_. You
-can install that (perhaps into a virtualenv for play purposes) with
+`<https://testpypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`_. You
+can install it (perhaps into a virtualenv for play purposes) with
 
 .. code-block:: bash
 
   pip install -i https://testpypi.python.org/pypi pyramid_jsonapi
 
 or, since there is only one file, you can download the development version from
-`<https://github.com/colinhiggs/pyramid-jsonapi/>`_ and copy the pyramid_jsonapi
+`<https://github.com/colinhiggs/pyramid-jsonapi>`_ and copy the pyramid_jsonapi
 directory into your PYTHONPATH or into your project.
 
 Auto-Creating an API
@@ -29,7 +38,9 @@ Auto-Creating an API
 
 Declare your models somewhere using sqlalchemy's
 :py:func:`sqlalchemy.ext.declarative.declarative_base`. In this documentation we
-assume that you have done so in a file called ``models.py``::
+assume that you have done so in a file called ``models.py``:
+
+.. code-block:: python
 
   class Person(Base):
       __tablename__ = 'people'
@@ -41,7 +52,9 @@ assume that you have done so in a file called ``models.py``::
   # and the rest...
 
 If you are happy with the defaults, you can get away with the following
-additions to the standard pyramid alchemy scaffold's top level ``__init__.py``::
+additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
+
+.. code-block:: python
 
   import pyramid_jsonapi
   # Or 'from . import pyramid_jsonapi' if you copied pyramid_jsonapi directly
@@ -148,27 +161,31 @@ Using the rather lovely httpie `<https://github.com/jkbrzt/httpie/>`_ to test:
 
   $ http http://localhost:6543/people
 
-
   HTTP/1.1 200 OK
   Content-Length: 1387
   Content-Type: application/vnd.api+json; charset=UTF-8
   Date: Fri, 28 Aug 2015 20:22:46 GMT
   Server: waitress
 
+.. code-block:: json
+
   {
     "data": [
-    {
-      "attributes": {
-        "name": "alice"
+      {
+        "attributes": {
+          "name": "alice"
+        },
+        "id": "1",
+        "links": {
+          "self": "http://localhost:6543/people/1"
+        },
+        "relationships": {
+          "<some_single_relationship>": {
+            "data": {"type": "<rel_type>", "id": "<some_id>"}
+          }
+        }
       },
-      "id": "1",
-      "links": {
-        "self": "http://localhost:6543/people/1"
-      },
-      "relationships": {
-      ...
-    }
-    ...
+      {"<another_person>"}
     ]
   }
 
