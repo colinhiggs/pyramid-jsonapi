@@ -942,6 +942,13 @@ class CollectionViewBase:
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
 
+        # Check that the original resource exists.
+        if not self.object_exists(obj_id):
+            raise HTTPNotFound('Object {} not found in collection {}'.format(
+                obj_id,
+                self.collection_name
+            ))
+
         # Set up the query
         q = self.related_query(obj_id, rel)
 
@@ -1031,9 +1038,12 @@ class CollectionViewBase:
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
 
-        # Check that the original resource exists. The following will raise an
-        # exception for us if it doesn't
-        self.get()
+        # Check that the original resource exists.
+        if not self.object_exists(obj_id):
+            raise HTTPNotFound('Object {} not found in collection {}'.format(
+                obj_id,
+                self.collection_name
+            ))
 
         # Set up the query
         q = self.related_query(obj_id, rel, full_object=False)
@@ -1743,6 +1753,26 @@ class CollectionViewBase:
             ))
 
         return q
+
+    def object_exists(self, obj_id):
+        '''Test if object with id obj_id exists.
+
+        Args:
+            obj_id (str): object id
+
+        Returns:
+            bool: True if object exists, False if not.
+        '''
+        DBSession = self.get_dbsession()
+        item = DBSession.query(
+            self.model
+        ).options(
+            load_only(self.key_column.name)
+        ).get(obj_id)
+        if item:
+            return True
+        else:
+            return False
 
     def serialise_resource_identifier(self, obj_id):
         '''Return a resource identifier dictionary for id "obj_id"
