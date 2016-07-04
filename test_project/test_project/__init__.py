@@ -71,7 +71,7 @@ def main(global_config, **settings):
     )
     pyramid_jsonapi.view_classes[
         models.Person
-    ].serialise_dict_callbacks.extend(
+    ].callbacks['serialised_object'].extend(
         (person_callback_add_information, secret_squirrel_callback)
     )
 

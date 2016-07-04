@@ -323,7 +323,13 @@ def collection_view_factory(
         if allowed_fields is None or key in allowed_fields:
             rels[key] = rel
     CollectionView.relationships = rels
-    CollectionView.serialise_dict_callbacks = []
+    CollectionView.callbacks = {
+        'serialised_identifier': [],
+        'serialised_object': [],
+        'requested_attributes': [],
+        'requested_relationships': [],
+        'requested_fields': [],
+    }
 
     return CollectionView
 
@@ -1868,7 +1874,7 @@ class CollectionViewBase:
             'relationships': rels
         }
 
-        for callback in self.serialise_dict_callbacks:
+        for callback in self.callbacks['serialised_object']:
             ret = callback(self, ret)
 
         return ret
