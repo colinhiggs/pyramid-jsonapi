@@ -1433,10 +1433,7 @@ class CollectionViewBase:
             else:
                 return {'data': None}
         if identifier:
-            ret['data'] = {
-                'type': self.collection_name,
-                'id': str(item._jsonapi_id)
-            }
+            ret['data'] = self.serialise_resource_identifier(item._jsonapi_id)
         else:
             ret['data'] = self.serialise_db_item(item, included)
             if self.requested_include_names():
@@ -1504,7 +1501,7 @@ class CollectionViewBase:
         # Primary data
         if identifiers:
             ret['data'] = [
-                {'type': self.collection_name, 'id': str(dbitem._jsonapi_id)}
+                self.serialise_resource_identifier(dbitem._jsonapi_id)
                 for dbitem in q.all()
             ]
         else:
@@ -1861,10 +1858,9 @@ class CollectionViewBase:
                 rel_dict['data'] = []
                 for ritem in q.all():
                     rel_dict['data'].append(
-                        {
-                            'type': rel_view.collection_name,
-                            'id': str(ritem._jsonapi_id)
-                        }
+                        rel_view.serialise_resource_identifier(
+                            ritem._jsonapi_id
+                        )
                     )
                     if is_included:
                         included[
@@ -1898,10 +1894,11 @@ class CollectionViewBase:
                     if rel_id is None:
                         rel_dict['data'] = None
                     else:
-                        rel_dict['data'] = {
-                            'type': rel_view.collection_name,
-                            'id': str(rel_id)
-                        }
+                        rel_dict[
+                            'data'
+                        ] = rel_view.serialise_resource_identifier(
+                            rel_id
+                        )
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
