@@ -655,7 +655,13 @@ class CollectionViewBase:
                 http DELETE http://localhost:6543/people/1
         '''
         DBSession = self.get_dbsession()
-        item = DBSession.query(self.model).get(self.request.matchdict['id'])
+        item = DBSession.query(
+            self.model
+        ).options(
+            load_only(self.key_column.name)
+        ).get(
+            self.request.matchdict['id']
+        )
         if item:
             try:
                 DBSession.delete(item)
