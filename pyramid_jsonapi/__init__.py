@@ -671,10 +671,9 @@ class CollectionViewBase:
             except sqlalchemy.exc.IntegrityError as e:
                 raise HTTPFailedDependency(str(e))
             return {
-                'data': {
-                    'type': self.collection_name,
-                    'id': self.request.matchdict['id']
-                }
+                'data': self.serialise_resource_identifier(
+                    self.request.matchdict['id']
+                )
             }
         else:
             return {'data': None}
@@ -1744,6 +1743,20 @@ class CollectionViewBase:
             ))
 
         return q
+
+    def serialise_resource_identifier(self, obj_id):
+        '''Return a resource identifier dictionary for id "obj_id"
+
+        '''
+        ret = {
+            'type': self.collection_name,
+            'id': str(obj_id)
+        }
+
+        for callback in self.callbacks['serialised_identifier']:
+            ret = callback(self, ret)
+
+        return ret
 
     def serialise_db_item(
             self, item,
