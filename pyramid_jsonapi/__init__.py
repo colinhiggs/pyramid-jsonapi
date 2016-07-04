@@ -593,15 +593,12 @@ class CollectionViewBase:
                     raise HTTPBadRequest(
                         'An id is required in a resource identifier.'
                     )
-                try:
-                    rel_item = DBSession.query(
-                        rel_class
-                    ).options(
-                        load_only(rel_view.key_column.name)
-                    ).filter(
-                        rel_view.key_column == data['id']
-                    ).one()
-                except NoResultFound:
+                rel_item = DBSession.query(
+                    rel_class
+                ).options(
+                    load_only(rel_view.key_column.name)
+                ).get(data['id'])
+                if not rel_item:
                     raise HTTPNotFound('{}/{} not found'.format(
                         rel_view.collection_name, data['id']
                     ))
@@ -609,15 +606,12 @@ class CollectionViewBase:
             elif isinstance(data, list):
                 rel_items = []
                 for res_ident in data:
-                    try:
-                        rel_item = DBSession.query(
-                            rel_class
-                        ).options(
-                            load_only(rel_view.key_column.name)
-                        ).filter(
-                            rel_view.key_column == res_ident['id']
-                        ).one()
-                    except NoResultFound:
+                    rel_item = DBSession.query(
+                        rel_class
+                    ).options(
+                        load_only(rel_view.key_column.name)
+                    ).get(res_ident['id'])
+                    if not rel_item:
                         raise HTTPNotFound('{}/{} not found'.format(
                             rel_view.collection_name, res_ident['id']
                         ))
