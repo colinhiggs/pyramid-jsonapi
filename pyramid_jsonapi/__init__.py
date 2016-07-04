@@ -543,9 +543,7 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         '''
-        try:
-            self.single_item_query.one()
-        except NoResultFound:
+        if not self.object_exists(self.request.matchdict['id']):
             raise HTTPNotFound(
                 'Cannot PATCH a non existent resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
