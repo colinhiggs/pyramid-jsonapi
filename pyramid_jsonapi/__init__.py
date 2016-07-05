@@ -2378,6 +2378,7 @@ def std_permissions_after_serialise_object(view, obj):
             }
         }
 
+
 def std_permissions_after_get(view, ret):
     '''Standard callback throwing 403 (Forbidden) based on information in meta.
 
