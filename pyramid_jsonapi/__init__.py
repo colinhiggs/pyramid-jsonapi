@@ -2395,11 +2395,11 @@ def std_permissions_after_get(view, ret):
     try:
         errors = obj['meta']['errors']
     except KeyError:
-        return obj
+        return ret
     for error in errors:
         if error['code'] == 403:
             raise HTTPForbidden(error['detail'])
-    return obj
+    return ret
 
 
 class DebugView:
