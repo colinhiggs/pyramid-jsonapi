@@ -30,6 +30,7 @@ import psycopg2
 import functools
 import types
 import importlib
+from collections import deque
 
 from sqlalchemy.orm import load_only
 from sqlalchemy.exc import DBAPIError
@@ -145,7 +146,7 @@ create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
 
 def create_resource(
         config, model, get_dbsession,
-        collection_name=None, allowed_fields=None,
+        collection_name=None, expose_fields=None,
         ):
     '''Produce a set of resource endpoints.
 
@@ -158,7 +159,7 @@ def create_resource(
     Keyword Args:
         collection_name: string name of collection. Passed through to
             ``collection_view_factory()``
-        allowed_fields: set of allowed field names. Passed through to
+        expose_fields: set of field names to be exposed. Passed through to
             ``collection_view_factory()``
     '''
 
@@ -183,15 +184,25 @@ def create_resource(
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(
-        model, get_dbsession, collection_name, allowed_fields=allowed_fields
+        model, get_dbsession, collection_name, expose_fields=expose_fields
     )
     view_classes['collection_name'] = view
     view_classes[model] = view
 
+    settings = config.registry.settings
     view.default_limit =\
-        int(config.registry.settings.get('jsonapi.paging.default_limit', 10))
+        int(settings.get('jsonapi.paging.default_limit', 10))
     view.max_limit =\
-        int(config.registry.settings.get('jsonapi.paging.max_limit', 100))
+        int(settings.get('jsonapi.paging.max_limit', 100))
+
+    # Add permissions callbacks if required
+    if settings.get('jsonapi.callbacks.std_permissions', 'false') == 'true':
+        view.callbacks['serialised_object'].append(
+            std_permissions_after_serialise_object
+        )
+        view.callbacks['after_get'].append(
+            std_permissions_after_get
+        )
 
     # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
@@ -263,7 +274,7 @@ def collection_view_factory(
         model,
         get_dbsession,
         collection_name=None,
-        allowed_fields=None
+        expose_fields=None
         ):
     '''Build a class to handle requests for model.
 
@@ -274,7 +285,7 @@ def collection_view_factory(
 
     Keyword Args:
         collection_name: string name of collection.
-        allowed_fields: set of allowed field names.
+        expose_fields: set of field names to expose.
     '''
     if collection_name is None:
         collection_name = model.__tablename__
@@ -308,27 +319,32 @@ def collection_view_factory(
     CollectionView.relationships_route_pattern =\
         collection_name + '/{id}/relationships/{relationship}'
 
-    CollectionView.class_allowed_fields = allowed_fields
+    CollectionView.exposed_fields = expose_fields
     atts = {}
+    fields = {}
     for key, col in sqlalchemy.inspect(model).mapper.columns.items():
         if key == CollectionView.key_column.name:
             continue
         if len(col.foreign_keys) > 0:
             continue
-        if allowed_fields is None or key in allowed_fields:
+        if expose_fields is None or key in expose_fields:
             atts[key] = col
+            fields[key] = col
     CollectionView.attributes = atts
     rels = {}
     for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
-        if allowed_fields is None or key in allowed_fields:
+        if expose_fields is None or key in expose_fields:
             rels[key] = rel
     CollectionView.relationships = rels
+    fields.update(rels)
+    CollectionView.fields = fields
     CollectionView.callbacks = {
-        'serialised_identifier': [],
-        'serialised_object': [],
-        'requested_attributes': [],
-        'requested_relationships': [],
-        'requested_fields': [],
+        'serialised_identifier': deque(),
+        'serialised_object': deque(),
+        'after_get': deque(),
+        'requested_attributes': deque(),
+        'requested_relationships': deque(),
+        'requested_fields': deque(),
     }
 
     return CollectionView
@@ -461,13 +477,16 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people/1
         '''
-        return self.single_return(
+        ret = self.single_return(
             self.single_item_query,
             'No id {} in collection {}'.format(
                 self.request.matchdict['id'],
                 self.collection_name
             )
         )
+        for callback in self.callbacks['after_get']:
+            ret = callback(self, ret)
+        return ret
 
     @jsonapi_view
     def patch(self):
@@ -735,7 +754,7 @@ class CollectionViewBase:
         q = DBSession.query(
             self.model
         ).options(
-            load_only(*self.requested_query_columns.keys())
+            load_only(*self.allowed_requested_query_columns.keys())
         )
         q = self.query_add_sorting(q)
         q = self.query_add_filtering(q)
@@ -1381,7 +1400,7 @@ class CollectionViewBase:
         q = DBSession.query(
             self.model
         ).options(
-            load_only(*self.requested_query_columns.keys())
+            load_only(*self.allowed_requested_query_columns.keys())
         ).filter(
             self.model._jsonapi_id == self.request.matchdict['id']
         )
@@ -1724,7 +1743,7 @@ class CollectionViewBase:
         q = DBSession.query(rel_class)
         if full_object:
             q = q.options(
-                load_only(*rel_view.requested_query_columns.keys())
+                load_only(*rel_view.allowed_requested_query_columns.keys())
             )
         else:
             q = q.options(load_only(rel_view.key_column.name))
@@ -2082,6 +2101,23 @@ class CollectionViewBase:
         return links
 
     @property
+    def allowed_fields(self):
+        '''Set of fields to which current action is allowed.
+
+        Returns:
+            set: set of allowed field names.
+        '''
+        return set(self.fields)
+
+    def allowed_object(self, obj):
+        '''Whether or not current action is allowed on object.
+
+        Returns:
+            bool:
+        '''
+        return True
+
+    @property
     @functools.lru_cache(maxsize=128)
     def requested_field_names(self):
         '''Get the sparse field names from request.
@@ -2092,7 +2128,7 @@ class CollectionViewBase:
             (attributes or relationships) to include in data.
 
         Returns:
-            set: set of fields names.
+            set: set of field names.
         '''
         param = self.request.params.get(
             'fields[{}]'.format(self.collection_name)
@@ -2180,30 +2216,34 @@ class CollectionViewBase:
         return ret
 
     @property
-    def requested_relationships_local_columns(self):
-        '''Finds all the local columns for MANYTOONE relationships.
+    def allowed_requested_relationships_local_columns(self):
+        '''Finds all the local columns for allowed MANYTOONE relationships.
 
         Returns:
             dict: local columns indexed by column name.
         '''
         return {
             pair[0].name: pair[0]
-            for rel in self.requested_relationships.values()
+            for k, rel in self.requested_relationships.items()
             for pair in rel.local_remote_pairs
-            if rel.direction is MANYTOONE
+            if rel.direction is MANYTOONE and k in self.allowed_fields
         }
 
     @property
-    def requested_query_columns(self):
-        '''All columns required in query to fetch requested fields from db.
+    def allowed_requested_query_columns(self):
+        '''All columns required in query to fetch allowed requested fields from
+        db.
 
         Returns:
-            dict: Union of requested_attributes and
-            requested_relationships_local_columns
+            dict: Union of allowed requested_attributes and
+            allowed_requested_relationships_local_columns
         '''
-        ret = self.requested_attributes
+        ret = {
+            k: v for k, v in self.requested_attributes.items()
+            if k in self.allowed_fields
+        }
         ret.update(
-            self.requested_relationships_local_columns
+            self.allowed_requested_relationships_local_columns
         )
         return ret
 
@@ -2276,6 +2316,90 @@ class CollectionViewBase:
             class: subclass of CollectionViewBase providing view for ``model``.
         '''
         return view_classes[model](self.request)
+
+
+def std_permissions_after_serialise_object(view, obj):
+    '''Standard callback altering object to take account of permissions.
+
+    Args:
+        obj (dict): the object immediately after serialisation.
+
+    Returns:
+        dict: the object, possibly with some fields removed, or meta
+        information indicating permission was denied to the whole object.
+    '''
+    if view.allowed_object(obj):
+        # Remove any forbidden fields that have been added by other
+        # callbacks. Those from the model won't have been added in the first
+        # place.
+
+        # Keep track so we can tell the caller which ones were forbidden.
+        forbidden = set()
+        if 'attributes' in obj:
+            atts = {}
+            for name, val in obj['attributes'].items():
+                if name in view.allowed_fields:
+                    atts[name] = val
+                else:
+                    forbidden.add(name)
+            obj['attributes'] = atts
+        if 'relationships' in obj:
+            rels = {}
+            for name, val in obj['relationships'].items():
+                if name in view.allowed_fields:
+                    rels[name] = val
+                else:
+                    forbidden.add(name)
+            obj['relationships'] = rels
+        # Now add all the forbidden fields from the model to the forbidden
+        # list. They don't need to be removed from the serialised object
+        # because they should not have been added in the first place.
+        for field in view.requested_field_names:
+            if field not in view.allowed_fields:
+                forbidden.add(field)
+        if 'meta' not in obj:
+            obj['meta'] = {}
+        obj['meta']['forbidden_fields'] = list(forbidden)
+        return obj
+    else:
+        return {
+            'type': obj['type'],
+            'id': obj['id'],
+            'meta': {
+                'errors': [
+                    {
+                        'code': 403,
+                        'title': 'Forbidden',
+                        'detail': 'No permission to view {}/{}.'.format(
+                            obj['type'], obj['id']
+                        )
+                    }
+                ]
+            }
+        }
+
+def std_permissions_after_get(view, ret):
+    '''Standard callback throwing 403 (Forbidden) based on information in meta.
+
+    Args:
+        ret (dict): dict which would have been returned from get().
+
+    Returns:
+        dict: the same object if an error has not been raised.
+
+    Raises:
+        HTTPForbidden
+    '''
+    obj = ret['data']
+    errors = []
+    try:
+        errors = obj['meta']['errors']
+    except KeyError:
+        return obj
+    for error in errors:
+        if error['code'] == 403:
+            raise HTTPForbidden(error['detail'])
+    return obj
 
 
 class DebugView:
