@@ -81,7 +81,7 @@ def main(global_config, **settings):
     person_view = pyramid_jsonapi.view_classes[
         models.Person
     ]
-    person_view.callbacks['serialised_object'].appendleft(
+    person_view.callbacks['after_serialise_object'].appendleft(
         person_callback_add_information
     )
     person_view.allowed_fields = property(person_allowed_fields)

@@ -197,7 +197,7 @@ def create_resource(
 
     # Add permissions callbacks if required
     if settings.get('jsonapi.callbacks.std_permissions', 'false') == 'true':
-        view.callbacks['serialised_object'].append(
+        view.callbacks['after_serialise_object'].append(
             std_permissions_after_serialise_object
         )
         view.callbacks['after_get'].append(
@@ -339,8 +339,8 @@ def collection_view_factory(
     fields.update(rels)
     CollectionView.fields = fields
     CollectionView.callbacks = {
-        'serialised_identifier': deque(),
-        'serialised_object': deque(),
+        'after_serialise_identifier': deque(),
+        'after_serialise_object': deque(),
         'after_get': deque(),
         'requested_attributes': deque(),
         'requested_relationships': deque(),
@@ -1797,7 +1797,7 @@ class CollectionViewBase:
             'id': str(obj_id)
         }
 
-        for callback in self.callbacks['serialised_identifier']:
+        for callback in self.callbacks['after_serialise_identifier']:
             ret = callback(self, ret)
 
         return ret
@@ -1931,7 +1931,7 @@ class CollectionViewBase:
             'relationships': rels
         }
 
-        for callback in self.callbacks['serialised_object']:
+        for callback in self.callbacks['after_serialise_object']:
             ret = callback(self, ret)
 
         return ret
