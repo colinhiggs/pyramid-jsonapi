@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-version = '0.2'
+version = '0.3'
 
 requires = [
     'pyramid',
