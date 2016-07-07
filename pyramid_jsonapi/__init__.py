@@ -329,13 +329,23 @@ def collection_view_factory(
     CollectionView.relationships = rels
     fields.update(rels)
     CollectionView.fields = fields
+
+    # All callbacks have the current view as the first argument. The comments
+    # below detail subsequent args.
     CollectionView.callbacks = {
-        'after_serialise_identifier': deque(),
-        'after_serialise_object': deque(),
-        'after_get': deque(),
-        'requested_attributes': deque(),
-        'requested_relationships': deque(),
-        'requested_fields': deque(),
+        'after_serialise_identifier': deque(),  # args: identifier(dict)
+        'after_serialise_object': deque(),      # args: object(dict)
+        'after_get': deque(),                   # args: document(dict)
+        'before_patch': deque(),                # args: partial_object(dict)
+        'before_delete': deque(),               # args: item(sqlalchemy)
+        'after_collection_get': deque(),        # args: document(dict)
+        'before_collection_post': deque(),      # args: object(dict)
+        'after_related_get': deque(),           # args: document(dict)
+        'after_relationships_get': deque(),     # args: document(dict)
+        'before_relationships_post': deque(),   # args: object(dict)
+        'before_relationships_patch': deque(),  # args: partial_object(dict)
+        'before_relationships_delete':
+            deque(),                            # args: parent_item(sqlalchemy)
     }
 
     return CollectionView
@@ -575,6 +585,8 @@ class CollectionViewBase:
                     data_id, req_id
                 )
             )
+        for callback in self.callbacks['before_patch']:
+            data = callback(self, data)
         atts = data.get('attributes', {})
         atts[self.key_column.name] = req_id
         item = DBSession.merge(self.model(**atts))
@@ -673,6 +685,8 @@ class CollectionViewBase:
             self.request.matchdict['id']
         )
         if item:
+            for callback in self.callbacks['before_delete']:
+                callback(self, item)
             try:
                 DBSession.delete(item)
                 DBSession.flush()
@@ -761,7 +775,12 @@ class CollectionViewBase:
         q = q.offset(qinfo['page[offset]'])
         q = q.limit(qinfo['page[limit]'])
 
-        return self.collection_return(q, count=count)
+        ret = self.collection_return(q, count=count)
+
+        # Alter return dict with any callbacks.
+        for callback in self.callbacks['after_collection_get']:
+            ret = callback(self, ret)
+        return ret
 
     @jsonapi_view
     def collection_post(self):
@@ -823,6 +842,11 @@ class CollectionViewBase:
         '''
         DBSession = self.get_dbsession()
         data = self.request.json_body['data']
+
+        # Alter data with any callbacks.
+        for callback in self.callbacks['before_collection_post']:
+            data = callback(self, data)
+
         # Check to see if we're allowing client ids
         if self.request.registry.settings.get(
                 'jsonapi.allow_client_ids',
@@ -974,9 +998,14 @@ class CollectionViewBase:
                 )
             q = q.offset(qinfo['page[offset]'])
             q = q.limit(qinfo['page[limit]'])
-            return rel_view.collection_return(q, count=count)
+            ret = rel_view.collection_return(q, count=count)
         else:
-            return rel_view.single_return(q)
+            ret = rel_view.single_return(q)
+
+        # Alter return dict with any callbacks.
+        for callback in self.callbacks['after_related_get']:
+            ret = callback(self, ret)
+        return ret
 
     @jsonapi_view
     def relationships_get(self):
@@ -1070,13 +1099,18 @@ class CollectionViewBase:
                 )
             q = q.offset(qinfo['page[offset]'])
             q = q.limit(qinfo['page[limit]'])
-            return rel_view.collection_return(
+            ret = rel_view.collection_return(
                 q,
                 count=count,
                 identifiers=True
             )
         else:
-            return rel_view.single_return(q, identifier=True)
+            ret = rel_view.single_return(q, identifier=True)
+
+        # Alter return dict with any callbacks.
+        for callback in self.callbacks['after_relationships_get']:
+            ret = callback(self, ret)
+        return ret
 
     @jsonapi_view
     def relationships_post(self):
@@ -1146,6 +1180,11 @@ class CollectionViewBase:
             ))
         if rel.direction is MANYTOONE:
             raise HTTPNotFound('Cannot POST to TOONE relationship link.')
+
+        # Alter data with any callbacks
+        for callback in self.callbacks['before_relationships_post']:
+            data = callback(self, data)
+
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         obj = DBSession.query(self.model).get(obj_id)
@@ -1170,7 +1209,7 @@ class CollectionViewBase:
     def relationships_patch(self):
         '''Handle PATCH requests for relationships (TOMANY or TOONE).
 
-        Completely replace the raltionship membership.
+        Completely replace the relationship membership.
 
         **URL (matchdict) Parameters**
 
@@ -1241,6 +1280,11 @@ class CollectionViewBase:
                 relname,
                 self.collection_name
             ))
+
+        # Alter data with any callbacks
+        for callback in self.callbacks['before_relationships_patch']:
+            data = callback(self, data)
+
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         obj = DBSession.query(self.model).get(obj_id)
@@ -1352,6 +1396,11 @@ class CollectionViewBase:
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         obj = DBSession.query(self.model).get(obj_id)
+
+        # Call callbacks
+        for callback in self.callbacks['before_relationships_delete']:
+            callback(self, obj)
+
         for resid in self.request.json_body['data']:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
