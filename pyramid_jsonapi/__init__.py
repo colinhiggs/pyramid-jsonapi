@@ -38,6 +38,8 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
+__version__ = 0.3
+
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
