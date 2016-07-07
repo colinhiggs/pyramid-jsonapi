@@ -212,15 +212,117 @@ Callbacks
 
 At certain points during the processing of a request, ``pyramid_jsonapi`` will
 invoke any callback functions which have been registered. Callback sequences are
-currently implemented as ordinary lists: you add your callback functions using
-``.append()``, remove them with ``.pop()`` and so on. The functions in each
-callback list will be called in order at the appropriate point.
+currently implemented as ``collections.deque``: you add your callback functions
+using ``.append()`` or ``.appendleft()``, remove them with ``.pop()`` or
+``.popleft()`` and so on. The functions in each callback list will be called in
+order at the appropriate point.
 
-Available Callback Lists
-------------------------
+Getting the Callback Deque
+--------------------------
+
+Every view class (subclass of CollectionViewBase) has its own dictionary of
+callback deques (``view_class.callbacks``). That dictionary is keyed by callback
+deque name. For example, if you have a view_class and you would like to append
+your ``my_after_get`` function to the ``after_get`` deque:
+
+.. code-block:: python
+
+  view_class.callbacks['after_get'].append(my_after_get)
+
+If you don't currently have a view class, you can get one from a model class
+(for example, ``models.Person``) with:
+
+.. code-block:: python
+
+  person_view_class = pyramid_jsonapi.view_classes[models.Person]
+
+Available Callback Deques
+-------------------------
+
+The following is a list of available callbacks. Note that each item in the list
+has a name like ``pyramid_jsonapi.callbacks_doc.<callback_name>``. That's so
+that sphinx will link to auto-built documentation from the module
+``pyramid_jsonapi.callbacks_doc``. In practice you should use only the name
+after the last '.' to get callback deques.
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.after_serialise_object`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.after_serialise_identifier`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.after_get`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.before_patch`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.before_delete`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.after_collection_get`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.before_collection_post`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.after_related_get`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.after_relationships_get`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.before_relationships_post`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.before_relationships_patch`
+
+* :py:func:`pyramid_jsonapi.callbacks_doc.before_relationships_delete`
 
 
+Canned Callbacks
+----------------
 
+Using the callbacks above, you could, in theory, do things like implement a
+permissions system, generalised call-outs to other data sources, or many other
+things. However, some of those would entail quite a lot of work as well as being
+potentially generally useful. In the interests of reuse, pyramid_jsonapi
+maintains sets of self consistent callbacks which cooperate towards one goal.
+
+So far there is only one such set: ``access_control_serialised_objects``. This
+set of callbacks implements an access control system based on the inspection of
+serialised (as dictionaries) objects before POST, PATCH and DELETE operations
+and after serialisation and GET operations.
+
+Registering Canned Callbacks
+----------------------------
+
+Given a callback set name, you can register callback sets on each view class:
+
+.. code-block:: python
+
+  view_class.append_callback_set('access_control_serialised_objects')
+
+or on all view classes:
+
+.. code-block:: python
+
+  pyramid_jsonapi.append_callback_set_to_all_views(
+    'access_control_serialised_objects'
+  )
+
+Callback Sets
+-------------
+
+``access_control_serialised_objects``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These callbacks will allow, deny, or manipulate the results of actions
+dependent upon the return values of two methods of the calling view class:
+:py:func:`pyramid_jsonapi.CollectionViewBase.allowed_object` and
+:py:func:`pyramid_jsonapi.CollectionViewBase.allowed_fields`.
+
+The default implementations allow everything. To do anything else, you need to
+replace those methods with your own implementations.
+
+* :py:func:`pyramid_jsonapi.CollectionViewBase.allowed_object` will be given two
+  arguments: an instance of a view class, and the serialised object (so far). It
+  should return ``True`` if the operation (available from view.request) is
+  allowed on the object, or ``False`` if not.
+
+* :py:func:`pyramid_jsonapi.CollectionViewBase.allowed_fields` will be given one
+  argument: an instance of a view class. It should return the set of fields
+  (attributes and relationships) on which the current operation is allowed.
 
 Consuming the API from the Client End
 =====================================
