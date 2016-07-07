@@ -195,15 +195,6 @@ def create_resource(
     view.max_limit =\
         int(settings.get('jsonapi.paging.max_limit', 100))
 
-    # Add permissions callbacks if required
-    if settings.get('jsonapi.callbacks.std_permissions', 'false') == 'true':
-        view.callbacks['after_serialise_object'].append(
-            std_permissions_after_serialise_object
-        )
-        view.callbacks['after_get'].append(
-            std_permissions_after_get
-        )
-
     # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
     # GET
@@ -2317,8 +2308,18 @@ class CollectionViewBase:
         '''
         return view_classes[model](self.request)
 
+    @classmethod
+    def append_callback_set(cls, set_name):
+        '''Append a named set of callbacks from ``callback_sets``.
 
-def std_permissions_after_serialise_object(view, obj):
+        Args:
+            set_name (str): key in ``callback_sets``.
+        '''
+        for cb_name, callback in callback_sets[set_name].items():
+            cls.callbacks[cb_name].append(callback)
+
+
+def acso_after_serialise_object(view, obj):
     '''Standard callback altering object to take account of permissions.
 
     Args:
@@ -2379,7 +2380,7 @@ def std_permissions_after_serialise_object(view, obj):
         }
 
 
-def std_permissions_after_get(view, ret):
+def acso_after_get(view, ret):
     '''Standard callback throwing 403 (Forbidden) based on information in meta.
 
     Args:
@@ -2401,6 +2402,24 @@ def std_permissions_after_get(view, ret):
         if error['code'] == 403:
             raise HTTPForbidden(error['detail'])
     return ret
+
+
+callback_sets = {
+    'access_control_serialised_objects': {
+        'after_serialise_object': acso_after_serialise_object,
+        'after_get': acso_after_get
+    }
+}
+
+
+def append_callback_set_to_all_views(set_name):
+    '''Append a named set of callbacks to all view classes.
+
+    Args:
+        set_name (str): key in ``callback_sets``.
+    '''
+    for view_class in view_classes.values():
+        view_class.append_callback_set(set_name)
 
 
 class DebugView:
