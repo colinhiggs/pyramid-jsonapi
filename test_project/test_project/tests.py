@@ -1267,7 +1267,7 @@ class TestSpec(DBTestBase):
             )
             app = get_app(
                 '{}/testing.ini'.format(parent_dir),
-                options={'jsonapi.allow_client_ids': 'false'}
+                options={'pyramid_jsonapi.allow_client_ids': 'false'}
             )
         test_app = webtest.TestApp(app)
         test_app.post_json(

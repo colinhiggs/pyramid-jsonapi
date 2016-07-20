@@ -104,7 +104,7 @@ def create_jsonapi(
     settings = config.registry.settings
 
     # Add the debug endpoints if required.
-    if settings.get('jsonapi.debug.debug_endpoints', 'false') == 'true':
+    if settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false') == 'true':
         if engine is None:
             DebugView.engine = model_list[0].metadata.bind
         else:
@@ -112,7 +112,7 @@ def create_jsonapi(
         DebugView.metadata = model_list[0].metadata
         if test_data is None:
             test_data = importlib.import_module(
-                settings.get('jsonapi.debug.test_data_module', 'test_data')
+                settings.get('pyramid_jsonapi.debug.test_data_module', 'test_data')
             )
         DebugView.test_data = test_data
         config.add_route('debug', '/debug/{action}')
@@ -193,9 +193,9 @@ def create_resource(
 
     settings = config.registry.settings
     view.default_limit =\
-        int(settings.get('jsonapi.paging.default_limit', 10))
+        int(settings.get('pyramid_jsonapi.paging.default_limit', 10))
     view.max_limit =\
-        int(settings.get('jsonapi.paging.max_limit', 100))
+        int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
 
     # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
@@ -427,7 +427,7 @@ class CollectionViewBase:
 
             # Potentially add some debug information.
             if self.request.registry.settings.get(
-                'jsonapi.debug.meta', 'false'
+                'pyramid_jsonapi.debug.meta', 'false'
             ) == 'true':
                 debug = {
                     'accept_header': {
@@ -851,7 +851,7 @@ class CollectionViewBase:
 
         # Check to see if we're allowing client ids
         if self.request.registry.settings.get(
-                'jsonapi.allow_client_ids',
+                'pyramid_jsonapi.allow_client_ids',
                 'false') != 'true' and 'id' in data:
             raise HTTPForbidden('Client generated ids are not supported.')
         # Type should be correct or raise 409 Conflict
@@ -2477,7 +2477,7 @@ class DebugView:
     '''Pyramid view class defining a debug API.
 
     These are available as ``/debug/{action}`` if
-    ``jsonapi.debug.debug_endpoints == 'true'``.
+    ``pyramid_jsonapi.debug.debug_endpoints == 'true'``.
 
     Attributes:
         engine: sqlalchemy engine with connection to the db.
