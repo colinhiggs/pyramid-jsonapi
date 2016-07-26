@@ -1184,6 +1184,7 @@ class CollectionViewBase:
             raise HTTPNotFound('Cannot POST to TOONE relationship link.')
 
         # Alter data with any callbacks
+        data = self.request.json_body['data']
         for callback in self.callbacks['before_relationships_post']:
             data = callback(self, data)
 
@@ -1191,7 +1192,7 @@ class CollectionViewBase:
         rel_view = self.view_instance(rel_class)
         obj = DBSession.query(self.model).get(obj_id)
         items = []
-        for resid in self.request.json_body['data']:
+        for resid in data:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
                     "Resource identifier type '{}' " +
@@ -1284,6 +1285,7 @@ class CollectionViewBase:
             ))
 
         # Alter data with any callbacks
+        data = self.request.json_body['data']
         for callback in self.callbacks['before_relationships_patch']:
             data = callback(self, data)
 
@@ -1291,7 +1293,7 @@ class CollectionViewBase:
         rel_view = self.view_instance(rel_class)
         obj = DBSession.query(self.model).get(obj_id)
         if rel.direction is MANYTOONE:
-            resid = self.request.json_body['data']
+            resid = data
             if resid is None:
                 setattr(obj, relname, None)
             else:
