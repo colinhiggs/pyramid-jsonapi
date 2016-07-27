@@ -44,7 +44,6 @@ ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
-route_prefix = 'jsonapi'
 view_classes = {}
 
 
@@ -186,7 +185,8 @@ def create_resource(
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(
-        model, get_dbsession, collection_name, expose_fields=expose_fields
+        config, model, get_dbsession, collection_name,
+        expose_fields=expose_fields
     )
     view_classes['collection_name'] = view
     view_classes[model] = view
@@ -264,6 +264,7 @@ def create_resource(
 
 
 def collection_view_factory(
+        config,
         model,
         get_dbsession,
         collection_name=None,
@@ -272,6 +273,7 @@ def collection_view_factory(
     '''Build a class to handle requests for model.
 
     Arguments:
+        config: ``pyramid.config.Configurator`` object from current app.
         model: a model class derived from DeclarativeMeta.
         get_dbsession: a callable shich returns a
             sqlalchemy.orm.session.Session or equivalent.
@@ -289,28 +291,53 @@ def collection_view_factory(
         {}
     )
 
+    def add_prefix(key, default, sep, name):
+        ''''''
+        prefix = config.registry.settings.get(key, default)
+        if prefix:
+            return sep.join((prefix, name))
+        else:
+            return name
+
+    def add_route_name_prefix(name):
+        return add_prefix(
+            'pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi',
+            ':', name
+        )
+
+    def add_route_pattern_prefix(name):
+        return add_prefix(
+            'pyramid_jsonapi.route_pattern_prefix', '',
+            '/', name
+        )
+
     CollectionView.model = model
     CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
     CollectionView.collection_name = collection_name
     CollectionView.get_dbsession = get_dbsession
 
-    CollectionView.collection_route_name =\
-        ':'.join((route_prefix, collection_name))
-    CollectionView.collection_route_pattern = collection_name
+    CollectionView.collection_route_name = add_route_name_prefix(
+        collection_name
+    )
+    CollectionView.collection_route_pattern = add_route_pattern_prefix(
+        collection_name
+    )
 
     CollectionView.item_route_name =\
         CollectionView.collection_route_name + ':item'
-    CollectionView.item_route_pattern = collection_name + '/{id}'
+    CollectionView.item_route_pattern =\
+        CollectionView.collection_route_pattern + '/{id}'
 
     CollectionView.related_route_name =\
         CollectionView.collection_route_name + ':related'
     CollectionView.related_route_pattern =\
-        collection_name + '/{id}/{relationship}'
+        CollectionView.collection_route_pattern + '/{id}/{relationship}'
 
     CollectionView.relationships_route_name =\
         CollectionView.collection_route_name + ':relationships'
     CollectionView.relationships_route_pattern =\
-        collection_name + '/{id}/relationships/{relationship}'
+        CollectionView.collection_route_pattern +\
+        '/{id}/relationships/{relationship}'
 
     CollectionView.exposed_fields = expose_fields
     atts = {}
