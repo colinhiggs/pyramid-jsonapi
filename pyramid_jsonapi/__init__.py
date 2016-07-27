@@ -263,6 +263,33 @@ def create_resource(
     )
 
 
+def add_prefix(config, key, default, sep, name):
+    '''Add key as a prefix to name with separator sep.'''
+    prefix = config.registry.settings.get(key, default)
+    if prefix:
+        return sep.join((prefix, name))
+    else:
+        return name
+
+
+def add_route_name_prefix(config, name):
+    '''Add route_name_prefix to name.'''
+    return add_prefix(
+        config,
+        'pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi',
+        ':', name
+    )
+
+
+def add_route_pattern_prefix(config, name):
+    '''Add route pattern prefix to name.'''
+    return add_prefix(
+        config,
+        'pyramid_jsonapi.route_pattern_prefix', '',
+        '/', name
+    )
+
+
 def collection_view_factory(
         config,
         model,
@@ -291,35 +318,17 @@ def collection_view_factory(
         {}
     )
 
-    def add_prefix(key, default, sep, name):
-        ''''''
-        prefix = config.registry.settings.get(key, default)
-        if prefix:
-            return sep.join((prefix, name))
-        else:
-            return name
-
-    def add_route_name_prefix(name):
-        return add_prefix(
-            'pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi',
-            ':', name
-        )
-
-    def add_route_pattern_prefix(name):
-        return add_prefix(
-            'pyramid_jsonapi.route_pattern_prefix', '',
-            '/', name
-        )
-
     CollectionView.model = model
     CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
     CollectionView.collection_name = collection_name
     CollectionView.get_dbsession = get_dbsession
 
     CollectionView.collection_route_name = add_route_name_prefix(
+        config,
         collection_name
     )
     CollectionView.collection_route_pattern = add_route_pattern_prefix(
+        config,
         collection_name
     )
 
