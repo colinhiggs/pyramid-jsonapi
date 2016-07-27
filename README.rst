@@ -21,17 +21,26 @@ pyramid_jsonapi documentation page
 Installation
 ============
 
-There is a test release on testpypi:
-`<https://testpypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`_. You
-can install it (perhaps into a virtualenv for play purposes) with
+* Stable releases are now uploaded to pypi:
+  `<https://pypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`_. You
+  can install it in the usual way:
 
-.. code-block:: bash
+  .. code-block:: bash
 
-  pip install -i https://testpypi.python.org/pypi pyramid_jsonapi
+    pip install -i pyramid_jsonapi
 
-or, since there is only one file, you can download the development version from
-`<https://github.com/colinhiggs/pyramid-jsonapi>`_ and copy the pyramid_jsonapi
-directory into your PYTHONPATH or into your project.
+* Test releases are sometimes uploaded to testpypi:
+  `<https://testpypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`_.
+  These may or may not be ahead of the current stable version. You
+  can install it (perhaps into a virtualenv for play purposes) with
+
+  .. code-block:: bash
+
+    pip install -i https://testpypi.python.org/pypi pyramid_jsonapi
+
+* Since there is only one file, you can download the development version from
+  `<https://github.com/colinhiggs/pyramid-jsonapi>`_ and copy the
+  pyramid_jsonapi directory into your PYTHONPATH or into your project.
 
 Auto-Creating an API
 ====================
