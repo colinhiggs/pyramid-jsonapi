@@ -1860,6 +1860,9 @@ class CollectionViewBase:
         else:
             return False
 
+    def invisible_column(self, column):
+        return hasattr(column, 'info') and column.info == 'invisible'
+
     def serialise_resource_identifier(self, obj_id):
         '''Return a resource identifier dictionary for id "obj_id"
 
@@ -1915,9 +1918,12 @@ class CollectionViewBase:
             key: getattr(item, key)
             for key in self.requested_attributes.keys()
         }
+
         for key, col in sqlalchemy.inspect(self.model).all_orm_descriptors.items():
             if isinstance(col, hybrid_property):
                 atts[key] = getattr(item, key)
+            if self.invisible_column(col):
+                atts.pop(key, None)
 
         rels = {}
         for key, rel in self.relationships.items():
