@@ -36,6 +36,7 @@ from sqlalchemy.orm import load_only
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
+from sqlalchemy import or_
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -176,13 +177,16 @@ def create_resource(
     if len(keycols) > 1:
         raise Exception(
             'Model {} has more than one primary key.'.format(
-                model_class.__name__
+                model.__name__
             )
         )
     model._jsonapi_id = getattr(model, keycols[0].name)
 
     if collection_name is None:
-        collection_name = sqlalchemy.inspect(model).tables[0].name
+        if hasattr(model, '__alt_model_name__'):
+            collection_name = model.__alt_model_name__
+        else:
+            collection_name = sqlalchemy.inspect(model).tables[0].name
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(
@@ -231,6 +235,7 @@ def create_resource(
 
     # related
     config.add_route(view.related_route_name, view.related_route_pattern)
+
     # GET
     config.add_view(
         view, attr='related_get', request_method='GET',
@@ -1821,7 +1826,7 @@ class CollectionViewBase:
             q = q.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
             q = q.filter(obj_id == rem_col)
-        elif rel.direction is MANYTOMANY:
+        elif rel.direction is MANYTOMANY:        
             q = q.filter(
                 obj_id == rel.primaryjoin.right
             ).filter(
