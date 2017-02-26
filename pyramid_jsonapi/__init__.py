@@ -241,6 +241,13 @@ def create_resource(
         route_name=view.related_route_name, renderer='json'
     )
 
+    # PATCH
+    config.add_view(
+        view, attr='related_patch', request_method='PATCH',
+        route_name=view.related_route_name, renderer='json'
+    )
+    
+
     # relationships
     config.add_route(
         view.relationships_route_name,
@@ -1040,6 +1047,133 @@ class CollectionViewBase:
         for callback in self.callbacks['after_related_get']:
             ret = callback(self, ret)
         return ret
+
+
+    @jsonapi_view
+    def related_patch(self):
+        '''Handle PATCH request for a related single item.
+
+        Update an existing item from a partially defined representation.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+
+        **Request Body**
+
+            **Partial resource object** (*json*)
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    'meta': {
+                        'updated': [
+                            <attribute_name>,
+                            <attribute_name>
+                        ]
+                    }
+                }
+
+        Raises:
+            HTTPNotFound
+
+        Example:
+            PATCH details of person 1, changing name to alicia:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/people/1/details data:='
+                {
+                    "type":"people", "id": "1",
+                    "attributes": {
+                        "name": "alicia"
+                    }
+                }' Content-Type:application/vnd.api+json
+
+            Change the author of posts/1 to people/2:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1/details data:='
+                {
+                    "type":"posts", "id": "1",
+                    "relationships": {
+                        "author": {"type": "people", "id": "2"}
+                    }
+                }' Content-Type:application/vnd.api+json
+
+            Set the comments on posts/1 to be [comments/4, comments/5]:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1/details data:='
+                {
+                    "type":"posts", "id": "1",
+                    "relationships": {
+                        "comments": [
+                            {"type": "comments", "id": "4"},
+                            {"type": "comments", "id": "5"}
+                        ]
+                    }
+                }' Content-Type:application/vnd.api+json
+        '''
+        if not self.object_exists(self.request.matchdict['id']):
+            raise HTTPNotFound(
+                'Cannot PATCH a non existent resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
+        DBSession = self.get_dbsession()
+        data = self.request.json_body['data']
+        req_id = self.request.matchdict['id']
+        relname = self.request.matchdict['relationship']
+        mapper = sqlalchemy.inspect(self.model).mapper
+        try:
+            rel = mapper.relationships[relname]
+        except KeyError:
+            raise HTTPNotFound('No relationship {} in collection {}'.format(
+                relname,
+                self.collection_name
+            ))
+        data_id = data.get('id')
+        if relname != data.get('type'):
+            raise HTTPConflict(
+                'JSON type ({}) does not match URL type ({}).'.format(
+                    data.get('type'), relname
+                )
+            )
+        if data_id != req_id:
+            raise HTTPConflict(
+                'JSON id ({}) does not match URL id ({}).'.format(
+                    data_id, req_id
+                )
+            )
+        for callback in self.callbacks['before_patch']:
+            data = callback(self, data)
+        atts = data.get('attributes', {})
+        q = self.related_query(req_id, rel, full_object=True)
+        obj = q.one()
+        for k, v in atts.items():
+            setattr(obj, k, v)
+        DBSession.merge(obj)
+        try:
+            DBSession.flush()
+        except sqlalchemy.exc.IntegrityError as e:
+            raise HTTPFailedDependency(str(e))
+
+        return {
+            'meta': {
+                'updated': {
+                    'attributes': [
+                        att for att in atts
+                        if att != self.key_column.name
+                    ]
+                }
+            }
+        }
 
     @jsonapi_view
     def relationships_get(self):
