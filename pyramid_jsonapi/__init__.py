@@ -176,13 +176,16 @@ def create_resource(
     if len(keycols) > 1:
         raise Exception(
             'Model {} has more than one primary key.'.format(
-                model_class.__name__
+                model.__name__
             )
         )
     model._jsonapi_id = getattr(model, keycols[0].name)
 
     if collection_name is None:
-        collection_name = sqlalchemy.inspect(model).tables[0].name
+        if hasattr(model, '__alt_model_name__'):
+            collection_name = model.__alt_model_name__
+        else:
+            collection_name = sqlalchemy.inspect(model).tables[0].name
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(
@@ -231,6 +234,7 @@ def create_resource(
 
     # related
     config.add_route(view.related_route_name, view.related_route_pattern)
+
     # GET
     config.add_view(
         view, attr='related_get', request_method='GET',
