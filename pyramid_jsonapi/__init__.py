@@ -2082,7 +2082,10 @@ class CollectionViewBase:
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
             is_included = False
-            if rel_path_str in self.requested_include_names():
+            requested_include_names = self.requested_include_names()
+            if isinstance(requested_include_names, set) and \
+               any(rel_path_str in s for s in requested_include_names) or\
+               rel_path_str in self.requested_include_names():
                 is_included = True
             q = self.related_query(
                 item._jsonapi_id, rel, full_object=is_included
