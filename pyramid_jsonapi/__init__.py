@@ -1958,7 +1958,7 @@ class CollectionViewBase:
         else:
             q = q.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
-            q = q.filter(obj_id == rem_col)
+            q = q.filter(str(rel.primaryjoin).replace(str(local_col), str(obj_id)))
         elif rel.direction is MANYTOMANY:
             q = q.filter(
                 obj_id == rel.primaryjoin.right
@@ -2082,7 +2082,10 @@ class CollectionViewBase:
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
             is_included = False
-            if rel_path_str in self.requested_include_names():
+            requested_include_names = self.requested_include_names()
+            if isinstance(requested_include_names, set) and \
+               any(rel_path_str in s for s in requested_include_names) or\
+               rel_path_str in self.requested_include_names():
                 is_included = True
             q = self.related_query(
                 item._jsonapi_id, rel, full_object=is_included
