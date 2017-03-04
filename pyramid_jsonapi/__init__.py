@@ -1958,7 +1958,8 @@ class CollectionViewBase:
         else:
             q = q.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
-            q = q.filter(str(rel.primaryjoin).replace(str(local_col), str(obj_id)))
+            q = q.filter(sqlalchemy.text(
+                str(rel.primaryjoin).replace(str(local_col), str(obj_id))))
         elif rel.direction is MANYTOMANY:
             q = q.filter(
                 obj_id == rel.primaryjoin.right
