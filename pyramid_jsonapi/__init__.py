@@ -1968,7 +1968,7 @@ class CollectionViewBase:
             )
         elif rel.direction is MANYTOONE:
             q = q.filter(
-                local_col == rel_class._jsonapi_id
+                rel.primaryjoin
             ).filter(
                 self.model._jsonapi_id == obj_id
             )
