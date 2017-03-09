@@ -38,6 +38,8 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import subqueryload
+from sqlalchemy import inspect
 
 __version__ = 0.3
 
@@ -1802,6 +1804,45 @@ class CollectionViewBase:
 
         return q
 
+    def get_operator_func(self, prop, op, val):
+        if op == 'eq':
+            op_func = getattr(prop, '__eq__')
+        elif op == 'ne':
+            op_func = getattr(prop, '__ne__')
+        elif op == 'startswith':
+            op_func = getattr(prop, 'startswith')
+        elif op == 'endswith':
+            op_func = getattr(prop, 'endswith')
+        elif op == 'contains':
+            op_func = getattr(prop, 'contains')
+        elif op == 'lt':
+            op_func = getattr(prop, '__lt__')
+        elif op == 'gt':
+            op_func = getattr(prop, '__gt__')
+        elif op == 'le':
+            op_func = getattr(prop, '__le__')
+        elif op == 'ge':
+            op_func = getattr(prop, '__ge__')
+        elif op == 'like' or op == 'ilike':
+            op_func = getattr(prop, op)
+            val = re.sub(r'\*', '%', val)
+        else:
+            raise HTTPBadRequest(
+                "No such filter operator: '{}'".format(op)
+            )
+        return op_func, val
+
+    def filter_on_relationships(self, q, rel, related_attribute, op, val):
+        '''Add filtering clauses for relationship to query
+        '''
+        prop = getattr(rel.mapper.class_, related_attribute)
+        q1 = self.get_dbsession().query(self.key_column)
+        q1 = q1.join(rel.mapper.class_)   
+        op_func, val = self.get_operator_func(prop, op, val)
+        q1 = q1.filter(op_func(val)).subquery()
+        q = q.filter(self.key_column.in_(q1))
+        return q
+
     def query_add_filtering(self, q):
         '''Add filtering clauses to query.
 
@@ -1871,34 +1912,10 @@ class CollectionViewBase:
             op = finfo['op']
             prop = getattr(self.model, colspec[0])
             if isinstance(prop.property, RelationshipProperty):
-                # TODO(Colin): deal with relationships properly.
-                pass
-            if op == 'eq':
-                op_func = getattr(prop, '__eq__')
-            elif op == 'ne':
-                op_func = getattr(prop, '__ne__')
-            elif op == 'startswith':
-                op_func = getattr(prop, 'startswith')
-            elif op == 'endswith':
-                op_func = getattr(prop, 'endswith')
-            elif op == 'contains':
-                op_func = getattr(prop, 'contains')
-            elif op == 'lt':
-                op_func = getattr(prop, '__lt__')
-            elif op == 'gt':
-                op_func = getattr(prop, '__gt__')
-            elif op == 'le':
-                op_func = getattr(prop, '__le__')
-            elif op == 'ge':
-                op_func = getattr(prop, '__ge__')
-            elif op == 'like' or op == 'ilike':
-                op_func = getattr(prop, op)
-                val = re.sub(r'\*', '%', val)
+                q = self.filter_on_relationships(q, prop, colspec[1], op, val)
             else:
-                raise HTTPBadRequest(
-                    "No such filter operator: '{}'".format(op)
-                )
-            q = q.filter(op_func(val))
+                op_func, val = self.get_operator_func(prop, op, val)
+                q = q.filter(op_func(val))
 
         return q
 
