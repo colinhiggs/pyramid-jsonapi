@@ -2145,19 +2145,18 @@ class CollectionViewBase:
                             included, include_path + [key]
                         )
 
+                rel_id = getattr(
+                    item,
+                    rel.local_remote_pairs[0][0].name
+                )
+                if rel_id is None:
+                    rel_dict['data'] = None
                 else:
-                    rel_id = getattr(
-                        item,
-                        rel.local_remote_pairs[0][0].name
+                    rel_dict[
+                        'data'
+                    ] = rel_view.serialise_resource_identifier(
+                        rel_id
                     )
-                    if rel_id is None:
-                        rel_dict['data'] = None
-                    else:
-                        rel_dict[
-                            'data'
-                        ] = rel_view.serialise_resource_identifier(
-                            rel_id
-                        )
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
