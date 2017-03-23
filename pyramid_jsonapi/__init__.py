@@ -1783,7 +1783,7 @@ class CollectionViewBase:
             # sort_keys[0] is the name of an attribute or a
             # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
             # is the name of a relationship.
-            if isinstance(order_att.property, RelationshipProperty):
+            if hasattr(order_att, 'property') and isinstance(order_att.property, RelationshipProperty):
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
