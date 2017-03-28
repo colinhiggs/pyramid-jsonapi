@@ -1820,7 +1820,7 @@ class CollectionViewBase:
         elif op == 'le':
             op_func = getattr(prop, '__le__')
         elif op == 'ge':
-            op_func = getattr(prop[i], '__ge__')
+            op_func = getattr(prop, '__ge__')
         elif op == 'like' or op == 'ilike':
             op_func = getattr(prop, op)
             val = re.sub(r'\*', '%', val)
