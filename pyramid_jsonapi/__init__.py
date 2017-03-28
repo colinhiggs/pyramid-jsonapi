@@ -1800,9 +1800,6 @@ class CollectionViewBase:
         return q
 
     def get_operator_func(self, prop, op, val):
- 
-        i = 0
-
         if op == 'eq':
             op_func = getattr(prop, '__eq__')
         elif op == 'ne':
