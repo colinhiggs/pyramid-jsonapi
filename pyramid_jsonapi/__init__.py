@@ -39,7 +39,7 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import subqueryload
-from sqlalchemy import inspect
+from sqlalchemy import inspect, or_
 
 __version__ = 0.3
 
@@ -1800,6 +1800,9 @@ class CollectionViewBase:
         return q
 
     def get_operator_func(self, prop, op, val):
+ 
+        i = 0
+
         if op == 'eq':
             op_func = getattr(prop, '__eq__')
         elif op == 'ne':
@@ -1817,7 +1820,7 @@ class CollectionViewBase:
         elif op == 'le':
             op_func = getattr(prop, '__le__')
         elif op == 'ge':
-            op_func = getattr(prop, '__ge__')
+            op_func = getattr(prop[i], '__ge__')
         elif op == 'like' or op == 'ilike':
             op_func = getattr(prop, op)
             val = re.sub(r'\*', '%', val)
@@ -1825,17 +1828,22 @@ class CollectionViewBase:
             raise HTTPBadRequest(
                 "No such filter operator: '{}'".format(op)
             )
+
         return op_func, val
 
     def filter_on_relationships(self, q, rel, related_attribute, op, val):
         '''Add filtering clauses for relationship to query
         '''
-        prop = getattr(rel.mapper.class_, related_attribute)
-        q1 = self.get_dbsession().query(self.key_column)
-        q1 = q1.join(rel.mapper.class_)
-        op_func, val = self.get_operator_func(prop, op, val)
-        q1 = q1.filter(op_func(val)).subquery()
-        q = q.filter(self.key_column.in_(q1))
+        qs = []
+        for i in range(0, len(rel)-1):
+            prop = getattr(rel[i].mapper.class_, related_attribute[i])
+            q1 = self.get_dbsession().query(self.key_column)
+            q1 = q1.join(rel[i].mapper.class_)
+            op_func, val = self.get_operator_func(prop, op[i], val[i])
+            q1 = q1.filter(op_func(val)).subquery()
+            qs.append(q1)
+
+        q = q.filter(or_(*[self.key_column.in_(x) for x in qs]))
         return q
 
     def query_add_filtering(self, q):
@@ -1902,17 +1910,31 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
         # Filters
         for p, finfo in qinfo['_filters'].items():
-            val = finfo['value']
-            colspec = finfo['colspec']
-            op = finfo['op']
-            prop = getattr(self.model, colspec[0])
-            for col in colspec[1:len(colspec)-1]:
-                prop = getattr(prop.mapper.class_, col)
-            if isinstance(prop.property, RelationshipProperty):
-                q = self.filter_on_relationships(q, prop, colspec[len(colspec)-1], op, val)
+            val = []
+            colspec = []
+            op = []
+            prop = []
+            use_rel_filter = False
+            for orelement in finfo:
+                elval = orelement['value']
+                elcolspec = orelement['colspec']
+                elop = orelement['op']
+                elprop = getattr(self.model, elcolspec[0])
+                for col in elcolspec[1:len(elcolspec)-1]:
+                    elprop = getattr(elprop.mapper.class_, col)
+
+                val.append(elval)
+                colspec.append(elcolspec[len(elcolspec)-1])
+                op.append(elop)
+                prop.append(elprop)
+                if isinstance(elprop.property, RelationshipProperty):
+                    use_rel_filter = True
+
+            if use_rel_filter:
+                q = self.filter_on_relationships(q, prop, colspec, op, val)
             else:
-                op_func, val = self.get_operator_func(prop, op, val)
-                q = q.filter(op_func(val))
+                op_func, val = self.get_operator_func(prop, op[0], val[0])
+                q = q.filter(or_([x for x in op_func(val)]))
 
         return q
 
@@ -2255,11 +2277,13 @@ class CollectionViewBase:
             # Filtering.
             # Use 'filter[<condition>]' param.
             # Format:
-            #   filter[<column_spec>:<operator>] = <value>
+            #   filter[<column_spec>:<operator>||<column_spec>:<operator>] = <value>
             #   where:
             #     <column_spec> is either:
             #       <column_name> for an attribute, or
             #       <relationship_name>.<column_name> for a relationship.
+            #
+            # "||" adds an OR boolean operation 
             # Examples:
             #   filter[name:eq]=Fred
             #      would find all objects with a 'name' attribute of 'Fred'
@@ -2269,13 +2293,16 @@ class CollectionViewBase:
             #
             # Find all the filters.
             if match.group(1) == 'filter':
-                colspec, op = match.group(2).split(':')
-                colspec = colspec.split('.')
-                info['_filters'][p] = {
-                    'colspec': colspec,
-                    'op': op,
-                    'value': val
-                }
+                ors = match.group(2).split('||')
+                info['_filters'][p] = []
+                for orelement in ors:
+                    colspec, op = orelement.split(':')
+                    colspec = colspec.split('.')
+                    info['_filters'][p].append({
+                        'colspec': colspec,
+                        'op': op,
+                        'value': val
+                    })
 
             # Paging.
             elif match.group(1) == 'page':
@@ -2299,7 +2326,7 @@ class CollectionViewBase:
         _query = {'page[{}]'.format(k): v for k, v in qinfo['_page'].items()}
         _query['sort'] = qinfo['sort']
         for f in sorted(qinfo['_filters']):
-            _query[f] = qinfo['_filters'][f]['value']
+            _query[f] = [x['value'] for x in qinfo['_filters'][f]]
 
         # First link.
         _query['page[offset]'] = 0
