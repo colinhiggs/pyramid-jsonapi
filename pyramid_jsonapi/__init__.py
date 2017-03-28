@@ -1034,11 +1034,7 @@ class CollectionViewBase:
             try:
                 count = q.count()
             except sqlalchemy.exc.ProgrammingError as e:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
-                )
+                raise HTTPBadRequest("error {}".format(e))
             q = q.offset(qinfo['page[offset]'])
             q = q.limit(qinfo['page[limit]'])
             ret = rel_view.collection_return(q, count=count)
@@ -1358,8 +1354,6 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = DBSession.query(self.model).get(obj_id)
-        items = []
         for resid in data:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
@@ -1368,12 +1362,13 @@ class CollectionViewBase:
                         resid['type'], rel_view.collection_name
                     )
                 )
-            items.append(DBSession.query(rel_class).get(resid['id']))
-        getattr(obj, relname).extend(items)
-        try:
-            DBSession.flush()
-        except sqlalchemy.exc.IntegrityError as e:
-            raise HTTPFailedDependency(str(e))
+            resid['attributes'][rel.primaryjoin.right.name] = obj_id
+            item = rel_class(**resid['attributes'])
+            try:
+                DBSession.add(item)
+                DBSession.flush()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise HTTPFailedDependency(str(e))
         return {}
 
     @jsonapi_view
@@ -1837,7 +1832,7 @@ class CollectionViewBase:
         '''
         prop = getattr(rel.mapper.class_, related_attribute)
         q1 = self.get_dbsession().query(self.key_column)
-        q1 = q1.join(rel.mapper.class_)   
+        q1 = q1.join(rel.mapper.class_)
         op_func, val = self.get_operator_func(prop, op, val)
         q1 = q1.filter(op_func(val)).subquery()
         q = q.filter(self.key_column.in_(q1))
@@ -1911,8 +1906,10 @@ class CollectionViewBase:
             colspec = finfo['colspec']
             op = finfo['op']
             prop = getattr(self.model, colspec[0])
+            for col in colspec[1:len(colspec)-1]:
+                prop = getattr(prop.mapper.class_, col)
             if isinstance(prop.property, RelationshipProperty):
-                q = self.filter_on_relationships(q, prop, colspec[1], op, val)
+                q = self.filter_on_relationships(q, prop, colspec[len(colspec)-1], op, val)
             else:
                 op_func, val = self.get_operator_func(prop, op, val)
                 q = q.filter(op_func(val))
