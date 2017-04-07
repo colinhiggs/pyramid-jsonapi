@@ -1354,6 +1354,7 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
+        ids = []
         for resid in data:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
@@ -1367,9 +1368,12 @@ class CollectionViewBase:
             try:
                 DBSession.add(item)
                 DBSession.flush()
+                ids.append(inspect(item).key[1][0])
+
             except sqlalchemy.exc.IntegrityError as e:
                 raise HTTPFailedDependency(str(e))
-        return {}
+
+        return {"ids": [x for x in ids]}
 
     @jsonapi_view
     def relationships_patch(self):
