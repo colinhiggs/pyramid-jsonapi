@@ -1296,7 +1296,7 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 {
-                    "data": [ { resource identifier },... ]
+                    "data":  { resource identifier },... 
                 }
 
         Returns:
@@ -1329,9 +1329,9 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http POST http://localhost:6543/posts/1/relationships/comments data:='
-                [
+                
                     { "type": "comments", "id": "1" }
-                ]' Content-Type:application/vnd.api+json
+                ' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
         obj_id = self.request.matchdict['id']
@@ -1354,26 +1354,25 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        ids = []
-        for resid in data:
-            if resid['type'] != rel_view.collection_name:
-                raise HTTPConflict(
-                    "Resource identifier type '{}' " +
-                    "does not match relationship type '{}'.".format(
-                        resid['type'], rel_view.collection_name
-                    )
+        resid = data
+        if resid['type'] != rel_view.collection_name:
+            raise HTTPConflict(
+                "Resource identifier type '{}' " +
+                "does not match relationship type '{}'.".format(
+                    resid['type'], rel_view.collection_name
                 )
-            resid['attributes'][rel.primaryjoin.right.name] = obj_id
-            item = rel_class(**resid['attributes'])
-            try:
-                DBSession.add(item)
-                DBSession.flush()
-                ids.append(inspect(item).key[1][0])
+            )
+        resid['attributes'][rel.primaryjoin.right.name] = obj_id
+        item = rel_class(**resid['attributes'])
+        try:
+            DBSession.add(item)
+            DBSession.flush()
+            id = inspect(item).key[1][0]
 
-            except sqlalchemy.exc.IntegrityError as e:
-                raise HTTPFailedDependency(str(e))
+        except sqlalchemy.exc.IntegrityError as e:
+            raise HTTPFailedDependency(str(e))
 
-        return {"ids": [x for x in ids]}
+        return {"id": id} if id is not None else {}
 
     @jsonapi_view
     def relationships_patch(self):
