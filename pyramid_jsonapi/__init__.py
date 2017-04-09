@@ -2124,60 +2124,62 @@ class CollectionViewBase:
                any(rel_path_str in s for s in requested_include_names) or\
                rel_path_str in self.requested_include_names():
                 is_included = True
-            q = self.related_query(
-                item._jsonapi_id, rel, full_object=is_included
-            )
-            if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-                qinfo = self.collection_query_info(self.request)
-                limit = self.related_limit(rel)
-                rel_dict['meta']['results']['limit'] = limit
-                rel_dict['meta']['results']['available'] = q.count()
-                q = q.limit(limit)
-                rel_dict['data'] = []
-                for ritem in q.all():
-                    rel_dict['data'].append(
-                        rel_view.serialise_resource_identifier(
-                            ritem._jsonapi_id
-                        )
-                    )
-                    if is_included:
-                        included[
-                            (rel_view.collection_name, ritem._jsonapi_id)
-                        ] = rel_view.serialise_db_item(
-                            ritem,
-                            included, include_path + [key]
-                        )
-                rel_dict['meta']['results']['returned'] =\
-                    len(rel_dict['data'])
-            else:
-                if is_included:
-                    ritem = None
-                    try:
-                        ritem = q.one()
-                    except sqlalchemy.orm.exc.NoResultFound:
-                        rel_dict['data'] = None
-                    if ritem:
-                        included[
-                            (rel_view.collection_name, ritem._jsonapi_id)
-                        ] = rel_view.serialise_db_item(
-                            ritem,
-                            included, include_path + [key]
-                        )
 
-                rel_id = getattr(
-                    item,
-                    rel.local_remote_pairs[0][0].name
+            if is_included:
+                q = self.related_query(
+                    item._jsonapi_id, rel, full_object=is_included
                 )
-                if rel_id is None:
-                    rel_dict['data'] = None
+                if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
+                    qinfo = self.collection_query_info(self.request)
+                    limit = self.related_limit(rel)
+                    rel_dict['meta']['results']['limit'] = limit
+                    rel_dict['meta']['results']['available'] = q.count()
+                    q = q.limit(limit)
+                    rel_dict['data'] = []
+                    for ritem in q.all():
+                        rel_dict['data'].append(
+                            rel_view.serialise_resource_identifier(
+                                ritem._jsonapi_id
+                            )
+                        )
+                        if is_included:
+                            included[
+                                (rel_view.collection_name, ritem._jsonapi_id)
+                            ] = rel_view.serialise_db_item(
+                                ritem,
+                                included, include_path + [key]
+                            )
+                    rel_dict['meta']['results']['returned'] =\
+                        len(rel_dict['data'])
                 else:
-                    rel_dict[
-                        'data'
-                    ] = rel_view.serialise_resource_identifier(
-                        rel_id
+                    if is_included:
+                        ritem = None
+                        try:
+                            ritem = q.one()
+                        except sqlalchemy.orm.exc.NoResultFound:
+                            rel_dict['data'] = None
+                        if ritem:
+                            included[
+                                (rel_view.collection_name, ritem._jsonapi_id)
+                            ] = rel_view.serialise_db_item(
+                                ritem,
+                                included, include_path + [key]
+                            )
+
+                    rel_id = getattr(
+                        item,
+                        rel.local_remote_pairs[0][0].name
                     )
-            if key in self.requested_relationships:
-                rels[key] = rel_dict
+                    if rel_id is None:
+                        rel_dict['data'] = None
+                    else:
+                        rel_dict[
+                            'data'
+                        ] = rel_view.serialise_resource_identifier(
+                            rel_id
+                        )
+                if key in self.requested_relationships:
+                    rels[key] = rel_dict
 
         ret = {
             'id': str(item_id),
@@ -2186,8 +2188,11 @@ class CollectionViewBase:
             'links': {
                 'self': item_url
             },
-            'relationships': rels
+            
         }
+
+        if len(rels) > 0:
+            ret['relationships'] = rels
 
         for callback in self.callbacks['after_serialise_object']:
             ret = callback(self, ret)
