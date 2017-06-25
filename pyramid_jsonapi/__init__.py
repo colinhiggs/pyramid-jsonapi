@@ -890,6 +890,7 @@ class CollectionViewBase:
         for callback in self.callbacks['before_collection_post']:
             data = callback(self, data)
 
+
         # Check to see if we're allowing client ids
         if self.request.registry.settings.get(
                 'pyramid_jsonapi.allow_client_ids',
@@ -1995,7 +1996,9 @@ class CollectionViewBase:
             q = q.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
             q = q.filter(sqlalchemy.text(
-                str(rel.primaryjoin).replace(str(local_col), str(obj_id))))
+                re.sub(
+                    r"\b%s\b" % str(local_col),
+                    str(obj_id), str(rel.primaryjoin))))
         elif rel.direction is MANYTOMANY:
             q = q.filter(
                 obj_id == rel.primaryjoin.right
@@ -2125,12 +2128,15 @@ class CollectionViewBase:
                rel_path_str in self.requested_include_names():
                 is_included = True
 
+            print(item._jsonapi_id)
+            print(rel)
             q = self.related_query(
                 item._jsonapi_id, rel, full_object=is_included
             )
             if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                 qinfo = self.collection_query_info(self.request)
                 limit = self.related_limit(rel)
+                print(q)
                 rel_dict['meta']['results']['limit'] = limit
                 rel_dict['meta']['results']['available'] = q.count()
                 q = q.limit(limit)
