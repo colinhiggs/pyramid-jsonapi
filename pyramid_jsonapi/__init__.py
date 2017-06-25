@@ -37,6 +37,9 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import subqueryload
+from sqlalchemy import inspect, or_
 
 __version__ = 0.3
 
@@ -175,13 +178,16 @@ def create_resource(
     if len(keycols) > 1:
         raise Exception(
             'Model {} has more than one primary key.'.format(
-                model_class.__name__
+                model.__name__
             )
         )
     model._jsonapi_id = getattr(model, keycols[0].name)
 
     if collection_name is None:
-        collection_name = sqlalchemy.inspect(model).tables[0].name
+        if hasattr(model, '__alt_model_name__'):
+            collection_name = model.__alt_model_name__
+        else:
+            collection_name = sqlalchemy.inspect(model).tables[0].name
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(
@@ -230,11 +236,19 @@ def create_resource(
 
     # related
     config.add_route(view.related_route_name, view.related_route_pattern)
+
     # GET
     config.add_view(
         view, attr='related_get', request_method='GET',
         route_name=view.related_route_name, renderer='json'
     )
+
+    # PATCH
+    config.add_view(
+        view, attr='related_patch', request_method='PATCH',
+        route_name=view.related_route_name, renderer='json'
+    )
+    
 
     # relationships
     config.add_route(
@@ -885,6 +899,7 @@ class CollectionViewBase:
         for callback in self.callbacks['before_collection_post']:
             data = callback(self, data)
 
+
         # Check to see if we're allowing client ids
         if self.request.registry.settings.get(
                 'pyramid_jsonapi.allow_client_ids',
@@ -1029,11 +1044,7 @@ class CollectionViewBase:
             try:
                 count = q.count()
             except sqlalchemy.exc.ProgrammingError as e:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
-                )
+                raise HTTPBadRequest("error {}".format(e))
             q = q.offset(qinfo['page[offset]'])
             q = q.limit(qinfo['page[limit]'])
             ret = rel_view.collection_return(q, count=count)
@@ -1044,6 +1055,133 @@ class CollectionViewBase:
         for callback in self.callbacks['after_related_get']:
             ret = callback(self, ret)
         return ret
+
+
+    @jsonapi_view
+    def related_patch(self):
+        '''Handle PATCH request for a related single item.
+
+        Update an existing item from a partially defined representation.
+
+        **URL (matchdict) Parameters**
+
+            **id** (*str*): resource id
+
+        **Request Body**
+
+            **Partial resource object** (*json*)
+
+        Returns:
+            dict: dict in the form:
+
+            .. parsed-literal::
+
+                {
+                    'meta': {
+                        'updated': [
+                            <attribute_name>,
+                            <attribute_name>
+                        ]
+                    }
+                }
+
+        Raises:
+            HTTPNotFound
+
+        Example:
+            PATCH details of person 1, changing name to alicia:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/people/1/details data:='
+                {
+                    "type":"people", "id": "1",
+                    "attributes": {
+                        "name": "alicia"
+                    }
+                }' Content-Type:application/vnd.api+json
+
+            Change the author of posts/1 to people/2:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1/details data:='
+                {
+                    "type":"posts", "id": "1",
+                    "relationships": {
+                        "author": {"type": "people", "id": "2"}
+                    }
+                }' Content-Type:application/vnd.api+json
+
+            Set the comments on posts/1 to be [comments/4, comments/5]:
+
+            .. parsed-literal::
+
+                http PATCH http://localhost:6543/posts/1/details data:='
+                {
+                    "type":"posts", "id": "1",
+                    "relationships": {
+                        "comments": [
+                            {"type": "comments", "id": "4"},
+                            {"type": "comments", "id": "5"}
+                        ]
+                    }
+                }' Content-Type:application/vnd.api+json
+        '''
+        if not self.object_exists(self.request.matchdict['id']):
+            raise HTTPNotFound(
+                'Cannot PATCH a non existent resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
+        DBSession = self.get_dbsession()
+        data = self.request.json_body['data']
+        req_id = self.request.matchdict['id']
+        relname = self.request.matchdict['relationship']
+        mapper = sqlalchemy.inspect(self.model).mapper
+        try:
+            rel = mapper.relationships[relname]
+        except KeyError:
+            raise HTTPNotFound('No relationship {} in collection {}'.format(
+                relname,
+                self.collection_name
+            ))
+        data_id = data.get('id')
+        if relname != data.get('type'):
+            raise HTTPConflict(
+                'JSON type ({}) does not match URL type ({}).'.format(
+                    data.get('type'), relname
+                )
+            )
+        if data_id != req_id:
+            raise HTTPConflict(
+                'JSON id ({}) does not match URL id ({}).'.format(
+                    data_id, req_id
+                )
+            )
+        for callback in self.callbacks['before_patch']:
+            data = callback(self, data)
+        atts = data.get('attributes', {})
+        q = self.related_query(req_id, rel, full_object=True)
+        obj = q.one()
+        for k, v in atts.items():
+            setattr(obj, k, v)
+        DBSession.merge(obj)
+        try:
+            DBSession.flush()
+        except sqlalchemy.exc.IntegrityError as e:
+            raise HTTPFailedDependency(str(e))
+
+        return {
+            'meta': {
+                'updated': {
+                    'attributes': [
+                        att for att in atts
+                        if att != self.key_column.name
+                    ]
+                }
+            }
+        }
 
     @jsonapi_view
     def relationships_get(self):
@@ -1168,7 +1306,7 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 {
-                    "data": [ { resource identifier },... ]
+                    "data":  { resource identifier },... 
                 }
 
         Returns:
@@ -1201,9 +1339,9 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http POST http://localhost:6543/posts/1/relationships/comments data:='
-                [
+                
                     { "type": "comments", "id": "1" }
-                ]' Content-Type:application/vnd.api+json
+                ' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
         obj_id = self.request.matchdict['id']
@@ -1226,23 +1364,25 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = DBSession.query(self.model).get(obj_id)
-        items = []
-        for resid in data:
-            if resid['type'] != rel_view.collection_name:
-                raise HTTPConflict(
-                    "Resource identifier type '{}' " +
-                    "does not match relationship type '{}'.".format(
-                        resid['type'], rel_view.collection_name
-                    )
+        resid = data
+        if resid['type'] != rel_view.collection_name:
+            raise HTTPConflict(
+                "Resource identifier type '{}' " +
+                "does not match relationship type '{}'.".format(
+                    resid['type'], rel_view.collection_name
                 )
-            items.append(DBSession.query(rel_class).get(resid['id']))
-        getattr(obj, relname).extend(items)
+            )
+        resid['attributes'][rel.primaryjoin.right.name] = obj_id
+        item = rel_class(**resid['attributes'])
         try:
+            DBSession.add(item)
             DBSession.flush()
+            id = inspect(item).key[1][0]
+
         except sqlalchemy.exc.IntegrityError as e:
             raise HTTPFailedDependency(str(e))
-        return {}
+
+        return {"id": id} if id is not None else {}
 
     @jsonapi_view
     def relationships_patch(self):
@@ -1651,7 +1791,7 @@ class CollectionViewBase:
             # sort_keys[0] is the name of an attribute or a
             # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
             # is the name of a relationship.
-            if isinstance(order_att.property, RelationshipProperty):
+            if hasattr(order_att, 'property') and isinstance(order_att.property, RelationshipProperty):
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
@@ -1670,6 +1810,50 @@ class CollectionViewBase:
             else:
                 q = q.order_by(order_att.desc())
 
+        return q
+
+    def get_operator_func(self, prop, op, val):
+        if op == 'eq':
+            op_func = getattr(prop, '__eq__')
+        elif op == 'ne':
+            op_func = getattr(prop, '__ne__')
+        elif op == 'startswith':
+            op_func = getattr(prop, 'startswith')
+        elif op == 'endswith':
+            op_func = getattr(prop, 'endswith')
+        elif op == 'contains':
+            op_func = getattr(prop, 'contains')
+        elif op == 'lt':
+            op_func = getattr(prop, '__lt__')
+        elif op == 'gt':
+            op_func = getattr(prop, '__gt__')
+        elif op == 'le':
+            op_func = getattr(prop, '__le__')
+        elif op == 'ge':
+            op_func = getattr(prop, '__ge__')
+        elif op == 'like' or op == 'ilike':
+            op_func = getattr(prop, op)
+            val = re.sub(r'\*', '%', val)
+        else:
+            raise HTTPBadRequest(
+                "No such filter operator: '{}'".format(op)
+            )
+
+        return op_func, val
+
+    def filter_on_relationships(self, q, rel, related_attribute, op, val):
+        '''Add filtering clauses for relationship to query
+        '''
+        qs = []
+        for i in range(0, len(rel)-1):
+            prop = getattr(rel[i].mapper.class_, related_attribute[i])
+            q1 = self.get_dbsession().query(self.key_column)
+            q1 = q1.join(rel[i].mapper.class_)
+            op_func, val = self.get_operator_func(prop, op[i], val[i])
+            q1 = q1.filter(op_func(val)).subquery()
+            qs.append(q1)
+
+        q = q.filter(or_(*[self.key_column.in_(x) for x in qs]))
         return q
 
     def query_add_filtering(self, q):
@@ -1736,39 +1920,31 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
         # Filters
         for p, finfo in qinfo['_filters'].items():
-            val = finfo['value']
-            colspec = finfo['colspec']
-            op = finfo['op']
-            prop = getattr(self.model, colspec[0])
-            if isinstance(prop.property, RelationshipProperty):
-                # TODO(Colin): deal with relationships properly.
-                pass
-            if op == 'eq':
-                op_func = getattr(prop, '__eq__')
-            elif op == 'ne':
-                op_func = getattr(prop, '__ne__')
-            elif op == 'startswith':
-                op_func = getattr(prop, 'startswith')
-            elif op == 'endswith':
-                op_func = getattr(prop, 'endswith')
-            elif op == 'contains':
-                op_func = getattr(prop, 'contains')
-            elif op == 'lt':
-                op_func = getattr(prop, '__lt__')
-            elif op == 'gt':
-                op_func = getattr(prop, '__gt__')
-            elif op == 'le':
-                op_func = getattr(prop, '__le__')
-            elif op == 'ge':
-                op_func = getattr(prop, '__ge__')
-            elif op == 'like' or op == 'ilike':
-                op_func = getattr(prop, op)
-                val = re.sub(r'\*', '%', val)
+            val = []
+            colspec = []
+            op = []
+            prop = []
+            use_rel_filter = False
+            for orelement in finfo:
+                elval = orelement['value']
+                elcolspec = orelement['colspec']
+                elop = orelement['op']
+                elprop = getattr(self.model, elcolspec[0])
+                for col in elcolspec[1:len(elcolspec)-1]:
+                    elprop = getattr(elprop.mapper.class_, col)
+
+                val.append(elval)
+                colspec.append(elcolspec[len(elcolspec)-1])
+                op.append(elop)
+                prop.append(elprop)
+                if isinstance(elprop.property, RelationshipProperty):
+                    use_rel_filter = True
+
+            if use_rel_filter:
+                q = self.filter_on_relationships(q, prop, colspec, op, val)
             else:
-                raise HTTPBadRequest(
-                    "No such filter operator: '{}'".format(op)
-                )
-            q = q.filter(op_func(val))
+                op_func, val = self.get_operator_func(prop, op[0], val[0])
+                q = q.filter(or_(*[x for x in op_func(val)]))
 
         return q
 
@@ -1828,7 +2004,10 @@ class CollectionViewBase:
         else:
             q = q.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
-            q = q.filter(obj_id == rem_col)
+            q = q.filter(sqlalchemy.text(
+                re.sub(
+                    r"\b%s\b" % str(local_col),
+                    str(obj_id), str(rel.primaryjoin))))
         elif rel.direction is MANYTOMANY:
             q = q.filter(
                 obj_id == rel.primaryjoin.right
@@ -1837,7 +2016,7 @@ class CollectionViewBase:
             )
         elif rel.direction is MANYTOONE:
             q = q.filter(
-                local_col == rel_class._jsonapi_id
+                rel.primaryjoin
             ).filter(
                 self.model._jsonapi_id == obj_id
             )
@@ -1867,6 +2046,9 @@ class CollectionViewBase:
             return True
         else:
             return False
+
+    def invisible_column(self, column):
+        return hasattr(column, 'info') and column.info == 'invisible'
 
     def serialise_resource_identifier(self, obj_id):
         '''Return a resource identifier dictionary for id "obj_id"
@@ -1924,6 +2106,12 @@ class CollectionViewBase:
             for key in self.requested_attributes.keys()
         }
 
+        for key, col in sqlalchemy.inspect(self.model).all_orm_descriptors.items():
+            if isinstance(col, hybrid_property):
+                atts[key] = getattr(item, key)
+            if self.invisible_column(col):
+                atts.pop(key, None)
+
         rels = {}
         for key, rel in self.relationships.items():
             rel_path_str = '.'.join(include_path + [key])
@@ -1943,35 +2131,42 @@ class CollectionViewBase:
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
             is_included = False
-            if rel_path_str in self.requested_include_names():
+            requested_include_names = self.requested_include_names()
+            if isinstance(requested_include_names, set) and \
+               any(rel_path_str in s for s in requested_include_names) or\
+               rel_path_str in self.requested_include_names():
                 is_included = True
+
+            print(item._jsonapi_id)
+            print(rel)
             q = self.related_query(
                 item._jsonapi_id, rel, full_object=is_included
             )
             if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                 qinfo = self.collection_query_info(self.request)
                 limit = self.related_limit(rel)
+                print(q)
                 rel_dict['meta']['results']['limit'] = limit
                 rel_dict['meta']['results']['available'] = q.count()
                 q = q.limit(limit)
-                rel_dict['data'] = []
-                for ritem in q.all():
-                    rel_dict['data'].append(
-                        rel_view.serialise_resource_identifier(
-                            ritem._jsonapi_id
+
+                if is_included:
+                    rel_dict['data'] = []
+                    for ritem in q.all():
+                        rel_dict['data'].append(
+                            rel_view.serialise_resource_identifier(
+                                ritem._jsonapi_id
+                            )
                         )
-                    )
-                    if is_included:
                         included[
                             (rel_view.collection_name, ritem._jsonapi_id)
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
                         )
-                rel_dict['meta']['results']['returned'] =\
-                    len(rel_dict['data'])
-            else:
-                if is_included:
+                    rel_dict['meta']['results']['returned'] =\
+                        len(rel_dict['data'])
+            elif is_included:
                     ritem = None
                     try:
                         ritem = q.one()
@@ -1985,7 +2180,6 @@ class CollectionViewBase:
                             included, include_path + [key]
                         )
 
-                else:
                     rel_id = getattr(
                         item,
                         rel.local_remote_pairs[0][0].name
@@ -2010,7 +2204,7 @@ class CollectionViewBase:
             },
             'relationships': rels
         }
-
+ 
         for callback in self.callbacks['after_serialise_object']:
             ret = callback(self, ret)
 
@@ -2099,11 +2293,13 @@ class CollectionViewBase:
             # Filtering.
             # Use 'filter[<condition>]' param.
             # Format:
-            #   filter[<column_spec>:<operator>] = <value>
+            #   filter[<column_spec>:<operator>||<column_spec>:<operator>] = <value>
             #   where:
             #     <column_spec> is either:
             #       <column_name> for an attribute, or
             #       <relationship_name>.<column_name> for a relationship.
+            #
+            # "||" adds an OR boolean operation 
             # Examples:
             #   filter[name:eq]=Fred
             #      would find all objects with a 'name' attribute of 'Fred'
@@ -2113,13 +2309,16 @@ class CollectionViewBase:
             #
             # Find all the filters.
             if match.group(1) == 'filter':
-                colspec, op = match.group(2).split(':')
-                colspec = colspec.split('.')
-                info['_filters'][p] = {
-                    'colspec': colspec,
-                    'op': op,
-                    'value': val
-                }
+                ors = match.group(2).split('||')
+                info['_filters'][p] = []
+                for orelement in ors:
+                    colspec, op = orelement.split(':')
+                    colspec = colspec.split('.')
+                    info['_filters'][p].append({
+                        'colspec': colspec,
+                        'op': op,
+                        'value': val
+                    })
 
             # Paging.
             elif match.group(1) == 'page':
@@ -2143,7 +2342,7 @@ class CollectionViewBase:
         _query = {'page[{}]'.format(k): v for k, v in qinfo['_page'].items()}
         _query['sort'] = qinfo['sort']
         for f in sorted(qinfo['_filters']):
-            _query[f] = qinfo['_filters'][f]['value']
+            _query[f] = [x['value'] for x in qinfo['_filters'][f]]
 
         # First link.
         _query['page[offset]'] = 0
