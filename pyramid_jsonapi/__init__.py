@@ -30,6 +30,8 @@ import psycopg2
 import functools
 import types
 import importlib
+import itertools
+import logging
 from collections import deque
 
 from sqlalchemy.orm import load_only
@@ -37,8 +39,11 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.ext.hybrid import hybrid_property
 
-__version__ = 0.3
+__version__ = '0.4.2-hybrid_property'
+log = logging.getLogger(__name__)
+log.debug('version {}'.format(__version__))
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
@@ -349,7 +354,11 @@ def collection_view_factory(
         '/{id}/relationships/{relationship}'
 
     CollectionView.exposed_fields = expose_fields
+    # atts is ordinary attributes of the model.
+    # hybrid_atts is any hybrid attributes defined.
+    # fields is atts + hybrid_atts + relationships
     atts = {}
+    hybrid_atts = {}
     fields = {}
     for key, col in sqlalchemy.inspect(model).mapper.columns.items():
         if key == CollectionView.key_column.name:
@@ -360,6 +369,12 @@ def collection_view_factory(
             atts[key] = col
             fields[key] = col
     CollectionView.attributes = atts
+    for item in sqlalchemy.inspect(model).all_orm_descriptors:
+        if type(item) == hybrid_property:
+            if expose_fields is None or item.__name__ in expose_fields:
+                hybrid_atts[item.__name__] = item
+                fields[item.__name__] = item
+    CollectionView.hybrid_attributes = hybrid_atts
     rels = {}
     for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
         if expose_fields is None or key in expose_fields:
@@ -2214,7 +2229,11 @@ class CollectionViewBase:
             'fields[{}]'.format(self.collection_name)
         )
         if param is None:
-            return self.attributes.keys() | self.relationships.keys()
+            return set(self.attributes.keys()).union(
+                self.hybrid_attributes.keys()
+            ).union(
+                self.relationships.keys()
+            )
         if param == '':
             return set()
         return set(param.split(','))
@@ -2239,7 +2258,9 @@ class CollectionViewBase:
                     }
         '''
         return {
-            k: v for k, v in self.attributes.items()
+            k: v for k, v in itertools.chain(
+                self.attributes.items(), self.hybrid_attributes.items()
+            )
             if k in self.requested_field_names
         }
 
@@ -2320,7 +2341,7 @@ class CollectionViewBase:
         '''
         ret = {
             k: v for k, v in self.requested_attributes.items()
-            if k in self.allowed_fields
+            if k in self.allowed_fields and k not in self.hybrid_attributes
         }
         ret.update(
             self.allowed_requested_relationships_local_columns
