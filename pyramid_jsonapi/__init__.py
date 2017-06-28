@@ -41,7 +41,7 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 
-__version__ = '0.4.2-hybrid_property'
+__version__ = '0.4.2-subclass'
 log = logging.getLogger(__name__)
 log.debug('version {}'.format(__version__))
 
