@@ -51,6 +51,64 @@ MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 view_classes = {}
 
+# Mapping of endpoints, http_methods and options for constructing routes and views.
+# Update this dictionary prior to calling create_jsonapi()
+# Mandatory 'endpoint' keys: http_methods
+# Optional 'endpoint' keys: route_pattern_suffix
+# Mandatory 'http_method' keys: function
+# Optional 'http_method' keys: renderer
+ENDPOINTS = {
+    'collection': {
+        'http_methods': {
+            'GET': {
+                'function': 'collection_get',
+            },
+            'POST': {
+                'function': 'collection_post',
+            },
+        },
+    },
+    'item': {
+        'route_pattern_suffix': '/{id}',
+        'http_methods': {
+            'DELETE': {
+                'function': 'delete',
+            },
+            'GET': {
+                'function': 'get',
+            },
+            'PATCH': {
+                'function': 'patch',
+            },
+        },
+    },
+    'related': {
+        'route_pattern_suffix': '/{id}/{relationship}',
+        'http_methods': {
+            'GET': {
+                'function': 'related_get',
+            },
+        },
+    },
+    'relationships': {
+        'route_pattern_suffix': '/{id}/relationships/{relationship}',
+        'http_methods': {
+            'DELETE': {
+                'function': 'relationships_delete',
+            },
+            'GET': {
+                'function': 'relationships_get',
+            },
+            'PATCH': {
+                'function': 'relationships_patch',
+            },
+            'POST': {
+                'function': 'relationships_post',
+            },
+        },
+    },
+}
+
 
 def error(e, request):
     request.response.content_type = 'application/vnd.api+json'
@@ -202,70 +260,14 @@ def create_resource(
     view.max_limit =\
         int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
 
-    # individual item
-    config.add_route(view.item_route_name, view.item_route_pattern)
-    # GET
-    config.add_view(
-        view, attr='get', request_method='GET',
-        route_name=view.item_route_name, renderer='json'
-    )
-    # DELETE
-    config.add_view(
-        view, attr='delete', request_method='DELETE',
-        route_name=view.item_route_name, renderer='json'
-    )
-    # PATCH
-    config.add_view(
-        view, attr='patch', request_method='PATCH',
-        route_name=view.item_route_name, renderer='json'
-    )
-
-    # collection
-    config.add_route(view.collection_route_name, view.collection_route_pattern)
-    # GET
-    config.add_view(
-        view, attr='collection_get', request_method='GET',
-        route_name=view.collection_route_name, renderer='json'
-    )
-    # POST
-    config.add_view(
-        view, attr='collection_post', request_method='POST',
-        route_name=view.collection_route_name, renderer='json'
-    )
-
-    # related
-    config.add_route(view.related_route_name, view.related_route_pattern)
-    # GET
-    config.add_view(
-        view, attr='related_get', request_method='GET',
-        route_name=view.related_route_name, renderer='json'
-    )
-
-    # relationships
-    config.add_route(
-        view.relationships_route_name,
-        view.relationships_route_pattern
-    )
-    # GET
-    config.add_view(
-        view, attr='relationships_get', request_method='GET',
-        route_name=view.relationships_route_name, renderer='json'
-    )
-    # POST
-    config.add_view(
-        view, attr='relationships_post', request_method='POST',
-        route_name=view.relationships_route_name, renderer='json'
-    )
-    # PATCH
-    config.add_view(
-        view, attr='relationships_patch', request_method='PATCH',
-        route_name=view.relationships_route_name, renderer='json'
-    )
-    # DELETE
-    config.add_view(
-        view, attr='relationships_delete', request_method='DELETE',
-        route_name=view.relationships_route_name, renderer='json'
-    )
+    for endpoint, endpoint_opts in ENDPOINTS.items():
+        route_name = "{}:{}".format(view.collection_route_name, endpoint)
+        route_pattern = "{}{}".format(view.collection_route_pattern, endpoint_opts.get('route_pattern_suffix', ''))
+        config.add_route(route_name, route_pattern)
+        for http_method, method_opts in endpoint_opts['http_methods'].items():
+            config.add_view(view, attr=method_opts['function'],
+                            request_method=http_method, route_name=route_name,
+                            renderer=method_opts.get('renderer', 'json'))
 
 
 def add_prefix(config, key, default, sep, name):
@@ -336,22 +338,6 @@ def collection_view_factory(
         config,
         collection_name
     )
-
-    CollectionView.item_route_name =\
-        CollectionView.collection_route_name + ':item'
-    CollectionView.item_route_pattern =\
-        CollectionView.collection_route_pattern + '/{id}'
-
-    CollectionView.related_route_name =\
-        CollectionView.collection_route_name + ':related'
-    CollectionView.related_route_pattern =\
-        CollectionView.collection_route_pattern + '/{id}/{relationship}'
-
-    CollectionView.relationships_route_name =\
-        CollectionView.collection_route_name + ':relationships'
-    CollectionView.relationships_route_pattern =\
-        CollectionView.collection_route_pattern +\
-        '/{id}/relationships/{relationship}'
 
     CollectionView.exposed_fields = expose_fields
     # atts is ordinary attributes of the model.
@@ -950,7 +936,7 @@ class CollectionViewBase:
             raise HTTPConflict(e.args[0])
         self.request.response.status_code = 201
         self.request.response.headers['Location'] = self.request.route_url(
-            self.item_route_name,
+            "{}:{}".format(self.collection_route_name, 'item'),
             **{'id': item._jsonapi_id}
         )
         return {
@@ -1930,7 +1916,7 @@ class CollectionViewBase:
         # JSON API type.
         type_name = self.collection_name
         item_url = self.request.route_url(
-            self.item_route_name,
+            "{}:{}".format(self.collection_route_name, 'item'),
             **{'id': item._jsonapi_id}
         )
 
