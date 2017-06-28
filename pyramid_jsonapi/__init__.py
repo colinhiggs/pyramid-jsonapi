@@ -174,7 +174,8 @@ def create_jsonapi(
         DebugView.metadata = model_list[0].metadata
         if test_data is None:
             test_data = importlib.import_module(
-                settings.get('pyramid_jsonapi.debug.test_data_module', 'test_data')
+                settings.get('pyramid_jsonapi.debug.test_data_module',
+                    'test_data')
             )
         DebugView.test_data = test_data
         config.add_route('debug', '/debug/{action}')
@@ -262,7 +263,8 @@ def create_resource(
 
     for endpoint, endpoint_opts in ENDPOINTS.items():
         route_name = "{}:{}".format(view.collection_route_name, endpoint)
-        route_pattern = "{}{}".format(view.collection_route_pattern, endpoint_opts.get('route_pattern_suffix', ''))
+        route_pattern = "{}{}".format(view.collection_route_pattern,
+            endpoint_opts.get('route_pattern_suffix', ''))
         config.add_route(route_name, route_pattern)
         for http_method, method_opts in endpoint_opts['http_methods'].items():
             config.add_view(view, attr=method_opts['function'],
