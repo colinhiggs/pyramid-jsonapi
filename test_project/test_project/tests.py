@@ -2041,7 +2041,7 @@ class TestSpec(DBTestBase):
 
 
 class TestErrors(DBTestBase):
-    '''Test that erros are thrown properly.'''
+    '''Test that errors are thrown properly.'''
 
     ###############################################
     # Error tests.
