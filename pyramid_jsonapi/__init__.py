@@ -642,7 +642,14 @@ class CollectionViewBase:
         atts[self.key_column.name] = req_id
         item = DBSession.merge(self.model(**atts))
         for att, value in hybrid_atts.items():
-            setattr(item, att, value)
+            try:
+                setattr(item, att, value)
+            except AttributeError:
+                raise HTTPConflict(
+                    'Attribute {} is read only.'.format(
+                        att
+                    )
+                )
 
         rels = data.get('relationships', {})
         for relname, data in rels.items():
