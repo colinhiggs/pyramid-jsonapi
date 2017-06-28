@@ -245,7 +245,7 @@ def create_resource(
     model._jsonapi_id = getattr(model, keycols[0].name)
 
     if collection_name is None:
-        collection_name = sqlalchemy.inspect(model).tables[0].name
+        collection_name = sqlalchemy.inspect(model).tables[-1].name
 
     # Create a view class for use in the various add_view() calls below.
     view = collection_view_factory(
