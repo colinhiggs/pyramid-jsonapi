@@ -626,9 +626,23 @@ class CollectionViewBase:
             )
         for callback in self.callbacks['before_patch']:
             data = callback(self, data)
-        atts = data.get('attributes', {})
+        atts = {}
+        hybrid_atts = {}
+        for key, value in data.get('attributes', {}).items():
+            if key in self.attributes:
+                atts[key] = value
+            elif key in self.hybrid_attributes:
+                hybrid_atts[key] = value
+            else:
+                raise HTTPNotFound(
+                    'Collection {} has no attribute {}'.format(
+                        self.collection_name, key
+                    )
+                )
         atts[self.key_column.name] = req_id
         item = DBSession.merge(self.model(**atts))
+        for att, value in hybrid_atts.items():
+            setattr(item, att, value)
 
         rels = data.get('relationships', {})
         for relname, data in rels.items():
