@@ -44,335 +44,298 @@ ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
-view_classes = {}
 
-# Mapping of endpoints, http_methods and options for constructing routes and views.
-# Update this dictionary prior to calling create_jsonapi()
-# Mandatory 'endpoint' keys: http_methods
-# Optional 'endpoint' keys: route_pattern_suffix
-# Mandatory 'http_method' keys: function
-# Optional 'http_method' keys: renderer
-ENDPOINTS = {
-    'collection': {
-        'http_methods': {
-            'GET': {
-                'function': 'collection_get',
+class MetaData():
+
+    def __init__(self, config):
+        self.config = config
+        self.route_name_prefix = self.config.registry.settings.get('pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi')
+        self.route_pattern_prefix = self.config.registry.settings.get('pyramid_jsonapi.route_pattern_prefix', '')
+        self.route_name_sep = self.config.registry.settings.get('pyramid_jsonapi.route_name_sep', ':')
+        self.route_pattern_sep = self.config.registry.settings.get('pyramid_jsonapi.route_pattern_sep', '/')
+        # Mapping of endpoints, http_methods and options for constructing routes and views.
+        # Update this dictionary prior to calling create_jsonapi()
+        # Mandatory 'endpoint' keys: http_methods
+        # Optional 'endpoint' keys: route_pattern_suffix
+        # Mandatory 'http_method' keys: function
+        # Optional 'http_method' keys: renderer
+        self.endpoints = {
+            'collection': {
+                'http_methods': {
+                    'GET': {
+                        'function': 'collection_get',
+                    },
+                    'POST': {
+                        'function': 'collection_post',
+                    },
+                },
             },
-            'POST': {
-                'function': 'collection_post',
+            'item': {
+                'route_pattern_suffix': '{id}',
+                'http_methods': {
+                    'DELETE': {
+                        'function': 'delete',
+                    },
+                    'GET': {
+                        'function': 'get',
+                    },
+                    'PATCH': {
+                        'function': 'patch',
+                    },
+                },
             },
-        },
-    },
-    'item': {
-        'route_pattern_suffix': '/{id}',
-        'http_methods': {
-            'DELETE': {
-                'function': 'delete',
+            'related': {
+                'route_pattern_suffix': '{id}/{relationship}',
+                'http_methods': {
+                    'GET': {
+                        'function': 'related_get',
+                    },
+                },
             },
-            'GET': {
-                'function': 'get',
+            'relationships': {
+                'route_pattern_suffix': '{id}/relationships/{relationship}',
+                'http_methods': {
+                    'DELETE': {
+                        'function': 'relationships_delete',
+                    },
+                    'GET': {
+                        'function': 'relationships_get',
+                    },
+                    'PATCH': {
+                        'function': 'relationships_patch',
+                    },
+                    'POST': {
+                        'function': 'relationships_post',
+                    },
+                },
             },
-            'PATCH': {
-                'function': 'patch',
-            },
-        },
-    },
-    'related': {
-        'route_pattern_suffix': '/{id}/{relationship}',
-        'http_methods': {
-            'GET': {
-                'function': 'related_get',
-            },
-        },
-    },
-    'relationships': {
-        'route_pattern_suffix': '/{id}/relationships/{relationship}',
-        'http_methods': {
-            'DELETE': {
-                'function': 'relationships_delete',
-            },
-            'GET': {
-                'function': 'relationships_get',
-            },
-            'PATCH': {
-                'function': 'relationships_patch',
-            },
-            'POST': {
-                'function': 'relationships_post',
-            },
-        },
-    },
-}
+        }
+
+    def make_route_name(self, name, suffix=''):
+        return self.route_name_sep.join((self.route_name_prefix, name, suffix)).rstrip(self.route_name_sep)
+
+    def make_route_pattern(self, name, suffix=''):
+        return self.route_pattern_sep.join((self.route_pattern_prefix, name, suffix)).rstrip(self.route_pattern_sep)
+
+    def add_routes_views(self, view):
+        for endpoint, endpoint_opts in self.endpoints.items():
+            route_name = self.make_route_name(view.collection_name, suffix=endpoint)
+            route_pattern = self.make_route_pattern(view.collection_name,
+                                                    suffix=endpoint_opts.get('route_pattern_suffix', ''))
+            self.config.add_route(route_name, route_pattern)
+            for http_method, method_opts in endpoint_opts['http_methods'].items():
+                self.config.add_view(view, attr=method_opts['function'],
+                                     request_method=http_method, route_name=route_name,
+                                     renderer=method_opts.get('renderer', 'json'))
 
 
-def error(e, request):
-    request.response.content_type = 'application/vnd.api+json'
-    request.response.status_code = e.code
-    return {
-        'errors': [
-            {
-                'code': str(e.code),
-                'detail': e.detail,
-                'title': e.title,
-            }
-        ]
-    }
+class Pyramid_JSONAPI():
 
+    view_classes = {}
 
-def create_jsonapi(
-        config, models, get_dbsession,
-        engine=None, test_data=None
-        ):
-    '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
+    def __init__(self, config, models, get_dbsession):
+        self.config = config
+        self.models = models
+        self.get_dbsession = get_dbsession
+        self.metadata = MetaData(config)
 
-    Arguments:
-        config: ``pyramid.config.Configurator`` object from current app.
-        models: an iterable (or module) of model classes derived
-            from DeclarativeMeta.
-        get_dbsession: a callable shich returns a
-            sqlalchemy.orm.session.Session or equivalent.
+    @staticmethod
+    def error(e, request):
+        request.response.content_type = 'application/vnd.api+json'
+        request.response.status_code = e.code
+        return {
+            'errors': [
+                {
+                    'code': str(e.code),
+                    'detail': e.detail,
+                    'title': e.title,
+                }
+            ]
+        }
 
-    Keyword Args:
-        engine: a sqlalchemy.engine.Engine instance. Only required if using the
-            debug view.
-        test_data: a module with an ``add_to_db()`` method which will populate
-            the database.
-    '''
+    def create_jsonapi(self, engine=None, test_data=None):
+        '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
-    config.add_notfound_view(error, renderer='json')
-    config.add_forbidden_view(error, renderer='json')
-    config.add_view(error, context=HTTPError, renderer='json')
+        Keyword Args:
+            engine: a sqlalchemy.engine.Engine instance. Only required if using the
+                debug view.
+            test_data: a module with an ``add_to_db()`` method which will populate
+                the database.
+        '''
 
-    # Build a list of declarative models to add as collections.
-    if isinstance(models, types.ModuleType):
-        model_list = []
-        for attr in models.__dict__.values():
-            if isinstance(attr, DeclarativeMeta):
-                try:
-                    keycols = sqlalchemy.inspect(attr).primary_key
-                except sqlalchemy.exc.NoInspectionAvailable:
-                    # Trying to inspect the declarative_base() raises this
-                    # exception. We don't want to add it to the API.
-                    continue
-                model_list.append(attr)
-    else:
-        model_list = list(models)
+        self.config.add_notfound_view(self.error, renderer='json')
+        self.config.add_forbidden_view(self.error, renderer='json')
+        self.config.add_view(self.error, context=HTTPError, renderer='json')
 
-    settings = config.registry.settings
-
-    # Add the debug endpoints if required.
-    if settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false') == 'true':
-        if engine is None:
-            DebugView.engine = model_list[0].metadata.bind
+        # Build a list of declarative models to add as collections.
+        if isinstance(self.models, types.ModuleType):
+            model_list = []
+            for attr in self.models.__dict__.values():
+                if isinstance(attr, DeclarativeMeta):
+                    try:
+                        keycols = sqlalchemy.inspect(attr).primary_key
+                    except sqlalchemy.exc.NoInspectionAvailable:
+                        # Trying to inspect the declarative_base() raises this
+                        # exception. We don't want to add it to the API.
+                        continue
+                    model_list.append(attr)
         else:
-            DebugView.engine = engine
-        DebugView.metadata = model_list[0].metadata
-        if test_data is None:
-            test_data = importlib.import_module(
-                settings.get('pyramid_jsonapi.debug.test_data_module', 'test_data')
+            model_list = list(self.models)
+
+        settings = self.config.registry.settings
+
+        # Add the debug endpoints if required.
+        if settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false') == 'true':
+            if engine is None:
+                DebugView.engine = model_list[0].metadata.bind
+            else:
+                DebugView.engine = engine
+            DebugView.metadata = model_list[0].metadata
+            if test_data is None:
+                test_data = importlib.import_module(
+                    settings.get('pyramid_jsonapi.debug.test_data_module', 'test_data')
+                )
+            DebugView.test_data = test_data
+            self.config.add_route('debug', '/debug/{action}')
+            self.config.add_view(
+                DebugView,
+                attr='drop',
+                route_name='debug',
+                match_param='action=drop',
+                renderer='json'
             )
-        DebugView.test_data = test_data
-        config.add_route('debug', '/debug/{action}')
-        config.add_view(
-            DebugView,
-            attr='drop',
-            route_name='debug',
-            match_param='action=drop',
-            renderer='json'
-        )
-        config.add_view(
-            DebugView,
-            attr='populate',
-            route_name='debug',
-            match_param='action=populate',
-            renderer='json'
-        )
-        config.add_view(
-            DebugView,
-            attr='reset',
-            route_name='debug',
-            match_param='action=reset',
-            renderer='json'
-        )
-
-    # Loop through the models list. Create resource endpoints for these and
-    # any relationships found.
-    for model_class in model_list:
-        create_resource(config, model_class, get_dbsession=get_dbsession)
-
-create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
-
-
-def create_resource(
-        config, model, get_dbsession,
-        collection_name=None, expose_fields=None,
-        ):
-    '''Produce a set of resource endpoints.
-
-    Arguments:
-        config: ``pyramid.config.Configurator`` object from current app.
-        model: a model class derived from DeclarativeMeta.
-        get_dbsession: a callable shich returns a
-            sqlalchemy.orm.session.Session or equivalent.
-
-    Keyword Args:
-        collection_name: string name of collection. Passed through to
-            ``collection_view_factory()``
-        expose_fields: set of field names to be exposed. Passed through to
-            ``collection_view_factory()``
-    '''
-
-    # Find the primary key column from the model and add it as _jsonapi_id.
-    try:
-        keycols = sqlalchemy.inspect(model).primary_key
-    except sqlalchemy.exc.NoInspectionAvailable:
-        # Trying to inspect the declarative_base() raises this exception. We
-        # don't want to add it to the API.
-        return
-    # Only deal with one primary key column.
-    if len(keycols) > 1:
-        raise Exception(
-            'Model {} has more than one primary key.'.format(
-                model_class.__name__
+            self.config.add_view(
+                DebugView,
+                attr='populate',
+                route_name='debug',
+                match_param='action=populate',
+                renderer='json'
             )
+            self.config.add_view(
+                DebugView,
+                attr='reset',
+                route_name='debug',
+                match_param='action=reset',
+                renderer='json'
+            )
+
+        # Loop through the models list. Create resource endpoints for these and
+        # any relationships found.
+        for model_class in model_list:
+            self.create_resource(model_class)
+
+    create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
+
+    def create_resource(self, model, collection_name=None, expose_fields=None):
+        '''Produce a set of resource endpoints.
+
+        Arguments:
+            model: a model class derived from DeclarativeMeta.
+
+        Keyword Args:
+            collection_name: string name of collection. Passed through to
+                ``collection_view_factory()``
+            expose_fields: set of field names to be exposed. Passed through to
+                ``collection_view_factory()``
+        '''
+
+        # Find the primary key column from the model and add it as _jsonapi_id.
+        try:
+            keycols = sqlalchemy.inspect(model).primary_key
+        except sqlalchemy.exc.NoInspectionAvailable:
+            # Trying to inspect the declarative_base() raises this exception. We
+            # don't want to add it to the API.
+            return
+        # Only deal with one primary key column.
+        if len(keycols) > 1:
+            raise Exception(
+                'Model {} has more than one primary key.'.format(
+                    model_class.__name__
+                )
+            )
+        model._jsonapi_id = getattr(model, keycols[0].name)
+
+        if collection_name is None:
+            collection_name = sqlalchemy.inspect(model).tables[0].name
+
+        # Create a view class for use in the various add_view() calls below.
+        view = self.collection_view_factory(model, collection_name, expose_fields=expose_fields)
+
+        self.view_classes[model] = view
+
+        settings = self.config.registry.settings
+        view.default_limit =\
+            int(settings.get('pyramid_jsonapi.paging.default_limit', 10))
+        view.max_limit =\
+            int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
+
+        self.metadata.add_routes_views(view)
+
+    def collection_view_factory(self, model, collection_name=None, expose_fields=None):
+        ''''Build a class to handle requests for model.
+
+        Arguments:
+            model: a model class derived from DeclarativeMeta.
+
+        Keyword Args:
+            collection_name: string name of collection.
+            expose_fields: set of field names to expose.
+        '''
+        if collection_name is None:
+            collection_name = model.__tablename__
+
+        CollectionView = type(
+            'CollectionView<{}>'.format(collection_name),
+            (CollectionViewBase, ),
+            {}
         )
-    model._jsonapi_id = getattr(model, keycols[0].name)
 
-    if collection_name is None:
-        collection_name = sqlalchemy.inspect(model).tables[0].name
+        CollectionView.model = model
+        CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
+        CollectionView.collection_name = collection_name
+        CollectionView.get_dbsession = self.get_dbsession
+        CollectionView.metadata = self.metadata
+        CollectionView.view_classes = self.view_classes
 
-    # Create a view class for use in the various add_view() calls below.
-    view = collection_view_factory(
-        config, model, get_dbsession, collection_name,
-        expose_fields=expose_fields
-    )
-    view_classes['collection_name'] = view
-    view_classes[model] = view
+        CollectionView.exposed_fields = expose_fields
+        atts = {}
+        fields = {}
+        for key, col in sqlalchemy.inspect(model).mapper.columns.items():
+            if key == CollectionView.key_column.name:
+                continue
+            if len(col.foreign_keys) > 0:
+                continue
+            if expose_fields is None or key in expose_fields:
+                atts[key] = col
+                fields[key] = col
+        CollectionView.attributes = atts
+        rels = {}
+        for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
+            if expose_fields is None or key in expose_fields:
+                rels[key] = rel
+        CollectionView.relationships = rels
+        fields.update(rels)
+        CollectionView.fields = fields
 
-    settings = config.registry.settings
-    view.default_limit =\
-        int(settings.get('pyramid_jsonapi.paging.default_limit', 10))
-    view.max_limit =\
-        int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
+        # All callbacks have the current view as the first argument. The comments
+        # below detail subsequent args.
+        CollectionView.callbacks = {
+            'after_serialise_identifier': deque(),  # args: identifier(dict)
+            'after_serialise_object': deque(),      # args: object(dict)
+            'after_get': deque(),                   # args: document(dict)
+            'before_patch': deque(),                # args: partial_object(dict)
+            'before_delete': deque(),               # args: item(sqlalchemy)
+            'after_collection_get': deque(),        # args: document(dict)
+            'before_collection_post': deque(),      # args: object(dict)
+            'after_related_get': deque(),           # args: document(dict)
+            'after_relationships_get': deque(),     # args: document(dict)
+            'before_relationships_post': deque(),   # args: object(dict)
+            'before_relationships_patch': deque(),  # args: partial_object(dict)
+            'before_relationships_delete':
+                deque(),                            # args: parent_item(sqlalchemy)
+        }
 
-    for endpoint, endpoint_opts in ENDPOINTS.items():
-        route_name = "{}:{}".format(view.collection_route_name, endpoint)
-        route_pattern = "{}{}".format(view.collection_route_pattern, endpoint_opts.get('route_pattern_suffix', ''))
-        config.add_route(route_name, route_pattern)
-        for http_method, method_opts in endpoint_opts['http_methods'].items():
-            config.add_view(view, attr=method_opts['function'],
-                            request_method=http_method, route_name=route_name,
-                            renderer=method_opts.get('renderer', 'json'))
-
-
-def add_prefix(config, key, default, sep, name):
-    '''Add key as a prefix to name with separator sep.'''
-    prefix = config.registry.settings.get(key, default)
-    if prefix:
-        return sep.join((prefix, name))
-    else:
-        return name
-
-
-def add_route_name_prefix(config, name):
-    '''Add route_name_prefix to name.'''
-    return add_prefix(
-        config,
-        'pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi',
-        ':', name
-    )
-
-
-def add_route_pattern_prefix(config, name):
-    '''Add route pattern prefix to name.'''
-    return add_prefix(
-        config,
-        'pyramid_jsonapi.route_pattern_prefix', '',
-        '/', name
-    )
-
-
-def collection_view_factory(
-        config,
-        model,
-        get_dbsession,
-        collection_name=None,
-        expose_fields=None
-        ):
-    '''Build a class to handle requests for model.
-
-    Arguments:
-        config: ``pyramid.config.Configurator`` object from current app.
-        model: a model class derived from DeclarativeMeta.
-        get_dbsession: a callable shich returns a
-            sqlalchemy.orm.session.Session or equivalent.
-
-    Keyword Args:
-        collection_name: string name of collection.
-        expose_fields: set of field names to expose.
-    '''
-    if collection_name is None:
-        collection_name = model.__tablename__
-
-    CollectionView = type(
-        'CollectionView<{}>'.format(collection_name),
-        (CollectionViewBase, ),
-        {}
-    )
-
-    CollectionView.model = model
-    CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
-    CollectionView.collection_name = collection_name
-    CollectionView.get_dbsession = get_dbsession
-
-    CollectionView.collection_route_name = add_route_name_prefix(
-        config,
-        collection_name
-    )
-    CollectionView.collection_route_pattern = add_route_pattern_prefix(
-        config,
-        collection_name
-    )
-
-    CollectionView.exposed_fields = expose_fields
-    atts = {}
-    fields = {}
-    for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-        if key == CollectionView.key_column.name:
-            continue
-        if len(col.foreign_keys) > 0:
-            continue
-        if expose_fields is None or key in expose_fields:
-            atts[key] = col
-            fields[key] = col
-    CollectionView.attributes = atts
-    rels = {}
-    for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
-        if expose_fields is None or key in expose_fields:
-            rels[key] = rel
-    CollectionView.relationships = rels
-    fields.update(rels)
-    CollectionView.fields = fields
-
-    # All callbacks have the current view as the first argument. The comments
-    # below detail subsequent args.
-    CollectionView.callbacks = {
-        'after_serialise_identifier': deque(),  # args: identifier(dict)
-        'after_serialise_object': deque(),      # args: object(dict)
-        'after_get': deque(),                   # args: document(dict)
-        'before_patch': deque(),                # args: partial_object(dict)
-        'before_delete': deque(),               # args: item(sqlalchemy)
-        'after_collection_get': deque(),        # args: document(dict)
-        'before_collection_post': deque(),      # args: object(dict)
-        'after_related_get': deque(),           # args: document(dict)
-        'after_relationships_get': deque(),     # args: document(dict)
-        'before_relationships_post': deque(),   # args: object(dict)
-        'before_relationships_patch': deque(),  # args: partial_object(dict)
-        'before_relationships_delete':
-            deque(),                            # args: parent_item(sqlalchemy)
-    }
-
-    return CollectionView
+        return CollectionView
 
 
 class CollectionViewBase:
@@ -921,7 +884,7 @@ class CollectionViewBase:
             raise HTTPConflict(e.args[0])
         self.request.response.status_code = 201
         self.request.response.headers['Location'] = self.request.route_url(
-            "{}:{}".format(self.collection_route_name, 'item'),
+            self.metadata.make_route_name(self.collection_name, suffix='item'),
             **{'id': item._jsonapi_id}
         )
         return {
@@ -1901,7 +1864,7 @@ class CollectionViewBase:
         # JSON API type.
         type_name = self.collection_name
         item_url = self.request.route_url(
-            "{}:{}".format(self.collection_route_name, 'item'),
+            self.metadata.make_route_name(self.collection_name, suffix='item'),
             **{'id': item._jsonapi_id}
         )
 
@@ -2381,7 +2344,7 @@ class CollectionViewBase:
         Returns:
             class: subclass of CollectionViewBase providing view for ``model``.
         '''
-        return view_classes[model](self.request)
+        return self.view_classes[model](self.request)
 
     @classmethod
     def append_callback_set(cls, set_name):
@@ -2493,7 +2456,7 @@ def append_callback_set_to_all_views(set_name):
     Args:
         set_name (str): key in ``callback_sets``.
     '''
-    for view_class in view_classes.values():
+    for view_class in self.view_classes.values():
         view_class.append_callback_set(set_name)
 
 
