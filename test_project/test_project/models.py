@@ -103,6 +103,38 @@ class Comment(Base):
     content = Column(Text)
     author_id = IdRefColumn('people.id')
     post_id = IdRefColumn('posts.id')
+    type = Column(Text)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'comments',
+        'polymorphic_on': 'type'
+    }
+
+
+class BenignComment(Comment):
+    __tablename__ = 'benign_comments'
+    comments_id = IdRefColumn(
+        'comments.comments_id',
+        primary_key=True
+    )
+    fawning_text = Column(Text)
+    __mapper_args__ = {
+        'polymorphic_identity': 'benign_comments'
+    }
+
+
+# class VitriolicComment(Comment):
+#     __tablename__ = 'vitriolic_comments'
+#     comments_id = IdRefColumn(
+#         'comments.comments_id',
+#         nullable=False,
+#         unique=True
+#     )
+#     scathing_text = Column(Text)
+#     __mapper_args__ = {
+#         'polymorphic_identity': 'vitriolic_comments'
+#     }
+
 
 class ArticleByAssoc(Base):
     __tablename__ = 'articles_by_assoc'
