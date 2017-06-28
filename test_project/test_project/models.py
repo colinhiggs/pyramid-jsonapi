@@ -37,7 +37,8 @@ authors_articles_assoc = Table(
     'authors_articles_assoc',
     Base.metadata,
     IdRefColumn('people.id', name='author_id', primary_key=True),
-    IdRefColumn('articles_by_assoc.articles_by_assoc_id', name='article_id', primary_key=True)
+    IdRefColumn('articles_by_assoc.articles_by_assoc_id', name='article_id',
+        primary_key=True)
 )
 
 class Person(Base):
