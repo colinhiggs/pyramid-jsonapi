@@ -2041,7 +2041,7 @@ class TestSpec(DBTestBase):
 
 
 class TestErrors(DBTestBase):
-    '''Test that erros are thrown properly.'''
+    '''Test that errors are thrown properly.'''
 
     ###############################################
     # Error tests.
@@ -2060,6 +2060,56 @@ class TestErrors(DBTestBase):
         self.assertIn('code', err)
         self.assertIn('title', err)
         self.assertIn('detail', err)
+
+
+class TestHybrid(DBTestBase):
+    '''Test cases for @hybrid_property attributes.'''
+
+    def test_hybrid_readonly_get(self):
+        '''Blog object should have owner_name attribute.'''
+        atts = self.test_app.get(
+            '/blogs/1'
+        ).json['data']['attributes']
+        self.assertIn('owner_name', atts)
+        self.assertEqual(atts['owner_name'], 'alice')
+
+    def test_hybrid_readonly_patch(self):
+        '''Updating owner_name should fail with 409.'''
+        self.test_app.patch_json(
+            '/blogs/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'blogs',
+                    'attributes': {
+                        'owner_name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
+
+    def test_hybrid_writeable_patch(self):
+        '''Should be able to update author_name of Post object.'''
+        # Patch post 1 and change author_name to 'alice2'
+        self.test_app.patch_json(
+            '/posts/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'posts',
+                    'attributes': {
+                        'author_name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Fetch alice back...
+        data = self.test_app.get('/people/1').json['data']
+        # ...should now be called alice2.
+        self.assertEqual(data['attributes']['name'], 'alice2')
 
 
 class TestBugs(DBTestBase):

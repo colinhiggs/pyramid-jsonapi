@@ -198,7 +198,8 @@ class Pyramid_JSONAPI():
             DebugView.metadata = model_list[0].metadata
             if test_data is None:
                 test_data = importlib.import_module(
-                    settings.get('pyramid_jsonapi.debug.test_data_module', 'test_data')
+                    settings.get('pyramid_jsonapi.debug.test_data_module',
+                        'test_data')
                 )
             DebugView.test_data = test_data
             self.config.add_route('debug', '/debug/{action}')
@@ -258,6 +259,7 @@ class Pyramid_JSONAPI():
                     model_class.__name__
                 )
             )
+
         model._jsonapi_id = getattr(model, keycols[0].name)
 
         if collection_name is None:
@@ -589,9 +591,30 @@ class CollectionViewBase:
             )
         for callback in self.callbacks['before_patch']:
             data = callback(self, data)
-        atts = data.get('attributes', {})
+        atts = {}
+        hybrid_atts = {}
+        for key, value in data.get('attributes', {}).items():
+            if key in self.attributes:
+                atts[key] = value
+            elif key in self.hybrid_attributes:
+                hybrid_atts[key] = value
+            else:
+                raise HTTPNotFound(
+                    'Collection {} has no attribute {}'.format(
+                        self.collection_name, key
+                    )
+                )
         atts[self.key_column.name] = req_id
         item = DBSession.merge(self.model(**atts))
+        for att, value in hybrid_atts.items():
+            try:
+                setattr(item, att, value)
+            except AttributeError:
+                raise HTTPConflict(
+                    'Attribute {} is read only.'.format(
+                        att
+                    )
+                )
 
         rels = data.get('relationships', {})
         for relname, data in rels.items():

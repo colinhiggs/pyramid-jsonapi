@@ -37,7 +37,8 @@ authors_articles_assoc = Table(
     'authors_articles_assoc',
     Base.metadata,
     IdRefColumn('people.id', name='author_id', primary_key=True),
-    IdRefColumn('articles_by_assoc.articles_by_assoc_id', name='article_id', primary_key=True)
+    IdRefColumn('articles_by_assoc.articles_by_assoc_id', name='article_id',
+        primary_key=True)
 )
 
 class Person(Base):
@@ -84,11 +85,13 @@ class Post(Base):
     # A read-write hybrid property
     @hybrid_property
     def author_name(self):
+        author_name = None
         try:
-            return self.author.name
+            author_name = self.author.name
         except AttributeError:
             # No author
-            return None
+            pass
+        return author_name
     @author_name.setter
     def author_name(self, name):
         self.author.name = name
