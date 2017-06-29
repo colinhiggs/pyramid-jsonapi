@@ -75,10 +75,10 @@ def main(global_config, **settings):
 
     # Lines specific to pyramid_jsonapi.
     # Create the routes and views automagically.
-    pyramid_jsonapi.create_jsonapi_using_magic_and_pixie_dust(
-        config, models, lambda view: models.DBSession
-    )
-    person_view = pyramid_jsonapi.view_classes[
+    pj = pyramid_jsonapi.Pyramid_JSONAPI(config, models, lambda view: models.DBSession)
+    pj.create_jsonapi_using_magic_and_pixie_dust()
+
+    person_view = pj.view_classes[
         models.Person
     ]
     person_view.callbacks['after_serialise_object'].appendleft(
@@ -87,6 +87,7 @@ def main(global_config, **settings):
     person_view.allowed_fields = property(person_allowed_fields)
     person_view.allowed_object = person_allowed_object
     pyramid_jsonapi.append_callback_set_to_all_views(
+        pj.view_classes,
         'access_control_serialised_objects'
     )
 
