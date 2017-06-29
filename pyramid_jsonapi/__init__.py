@@ -925,11 +925,22 @@ class CollectionViewBase:
                         ]
                     )
                 else:
+                    try:
+                        data = reldata['data']
+                    except KeyError:
+                        raise HTTPBadRequest(
+                            'relationships within POST must have data member'
+                        )
+                    try:
+                        related_id = data['id']
+                    except Exception:
+                        raise HTTPBadRequest(
+                            'No id member in relationship data.'
+                        )
                     setattr(
                         item,
                         relname,
-                        DBSession.query(rel_class).get(
-                            reldata['data']['id'])
+                        DBSession.query(rel_class).get(related_id)
                     )
         try:
             DBSession.add(item)

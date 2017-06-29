@@ -1034,6 +1034,68 @@ class TestSpec(DBTestBase):
         ).json['data']
         self.assertEqual(data['id'], created_id)
 
+        # Make sure we get an error if there is no data member:
+        #
+        # its value MUST be a relationship object with a data
+        # member.
+        self.test_app.post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'owner': {
+                            'meta': 'this should fail because there is no data'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # Malformed data member
+        self.test_app.post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'owner': {
+                            'data': 'mince'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # No id in relationship
+        self.test_app.post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'owner': {
+                            'data': {'type': 'people'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+
     def test_spec_post_with_relationships_onetomany(self):
         '''Should create a two new blogs and a user who owns them.
 
