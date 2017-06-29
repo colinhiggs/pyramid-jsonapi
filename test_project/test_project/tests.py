@@ -2113,7 +2113,7 @@ class TestHybrid(DBTestBase):
 
 
 class TestJoinedTableInheritance(DBTestBase):
-    '''Test cases for .'''
+    '''Test cases for sqlalchemy joined table inheritance pattern.'''
 
     def test_joined_benign_create_fetch(self):
         '''Should create BenignComment with author people/1 and then fetch it.'''
