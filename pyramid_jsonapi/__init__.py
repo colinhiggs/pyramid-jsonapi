@@ -2496,3 +2496,33 @@ class DebugView:
         self.drop()
         self.populate()
         return "reset"
+
+
+def create_jsonapi(
+    config, models, get_dbsession,
+    engine=None, test_data=None
+        ):
+    '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
+
+    DEPRECATED: This module method is deprecated!
+    Please use the Pyramid_JSONAPI class method instead.
+
+    Arguments:
+        config: ``pyramid.config.Configurator`` object from current app.
+        models: an iterable (or module) of model classes derived
+            from DeclarativeMeta.
+        get_dbsession: a callable shich returns a
+            sqlalchemy.orm.session.Session or equivalent.
+
+    Keyword Args:
+        engine: a sqlalchemy.engine.Engine instance. Only required if using the
+            debug view.
+        test_data: a module with an ``add_to_db()`` method which will populate
+            the database.
+    '''
+
+    pj = Pyramid_JSONAPI(config, models, get_dbsession)
+    pj.create_jsonapi()
+
+
+create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
