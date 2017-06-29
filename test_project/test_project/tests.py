@@ -965,6 +965,18 @@ class TestSpec(DBTestBase):
         data = self.test_app.get('/people?filter[name:eq]=test').json['data']
         self.assertEqual(len(data),1)
 
+    def test_spec_post_collection_no_attributes(self):
+        '''Should create a person with no attributes.'''
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        )
+
     def test_spec_post_must_have_type(self):
         '''Server should respond with 409 (Conflict) if type not specified.
 

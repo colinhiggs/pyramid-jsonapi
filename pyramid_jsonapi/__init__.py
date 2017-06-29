@@ -891,7 +891,10 @@ class CollectionViewBase:
         datatype = data.get('type')
         if datatype != self.collection_name:
             raise HTTPConflict("Unsupported type '{}'".format(datatype))
-        atts = data['attributes']
+        try:
+            atts = data['attributes']
+        except KeyError:
+            atts = {}
         if 'id' in data:
             atts['id'] = data['id']
         item = self.model(**atts)
