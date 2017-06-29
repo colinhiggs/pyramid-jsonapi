@@ -215,6 +215,66 @@ Your database may have some tables which you do not wish to expose as collection
 * passing an iterable of only the model classes you wish to expose to
   :py:func:`pyramid_jsonapi.PyramidJSONAPI`.
 
+Modifying Endpoints
+-------------------
+
+Endpoints are created automatically from a dictionary: :py:func:`pyramid_jsonapi.EndpointsData.endpoints`.
+
+This takes the following format:
+
+.. code-block:: python
+
+  {
+    'item': {
+      'route_pattern_suffix': '{id}',
+      'http_methods': {
+        'DELETE': {
+          'function': 'delete',
+        },
+        'GET': {
+          'function': 'get',
+        },
+        'PATCH': {
+          'function': 'patch',
+        },
+      },
+    },
+    ... # other endpoints ommitted
+  }
+
+* There are 4 ``endpoints`` defined: ``collection``, ``item``, ``relationships`` and ``related``.
+* Each ``endpoint`` may have ``route_pattern_suffix`` defined (if ommitted, defaults to ``''``).
+* Each ``endpoint`` may have 0 or more ``http_methods`` defined. (``GET``, ``POST``, etc).
+* Each ``method`` must have ``function`` defined. This is the name (string) of the view function to call for this endpoint.
+* Each ``method`` may have a ``renderer`` defined (if omitted, this defaults to ``'json'``).
+
+For example, to extend this structure to handle the ``OPTIONS`` ``http_method`` for all endpoints (e.g. for `CORS <https://enable-cors.org>`_):
+
+.. code-block:: python
+
+  ...
+
+  # Create a view class method.
+  def options_view(self):
+      return ''
+
+  # Instantiate the class
+  pj = pyramid_jsonapi.Pyramid_JSONAPI(config, models, dbsession)
+
+  # Update all endpoints to handle OPTIONS http_method requests
+  for endpoint in pj.EndpointData.endpoints:
+      pj.EndpointData.endpoints[endpoint]['http_methods']['OPTIONS'] = {'function': 'options_view',
+                                                                        'renderer': 'string'}
+
+  # Create the view_classes
+  pj.create_jsonapi()
+
+  # Bind the custom options method (defined above) to each view_class
+  for vc in pj.view_classes.values():
+          vc.options_view = options_view
+
+
+
 Callbacks
 ---------
 
