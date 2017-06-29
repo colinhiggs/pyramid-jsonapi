@@ -354,6 +354,15 @@ class PyramidJSONAPI():
 
         return CollectionView
 
+    def append_callback_set_to_all_views(self, set_name):
+        '''Append a named set of callbacks to all view classes.
+
+        Args:
+            set_name (str): key in ``callback_sets``.
+        '''
+        for view_class in self.view_classes.values():
+            view_class.append_callback_set(set_name)
+
 
 class CollectionViewBase:
     '''Base class for all view classes.
@@ -2492,16 +2501,6 @@ callback_sets = {
         'after_get': acso_after_get
     }
 }
-
-
-def append_callback_set_to_all_views(view_classes, set_name):
-    '''Append a named set of callbacks to all view classes.
-
-    Args:
-        set_name (str): key in ``callback_sets``.
-    '''
-    for view_class in view_classes.values():
-        view_class.append_callback_set(set_name)
 
 
 class DebugView:

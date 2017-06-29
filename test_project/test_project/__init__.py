@@ -86,8 +86,7 @@ def main(global_config, **settings):
     )
     person_view.allowed_fields = property(person_allowed_fields)
     person_view.allowed_object = person_allowed_object
-    pyramid_jsonapi.append_callback_set_to_all_views(
-        pj.view_classes,
+    pj.append_callback_set_to_all_views(
         'access_control_serialised_objects'
     )
 
