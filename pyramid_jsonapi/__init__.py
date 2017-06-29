@@ -199,7 +199,7 @@ class Pyramid_JSONAPI():
             if test_data is None:
                 test_data = importlib.import_module(
                     settings.get('pyramid_jsonapi.debug.test_data_module',
-                        'test_data')
+                                 'test_data')
                 )
             DebugView.test_data = test_data
             self.config.add_route('debug', '/debug/{action}')
