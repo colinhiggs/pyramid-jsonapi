@@ -11,6 +11,7 @@ from sqlalchemy import (
     )
 
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from sqlalchemy.orm import (
     scoped_session,
@@ -62,7 +63,14 @@ class Blog(Base):
     title = Column(Text)
     owner_id = IdRefColumn('people.id')
     posts = relationship('Post', backref='blog')
-
+    # A read only hybrid property
+    @hybrid_property
+    def owner_name(self):
+        try:
+            return self.owner.name
+        except AttributeError:
+            # No owner
+            return None
 
 class Post(Base):
     __tablename__ = 'posts'
@@ -73,6 +81,18 @@ class Post(Base):
     blog_id = IdRefColumn('blogs.id')
     author_id = IdRefColumn('people.id', nullable=False)
     comments = relationship('Comment', backref = 'post')
+    # A read-write hybrid property
+    @hybrid_property
+    def author_name(self):
+        try:
+            return self.author.name
+        except AttributeError:
+            # No author
+            return None
+    @author_name.setter
+    def author_name(self, name):
+        self.author.name = name
+
 
 class Comment(Base):
     __tablename__ = 'comments'
