@@ -86,10 +86,7 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     renderer.add_adapter(datetime.date, datetime_adapter)
     config.add_renderer('json', renderer)
 
-    # Create the routes and views automagically:
-    pyramid_jsonapi.create_jsonapi_using_magic_and_pixie_dust(
-      config, models, lambda view: models.DBSession
-    )
+    # Instantiate a PyramidJSONAPI class instance
     # The third argument above should be a callable which accepts a
     # CollectionView instance as an argument and returns a database session.
     # Notably the request is available as view.request, so if you're doing
@@ -97,21 +94,23 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     # https://metaclassical.com/what-the-zope-transaction-manager-means-to-me-and-you
     # you can return the per-request session. In this case we just return the
     # usual DBSession from the models module.
+    pj = pyramid_jsonapi.PyramidJSONAPI(config, models, lambda view: models.DBSession)
+
+    # Create the routes and views automagically:
+    pj.create_jsonapi_using_magic_and_pixie_dust()
 
     # Routes and views are added imperatively, so no need for a scan - unless
     # you have defined other routes and views declaratively.
 
 Yes, there really is a method called
-:py:func:`pyramid_jsonapi.create_jsonapi_using_magic_and_pixie_dust`. No, you
+:py:func:`pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust`. No, you
 don't *have* to call it that. If you are feeling more sensible you can use the
-synonym :py:func:`pyramid_jsonapi.create_jsonapi`.
+synonym :py:func:`pyramid_jsonapi.PyramidJSONAPI.create_jsonapi`.
 
-Calling :py:func:`pyramid_jsonapi.create_jsonapi`
--------------------------------------------------
+:py:func:`pyramid_jsonapi.PyramidJSONAPI`
+----------------------------------------
 
-Since :py:func:`pyramid_jsonapi.create_jsonapi` (or the one with pixie dust)
-sits at the centre of the API creation, we'll spend a little time now explaining
-the three mandatory arguments.
+We'll spend a little time now explaining the three mandatory arguments.
 
 * ``config`` is the usual Configurator object used in pyramid.
 
@@ -214,7 +213,7 @@ Your database may have some tables which you do not wish to expose as collection
 
 * writing a models module with only the model classes you wish to expose; or
 * passing an iterable of only the model classes you wish to expose to
-  :py:func:`pyramid_jsonapi.create_jsonapi`.
+  :py:func:`pyramid_jsonapi.PyramidJSONAPI`.
 
 Callbacks
 ---------
@@ -243,7 +242,7 @@ If you don't currently have a view class, you can get one from a model class
 
 .. code-block:: python
 
-  person_view_class = pyramid_jsonapi.view_classes[models.Person]
+  person_view_class = pyramid_jsonapi.PyramidJSONAPI.view_classes[models.Person]
 
 Available Callback Deques
 -------------------------
@@ -306,7 +305,7 @@ or on all view classes:
 
 .. code-block:: python
 
-  pyramid_jsonapi.append_callback_set_to_all_views(
+  pyramid_jsonapi.PyramidJSONAPI.append_callback_set_to_all_views(
     'access_control_serialised_objects'
   )
 
