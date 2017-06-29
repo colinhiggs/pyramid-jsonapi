@@ -109,7 +109,7 @@ class TestSpec(DBTestBase):
         '''Server should respond with 406 if all jsonapi media types have parameters.
 
         Servers MUST respond with a 406 Not Acceptable status code if a
-        request’s Accept header contains the JSON API media type and all
+        request's Accept header contains the JSON API media type and all
         instances of that media type are modified with media type parameters.
         '''
         # Should work with correct accepts header.
@@ -139,7 +139,7 @@ class TestSpec(DBTestBase):
 
         A document MUST contain at least one of the following top-level members:
 
-            * data: the document’s “primary data”
+            * data: the document's “primary data”
             * errors: an array of error objects
             * meta: a meta object that contains non-standard meta-information.
         '''
@@ -2110,6 +2110,44 @@ class TestHybrid(DBTestBase):
         data = self.test_app.get('/people/1').json['data']
         # ...should now be called alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
+
+
+class TestJoinedTableInheritance(DBTestBase):
+    '''Test cases for .'''
+
+    def test_joined_benign_create_fetch(self):
+        '''Should create BenignComment with author people/1 and then fetch it.'''
+        content = 'Main content.'
+        fawning_text = 'You are so great.'
+        created = self.test_app.post_json(
+            '/benign_comments',
+            {
+                'data': {
+                    'type': 'benign_comments',
+                    'attributes': {
+                        'content': content,
+                        'fawning_text': fawning_text
+                    },
+                    'relationships': {
+                        'author': {
+                            'data': {'type': 'people', 'id': '1'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=201
+        ).json['data']
+        # Fetch the object back
+        fetched = self.test_app.get(
+            '/benign_comments/{}'.format(created['id'])
+        ).json['data']
+        self.assertEqual(fetched['attributes']['content'], content)
+        self.assertEqual(
+            fetched['attributes']['fawning_text'],
+            fawning_text
+        )
+        self.assertEqual(fetched['relationships']['author']['data']['id'],'1')
 
 
 class TestBugs(DBTestBase):
