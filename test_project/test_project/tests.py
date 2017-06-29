@@ -109,7 +109,7 @@ class TestSpec(DBTestBase):
         '''Server should respond with 406 if all jsonapi media types have parameters.
 
         Servers MUST respond with a 406 Not Acceptable status code if a
-        request’s Accept header contains the JSON API media type and all
+        request's Accept header contains the JSON API media type and all
         instances of that media type are modified with media type parameters.
         '''
         # Should work with correct accepts header.
@@ -139,7 +139,7 @@ class TestSpec(DBTestBase):
 
         A document MUST contain at least one of the following top-level members:
 
-            * data: the document’s “primary data”
+            * data: the document's “primary data”
             * errors: an array of error objects
             * meta: a meta object that contains non-standard meta-information.
         '''
