@@ -581,7 +581,10 @@ class CollectionViewBase:
                 )
             )
         DBSession = self.get_dbsession()
-        data = self.request.json_body['data']
+        try:
+            data = self.request.json_body['data']
+        except KeyError:
+            raise HTTPBadRequest('data attribute required in PATCHes.')
         req_id = self.request.matchdict['id']
         data_id = data.get('id')
         if self.collection_name != data.get('type'):

@@ -2081,7 +2081,16 @@ class TestMalformed(DBTestBase):
         '''Should complain about lack of data attribute.'''
         self.test_app.post_json(
             '/people',
-            {'rubbish': 'blah'},
+            {'type': 'people'},
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    def test_malformed_item_patch_no_data(self):
+        '''Should complain about lack of data attribute.'''
+        self.test_app.patch_json(
+            '/people/1',
+            {'type': 'people', 'id': '1'},
             headers={'Content-Type': 'application/vnd.api+json'},
             status=400
         )
