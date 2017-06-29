@@ -2077,7 +2077,7 @@ class TestErrors(DBTestBase):
 class TestMalformed(DBTestBase):
     '''Various malformed POSTs and PATCHes.'''
 
-    def test_malformed_collection_post(self):
+    def test_malformed_collection_post_no_data(self):
         '''Should complain about lack of data attribute.'''
         self.test_app.post_json(
             '/people',
