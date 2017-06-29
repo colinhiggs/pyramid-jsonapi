@@ -50,7 +50,7 @@ MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 
-class MetaData():
+class EndpointData():
 
     def __init__(self, config):
         self.config = config
@@ -142,7 +142,7 @@ class PyramidJSONAPI():
         self.config = config
         self.models = models
         self.get_dbsession = get_dbsession
-        self.metadata = MetaData(config)
+        self.endpoint_data = EndpointData(config)
 
     @staticmethod
     def error(e, request):
@@ -276,7 +276,7 @@ class PyramidJSONAPI():
         view.max_limit =\
             int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
 
-        self.metadata.add_routes_views(view)
+        self.endpoint_data.add_routes_views(view)
 
     def collection_view_factory(self, model, collection_name=None, expose_fields=None):
         ''''Build a class to handle requests for model.
@@ -301,7 +301,7 @@ class PyramidJSONAPI():
         CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
         CollectionView.collection_name = collection_name
         CollectionView.get_dbsession = self.get_dbsession
-        CollectionView.metadata = self.metadata
+        CollectionView.endpoint_data = self.endpoint_data
         CollectionView.view_classes = self.view_classes
 
         CollectionView.exposed_fields = expose_fields
@@ -922,7 +922,7 @@ class CollectionViewBase:
             raise HTTPConflict(e.args[0])
         self.request.response.status_code = 201
         self.request.response.headers['Location'] = self.request.route_url(
-            self.metadata.make_route_name(self.collection_name, suffix='item'),
+            self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': item._jsonapi_id}
         )
         return {
@@ -1902,7 +1902,7 @@ class CollectionViewBase:
         # JSON API type.
         type_name = self.collection_name
         item_url = self.request.route_url(
-            self.metadata.make_route_name(self.collection_name, suffix='item'),
+            self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': item._jsonapi_id}
         )
 
