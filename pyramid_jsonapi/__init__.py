@@ -442,8 +442,8 @@ class CollectionViewBase:
             ) == 'true':
                 debug = {
                     'accept_header': {
-                            a: None for a in jsonapi_accepts
-                        },
+                        a: None for a in jsonapi_accepts
+                    },
                     'qinfo_page':
                         self.collection_query_info(self.request)['_page'],
                     'atts': {k: None for k in self.attributes.keys()},
@@ -923,7 +923,7 @@ class CollectionViewBase:
                         relname,
                         DBSession.query(rel_class).get(
                             reldata['data']['id'])
-                        )
+                    )
         try:
             DBSession.add(item)
             DBSession.flush()
@@ -1879,9 +1879,9 @@ class CollectionViewBase:
         return ret
 
     def serialise_db_item(
-            self, item,
-            included, include_path=None,
-            ):
+        self, item,
+        included, include_path=None,
+    ):
         '''Serialise an individual database item to JSON-API.
 
         Arguments:
@@ -2542,9 +2542,11 @@ class DebugView:
 
 
 def create_jsonapi(
-    config, models, get_dbsession,
-    engine=None, test_data=None
-        ):
+    config, models,
+    get_dbsession,
+    engine=None,
+    test_data=None
+):
     '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
     DEPRECATED: This module method is deprecated!
