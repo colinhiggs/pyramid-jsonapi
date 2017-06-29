@@ -134,7 +134,7 @@ class MetaData():
                                      renderer=method_opts.get('renderer', 'json'))
 
 
-class Pyramid_JSONAPI():
+class PyramidJSONAPI():
 
     view_classes = {}
 
@@ -2549,7 +2549,7 @@ def create_jsonapi(
     '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
     DEPRECATED: This module method is deprecated!
-    Please use the Pyramid_JSONAPI class method instead.
+    Please use the PyramidJSONAPI class method instead.
 
     Arguments:
         config: ``pyramid.config.Configurator`` object from current app.
@@ -2565,8 +2565,8 @@ def create_jsonapi(
             the database.
     '''
 
-    pj = Pyramid_JSONAPI(config, models, get_dbsession)
-    pj.create_jsonapi()
+    pyramid_jsonapi = PyramidJSONAPI(config, models, get_dbsession)
+    pyramid_jsonapi.create_jsonapi()
 
 
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi

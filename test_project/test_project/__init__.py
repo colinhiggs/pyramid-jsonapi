@@ -75,7 +75,7 @@ def main(global_config, **settings):
 
     # Lines specific to pyramid_jsonapi.
     # Create the routes and views automagically.
-    pj = pyramid_jsonapi.Pyramid_JSONAPI(config, models, lambda view: models.DBSession)
+    pj = pyramid_jsonapi.PyramidJSONAPI(config, models, lambda view: models.DBSession)
     pj.create_jsonapi_using_magic_and_pixie_dust()
 
     person_view = pj.view_classes[
