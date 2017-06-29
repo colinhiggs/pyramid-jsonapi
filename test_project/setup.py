@@ -20,7 +20,8 @@ requires = [
     ]
 
 setup(name='test_project',
-      version='0.3',
+      use_scm_version=True,
+      setup_requires=['setuptools_scm'],
       description='test_project',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
