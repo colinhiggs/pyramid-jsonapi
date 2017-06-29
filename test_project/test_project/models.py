@@ -123,17 +123,16 @@ class BenignComment(Comment):
     }
 
 
-# class VitriolicComment(Comment):
-#     __tablename__ = 'vitriolic_comments'
-#     comments_id = IdRefColumn(
-#         'comments.comments_id',
-#         nullable=False,
-#         unique=True
-#     )
-#     scathing_text = Column(Text)
-#     __mapper_args__ = {
-#         'polymorphic_identity': 'vitriolic_comments'
-#     }
+class VitriolicComment(Comment):
+    __tablename__ = 'vitriolic_comments'
+    comments_id = IdRefColumn(
+        'comments.comments_id',
+        primary_key=True
+    )
+    scathing_text = Column(Text)
+    __mapper_args__ = {
+        'polymorphic_identity': 'vitriolic_comments'
+    }
 
 
 class ArticleByAssoc(Base):
