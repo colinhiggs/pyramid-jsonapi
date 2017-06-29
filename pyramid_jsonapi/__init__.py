@@ -873,7 +873,10 @@ class CollectionViewBase:
                 }' Content-Type:application/vnd.api+json
         '''
         DBSession = self.get_dbsession()
-        data = self.request.json_body['data']
+        try:
+            data = self.request.json_body['data']
+        except KeyError:
+            raise HTTPBadRequest('data attribute required in POSTs.')
 
         # Alter data with any callbacks.
         for callback in self.callbacks['before_collection_post']:

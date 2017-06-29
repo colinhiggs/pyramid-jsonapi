@@ -2062,6 +2062,19 @@ class TestErrors(DBTestBase):
         self.assertIn('detail', err)
 
 
+class TestMalformed(DBTestBase):
+    '''Various malformed POSTs and PATCHes.'''
+
+    def test_malformed_collection_post(self):
+        '''Should complain about lack of data attribute.'''
+        self.test_app.post_json(
+            '/people',
+            {'rubbish': 'blah'},
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+
 class TestHybrid(DBTestBase):
     '''Test cases for @hybrid_property attributes.'''
 
