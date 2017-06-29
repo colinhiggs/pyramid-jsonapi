@@ -2112,6 +2112,44 @@ class TestHybrid(DBTestBase):
         self.assertEqual(data['attributes']['name'], 'alice2')
 
 
+class TestJoinedTableInheritance(DBTestBase):
+    '''Test cases for .'''
+
+    def test_joined_benign_create_fetch(self):
+        '''Should create BenignComment with author people/1 and then fetch it.'''
+        content = 'Main content.'
+        fawning_text = 'You are so great.'
+        created = self.test_app.post_json(
+            '/benign_comments',
+            {
+                'data': {
+                    'type': 'benign_comments',
+                    'attributes': {
+                        'content': content,
+                        'fawning_text': fawning_text
+                    },
+                    'relationships': {
+                        'author': {
+                            'data': {'type': 'people', 'id': '1'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=201
+        ).json['data']
+        # Fetch the object back
+        fetched = self.test_app.get(
+            '/benign_comments/{}'.format(created['id'])
+        ).json['data']
+        self.assertEqual(fetched['attributes']['content'], content)
+        self.assertEqual(
+            fetched['attributes']['fawning_text'],
+            fawning_text
+        )
+        self.assertEqual(fetched['relationships']['author']['data']['id'],'1')
+
+
 class TestBugs(DBTestBase):
 
     def test_19_last_negative_offset(self):
