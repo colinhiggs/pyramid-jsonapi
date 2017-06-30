@@ -1897,6 +1897,22 @@ class CollectionViewBase:
         else:
             return False
 
+    def column_info_from_name(self, name, model=None):
+        '''Get the pyramid_jsonapi info dictionary for a column.
+
+        Parameters:
+            name (str): name of column.
+
+            model (sqlalchemy.ext.declarative.declarative_base): model to
+                inspect. Defaults to self.model.
+
+        '''
+        if model is None:
+            model = self.model
+        return sqlalchemy.inspect(model).all_orm_descriptors.get(
+            name
+        ).info.get('pyramid_jsonapi', {})
+
     def serialise_resource_identifier(self, obj_id):
         '''Return a resource identifier dictionary for id "obj_id"
 
