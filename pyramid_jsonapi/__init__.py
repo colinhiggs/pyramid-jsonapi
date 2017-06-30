@@ -1967,6 +1967,7 @@ class CollectionViewBase:
         atts = {
             key: getattr(item, key)
             for key in self.requested_attributes.keys()
+            if self.column_info_from_name(key).get('visible', True)
         }
 
         rels = {}

@@ -2347,6 +2347,17 @@ class TestJoinedTableInheritance(DBTestBase):
         self.assertEqual(fetched['relationships']['author']['data']['id'],'1')
 
 
+class TestFeatures(DBTestBase):
+    '''Test case for features beyond spec.'''
+
+    def test_feature_invisible_column(self):
+        '''people object should not have attribute "invisible".'''
+        person1 = self.test_app.get(
+            '/people/1'
+        ).json['data']
+        self.assertNotIn('invisible',person1['attributes'])
+
+
 class TestBugs(DBTestBase):
 
     def test_19_last_negative_offset(self):

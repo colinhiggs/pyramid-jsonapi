@@ -45,6 +45,7 @@ class Person(Base):
     __tablename__ = 'people'
     id = IdColumn()
     name = Column(Text)
+    invisible = Column(Text)
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
     comments = relationship('Comment', backref='author')
@@ -57,6 +58,8 @@ class Person(Base):
         'ArticleAuthorAssociation',
         backref='author'
     )
+    # make invisible column invisible to API
+    invisible.info.update({'pyramid_jsonapi': {'visible': False}})
 
 class Blog(Base):
     __tablename__ = 'blogs'
