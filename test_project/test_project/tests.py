@@ -1163,6 +1163,107 @@ class TestSpec(DBTestBase):
             found_blog_ids.add(blog['id'])
         self.assertEqual(created_blog_ids, found_blog_ids)
 
+        # Now attempt to add another person with malformed requests.
+        # No data element in blogs.
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test2'
+                    },
+                    'relationships': {
+                        'blogs': {
+                            'meta': 'should fail'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # Not an array
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test2'
+                    },
+                    'relationships': {
+                        'blogs': {
+                            'data': { 'type': 'blogs', 'id': str(blog1_id)}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # Not an array
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test2'
+                    },
+                    'relationships': {
+                        'blogs': {
+                            'data': 'splat'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # Item with incorrect type
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test2'
+                    },
+                    'relationships': {
+                        'blogs': {
+                            'data': [
+                                { 'type': 'splats', 'id': str(blog1_id)}
+                            ]
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # Item with no id
+        self.test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'test2'
+                    },
+                    'relationships': {
+                        'blogs': {
+                            'data': [
+                                { 'type': 'blogs', 'id_typo': str(blog1_id)}
+                            ]
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_post_with_relationships_manytomany_table(self):
         '''Should create an article_by_assoc with two authors.
         '''

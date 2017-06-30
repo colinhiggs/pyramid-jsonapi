@@ -32,7 +32,7 @@ import types
 import importlib
 import itertools
 import logging
-from collections import deque
+from collections import deque, Sequence
 
 from sqlalchemy.orm import load_only
 from sqlalchemy.exc import DBAPIError
@@ -903,7 +903,13 @@ class CollectionViewBase:
         item = self.model(**atts)
         mapper = sqlalchemy.inspect(self.model).mapper
         with DBSession.no_autoflush:
-            for relname, reldata in data.get('relationships', {}).items():
+            for relname, reldict in data.get('relationships', {}).items():
+                try:
+                    reldata = reldict['data']
+                except KeyError:
+                    raise HTTPBadRequest(
+                        'relationships within POST must have data member'
+                    )
                 try:
                     rel = mapper.relationships[relname]
                 except KeyError:
@@ -914,25 +920,32 @@ class CollectionViewBase:
                         )
                     )
                 rel_class = rel.mapper.class_
+                rel_type = self.view_classes[rel_class].collection_name
                 if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-                    setattr(
-                        item, relname,
-                        [
-                            DBSession.query(rel_class).get(
-                                rel_identifier['id']
+                    # reldata should be a list/array
+                    if not isinstance(reldata, Sequence) or isinstance(reldata, str):
+                        raise HTTPBadRequest(
+                            'Relationship data should be an array for TOMANY relationships.'
+                        )
+                    rel_items = []
+                    for rel_identifier in reldata:
+                        if rel_identifier.get('type') != rel_type:
+                            raise HTTPBadRequest(
+                                'Relationship identifier has type {} and should be {}'.format(
+                                    rel_identifier.get('type'), rel_type
+                                )
                             )
-                            for rel_identifier in reldata['data']
-                        ]
-                    )
+                        try:
+                            rid_id = rel_identifier['id']
+                        except KeyError:
+                            raise HTTPBadRequest(
+                                'Relationship identifier must have an id member'
+                            )
+                        rel_items.append(DBSession.query(rel_class).get(rid_id))
+                    setattr(item, relname, rel_items)
                 else:
                     try:
-                        data = reldata['data']
-                    except KeyError:
-                        raise HTTPBadRequest(
-                            'relationships within POST must have data member'
-                        )
-                    try:
-                        related_id = data['id']
+                        related_id = reldata['id']
                     except Exception:
                         raise HTTPBadRequest(
                             'No id member in relationship data.'
