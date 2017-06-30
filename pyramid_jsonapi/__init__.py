@@ -932,7 +932,7 @@ class CollectionViewBase:
                     rel_items = []
                     for rel_identifier in reldata:
                         if rel_identifier.get('type') != rel_type:
-                            raise HTTPBadRequest(
+                            raise HTTPConflict(
                                 'Relationship identifier has type {} and should be {}'.format(
                                     rel_identifier.get('type'), rel_type
                                 )

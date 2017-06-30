@@ -1240,7 +1240,7 @@ class TestSpec(DBTestBase):
                 }
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
+            status=409
         )
         # Item with no id
         self.test_app.post_json(
