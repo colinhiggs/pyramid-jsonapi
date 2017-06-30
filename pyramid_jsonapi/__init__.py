@@ -861,6 +861,8 @@ class CollectionViewBase:
             constraint (most commonly if an id is supplied by the client and
             an item with that id already exists).
 
+            HTTPBadRequest: if the request is malformed in some other way.
+
         Examples:
             Create a new person with name 'monty' and let the server pick the
             id:
