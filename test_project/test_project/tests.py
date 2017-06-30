@@ -2358,6 +2358,13 @@ class TestFeatures(DBTestBase):
         self.assertNotIn('invisible', atts)
         self.assertNotIn('invisible_hybrid', atts)
 
+    def test_feature_rename_collection(self):
+        '''Should be able to fetch from whatsits even though table is things.'''
+        # There should be whatsits...
+        self.test_app.get('/whatsits')
+        # ...but not things.
+        self.test_app.get('/things', status=404)
+
 
 class TestBugs(DBTestBase):
 

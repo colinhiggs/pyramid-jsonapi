@@ -261,6 +261,10 @@ class PyramidJSONAPI():
         model._jsonapi_id = getattr(model, keycols[0].name)
 
         if collection_name is None:
+            collection_name = getattr(
+                model, '__pyramid_jsonapi__', {}
+            ).get('collection_name')
+        if collection_name is None:
             collection_name = sqlalchemy.inspect(model).tables[-1].name
 
         # Create a view class for use in the various add_view() calls below.

@@ -176,3 +176,12 @@ class ArticleByObj(Base):
         'ArticleAuthorAssociation',
         backref='article'
     )
+
+
+class RenamedThings(Base):
+    __tablename__ = 'things'
+    id = IdColumn()
+    stuff = Column(Text)
+    __pyramid_jsonapi__ = {
+        'collection_name': 'whatsits'
+    }
