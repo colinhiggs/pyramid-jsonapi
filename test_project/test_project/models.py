@@ -58,8 +58,13 @@ class Person(Base):
         'ArticleAuthorAssociation',
         backref='author'
     )
-    # make invisible column invisible to API
+
+    @hybrid_property
+    def invisible_hybrid(self):
+        return 'boo!'
+    # make invisible columns invisible to API
     invisible.info.update({'pyramid_jsonapi': {'visible': False}})
+    invisible_hybrid.info.update({'pyramid_jsonapi': {'visible': False}})
 
 class Blog(Base):
     __tablename__ = 'blogs'

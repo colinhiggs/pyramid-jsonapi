@@ -2352,10 +2352,11 @@ class TestFeatures(DBTestBase):
 
     def test_feature_invisible_column(self):
         '''people object should not have attribute "invisible".'''
-        person1 = self.test_app.get(
+        atts = self.test_app.get(
             '/people/1'
-        ).json['data']
-        self.assertNotIn('invisible',person1['attributes'])
+        ).json['data']['attributes']
+        self.assertNotIn('invisible', atts)
+        self.assertNotIn('invisible_hybrid', atts)
 
 
 class TestBugs(DBTestBase):
