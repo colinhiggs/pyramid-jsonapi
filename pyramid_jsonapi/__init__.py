@@ -254,7 +254,7 @@ class PyramidJSONAPI():
         if len(keycols) > 1:
             raise Exception(
                 'Model {} has more than one primary key.'.format(
-                    model_class.__name__
+                    model.__name__
                 )
             )
 
