@@ -937,6 +937,23 @@ class TestSpec(DBTestBase):
             )
             self.assertGreaterEqual(date, ref_date)
 
+    def test_spec_filterop_like(self):
+        '''Should return collection where content matches "*thing*".'''
+        data = self.test_app.get(
+            '/posts?filter[content:like]=*thing*'
+        ).json['data']
+        for item in data:
+            self.assertTrue('thing' in item['attributes']['content'])
+
+
+    def test_spec_filterop_ilike(self):
+        '''Should return collection where content case insensitive matches "*thing*".'''
+        data = self.test_app.get(
+            '/posts?filter[content:ilike]=*THING*'
+        ).json['data']
+        for item in data:
+            self.assertTrue('thing' in item['attributes']['content'])
+
     ###############################################
     # POST tests.
     ###############################################
