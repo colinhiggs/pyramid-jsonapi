@@ -1818,7 +1818,7 @@ class CollectionViewBase:
                 )
             if filter_op.value_transform:
                 val = filter_op.value_transform(val)
-            db_func = filter_op.get_db_function(prop)
+            db_func = getattr(prop, filter_op.comparator_name)
             q = q.filter(db_func(val))
 
         return q
@@ -2501,13 +2501,15 @@ class FilterOperator:
 
     def __init__(
         self,
-        name,
-        get_db_function=None,
+        comparator_name,
+        name=None,
         value_transform=None,
         docstring=None
     ):
+        self.comparator_name = comparator_name
+        if name is None:
+            name = comparator_name.replace('__','')
         self.name = name
-        self.get_db_function = get_db_function
         self.value_transform = value_transform
         self.docstring = docstring
 
@@ -2519,7 +2521,6 @@ class FilterOperatorCollection(Mapping):
         self.ops = {}
 
     def register(self, operator, force=False):
-        self.check_interface_filter_operator(operator)
         if operator.name in self.ops and not force:
             raise KeyError('Operator named "{}" already registered'.format(
                 operator.name
@@ -2529,12 +2530,6 @@ class FilterOperatorCollection(Mapping):
     def register_group(self, iterable):
         for op in iterable:
             self.register(op)
-
-    def check_interface_filter_operator(self, operator):
-        '''Check operator for FilterOperator interface.'''
-        for att in ('name', 'get_db_function', 'value_transform', 'docstring'):
-            if not hasattr(operator, att):
-                raise Exception('operator must have attribute {}'.format(att))
 
     def __getitem__(self, key):
         return self.ops[key]
@@ -2548,41 +2543,29 @@ class FilterOperatorCollection(Mapping):
 
 filter_operator_groups = {
     'standard': [
+        FilterOperator('__eq__'),
+        FilterOperator('__ne__'),
+        FilterOperator('startswith'),
+        FilterOperator('endswith'),
+        FilterOperator('contains'),
+        FilterOperator('__lt__'),
+        FilterOperator('__gt__'),
+        FilterOperator('__le__'),
+        FilterOperator('__ge__'),
         FilterOperator(
-            'eq', lambda prop: getattr(prop, '__eq__')
-        ),
-        FilterOperator(
-            'ne', lambda prop: getattr(prop, '__ne__'),
-        ),
-        FilterOperator(
-            'startswith', lambda prop: getattr(prop, 'startswith'),
-        ),
-        FilterOperator(
-            'endswith', lambda prop: getattr(prop, 'endswith'),
-        ),
-        FilterOperator(
-            'contains', lambda prop: getattr(prop, 'contains'),
-        ),
-        FilterOperator(
-            'lt', lambda prop: getattr(prop, '__lt__'),
-        ),
-        FilterOperator(
-            'gt', lambda prop: getattr(prop, '__gt__'),
-        ),
-        FilterOperator(
-            'le', lambda prop: getattr(prop, '__le__'),
-        ),
-        FilterOperator(
-            'ge', lambda prop: getattr(prop, '__ge__'),
-        ),
-        FilterOperator(
-            'like', lambda prop: getattr(prop, 'like'),
+            'like',
             value_transform=lambda val: re.sub(r'\*', '%', val)
         ),
         FilterOperator(
-            'ilike', lambda prop: getattr(prop, 'ilike'),
+            'ilike',
             value_transform=lambda val: re.sub(r'\*', '%', val)
         ),
+    ],
+    'json': [
+        FilterOperator('contained_by'),
+        FilterOperator('has_all'),
+        FilterOperator('has_any'),
+        FilterOperator('has_key'),
     ]
 }
 
