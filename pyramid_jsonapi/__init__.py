@@ -2512,7 +2512,7 @@ class FilterOperator:
     ):
         self.comparator_name = comparator_name
         if name is None:
-            name = comparator_name.replace('__','')
+            name = comparator_name.replace('__', '')
         self.name = name
         self.value_transform = value_transform
         self.docstring = docstring
