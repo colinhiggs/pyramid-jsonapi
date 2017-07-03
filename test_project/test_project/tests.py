@@ -11,6 +11,7 @@ import inspect
 import os
 import urllib
 import warnings
+import json
 
 from test_project.models import (
     DBSession,
@@ -953,6 +954,25 @@ class TestSpec(DBTestBase):
         ).json['data']
         for item in data:
             self.assertTrue('thing' in item['attributes']['content'])
+
+    def test_spec_filterop_json_contains(self):
+        '''Should return collection where json_content contains {"b": 2}.'''
+        data = self.test_app.get(
+            '/posts?filter[json_content:contains]={"b": 2}'
+        ).json['data']
+        for item in data:
+            self.assertIn('b', item['attributes']['json_content'])
+
+    def test_spec_filterop_json_contained_by(self):
+        '''Should return collection where json_content contained by expression.'''
+        containing_expr = '{"a":1, "b": 2, "c": 3}'
+        containing_json = json.loads(containing_expr)
+        data = self.test_app.get(
+            '/posts?filter[json_content:contained_by]={}'.format(containing_expr)
+        ).json['data']
+        for item in data:
+            for key in item['attributes']['json_content']:
+                self.assertIn(key, containing_json)
 
     ###############################################
     # POST tests.
