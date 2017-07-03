@@ -23,13 +23,27 @@ def add_to_db():
             if len(dataset) > 2:
                 opts = dataset[2]
             for item in dataset[1]:
-                set_item(model, item, opts)
+                set_item(model, item_transform(item), opts)
         for assoc_data in data.get('associations',[]):
             table = getattr(models, assoc_data[0])
             for assoc in assoc_data[1]:
                 rows = DBSession.query(table).filter_by(**assoc).all()
                 if not rows:
                     DBSession.execute(table.insert(), assoc)
+
+def item_transform(item):
+    '''Transform item prior to saving to database.
+
+     * Attributes named __json__<something> will be renamed to <something> with
+       values parsed by the json parser first.
+    '''
+    new_item = {}
+    for att, val in item.items():
+        if att.startswith('__json__'):
+            att = att.replace('__json__','')
+            val = json.loads(val)
+        new_item[att] = val
+    return new_item
 
 def set_item(model, data, opts):
     '''Make sure item exists in the db with attributes as specified in data.
