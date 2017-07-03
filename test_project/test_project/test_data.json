@@ -58,6 +58,7 @@
           "title": "post1: alice.main",
           "content": "something insightful",
           "published_at": "2015-01-01",
+          "__json__json_content": "{\"a\": 1, \"b\": 2}",
           "author_id": "1",
           "blog_id": "1"
         },
@@ -66,6 +67,7 @@
           "title": "post2: alice.main",
           "content": "something trivial",
           "published_at": "2015-01-02",
+          "__json__json_content": "{\"b\": 2}",
           "author_id": "1",
           "blog_id": "1"
         },
