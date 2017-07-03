@@ -17,11 +17,11 @@ requires = [
     'psycopg2',
     'testing.postgresql',
     'webtest',
+    'jsonschema',
     ]
 
 setup(name='test_project',
-      use_scm_version=True,
-      setup_requires=['setuptools_scm'],
+      version='1.0',
       description='test_project',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[

@@ -995,7 +995,7 @@ class TestSpec(DBTestBase):
         )
 
     def test_spec_post_must_have_type(self):
-        '''Server should respond with 409 (Conflict) if type not specified.
+        '''type must be specified.
 
         Note: The type member is required in every resource object throughout
         requests and responses in JSON API. There are some cases, such as when
@@ -1015,7 +1015,7 @@ class TestSpec(DBTestBase):
                 }
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-            status=409
+            status=400
         )
 
     def test_spec_post_with_relationships_manytoone(self):
@@ -1499,7 +1499,7 @@ class TestSpec(DBTestBase):
         )
 
     def test_spec_post_type_conflicts(self):
-        '''Should 409 if type does not exist.
+        '''Should 409 if type conflicts with endpoint.
 
         A server MUST return 409 Conflict when processing a POST request in
         which the resource object’s type is not among the type(s) that
