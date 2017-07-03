@@ -1,7 +1,10 @@
 '''Tools for constructing a JSON-API from sqlalchemy models in Pyramid.'''
+import copy
 import json
+import pkgutil
 import transaction
 import sqlalchemy
+import jsonschema
 from pyramid.view import (
     view_config,
     notfound_view_config,
@@ -21,7 +24,8 @@ from pyramid.httpexceptions import (
     HTTPNotAcceptable,
     HTTPNotImplemented,
     HTTPError,
-    HTTPFailedDependency
+    HTTPFailedDependency,
+    HTTPInternalServerError,
 )
 import pyramid
 import sys
@@ -303,6 +307,7 @@ class PyramidJSONAPI():
             {}
         )
 
+        CollectionView.config = self.config
         CollectionView.model = model
         CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
         CollectionView.collection_name = collection_name
@@ -413,6 +418,30 @@ class CollectionViewBase:
                     'parameters in Accepts header ' +
                     '(http://jsonapi.org/format).'
                 )
+
+            validation = True
+            if self.config.registry.settings.get('pyramid_jsonapi.schema_validation') == 'false':
+                validation = False
+            if validation:
+                schema_file = self.config.registry.settings.get(
+                    'pyramid_jsonapi.schema_file')
+                if schema_file:
+                    with open(schema_file) as schema_f:
+                        schema = json.loads(schema_f.read())
+                else:
+                    schema = json.loads(
+                        pkgutil.get_data(__name__,
+                                         'schema/jsonapi-schema.json').decode('utf-8'))
+
+                # Validate request JSON against the JSONAPI jsonschema
+                if self.request.content_length and self.request.method is not 'PATCH':
+                    modified_schema = copy.deepcopy(schema)
+                    # POST uses full schema, may omit 'id'
+                    modified_schema['definitions']['resource']['required'].remove('id')
+                    try:
+                        jsonschema.validate(self.request.json_body, modified_schema)
+                    except jsonschema.exceptions.ValidationError as exc:
+                        raise HTTPBadRequest(exc.message)
 
             # Spec says throw BadRequest if any include paths reference non
             # existent attributes or relationships.
