@@ -1,8 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 requires = [
     'pyramid',
     'SQLAlchemy',
+    'jsonschema',
     ]
 
 setup(
@@ -16,4 +17,6 @@ setup(
   url = 'https://github.com/colinhiggs/pyramid-jsonapi',
   keywords = ['json', 'api', 'API', 'JSON-API', 'pyramid', 'sqlalchemy'],
   classifiers = [],
-)
+  #include_package_data=True,
+  package_data={'': ['schema/*.json']}
+  )
