@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     )
+from sqlalchemy.dialects.postgresql import JSONB
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
@@ -87,6 +88,7 @@ class Post(Base):
     title = Column(Text)
     content = Column(Text)
     published_at = Column(DateTime, nullable=False)
+    json_content = Column(JSONB)
     blog_id = IdRefColumn('blogs.id')
     author_id = IdRefColumn('people.id', nullable=False)
     comments = relationship('Comment', backref = 'post')

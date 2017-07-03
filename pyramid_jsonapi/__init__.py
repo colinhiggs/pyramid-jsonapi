@@ -146,9 +146,13 @@ class PyramidJSONAPI():
         self.get_dbsession = get_dbsession
         self.endpoint_data = EndpointData(config)
         self.filter_operator_collection = FilterOperatorCollection()
-        self.filter_operator_collection.register_group(
-            filter_operator_groups['standard']
-        )
+        fo_groups = config.registry.settings.get(
+            'pyramid_jsonapi.filter_operator_groups', 'standard'
+        ).split()
+        for fo_group in fo_groups:
+            self.filter_operator_collection.register_group(
+                filter_operator_groups[fo_group]
+            )
 
     @staticmethod
     def error(e, request):
