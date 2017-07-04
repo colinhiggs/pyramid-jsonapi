@@ -7,17 +7,16 @@ README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid',
-    'SQLAlchemy',
-    'transaction',
-    'pyramid_tm',
-    'pyramid_debugtoolbar',
-    'zope.sqlalchemy',
-    'waitress',
     'psycopg2',
+    'pyramid',
+    'pyramid_debugtoolbar',
+    'pyramid_tm',
+    'SQLAlchemy',
     'testing.postgresql',
+    'transaction',
+    'waitress',
     'webtest',
-    'jsonschema',
+    'zope.sqlalchemy',
     ]
 
 setup(name='test_project',

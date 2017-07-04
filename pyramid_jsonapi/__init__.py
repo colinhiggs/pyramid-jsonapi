@@ -1,10 +1,18 @@
 '''Tools for constructing a JSON-API from sqlalchemy models in Pyramid.'''
 import copy
+import functools
+import importlib
+import itertools
 import json
+import logging
 import pkgutil
-import transaction
-import sqlalchemy
+import re
+import sys
+import types
+from collections import deque, Sequence, Mapping
+
 import jsonschema
+import pyramid
 from pyramid.view import (
     view_config,
     notfound_view_config,
@@ -27,23 +35,14 @@ from pyramid.httpexceptions import (
     HTTPFailedDependency,
     HTTPInternalServerError,
 )
-import pyramid
-import sys
-import re
-import psycopg2
-import functools
-import types
-import importlib
-import itertools
-import logging
-from collections import deque, Sequence, Mapping
-
+import sqlalchemy
 from sqlalchemy.orm import load_only
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
+import transaction
 
 log = logging.getLogger(__name__)
 
