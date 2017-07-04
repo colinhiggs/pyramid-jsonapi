@@ -108,7 +108,7 @@ don't *have* to call it that. If you are feeling more sensible you can use the
 synonym :py:func:`pyramid_jsonapi.PyramidJSONAPI.create_jsonapi`.
 
 :py:func:`pyramid_jsonapi.PyramidJSONAPI`
-----------------------------------------
+-----------------------------------------
 
 We'll spend a little time now explaining the three mandatory arguments.
 
