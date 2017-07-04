@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 requires = [
+    'jsonschema',
     'pyramid',
     'SQLAlchemy',
-    'jsonschema',
     ]
 
 setup(

@@ -1,10 +1,13 @@
+# pyramid_jsonapi
 jsonschema
-psycopg2
 pyramid
 pyramid_tm
 SQLAlchemy
-testing.postgresql
 transaction
+
+# test_project
+psycopg2
+testing.postgresql
 waitress
 webtest
 zope.sqlalchemy
