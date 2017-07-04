@@ -6,9 +6,9 @@
 .. toctree::
   :maxdepth: 2
 
-.. include:: readme.rst
+.. include:: readme.inc
 
-.. include:: reference.rst
+.. include:: reference.inc
 
 Indices and tables
 ==================
