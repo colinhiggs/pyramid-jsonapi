@@ -1,9 +1,10 @@
-pyramid
-SQLAlchemy
-transaction
-pyramid_tm
-zope.sqlalchemy
-waitress
+jsonschema
 psycopg2
+pyramid
+pyramid_tm
+SQLAlchemy
 testing.postgresql
+transaction
+waitress
 webtest
+zope.sqlalchemy

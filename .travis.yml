@@ -20,6 +20,7 @@ script:
   - python test_project/setup.py test
   - travis-sphinx build
 install:
+  - pip install -r requirements.txt
   - pip install pep8
   - pip install travis-sphinx
   - python setup.py install
