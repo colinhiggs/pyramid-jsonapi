@@ -44,6 +44,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.dialects.postgresql import JSONB
 
 log = logging.getLogger(__name__)
 
@@ -145,13 +146,40 @@ class PyramidJSONAPI():
         self.models = models
         self.get_dbsession = get_dbsession
         self.endpoint_data = EndpointData(config)
-        self.filter_operator_collection = FilterOperatorCollection()
-        fo_groups = config.registry.settings.get(
-            'pyramid_jsonapi.filter_operator_groups', 'standard'
-        ).split()
-        for fo_group in fo_groups:
-            self.filter_operator_collection.register_group(
-                filter_operator_groups[fo_group]
+        self.filter_registry = FilterRegistry()
+        # Register standard supported filter operators
+        for comparator_name in (
+            '__eq__',
+            '__ne__',
+            'startswith',
+            'endswith',
+            'contains',
+            '__lt__',
+            '__gt__',
+            '__le__',
+            '__ge__'
+        ):
+            self.filter_registry.register(comparator_name)
+        # Transform '%' to '*' for like and ilike
+        for comparator_name in (
+            'like',
+            'ilike'
+        ):
+            self.filter_registry.register(
+                comparator_name,
+                value_transform=lambda val: re.sub(r'\*', '%', val)
+            )
+        # JSONB specific operators
+        for comparator_name in (
+            'contains',
+            'contained_by',
+            'has_all',
+            'has_any',
+            'has_key'
+        ):
+            self.filter_registry.register(
+                comparator_name,
+                column_type=JSONB
             )
 
     @staticmethod
@@ -348,7 +376,7 @@ class PyramidJSONAPI():
         CollectionView.relationships = rels
         fields.update(rels)
         CollectionView.fields = fields
-        CollectionView.filter_operator_collection = self.filter_operator_collection
+        CollectionView.filter_registry = self.filter_registry
 
         # All callbacks have the current view as the first argument. The comments
         # below detail subsequent args.
@@ -1762,18 +1790,9 @@ class CollectionViewBase:
             ``value`` is the value the comparison operator should compare to.
 
         Valid comparison operators:
-
-            * ``eq`` as sqlalchemy ``__eq__``
-            * ``ne`` as sqlalchemy ``__ne__``
-            * ``startswith`` as sqlalchemy ``startswith``
-            * ``endswith`` as sqlalchemy ``endswith``
-            * ``contains`` as sqlalchemy ``contains``
-            * ``lt`` as sqlalchemy ``__lt__``
-            * ``gt`` as sqlalchemy ``__gt__``
-            * ``le`` as sqlalchemy ``__le__``
-            * ``ge`` as sqlalchemy ``__ge__``
-            * ``like`` or ``ilike`` as sqlalchemy ``like`` or ``ilike``, except
-              replace any '*' with '%' (so that '*' acts as a wildcard)
+            Only operators added via self.filter_registry.register() are
+            considered valid. Get a list of filter names with
+            self.filter_registry.valid_filter_names()
 
         See Also:
             ``_filters`` key from :py:func:`collection_query_info`
@@ -1815,15 +1834,14 @@ class CollectionViewBase:
                 # TODO(Colin): deal with relationships properly.
                 pass
             try:
-                filter_op = self.filter_operator_collection[op]
+                filter = self.filter_registry.get_filter(type(prop.type), op)
             except KeyError:
                 raise HTTPBadRequest(
                     "No such filter operator: '{}'".format(op)
                 )
-            if filter_op.value_transform:
-                val = filter_op.value_transform(val)
-            db_func = getattr(prop, filter_op.comparator_name)
-            q = q.filter(db_func(val))
+            val = filter['value_transform'](val)
+            comparator = getattr(prop, filter['comparator_name'])
+            q = q.filter(comparator(val))
 
         return q
 
@@ -2486,92 +2504,78 @@ class CollectionViewBase:
             cls.callbacks[cb_name].append(callback)
 
 
-class FilterOperator:
-    '''Encapsulates an operator for use in filter parameter.
-
-    Arguments:
-        name (str): name used in filter parameter of the URL
-
-    Keyword Args:
-        get_db_function (function): returns a function implementing database op.
-        Will be given the property (attribute or relationship) as the first
-        argument.
+class FilterRegistry:
+    '''Registry of allowed filter operators.
 
     Attributes:
-        name (str): name
-
-        get_db_function (function):
+        data (dict): data store for filter op information.
     '''
 
-    def __init__(
+    def __init__(self):
+        self.data = {}
+
+    def register(
         self,
         comparator_name,
-        name=None,
-        value_transform=None,
-        docstring=None
+        filter_name=None,
+        value_transform=lambda val: val,
+        column_type='__ALL__'
     ):
-        self.comparator_name = comparator_name
-        if name is None:
-            name = comparator_name.replace('__', '')
-        self.name = name
-        self.value_transform = value_transform
-        self.docstring = docstring
+        ''' Register a new filter operator.
 
+        Args:
+            comparator_name (str): name of sqlalchemy comparator method.
+            filter_name(str): name of filter param in URL. Defaults to
+                comparator_name with any occurrences of '__' removed (so '__eq__'
+                defaults to 'eq', for example).
+            value_transform (func): function taking the filter value as the only
+                argument and returning a transformed value. Defaults to a
+                function returning an unmodified value.
+            column_type (class): type (class object, not name) for which this
+                operator is to be registered. Defaults to '__ALL__' (the string)
+                which makes the operator valid for all column types.
+        '''
+        try:
+            registry = self.data[column_type]
+        except KeyError:
+            registry = self.data[column_type] = {}
+        if filter_name is None:
+            filter_name = comparator_name.replace('__', '')
+        registry[filter_name] = {
+            'comparator_name': comparator_name,
+            'value_transform': value_transform
+        }
 
-class FilterOperatorCollection(Mapping):
-    '''Contains FilterOperator instances.'''
+    def get_filter(self, column_type, filter_name):
+        '''Get dictionary of filter information.
 
-    def __init__(self):
-        self.ops = {}
+        Args:
+            column_type (class): type (class object, not name) of a Column.
+            filter_name(str): name of filter param in URL.
 
-    def register(self, operator, force=False):
-        if operator.name in self.ops and not force:
-            raise KeyError('Operator named "{}" already registered'.format(
-                operator.name
-            ))
-        self.ops[operator.name] = operator
+        Returns:
+            dict: information dictionary for filter. Type specific entry if it
+                exists, entry from '__ALL__' if it does not.
 
-    def register_group(self, iterable):
-        for op in iterable:
-            self.register(op)
+        Raises:
+            KeyError: if filter_name is not in the type specific or ALL sections.
+        '''
+        try:
+            return self.data[column_type][filter_name]
+        except KeyError:
+            return self.data['__ALL__'][filter_name]
 
-    def __getitem__(self, key):
-        return self.ops[key]
-
-    def __iter__(self):
-        return iter(self.ops)
-
-    def __len__(self):
-        return len(self.ops)
-
-
-filter_operator_groups = {
-    'standard': [
-        FilterOperator('__eq__'),
-        FilterOperator('__ne__'),
-        FilterOperator('startswith'),
-        FilterOperator('endswith'),
-        FilterOperator('contains'),
-        FilterOperator('__lt__'),
-        FilterOperator('__gt__'),
-        FilterOperator('__le__'),
-        FilterOperator('__ge__'),
-        FilterOperator(
-            'like',
-            value_transform=lambda val: re.sub(r'\*', '%', val)
-        ),
-        FilterOperator(
-            'ilike',
-            value_transform=lambda val: re.sub(r'\*', '%', val)
-        ),
-    ],
-    'json': [
-        FilterOperator('contained_by'),
-        FilterOperator('has_all'),
-        FilterOperator('has_any'),
-        FilterOperator('has_key'),
-    ]
-}
+    def valid_filter_names(self, column_types=None):
+        '''Return set of supported filter operator names.'''
+        ops = set()
+        if column_types is None:
+            column_types = {k for k in self.data}
+        else:
+            column_types = set(column_types)
+            column_types.add('__ALL__')
+        for ct in column_types:
+            ops |= self.data[ct].keys()
+        return ops
 
 
 def acso_after_serialise_object(view, obj):
