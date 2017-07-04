@@ -15,5 +15,9 @@ virtualenv:
 script:
   - pep8 --ignore=E501 pyramid_jsonapi
   - python test_project/setup.py test
+  - travis-sphinx build
 install:
   - pip install pep8
+  - pip install travis-sphinx
+after:
+  - travis-sphinx deploy
