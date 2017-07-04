@@ -3,6 +3,9 @@ sudo: required
 dist: trusty
 addons:
   postgresql: "9.6"
+  apt:
+    packages:
+    - python3-sphinx
 cache:
   - apt
   - directories:
@@ -15,5 +18,11 @@ virtualenv:
 script:
   - pep8 --ignore=E501 pyramid_jsonapi
   - python test_project/setup.py test
+  - travis-sphinx build
 install:
+  - pip install -r requirements.txt
   - pip install pep8
+  - pip install travis-sphinx
+  - python setup.py install
+after_success:
+  - travis-sphinx deploy
