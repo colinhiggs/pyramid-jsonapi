@@ -1071,6 +1071,27 @@ class TestSpec(DBTestBase):
         ).json['data']
         self.assertEqual(data['id'], created_id)
 
+        # Test where there is a relationship with nullable=False
+        # Add a test post with author alice.
+        created_id = self.test_app.post_json(
+            '/posts',
+            {
+                'data': {
+                    'type': 'posts',
+                    'attributes': {
+                        'title': 'test',
+                        'published_at': '2017-01-01'
+                    },
+                    'relationships': {
+                        'author': {
+                            'data': {'type': 'people', 'id': '1'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
         # Make sure we get an error if there is no data member:
         #
         # its value MUST be a relationship object with a data
