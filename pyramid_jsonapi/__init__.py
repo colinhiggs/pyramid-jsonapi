@@ -781,13 +781,21 @@ class CollectionViewBase:
                 http DELETE http://localhost:6543/people/1
         '''
         DBSession = self.get_dbsession()
-        item = DBSession.query(
-            self.model
-        ).options(
-            load_only(self.key_column.name)
-        ).get(
-            self.request.matchdict['id']
-        )
+        try:
+            item = DBSession.query(
+                self.model
+            ).options(
+                load_only(self.key_column.name)
+            ).get(
+                self.request.matchdict['id']
+            )
+        except sqlalchemy.exc.DataError:
+            raise HTTPNotFound(
+                'Cannot DELETE a non existent resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
+
         if item:
             for callback in self.callbacks['before_delete']:
                 callback(self, item)
@@ -802,7 +810,11 @@ class CollectionViewBase:
                 )
             }
         else:
-            return {'data': None}
+            raise HTTPNotFound(
+                'Cannot DELETE a non existent resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
 
     @jsonapi_view
     def collection_get(self):
