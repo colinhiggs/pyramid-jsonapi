@@ -2,6 +2,19 @@
 pyramid-jsonapi Documentation
 *********************************
 
+.. note:: Now approaching version 1.0.0. There have been some significant
+  changes since 0.4.3:
+
+  * The JSON API is now constructed at class level (using the
+    :py:class:`PyramidJSONAPI` class), rather than module level. This has
+    implications for the way that an API instance is constructed.
+
+  * There is now a way of altering the set of endpoints before the views are
+    constructed. New endpoints can be added at this stage.
+
+  * There is now a way to add new search/filter operators (using an instance of
+    :py:class:`FilterRegistry` associated with the API instance).
+
 Create a JSON-API (`<http://jsonapi.org/>`_) standard API from a database using
 the sqlAlchemy ORM and pyramid framework.
 
