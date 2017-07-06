@@ -115,6 +115,8 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     # Routes and views are added imperatively, so no need for a scan - unless
     # you have defined other routes and views declaratively.
 
+    return config.make_wsgi_app()
+
 Yes, there really is a method called
 :py:func:`pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust`. No, you
 don't *have* to call it that. If you are feeling more sensible you can use the
