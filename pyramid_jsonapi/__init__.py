@@ -1,4 +1,7 @@
 '''Tools for constructing a JSON-API from sqlalchemy models in Pyramid.'''
+
+# pylint:disable=line-too-long
+
 import copy
 import functools
 import importlib
@@ -148,21 +151,21 @@ class PyramidJSONAPI():
         self.filter_registry = FilterRegistry()
         # Register standard supported filter operators
         for comparator_name in (
-            '__eq__',
-            '__ne__',
-            'startswith',
-            'endswith',
-            'contains',
-            '__lt__',
-            '__gt__',
-            '__le__',
-            '__ge__'
+                '__eq__',
+                '__ne__',
+                'startswith',
+                'endswith',
+                'contains',
+                '__lt__',
+                '__gt__',
+                '__le__',
+                '__ge__'
         ):
             self.filter_registry.register(comparator_name)
         # Transform '%' to '*' for like and ilike
         for comparator_name in (
-            'like',
-            'ilike'
+                'like',
+                'ilike'
         ):
             self.filter_registry.register(
                 comparator_name,
@@ -170,11 +173,11 @@ class PyramidJSONAPI():
             )
         # JSONB specific operators
         for comparator_name in (
-            'contains',
-            'contained_by',
-            'has_all',
-            'has_any',
-            'has_key'
+                'contains',
+                'contained_by',
+                'has_all',
+                'has_any',
+                'has_key'
         ):
             self.filter_registry.register(
                 comparator_name,
@@ -182,15 +185,16 @@ class PyramidJSONAPI():
             )
 
     @staticmethod
-    def error(e, request):
+    def error(exc, request):
+        '''Error method to return jsonapi compliant errors.'''
         request.response.content_type = 'application/vnd.api+json'
-        request.response.status_code = e.code
+        request.response.status_code = exc.code
         return {
             'errors': [
                 {
-                    'code': str(e.code),
-                    'detail': e.detail,
-                    'title': e.title,
+                    'code': str(exc.code),
+                    'detail': exc.detail,
+                    'title': exc.title,
                 }
             ]
         }
@@ -215,7 +219,7 @@ class PyramidJSONAPI():
             for attr in self.models.__dict__.values():
                 if isinstance(attr, DeclarativeMeta):
                     try:
-                        keycols = sqlalchemy.inspect(attr).primary_key
+                        sqlalchemy.inspect(attr).primary_key
                     except sqlalchemy.exc.NoInspectionAvailable:
                         # Trying to inspect the declarative_base() raises this
                         # exception. We don't want to add it to the API.
@@ -267,7 +271,7 @@ class PyramidJSONAPI():
         for model_class in model_list:
             self.create_resource(model_class)
 
-    create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
+    create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
 
     def create_resource(self, model, collection_name=None, expose_fields=None):
         '''Produce a set of resource endpoints.
@@ -332,7 +336,7 @@ class PyramidJSONAPI():
         if collection_name is None:
             collection_name = model.__tablename__
 
-        CollectionView = type(
+        CollectionView = type(  # pylint:disable=invalid-name
             'CollectionView<{}>'.format(collection_name),
             (CollectionViewBase, ),
             {}
@@ -354,7 +358,7 @@ class PyramidJSONAPI():
         hybrid_atts = {}
         fields = {}
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-            if key == CollectionView.key_column.name:
+            if key == CollectionView.key_column.name:  # pylint:disable=no-member
                 continue
             if len(col.foreign_keys) > 0:
                 continue
@@ -397,7 +401,7 @@ class PyramidJSONAPI():
 
         return CollectionView
 
-    def append_callback_set_to_all_views(self, set_name):
+    def append_callback_set_to_all_views(self, set_name):  # pylint:disable=invalid-name
         '''Append a named set of callbacks to all view classes.
 
         Args:
@@ -417,16 +421,14 @@ class CollectionViewBase:
         self.request = request
         self.views = {}
 
-    def jsonapi_view(f):
+    def jsonapi_view(func):  # pylint: disable=no-self-argument
         '''Decorator for view functions. Adds jsonapi boilerplate.'''
-        @functools.wraps(f)
-        def new_f(self, *args):
+        @functools.wraps(func)
+        def new_func(self, *args):
+            '''jsonapi boilerplate function to wrap decorated functions.'''
             # Spec says to reject (with 415) any request with media type
             # params.
-            cth = self.request.headers.get('content-type', '').split(';')
-            content_type = cth[0]
-            params = None
-            if len(cth) > 1:
+            if len(self.request.headers.get('content-type', '').split(';')) > 1:
                 raise HTTPUnsupportedMediaType(
                     'Media Type parameters not allowed by JSONAPI ' +
                     'spec (http://jsonapi.org/format).'
@@ -493,7 +495,7 @@ class CollectionViewBase:
             }
 
             # Update the dictionary with the reults of the wrapped method.
-            ret.update(f(self, *args))
+            ret.update(func(self, *args))  # pylint:disable=not-callable
 
             # Include a self link unless the method is PATCH.
             if self.request.method != 'PATCH':
@@ -505,7 +507,7 @@ class CollectionViewBase:
 
             # Potentially add some debug information.
             if self.request.registry.settings.get(
-                'pyramid_jsonapi.debug.meta', 'false'
+                    'pyramid_jsonapi.debug.meta', 'false'
             ) == 'true':
                 debug = {
                     'accept_header': {
@@ -521,7 +523,7 @@ class CollectionViewBase:
                 ret['meta'].update({'debug': debug})
 
             return ret
-        return new_f
+        return new_func
 
     @jsonapi_view
     def get(self):
@@ -649,7 +651,7 @@ class CollectionViewBase:
                     self.collection_name, self.request.matchdict['id']
                 )
             )
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         try:
             data = self.request.json_body['data']
         except KeyError:
@@ -684,7 +686,7 @@ class CollectionViewBase:
                     )
                 )
         atts[self.key_column.name] = req_id
-        item = DBSession.merge(self.model(**atts))
+        item = db_session.merge(self.model(**atts))
         for att, value in hybrid_atts.items():
             try:
                 setattr(item, att, value)
@@ -719,7 +721,7 @@ class CollectionViewBase:
                     raise HTTPBadRequest(
                         'An id is required in a resource identifier.'
                     )
-                rel_item = DBSession.query(
+                rel_item = db_session.query(
                     rel_class
                 ).options(
                     load_only(rel_view.key_column.name)
@@ -732,7 +734,7 @@ class CollectionViewBase:
             elif isinstance(data, list):
                 rel_items = []
                 for res_ident in data:
-                    rel_item = DBSession.query(
+                    rel_item = db_session.query(
                         rel_class
                     ).options(
                         load_only(rel_view.key_column.name)
@@ -744,7 +746,7 @@ class CollectionViewBase:
                     rel_items.append(rel_item)
                 setattr(item, relname, rel_items)
 
-        DBSession.flush()
+        db_session.flush()
         return {
             'meta': {
                 'updated': {
@@ -780,9 +782,9 @@ class CollectionViewBase:
 
                 http DELETE http://localhost:6543/people/1
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         try:
-            item = DBSession.query(
+            item = db_session.query(
                 self.model
             ).options(
                 load_only(self.key_column.name)
@@ -800,10 +802,10 @@ class CollectionViewBase:
             for callback in self.callbacks['before_delete']:
                 callback(self, item)
             try:
-                DBSession.delete(item)
-                DBSession.flush()
-            except sqlalchemy.exc.IntegrityError as e:
-                raise HTTPFailedDependency(str(e))
+                db_session.delete(item)
+                db_session.flush()
+            except sqlalchemy.exc.IntegrityError as exc:
+                raise HTTPFailedDependency(str(exc))
             return {
                 'data': self.serialise_resource_identifier(
                     self.request.matchdict['id']
@@ -869,29 +871,29 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people?page[limit]=2&page[offset]=2&sort=-name&include=posts
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
 
         # Set up the query
-        q = DBSession.query(
+        query = db_session.query(
             self.model
         ).options(
             load_only(*self.allowed_requested_query_columns.keys())
         )
-        q = self.query_add_sorting(q)
-        q = self.query_add_filtering(q)
+        query = self.query_add_sorting(query)
+        query = self.query_add_filtering(query)
         qinfo = self.collection_query_info(self.request)
         try:
-            count = q.count()
-        except sqlalchemy.exc.ProgrammingError as e:
+            count = query.count()
+        except sqlalchemy.exc.ProgrammingError:
             raise HTTPBadRequest(
                 "Could not use operator '{}' with field '{}'".format(
                     op, prop.name
                 )
             )
-        q = q.offset(qinfo['page[offset]'])
-        q = q.limit(qinfo['page[limit]'])
+        query = query.offset(qinfo['page[offset]'])
+        query = query.limit(qinfo['page[limit]'])
 
-        ret = self.collection_return(q, count=count)
+        ret = self.collection_return(query, count=count)
 
         # Alter return dict with any callbacks.
         for callback in self.callbacks['after_collection_get']:
@@ -958,7 +960,7 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         try:
             data = self.request.json_body['data']
         except KeyError:
@@ -985,7 +987,7 @@ class CollectionViewBase:
             atts['id'] = data['id']
         item = self.model(**atts)
         mapper = sqlalchemy.inspect(self.model).mapper
-        with DBSession.no_autoflush:
+        with db_session.no_autoflush:
             for relname, reldict in data.get('relationships', {}).items():
                 try:
                     reldata = reldict['data']
@@ -1024,7 +1026,7 @@ class CollectionViewBase:
                             raise HTTPBadRequest(
                                 'Relationship identifier must have an id member'
                             )
-                        rel_items.append(DBSession.query(rel_class).get(rid_id))
+                        rel_items.append(db_session.query(rel_class).get(rid_id))
                     setattr(item, relname, rel_items)
                 else:
                     try:
@@ -1036,13 +1038,13 @@ class CollectionViewBase:
                     setattr(
                         item,
                         relname,
-                        DBSession.query(rel_class).get(related_id)
+                        db_session.query(rel_class).get(related_id)
                     )
         try:
-            DBSession.add(item)
-            DBSession.flush()
-        except sqlalchemy.exc.IntegrityError as e:
-            raise HTTPConflict(e.args[0])
+            db_session.add(item)
+            db_session.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPConflict(exc.args[0])
         self.request.response.status_code = 201
         self.request.response.headers['Location'] = self.request.route_url(
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
@@ -1130,25 +1132,25 @@ class CollectionViewBase:
             ))
 
         # Set up the query
-        q = self.related_query(obj_id, rel)
+        query = self.related_query(obj_id, rel)
 
         if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-            q = rel_view.query_add_sorting(q)
-            q = rel_view.query_add_filtering(q)
+            query = rel_view.query_add_sorting(query)
+            query = rel_view.query_add_filtering(query)
             qinfo = rel_view.collection_query_info(self.request)
             try:
-                count = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
+                count = query.count()
+            except sqlalchemy.exc.ProgrammingError:
                 raise HTTPBadRequest(
                     "Could not use operator '{}' with field '{}'".format(
                         op, prop.name
                     )
                 )
-            q = q.offset(qinfo['page[offset]'])
-            q = q.limit(qinfo['page[limit]'])
-            ret = rel_view.collection_return(q, count=count)
+            query = query.offset(qinfo['page[offset]'])
+            query = query.limit(qinfo['page[limit]'])
+            ret = rel_view.collection_return(query, count=count)
         else:
-            ret = rel_view.single_return(q)
+            ret = rel_view.single_return(query)
 
         # Alter return dict with any callbacks.
         for callback in self.callbacks['after_related_get']:
@@ -1231,29 +1233,29 @@ class CollectionViewBase:
             ))
 
         # Set up the query
-        q = self.related_query(obj_id, rel, full_object=False)
+        query = self.related_query(obj_id, rel, full_object=False)
 
         if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-            q = rel_view.query_add_sorting(q)
-            q = rel_view.query_add_filtering(q)
+            query = rel_view.query_add_sorting(query)
+            query = rel_view.query_add_filtering(query)
             qinfo = rel_view.collection_query_info(self.request)
             try:
-                count = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
+                count = query.count()
+            except sqlalchemy.exc.ProgrammingError:
                 raise HTTPBadRequest(
                     "Could not use operator '{}' with field '{}'".format(
                         op, prop.name
                     )
                 )
-            q = q.offset(qinfo['page[offset]'])
-            q = q.limit(qinfo['page[limit]'])
+            query = query.offset(qinfo['page[offset]'])
+            query = query.limit(qinfo['page[limit]'])
             ret = rel_view.collection_return(
-                q,
+                query,
                 count=count,
                 identifiers=True
             )
         else:
-            ret = rel_view.single_return(q, identifier=True)
+            ret = rel_view.single_return(query, identifier=True)
 
         # Alter return dict with any callbacks.
         for callback in self.callbacks['after_relationships_get']:
@@ -1315,7 +1317,7 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1336,22 +1338,21 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = DBSession.query(self.model).get(obj_id)
+        obj = db_session.query(self.model).get(obj_id)
         items = []
         for resid in data:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
-                    "Resource identifier type '{}' " +
-                    "does not match relationship type '{}'.".format(
+                    "Resource identifier type '{}' does not match relationship type '{}'.".format(
                         resid['type'], rel_view.collection_name
                     )
                 )
-            items.append(DBSession.query(rel_class).get(resid['id']))
+            items.append(db_session.query(rel_class).get(resid['id']))
         getattr(obj, relname).extend(items)
         try:
-            DBSession.flush()
-        except sqlalchemy.exc.IntegrityError as e:
-            raise HTTPFailedDependency(str(e))
+            db_session.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPFailedDependency(str(exc))
         return {}
 
     @jsonapi_view
@@ -1418,7 +1419,7 @@ class CollectionViewBase:
                     { "type": "comments", "id": "2" }
                 ]' Content-Type:application/vnd.api+json
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1437,7 +1438,7 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = DBSession.query(self.model).get(obj_id)
+        obj = db_session.query(self.model).get(obj_id)
         if rel.direction is MANYTOONE:
             resid = data
             if resid is None:
@@ -1445,8 +1446,7 @@ class CollectionViewBase:
             else:
                 if resid['type'] != rel_view.collection_name:
                     raise HTTPConflict(
-                        "Resource identifier type '{}' " +
-                        "does not match relationship type '{}'.".format(
+                        "Resource identifier type '{}' does not match relationship type '{}'.".format(
                             resid['type'],
                             rel_view.collection_name
                         )
@@ -1454,25 +1454,24 @@ class CollectionViewBase:
                 setattr(
                     obj,
                     relname,
-                    DBSession.query(rel_class).get(resid['id'])
+                    db_session.query(rel_class).get(resid['id'])
                 )
             return {}
         items = []
         for resid in self.request.json_body['data']:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
-                    "Resource identifier type '{}' " +
-                    "does not match relationship type '{}'.".format(
+                    "Resource identifier type '{}' does not match relationship type '{}'.".format(
                         resid['type'],
                         rel_view.collection_name
                     )
                 )
-            items.append(DBSession.query(rel_class).get(resid['id']))
+            items.append(db_session.query(rel_class).get(resid['id']))
         setattr(obj, relname, items)
         try:
-            DBSession.flush()
-        except sqlalchemy.exc.IntegrityError as e:
-            raise HTTPFailedDependency(str(e))
+            db_session.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPFailedDependency(str(exc))
         return {}
 
     @jsonapi_view
@@ -1530,7 +1529,7 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1545,7 +1544,7 @@ class CollectionViewBase:
             raise HTTPNotFound('Cannot DELETE to TOONE relationship link.')
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = DBSession.query(self.model).get(obj_id)
+        obj = db_session.query(self.model).get(obj_id)
 
         # Call callbacks
         for callback in self.callbacks['before_relationships_delete']:
@@ -1554,24 +1553,23 @@ class CollectionViewBase:
         for resid in self.request.json_body['data']:
             if resid['type'] != rel_view.collection_name:
                 raise HTTPConflict(
-                    "Resource identifier type '{}' " +
-                    "does not match relationship type '{}'.".format(
+                    "Resource identifier type '{}' does not match relationship type '{}'.".format(
                         resid['type'], rel_view.collection_name
                     )
                 )
             try:
                 getattr(obj, relname).\
-                    remove(DBSession.query(rel_class).get(resid['id']))
-            except ValueError as e:
-                if e.args[0].endswith(': x not in list'):
+                    remove(db_session.query(rel_class).get(resid['id']))
+            except ValueError as exc:
+                if exc.args[0].endswith(': x not in list'):
                     # The item we were asked to remove is not there.
                     pass
                 else:
                     raise
         try:
-            DBSession.flush()
-        except sqlalchemy.exc.IntegrityError as e:
-            raise HTTPFailedDependency(str(e))
+            db_session.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPFailedDependency(str(exc))
         return {}
 
     @property
@@ -1586,21 +1584,20 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch item with id
             'id'.
         '''
-        DBSession = self.get_dbsession()
-        q = DBSession.query(
+        db_session = self.get_dbsession()
+        return db_session.query(
             self.model
         ).options(
             load_only(*self.allowed_requested_query_columns.keys())
         ).filter(
             self.model._jsonapi_id == self.request.matchdict['id']
         )
-        return q
 
-    def single_return(self, q, not_found_message=None, identifier=False):
+    def single_return(self, query, not_found_message=None, identifier=False):
         '''Populate return dictionary for a single item.
 
         Arguments:
-            q (sqlalchemy.orm.query.Query): query designed to return one item.
+            query (sqlalchemy.orm.query.Query): query designed to return one item.
 
         Keyword Arguments:
             not_found_message (str or None): if an item is not found either:
@@ -1635,7 +1632,7 @@ class CollectionViewBase:
         included = {}
         ret = {}
         try:
-            item = q.one()
+            item = query.one()
         except NoResultFound:
             if not_found_message:
                 raise HTTPNotFound(not_found_message)
@@ -1649,11 +1646,11 @@ class CollectionViewBase:
                 ret['included'] = [obj for obj in included.values()]
         return ret
 
-    def collection_return(self, q, count=None, identifiers=False):
+    def collection_return(self, query, count=None, identifiers=False):
         '''Populate return dictionary for collections.
 
         Arguments:
-            q (sqlalchemy.orm.query.Query): query designed to return multiple
+            query (sqlalchemy.orm.query.Query): query designed to return multiple
             items.
 
         Keyword Arguments:
@@ -1691,8 +1688,8 @@ class CollectionViewBase:
 
         if count is None:
             try:
-                count = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
+                count = query.count()
+            except sqlalchemy.exc.ProgrammingError:
                 raise HTTPBadRequest(
                     "Could not use operator '{}' with field '{}'".format(
                         op, prop.name
@@ -1711,13 +1708,13 @@ class CollectionViewBase:
         if identifiers:
             ret['data'] = [
                 self.serialise_resource_identifier(dbitem._jsonapi_id)
-                for dbitem in q.all()
+                for dbitem in query.all()
             ]
         else:
             included = {}
             ret['data'] = [
                 self.serialise_db_item(dbitem, included)
-                for dbitem in q.all()
+                for dbitem in query.all()
             ]
             # Included objects
             if self.requested_include_names():
@@ -1726,7 +1723,7 @@ class CollectionViewBase:
         ret['meta']['results']['returned'] = len(ret['data'])
         return ret
 
-    def query_add_sorting(self, q):
+    def query_add_sorting(self, query):
         '''Add sorting to query.
 
         Use information from the ``sort`` query parameter (via
@@ -1740,7 +1737,7 @@ class CollectionViewBase:
             **sort:** comma separated list of sort keys.
 
         Parameters:
-            q (sqlalchemy.orm.query.Query): query
+            query (sqlalchemy.orm.query.Query): query
 
         Returns:
             sqlalchemy.orm.query.Query: query with ``order_by`` clause.
@@ -1765,7 +1762,7 @@ class CollectionViewBase:
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
-                q = q.join(order_att)
+                query = query.join(order_att)
                 rel = order_att.property
                 try:
                     sub_key = sort_keys[1]
@@ -1776,13 +1773,13 @@ class CollectionViewBase:
                     ).key_column.name
                 order_att = getattr(rel.mapper.entity, sub_key)
             if key_info['ascending']:
-                q = q.order_by(order_att)
+                query = query.order_by(order_att)
             else:
-                q = q.order_by(order_att.desc())
+                query = query.order_by(order_att.desc())
 
-        return q
+        return query
 
-    def query_add_filtering(self, q):
+    def query_add_filtering(self, query):
         '''Add filtering clauses to query.
 
         Use information from the ``filter`` query parameter (via
@@ -1812,7 +1809,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Parameters:
-            q (sqlalchemy.orm.query.Query): query
+            query (sqlalchemy.orm.query.Query): query
 
         Returns:
             sqlalchemy.orm.query.Query: filtered query.
@@ -1836,25 +1833,25 @@ class CollectionViewBase:
         '''
         qinfo = self.collection_query_info(self.request)
         # Filters
-        for p, finfo in qinfo['_filters'].items():
+        for finfo in qinfo['_filters'].values():
             val = finfo['value']
             colspec = finfo['colspec']
-            op = finfo['op']
+            operator = finfo['op']
             prop = getattr(self.model, colspec[0])
             if isinstance(prop.property, RelationshipProperty):
                 # TODO(Colin): deal with relationships properly.
                 pass
             try:
-                filter = self.filter_registry.get_filter(type(prop.type), op)
+                filtr = self.filter_registry.get_filter(type(prop.type), operator)
             except KeyError:
                 raise HTTPBadRequest(
                     "No such filter operator: '{}'".format(op)
                 )
-            val = filter['value_transform'](val)
-            comparator = getattr(prop, filter['comparator_name'])
-            q = q.filter(comparator(val))
+            val = filtr['value_transform'](val)
+            comparator = getattr(prop, filtr['comparator_name'])
+            query = query.filter(comparator(val))
 
-        return q
+        return query
 
     def related_limit(self, relationship):
         '''Paging limit for related resources.
@@ -1899,28 +1896,28 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         '''
-        DBSession = self.get_dbsession()
+        db_session = self.get_dbsession()
         rel = relationship
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         local_col, rem_col = rel.local_remote_pairs[0]
-        q = DBSession.query(rel_class)
+        query = db_session.query(rel_class)
         if full_object:
-            q = q.options(
+            query = query.options(
                 load_only(*rel_view.allowed_requested_query_columns.keys())
             )
         else:
-            q = q.options(load_only(rel_view.key_column.name))
+            query = query.options(load_only(rel_view.key_column.name))
         if rel.direction is ONETOMANY:
-            q = q.filter(obj_id == rem_col)
+            query = query.filter(obj_id == rem_col)
         elif rel.direction is MANYTOMANY:
-            q = q.filter(
+            query = query.filter(
                 obj_id == rel.primaryjoin.right
             ).filter(
                 rel_class._jsonapi_id == rel.secondaryjoin.right
             )
         elif rel.direction is MANYTOONE:
-            q = q.filter(
+            query = query.filter(
                 local_col == rel_class._jsonapi_id
             ).filter(
                 self.model._jsonapi_id == obj_id
@@ -1930,7 +1927,7 @@ class CollectionViewBase:
                 rel.direction.name
             ))
 
-        return q
+        return query
 
     def object_exists(self, obj_id):
         '''Test if object with id obj_id exists.
@@ -1941,8 +1938,8 @@ class CollectionViewBase:
         Returns:
             bool: True if object exists, False if not.
         '''
-        DBSession = self.get_dbsession()
-        item = DBSession.query(
+        db_session = self.get_dbsession()
+        item = db_session.query(
             self.model
         ).options(
             load_only(self.key_column.name)
@@ -1983,8 +1980,8 @@ class CollectionViewBase:
         return ret
 
     def serialise_db_item(
-        self, item,
-        included, include_path=None,
+            self, item,
+            included, include_path=None,
     ):
         '''Serialise an individual database item to JSON-API.
 
@@ -2000,7 +1997,6 @@ class CollectionViewBase:
         Returns:
             dict: resource object dictionary.
         '''
-        DBSession = self.get_dbsession()
         if include_path is None:
             include_path = []
         model = self.model
@@ -2046,17 +2042,16 @@ class CollectionViewBase:
             is_included = False
             if rel_path_str in self.requested_include_names():
                 is_included = True
-            q = self.related_query(
+            query = self.related_query(
                 item._jsonapi_id, rel, full_object=is_included
             )
             if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-                qinfo = self.collection_query_info(self.request)
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
-                rel_dict['meta']['results']['available'] = q.count()
-                q = q.limit(limit)
+                rel_dict['meta']['results']['available'] = query.count()
+                query = query.limit(limit)
                 rel_dict['data'] = []
-                for ritem in q.all():
+                for ritem in query.all():
                     rel_dict['data'].append(
                         rel_view.serialise_resource_identifier(
                             ritem._jsonapi_id
@@ -2075,7 +2070,7 @@ class CollectionViewBase:
                 if is_included:
                     ritem = None
                     try:
-                        ritem = q.one()
+                        ritem = query.one()
                     except sqlalchemy.orm.exc.NoResultFound:
                         rel_dict['data'] = None
                     if ritem:
@@ -2191,11 +2186,11 @@ class CollectionViewBase:
         # Find all parametrised parameters ( :) )
         info['_filters'] = {}
         info['_page'] = {}
-        for p in request.params.keys():
-            match = re.match(r'(.*?)\[(.*?)\]', p)
+        for param in request.params.keys():
+            match = re.match(r'(.*?)\[(.*?)\]', param)
             if not match:
                 continue
-            val = request.params.get(p)
+            val = request.params.get(param)
 
             # Filtering.
             # Use 'filter[<condition>]' param.
@@ -2214,11 +2209,11 @@ class CollectionViewBase:
             #
             # Find all the filters.
             if match.group(1) == 'filter':
-                colspec, op = match.group(2).split(':')
+                colspec, operator = match.group(2).split(':')
                 colspec = colspec.split('.')
-                info['_filters'][p] = {
+                info['_filters'][param] = {
                     'colspec': colspec,
-                    'op': op,
+                    'op': operator,
                     'value': val
                 }
 
@@ -2243,8 +2238,8 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(req)
         _query = {'page[{}]'.format(k): v for k, v in qinfo['_page'].items()}
         _query['sort'] = qinfo['sort']
-        for f in sorted(qinfo['_filters']):
-            _query[f] = qinfo['_filters'][f]['value']
+        for filtr in sorted(qinfo['_filters']):
+            _query[filtr] = qinfo['_filters'][filtr]['value']
 
         # First link.
         _query['page[offset]'] = 0
@@ -2290,7 +2285,7 @@ class CollectionViewBase:
         '''
         return set(self.fields)
 
-    def allowed_object(self, obj):
+    def allowed_object(self, obj):  # pylint:disable=no-self-use,unused-argument
         '''Whether or not current action is allowed on object.
 
         Returns:
@@ -2403,7 +2398,7 @@ class CollectionViewBase:
         return ret
 
     @property
-    def allowed_requested_relationships_local_columns(self):
+    def allowed_requested_relationships_local_columns(self):  # pylint:disable=invalid-name
         '''Finds all the local columns for allowed MANYTOONE relationships.
 
         Returns:
@@ -2526,11 +2521,11 @@ class FilterRegistry:
         self.data = {}
 
     def register(
-        self,
-        comparator_name,
-        filter_name=None,
-        value_transform=lambda val: val,
-        column_type='__ALL__'
+            self,
+            comparator_name,
+            filter_name=None,
+            value_transform=lambda val: val,
+            column_type='__ALL__'
     ):
         ''' Register a new filter operator.
 
@@ -2584,8 +2579,8 @@ class FilterRegistry:
         else:
             column_types = set(column_types)
             column_types.add('__ALL__')
-        for ct in column_types:
-            ops |= self.data[ct].keys()
+        for ctype in column_types:
+            ops |= self.data[ctype].keys()
         return ops
 
 
@@ -2650,7 +2645,7 @@ def acso_after_serialise_object(view, obj):
         }
 
 
-def acso_after_get(view, ret):
+def acso_after_get(view, ret):  #pylint:disable=unused-argument
     '''Standard callback throwing 403 (Forbidden) based on information in meta.
 
     Args:
@@ -2721,10 +2716,10 @@ class DebugView:
 
 
 def create_jsonapi(
-    config, models,
-    get_dbsession,
-    engine=None,
-    test_data=None
+        config, models,
+        get_dbsession,
+        engine=None,
+        test_data=None
 ):
     '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
@@ -2749,4 +2744,4 @@ def create_jsonapi(
     pyramid_jsonapi.create_jsonapi()
 
 
-create_jsonapi_using_magic_and_pixie_dust = create_jsonapi
+create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
