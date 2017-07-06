@@ -1971,10 +1971,7 @@ class CollectionViewBase:
         ).options(
             load_only(self.key_column.name)
         ).get(obj_id)
-        if item:
-            return True
-        else:
-            return False
+        return bool(item)
 
     def column_info_from_name(self, name, model=None):
         '''Get the pyramid_jsonapi info dictionary for a column.
