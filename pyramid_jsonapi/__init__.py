@@ -810,9 +810,9 @@ class CollectionViewBase:
                 http DELETE http://localhost:6543/people/1
         '''
 
-        db_Session = self.get_dbsession()
+        db_session = self.get_dbsession()
         try:
-            item = db_ession.query(
+            item = db_session.query(
                 self.model
             ).options(
                 load_only(self.key_column.name)
