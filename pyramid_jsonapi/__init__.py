@@ -394,7 +394,7 @@ class PyramidJSONAPI():
                 fields[key] = col
         CollectionView.attributes = atts
         for item in sqlalchemy.inspect(model).all_orm_descriptors:
-            if type(item) == hybrid_property:
+            if isinstance(item, hybrid_property):
                 if expose_fields is None or item.__name__ in expose_fields:
                     hybrid_atts[item.__name__] = item
                     fields[item.__name__] = item
