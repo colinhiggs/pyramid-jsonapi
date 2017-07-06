@@ -55,6 +55,12 @@ MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 
 class EndpointData():
+    '''Class to hold endpoint data and utility methods.
+
+    Arguments:
+        config: A pyramid Configurator object.
+
+    '''
 
     def __init__(self, config):
         self.config = config
@@ -121,12 +127,34 @@ class EndpointData():
         }
 
     def make_route_name(self, name, suffix=''):
+        '''Attach prefix and suffix to name to generate a route_name.
+
+        Arguments:
+            name: A pyramid route name.
+
+        Keyword Arguments:
+            suffix: An (optional) suffix to append to the route name.
+        '''
         return self.route_name_sep.join((self.route_name_prefix, name, suffix)).rstrip(self.route_name_sep)
 
     def make_route_pattern(self, name, suffix=''):
+        '''Attach prefix and suffix to name to generate a route_name.
+
+        Arguments:
+            name: A pyramid route name.
+
+        Keyword Arguments:
+            suffix: An (optional) suffix to append to the route name.
+        '''
         return self.route_pattern_sep.join((self.route_pattern_prefix, name, suffix)).rstrip(self.route_pattern_sep)
 
     def add_routes_views(self, view):
+        '''Generate routes and views from the endpoints data object.
+
+        Arguments:
+            view: A view_class to associate routes and views with.
+        '''
+
         for endpoint, endpoint_opts in self.endpoints.items():
             route_name = self.make_route_name(view.collection_name, suffix=endpoint)
             route_pattern = self.make_route_pattern(view.collection_name,
