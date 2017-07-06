@@ -2,6 +2,9 @@
 pyramid-jsonapi Documentation
 *********************************
 
+Create a JSON-API (`<http://jsonapi.org/>`_) standard API from a database using
+the sqlAlchemy ORM and pyramid framework.
+
 .. note:: Now approaching version 1.0.0. There have been some significant
   changes since 0.4.3:
 
@@ -14,9 +17,6 @@ pyramid-jsonapi Documentation
 
   * There is now a way to add new search/filter operators (using an instance of
     :py:class:`FilterRegistry` associated with the API instance).
-
-Create a JSON-API (`<http://jsonapi.org/>`_) standard API from a database using
-the sqlAlchemy ORM and pyramid framework.
 
 The core idea behind pyramid-jsonapi is to create a working JSON-API
 automatically, starting from the sort of ``models.py`` file shipped with a
