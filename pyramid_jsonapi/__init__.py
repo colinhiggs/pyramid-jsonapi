@@ -2023,10 +2023,6 @@ class CollectionViewBase:
         '''
         if include_path is None:
             include_path = []
-        model = self.model
-        # Required for some introspection.
-        mapper = sqlalchemy.inspect(model).mapper
-        ispector = self.request.registry.introspector
 
         # Item's id and type are required at the top level of json-api
         # objects.
