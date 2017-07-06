@@ -2666,7 +2666,7 @@ def acso_after_serialise_object(view, obj):
         }
 
 
-def acso_after_get(view, ret):  #pylint:disable=unused-argument
+def acso_after_get(view, ret):  # pylint:disable=unused-argument
     '''Standard callback throwing 403 (Forbidden) based on information in meta.
 
     Args:
