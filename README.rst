@@ -100,7 +100,7 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     config.add_renderer('json', renderer)
 
     # Instantiate a PyramidJSONAPI class instance
-    # The third argument above should be a callable which accepts a
+    # The third argument should be a callable which accepts a
     # CollectionView instance as an argument and returns a database session.
     # Notably the request is available as view.request, so if you're doing
     # something like this post
