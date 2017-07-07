@@ -1861,7 +1861,14 @@ class CollectionViewBase:
             val = finfo['value']
             colspec = finfo['colspec']
             operator = finfo['op']
-            prop = getattr(self.model, colspec[0])
+            try:
+                prop = getattr(self.model, colspec[0])
+            except AttributeError:
+                raise HTTPBadRequest(
+                    "Collection '{}' has no attribute '{}'".format(
+                        self.collection_name, '.'.join(colspec)
+                    )
+                )
             if isinstance(prop.property, RelationshipProperty):
                 # TODO(Colin): deal with relationships properly.
                 pass
@@ -1876,7 +1883,7 @@ class CollectionViewBase:
                 comparator = getattr(prop, filtr['comparator_name'])
             except AttributeError:
                 raise HTTPInternalServerError(
-                    "Operator '{}' is registered but has no implementation on column '{}'.".format(
+                    "Operator '{}' is registered but has no implementation on attribute '{}'.".format(
                         operator, '.'.join(colspec)
                     )
                 )
