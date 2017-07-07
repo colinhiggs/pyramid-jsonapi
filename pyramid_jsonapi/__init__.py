@@ -1873,7 +1873,7 @@ class CollectionViewBase:
                 filtr = self.filter_registry.get_filter(type(prop.type), operator)
             except KeyError:
                 raise HTTPBadRequest(
-                    "No such filter operator: '{}'".format(op)
+                    "No such filter operator: '{}'".format(operator)
                 )
             val = filtr['value_transform'](val)
             comparator = getattr(prop, filtr['comparator_name'])
