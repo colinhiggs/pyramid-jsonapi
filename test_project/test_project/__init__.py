@@ -74,8 +74,11 @@ def main(global_config, **settings):
     config.add_renderer('json', renderer)
 
     # Lines specific to pyramid_jsonapi.
-    # Create the routes and views automagically.
+    # Create an API instance.
     pj = pyramid_jsonapi.PyramidJSONAPI(config, models, lambda view: models.DBSession)
+    # Register a bad filter operator for test purposes.
+    pj.filter_registry.register('bad_op')
+    # Create the routes and views automagically.
     pj.create_jsonapi_using_magic_and_pixie_dust()
 
     person_view = pj.view_classes[
