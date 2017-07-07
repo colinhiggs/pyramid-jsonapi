@@ -30,6 +30,7 @@ deploy:
   - provider: pypi
     user: "colinhiggs"
     on:
+      all-branches: true
       tags: true
     password:
       secure: M8J770TyWCM2vsAL2v2XR7R75C7nuFF+y8jW4MpcWVb93/03Ycc/n6zMzJU4gzog0qeUqJq0Gmpu8fjZ11FXiIMufVgulDEG7hUR63OFa9eRNXKznmCDVxWuGesAySyPOFfIOKeEPfF89CgpOhlFEfmvDuJcaiUppLckQr/tm/ijUt+jCzReVpcEV51JwRlPkVl506/qZCN44fktHI35IW4jRYKFWl2ztf/lq75axvwR8wjuVDKXEVvkTzBBV3fE1v+Fax20ZGOLtNtDmCyQzand1DW5lNESQYep6Xz1IBPEtiJiCG8wsT2DQmJaSrCNVGI59W+EP0KF78qN8FsZDnCbdY0+Ku69cTiKte32L3UNMezGr0bOs/anV+CTl24moQsRFGLxxBof9N5ao43DfjYJLqAzS7rtGBxbwkBtgXksSaa07nLLh6ZR4tYJ+ueX+8rtFEfNgMZhWnA3By0cfYshpLnb7QTRiHyFj1Kzwtql48jUnz43UnyFdxtHITAOXAZPCYWjxc6RvlKvnEKPrIW7PvJ2PLx5im3r8T2goy9RJwdjPvkm45o54sbiMQZC9Bm9fk587tx1t+WdscM+hTgHXw0zzLPMS04njPT5wF8sJcrvNa90bGmgxe42CVnalXZOL+cokiUWj6p9nVkJx3A1KhmKdhKXGVRgYBrwTR4=
