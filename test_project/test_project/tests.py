@@ -2326,10 +2326,10 @@ class TestMalformed(DBTestBase):
             status=400
         )
 
-    def test_malformed_filter_invalid_operator(self):
+    def test_malformed_filter_unregistered_operator(self):
         '''Unkown filter operator should raise 400 BadRequest.'''
         self.test_app.get(
-            '/people?filter[name:bogus_op]=splat',
+            '/people?filter[name:not_an_op]=splat',
             status=400
         )
 
