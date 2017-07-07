@@ -912,7 +912,7 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
         try:
             count = query.count()
-        except sqlalchemy.exc.ProgrammingError as exc:
+        except sqlalchemy.exc.ProgrammingError:
             raise HTTPInternalServerError(
                 'An error occurred querying the database. Server logs may have details.'
             )
