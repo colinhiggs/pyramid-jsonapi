@@ -2334,7 +2334,7 @@ class TestMalformed(DBTestBase):
         )
 
     def test_malformed_filter_bad_operator(self):
-        '''Unkown filter operator should raise 500 InternalServerError.'''
+        '''Known filter with no comparator should raise 500 InternalServerError.'''
         self.test_app.get(
             '/people?filter[name:bad_op]=splat',
             status=500
