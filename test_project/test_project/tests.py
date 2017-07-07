@@ -2326,6 +2326,13 @@ class TestMalformed(DBTestBase):
             status=400
         )
 
+    def test_malformed_filter_invalid_operator(self):
+        '''Unkown filter operator should raise 400 BadRequest.'''
+        self.test_app.get(
+            '/people?filter[name:bogus_op]=splat',
+            status=400
+        )
+
 
 class TestHybrid(DBTestBase):
     '''Test cases for @hybrid_property attributes.'''
