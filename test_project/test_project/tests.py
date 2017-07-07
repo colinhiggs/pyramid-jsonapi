@@ -2340,6 +2340,13 @@ class TestMalformed(DBTestBase):
             status=500
         )
 
+    def test_malformed_filter_unknown_column(self):
+        '''Unkown column should raise 400 BadRequest.'''
+        self.test_app.get(
+            '/people?filter[unknown_column:eq]=splat',
+            status=400
+        )
+
 
 class TestHybrid(DBTestBase):
     '''Test cases for @hybrid_property attributes.'''
