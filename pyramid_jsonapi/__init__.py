@@ -494,7 +494,7 @@ class CollectionViewBase:
                                          'schema/jsonapi-schema.json').decode('utf-8'))
 
                 # Validate request JSON against the JSONAPI jsonschema
-                if self.request.content_length and self.request.method is not 'PATCH':
+                if self.request.content_length and self.request.method != 'PATCH':
                     modified_schema = copy.deepcopy(schema)
                     # POST uses full schema, may omit 'id'
                     modified_schema['definitions']['resource']['required'].remove('id')
