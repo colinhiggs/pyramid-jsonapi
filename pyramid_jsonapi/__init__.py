@@ -913,7 +913,9 @@ class CollectionViewBase:
         try:
             count = query.count()
         except sqlalchemy.exc.ProgrammingError as exc:
-            raise HTTPInternalServerError(exc)
+            raise HTTPInternalServerError(
+                'An error occurred querying the database. Server logs may have details.'
+            )
         query = query.offset(qinfo['page[offset]'])
         query = query.limit(qinfo['page[limit]'])
 
@@ -1165,10 +1167,8 @@ class CollectionViewBase:
             try:
                 count = query.count()
             except sqlalchemy.exc.ProgrammingError:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
+                raise HTTPInternalServerError(
+                    'An error occurred querying the database. Server logs may have details.'
                 )
             query = query.offset(qinfo['page[offset]'])
             query = query.limit(qinfo['page[limit]'])
@@ -1266,10 +1266,8 @@ class CollectionViewBase:
             try:
                 count = query.count()
             except sqlalchemy.exc.ProgrammingError:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
+                raise HTTPInternalServerError(
+                    'An error occurred querying the database. Server logs may have details.'
                 )
             query = query.offset(qinfo['page[offset]'])
             query = query.limit(qinfo['page[limit]'])
@@ -1714,10 +1712,8 @@ class CollectionViewBase:
             try:
                 count = query.count()
             except sqlalchemy.exc.ProgrammingError:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
+                raise HTTPInternalServerError(
+                    'An error occurred querying the database. Server logs may have details.'
                 )
         ret['meta']['results']['available'] = count
 
