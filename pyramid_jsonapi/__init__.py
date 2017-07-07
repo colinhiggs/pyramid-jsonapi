@@ -351,7 +351,7 @@ class PyramidJSONAPI():
         self.endpoint_data.add_routes_views(view)
 
     def collection_view_factory(self, model, collection_name=None, expose_fields=None):
-        ''''Build a class to handle requests for model.
+        '''Build a class to handle requests for model.
 
         Arguments:
             model: a model class derived from DeclarativeMeta.
@@ -387,7 +387,7 @@ class PyramidJSONAPI():
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
             if key == CollectionView.key_column.name:  # pylint:disable=no-member
                 continue
-            if len(col.foreign_keys) > 0:
+            if col.foreign_keys:
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
