@@ -912,12 +912,8 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
         try:
             count = query.count()
-        except sqlalchemy.exc.ProgrammingError:
-            raise HTTPBadRequest(
-                "Could not use operator '{}' with field '{}'".format(
-                    op, prop.name
-                )
-            )
+        except sqlalchemy.exc.ProgrammingError as exc:
+            raise HTTPInternalServerError(exc)
         query = query.offset(qinfo['page[offset]'])
         query = query.limit(qinfo['page[limit]'])
 
@@ -1876,7 +1872,14 @@ class CollectionViewBase:
                     "No such filter operator: '{}'".format(operator)
                 )
             val = filtr['value_transform'](val)
-            comparator = getattr(prop, filtr['comparator_name'])
+            try:
+                comparator = getattr(prop, filtr['comparator_name'])
+            except AttributeError:
+                raise HTTPInternalServerError(
+                    "Operator '{}' is registered but has no implementation on column '{}'.".format(
+                        operator, '.'.join(colspec)
+                    )
+                )
             query = query.filter(comparator(val))
 
         return query
