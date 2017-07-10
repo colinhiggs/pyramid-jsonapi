@@ -354,21 +354,16 @@ class PyramidJSONAPI():
             expose_fields: set of field names to expose.
         '''
 
-        CollectionView = type(  # pylint:disable=invalid-name
-            'CollectionView<{}>'.format(collection_name),
-            (CollectionViewBase, ),
-            {}
-        )
+        class_attrs = {}
+        class_attrs['config'] = self.config
+        class_attrs['model'] = model
+        class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
+        class_attrs['collection_name'] = collection_name or model.__tablename__
+        class_attrs['get_dbsession'] = self.get_dbsession
+        class_attrs['endpoint_data'] = self.endpoint_data
+        class_attrs['view_classes'] = self.view_classes
 
-        CollectionView.config = self.config
-        CollectionView.model = model
-        CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
-        CollectionView.collection_name = collection_name or model.__tablename__
-        CollectionView.get_dbsession = self.get_dbsession
-        CollectionView.endpoint_data = self.endpoint_data
-        CollectionView.view_classes = self.view_classes
-
-        CollectionView.exposed_fields = expose_fields
+        class_attrs['exposed_fields'] = expose_fields
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
         # fields is atts + hybrid_atts + relationships
@@ -376,30 +371,30 @@ class PyramidJSONAPI():
         hybrid_atts = {}
         fields = {}
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-            if key == CollectionView.key_column.name or col.foreign_keys:  # pylint:disable=no-member
+            if key == class_attrs['key_column'].name or col.foreign_keys:
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
                 fields[key] = col
-        CollectionView.attributes = atts
+        class_attrs['attributes'] = atts
         for item in sqlalchemy.inspect(model).all_orm_descriptors:
             if isinstance(item, hybrid_property):
                 if expose_fields is None or item.__name__ in expose_fields:
                     hybrid_atts[item.__name__] = item
                     fields[item.__name__] = item
-        CollectionView.hybrid_attributes = hybrid_atts
+        class_attrs['hybrid_attributes'] = hybrid_atts
         rels = {}
         for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
             if expose_fields is None or key in expose_fields:
                 rels[key] = rel
-        CollectionView.relationships = rels
+        class_attrs['relationships'] = rels
         fields.update(rels)
-        CollectionView.fields = fields
-        CollectionView.filter_registry = self.filter_registry
+        class_attrs['fields'] = fields
+        class_attrs['filter_registry'] = self.filter_registry
 
         # All callbacks have the current view as the first argument. The comments
         # below detail subsequent args.
-        CollectionView.callbacks = {
+        class_attrs['callbacks'] = {
             'after_serialise_identifier': deque(),  # args: identifier(dict)
             'after_serialise_object': deque(),      # args: object(dict)
             'after_get': deque(),                   # args: document(dict)
@@ -415,7 +410,11 @@ class PyramidJSONAPI():
                 deque(),                            # args: parent_item(sqlalchemy)
         }
 
-        return CollectionView
+        return type(
+            'CollectionView<{}>'.format(collection_name),
+            (CollectionViewBase, ),
+            class_attrs
+        )
 
     def append_callback_set_to_all_views(self, set_name):  # pylint:disable=invalid-name
         '''Append a named set of callbacks to all view classes.
@@ -433,6 +432,27 @@ class CollectionViewBase:
     Arguments:
         request (pyramid.request): passed by framework.
     '''
+
+    # Define class attributes
+    # Callable attributes use lambda to keep pylint happy
+    attributes = None
+    callbacks = None
+    config = None
+    collection_name = None
+    default_limit = None
+    endpoint_data = None
+    exposed_fields = None
+    fields = None
+    filter_registry = None
+    get_dbsession = lambda: None
+    hybrid_attributes = None
+    key_column = None
+    max_limit = None
+    model = lambda: None
+    request = None
+    relationships = None
+    view_classes = None
+
     def __init__(self, request):
         self.request = request
         self.views = {}
@@ -2516,8 +2536,98 @@ class CollectionViewBase:
         Args:
             set_name (str): key in ``callback_sets``.
         '''
-        for cb_name, callback in callback_sets[set_name].items():
+        for cb_name, callback in cls.callback_sets[set_name].items():
             cls.callbacks[cb_name].append(callback)
+
+    def acso_after_serialise_object(view, obj):  # pylint:disable=no-self-argument
+        '''Standard callback altering object to take account of permissions.
+
+        Args:
+            obj (dict): the object immediately after serialisation.
+
+        Returns:
+            dict: the object, possibly with some fields removed, or meta
+            information indicating permission was denied to the whole object.
+        '''
+        if view.allowed_object(obj):
+            # Remove any forbidden fields that have been added by other
+            # callbacks. Those from the model won't have been added in the first
+            # place.
+
+            # Keep track so we can tell the caller which ones were forbidden.
+            forbidden = set()
+            if 'attributes' in obj:
+                atts = {}
+                for name, val in obj['attributes'].items():
+                    if name in view.allowed_fields:
+                        atts[name] = val
+                    else:
+                        forbidden.add(name)
+                obj['attributes'] = atts
+            if 'relationships' in obj:
+                rels = {}
+                for name, val in obj['relationships'].items():
+                    if name in view.allowed_fields:
+                        rels[name] = val
+                    else:
+                        forbidden.add(name)
+                obj['relationships'] = rels
+            # Now add all the forbidden fields from the model to the forbidden
+            # list. They don't need to be removed from the serialised object
+            # because they should not have been added in the first place.
+            for field in view.requested_field_names:
+                if field not in view.allowed_fields:
+                    forbidden.add(field)
+            if 'meta' not in obj:
+                obj['meta'] = {}
+            obj['meta']['forbidden_fields'] = list(forbidden)
+            return obj
+        else:
+            return {
+                'type': obj['type'],
+                'id': obj['id'],
+                'meta': {
+                    'errors': [
+                        {
+                            'code': 403,
+                            'title': 'Forbidden',
+                            'detail': 'No permission to view {}/{}.'.format(
+                                obj['type'], obj['id']
+                            )
+                        }
+                    ]
+                }
+            }
+
+    def acso_after_get(view, ret):  # pylint:disable=unused-argument,no-self-argument
+        '''Standard callback throwing 403 (Forbidden) based on information in meta.
+
+        Args:
+            ret (dict): dict which would have been returned from get().
+
+        Returns:
+            dict: the same object if an error has not been raised.
+
+        Raises:
+            HTTPForbidden
+        '''
+        obj = ret['data']
+        errors = []
+        try:
+            errors = obj['meta']['errors']
+        except KeyError:
+            return ret
+        for error in errors:
+            if error['code'] == 403:
+                raise HTTPForbidden(error['detail'])
+        return ret
+
+    callback_sets = {
+        'access_control_serialised_objects': {
+            'after_serialise_object': acso_after_serialise_object,
+            'after_get': acso_after_get
+        }
+    }
 
 
 class FilterRegistry:
@@ -2587,99 +2697,6 @@ class FilterRegistry:
         for ctype in column_types:
             ops |= self.data[ctype].keys()
         return ops
-
-
-def acso_after_serialise_object(view, obj):
-    '''Standard callback altering object to take account of permissions.
-
-    Args:
-        obj (dict): the object immediately after serialisation.
-
-    Returns:
-        dict: the object, possibly with some fields removed, or meta
-        information indicating permission was denied to the whole object.
-    '''
-    if view.allowed_object(obj):
-        # Remove any forbidden fields that have been added by other
-        # callbacks. Those from the model won't have been added in the first
-        # place.
-
-        # Keep track so we can tell the caller which ones were forbidden.
-        forbidden = set()
-        if 'attributes' in obj:
-            atts = {}
-            for name, val in obj['attributes'].items():
-                if name in view.allowed_fields:
-                    atts[name] = val
-                else:
-                    forbidden.add(name)
-            obj['attributes'] = atts
-        if 'relationships' in obj:
-            rels = {}
-            for name, val in obj['relationships'].items():
-                if name in view.allowed_fields:
-                    rels[name] = val
-                else:
-                    forbidden.add(name)
-            obj['relationships'] = rels
-        # Now add all the forbidden fields from the model to the forbidden
-        # list. They don't need to be removed from the serialised object
-        # because they should not have been added in the first place.
-        for field in view.requested_field_names:
-            if field not in view.allowed_fields:
-                forbidden.add(field)
-        if 'meta' not in obj:
-            obj['meta'] = {}
-        obj['meta']['forbidden_fields'] = list(forbidden)
-        return obj
-    else:
-        return {
-            'type': obj['type'],
-            'id': obj['id'],
-            'meta': {
-                'errors': [
-                    {
-                        'code': 403,
-                        'title': 'Forbidden',
-                        'detail': 'No permission to view {}/{}.'.format(
-                            obj['type'], obj['id']
-                        )
-                    }
-                ]
-            }
-        }
-
-
-def acso_after_get(view, ret):  # pylint:disable=unused-argument
-    '''Standard callback throwing 403 (Forbidden) based on information in meta.
-
-    Args:
-        ret (dict): dict which would have been returned from get().
-
-    Returns:
-        dict: the same object if an error has not been raised.
-
-    Raises:
-        HTTPForbidden
-    '''
-    obj = ret['data']
-    errors = []
-    try:
-        errors = obj['meta']['errors']
-    except KeyError:
-        return ret
-    for error in errors:
-        if error['code'] == 403:
-            raise HTTPForbidden(error['detail'])
-    return ret
-
-
-callback_sets = {
-    'access_control_serialised_objects': {
-        'after_serialise_object': acso_after_serialise_object,
-        'after_get': acso_after_get
-    }
-}
 
 
 class DebugView:

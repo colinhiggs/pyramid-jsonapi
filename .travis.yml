@@ -16,7 +16,7 @@ python:
 virtualenv:
   system_site_packages: true
 script:
-- pep8 --ignore=E501 pyramid_jsonapi
+- pep8 --ignore=E501,E731 pyramid_jsonapi
 - pylint -E --rcfile=.pylintrc pyramid_jsonapi
 - python test_project/setup.py test
 - travis-sphinx build
