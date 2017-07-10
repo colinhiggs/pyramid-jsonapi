@@ -2464,7 +2464,7 @@ class TestFeatures(DBTestBase):
     def test_feature_construct_with_models_list(self):
         '''Should construct an api from a list of models.'''
         test_app = self.new_test_app(
-            options={'pyramid_jsonapi_tests.models_iterable': 'list'}
+            options={'pyramid_jsonapi.tests.models_iterable': 'list'}
         )
         test_app.get('/people/1')
 
