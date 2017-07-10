@@ -259,17 +259,11 @@ class PyramidJSONAPI():
 
         # Add the debug endpoints if required.
         if settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false') == 'true':
-            if engine is None:
-                DebugView.engine = model_list[0].metadata.bind
-            else:
-                DebugView.engine = engine
+            DebugView.engine = engine or model_list[0].metadata.bind
             DebugView.metadata = model_list[0].metadata
-            if test_data is None:
-                test_data = importlib.import_module(
-                    settings.get('pyramid_jsonapi.debug.test_data_module',
-                                 'test_data')
-                )
-            DebugView.test_data = test_data
+            DebugView.test_data = test_data or importlib.import_module(
+                settings.get('pyramid_jsonapi.debug.test_data_module',
+                             'test_data'))
             self.config.add_route('debug', '/debug/{action}')
             self.config.add_view(
                 DebugView,
@@ -330,15 +324,14 @@ class PyramidJSONAPI():
 
         model._jsonapi_id = getattr(model, keycols[0].name)
 
-        if collection_name is None:
-            collection_name = getattr(
-                model, '__pyramid_jsonapi__', {}
-            ).get('collection_name')
-        if collection_name is None:
-            collection_name = sqlalchemy.inspect(model).tables[-1].name
-
         # Create a view class for use in the various add_view() calls below.
-        view = self.collection_view_factory(model, collection_name, expose_fields=expose_fields)
+        view = self.collection_view_factory(model,
+                                            collection_name or
+                                            getattr(
+                                                model, '__pyramid_jsonapi__', {}
+                                            ).get('collection_name') or
+                                            sqlalchemy.inspect(model).tables[-1].name,
+                                            expose_fields=expose_fields)
 
         self.view_classes[model] = view
 
@@ -360,8 +353,6 @@ class PyramidJSONAPI():
             collection_name: string name of collection.
             expose_fields: set of field names to expose.
         '''
-        if collection_name is None:
-            collection_name = model.__tablename__
 
         CollectionView = type(  # pylint:disable=invalid-name
             'CollectionView<{}>'.format(collection_name),
@@ -372,7 +363,7 @@ class PyramidJSONAPI():
         CollectionView.config = self.config
         CollectionView.model = model
         CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
-        CollectionView.collection_name = collection_name
+        CollectionView.collection_name = collection_name or model.__tablename__
         CollectionView.get_dbsession = self.get_dbsession
         CollectionView.endpoint_data = self.endpoint_data
         CollectionView.view_classes = self.view_classes
@@ -385,9 +376,7 @@ class PyramidJSONAPI():
         hybrid_atts = {}
         fields = {}
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-            if key == CollectionView.key_column.name:  # pylint:disable=no-member
-                continue
-            if col.foreign_keys:
+            if key == CollectionView.key_column.name or col.foreign_keys:  # pylint:disable=no-member
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
@@ -1708,13 +1697,12 @@ class CollectionViewBase:
         # Add information to the return dict
         ret = {'meta': {'results': {}}}
 
-        if count is None:
-            try:
-                count = query.count()
-            except sqlalchemy.exc.ProgrammingError:
-                raise HTTPInternalServerError(
-                    'An error occurred querying the database. Server logs may have details.'
-                )
+        try:
+            count = count or query.count()
+        except sqlalchemy.exc.ProgrammingError:
+            raise HTTPInternalServerError(
+                'An error occurred querying the database. Server logs may have details.'
+            )
         ret['meta']['results']['available'] = count
 
         # Pagination links
@@ -1990,9 +1978,7 @@ class CollectionViewBase:
                 inspect. Defaults to self.model.
 
         '''
-        if model is None:
-            model = self.model
-        return sqlalchemy.inspect(model).all_orm_descriptors.get(
+        return sqlalchemy.inspect(model or self.model).all_orm_descriptors.get(
             name
         ).info.get('pyramid_jsonapi', {})
 
@@ -2028,8 +2014,8 @@ class CollectionViewBase:
         Returns:
             dict: resource object dictionary.
         '''
-        if include_path is None:
-            include_path = []
+
+        include_path = include_path or []
 
         # Item's id and type are required at the top level of json-api
         # objects.
@@ -2342,7 +2328,7 @@ class CollectionViewBase:
             ).union(
                 self.relationships.keys()
             )
-        if param == '':
+        elif param == '':
             return set()
         return set(param.split(','))
 
@@ -2469,14 +2455,12 @@ class CollectionViewBase:
         inc = set()
         param = self.request.params.get('include')
 
-        if param is None:
-            return inc
-
-        for i in param.split(','):
-            curname = []
-            for name in i.split('.'):
-                curname.append(name)
-                inc.add('.'.join(curname))
+        if param:
+            for i in param.split(','):
+                curname = []
+                for name in i.split('.'):
+                    curname.append(name)
+                    inc.add('.'.join(curname))
         return inc
 
     @property
@@ -2494,24 +2478,23 @@ class CollectionViewBase:
         '''
         param = self.request.params.get('include')
         bad = set()
-        if param is None:
-            return bad
-        for i in param.split(','):
-            curname = []
-            curview = self
-            tainted = False
-            for name in i.split('.'):
-                curname.append(name)
-                if tainted:
-                    bad.add('.'.join(curname))
-                else:
-                    if name in curview.relationships.keys():
-                        curview = curview.view_instance(
-                            curview.relationships[name].mapper.class_
-                        )
-                    else:
-                        tainted = True
+        if param:
+            for i in param.split(','):
+                curname = []
+                curview = self
+                tainted = False
+                for name in i.split('.'):
+                    curname.append(name)
+                    if tainted:
                         bad.add('.'.join(curname))
+                    else:
+                        if name in curview.relationships.keys():
+                            curview = curview.view_instance(
+                                curview.relationships[name].mapper.class_
+                            )
+                        else:
+                            tainted = True
+                            bad.add('.'.join(curname))
         return bad
 
     @functools.lru_cache(maxsize=128)
@@ -2572,9 +2555,7 @@ class FilterRegistry:
             registry = self.data[column_type]
         except KeyError:
             registry = self.data[column_type] = {}
-        if filter_name is None:
-            filter_name = comparator_name.replace('__', '')
-        registry[filter_name] = {
+        registry[filter_name or comparator_name.replace('__', '')] = {
             'comparator_name': comparator_name,
             'value_transform': value_transform
         }
@@ -2601,11 +2582,8 @@ class FilterRegistry:
     def valid_filter_names(self, column_types=None):
         '''Return set of supported filter operator names.'''
         ops = set()
-        if column_types is None:
-            column_types = {k for k in self.data}
-        else:
-            column_types = set(column_types)
-            column_types.add('__ALL__')
+        column_types = set(column_types or {k for k in self.data})
+        column_types.add('__ALL__')
         for ctype in column_types:
             ops |= self.data[ctype].keys()
         return ops
