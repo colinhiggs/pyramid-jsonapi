@@ -351,7 +351,7 @@ class PyramidJSONAPI():
         self.endpoint_data.add_routes_views(view)
 
     def collection_view_factory(self, model, collection_name=None, expose_fields=None):
-        ''''Build a class to handle requests for model.
+        '''Build a class to handle requests for model.
 
         Arguments:
             model: a model class derived from DeclarativeMeta.
@@ -387,7 +387,7 @@ class PyramidJSONAPI():
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
             if key == CollectionView.key_column.name:  # pylint:disable=no-member
                 continue
-            if len(col.foreign_keys) > 0:
+            if col.foreign_keys:
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
@@ -494,7 +494,7 @@ class CollectionViewBase:
                                          'schema/jsonapi-schema.json').decode('utf-8'))
 
                 # Validate request JSON against the JSONAPI jsonschema
-                if self.request.content_length and self.request.method is not 'PATCH':
+                if self.request.content_length and self.request.method != 'PATCH':
                     modified_schema = copy.deepcopy(schema)
                     # POST uses full schema, may omit 'id'
                     modified_schema['definitions']['resource']['required'].remove('id')
@@ -912,7 +912,7 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
         try:
             count = query.count()
-        except sqlalchemy.exc.ProgrammingError as exc:
+        except sqlalchemy.exc.ProgrammingError:
             raise HTTPInternalServerError(
                 'An error occurred querying the database. Server logs may have details.'
             )
