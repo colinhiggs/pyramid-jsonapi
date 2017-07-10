@@ -49,16 +49,8 @@ class DBTestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        '''Create a test app.'''
-        with warnings.catch_warnings():
-            # Suppress SAWarning: about Property _jsonapi_id being replaced by
-            # Propery _jsonapi_id every time a new app is instantiated.
-            warnings.simplefilter(
-                "ignore",
-                category=SAWarning
-            )
-            cls.app = get_app('{}/testing.ini'.format(parent_dir))
-        cls.test_app = webtest.TestApp(cls.app)
+        '''Create a test app for the class.'''
+        cls.test_app = cls.new_test_app()
 
     def setUp(self):
         Base.metadata.create_all(engine)
@@ -69,6 +61,21 @@ class DBTestBase(unittest.TestCase):
     def tearDown(self):
         transaction.abort()
         Base.metadata.drop_all(engine)
+
+    @classmethod
+    def new_test_app(cls, options=None):
+        '''Create a test app.'''
+        with warnings.catch_warnings():
+            # Suppress SAWarning: about Property _jsonapi_id being replaced by
+            # Propery _jsonapi_id every time a new app is instantiated.
+            warnings.simplefilter(
+                "ignore",
+                category=SAWarning
+            )
+            return webtest.TestApp(get_app(
+                '{}/testing.ini'.format(parent_dir),
+                options=options
+            ))
 
 
 class TestSpec(DBTestBase):
@@ -1491,18 +1498,9 @@ class TestSpec(DBTestBase):
         to create a resource with a client-generated ID.
         '''
         # We need a test_app with different settings.
-        with warnings.catch_warnings():
-            # Suppress SAWarning: about Property _jsonapi_id being replaced by
-            # Propery _jsonapi_id every time a new app is instantiated.
-            warnings.simplefilter(
-                "ignore",
-                category=SAWarning
-            )
-            app = get_app(
-                '{}/testing.ini'.format(parent_dir),
-                options={'pyramid_jsonapi.allow_client_ids': 'false'}
-            )
-        test_app = webtest.TestApp(app)
+        test_app = self.new_test_app(
+            options={'pyramid_jsonapi.allow_client_ids': 'false'}
+        )
         test_app.post_json(
             '/people',
             {
@@ -2453,6 +2451,13 @@ class TestFeatures(DBTestBase):
         self.test_app.get('/whatsits')
         # ...but not things.
         self.test_app.get('/things', status=404)
+
+    def test_feature_construct_with_models_list(self):
+        '''Should construct an api from a list of models.'''
+        test_app = self.new_test_app(
+            options={'pyramid_jsonapi_tests.models_iterable': 'list'}
+        )
+        test_app.get('/people/1')
 
 
 class TestBugs(DBTestBase):
