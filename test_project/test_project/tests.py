@@ -73,15 +73,17 @@ class DBTestBase(unittest.TestCase):
                 "ignore",
                 category=SAWarning
             )
-            tmp_cfg = configparser.ConfigParser()
-            tmp_cfg.read('{}/testing.ini'.format(parent_dir))
-            tmp_cfg['app:main'].update(options or {})
-            with open('{}/tmp_testing.ini'.format(parent_dir), 'w') as tmp_file:
-                tmp_cfg.write(tmp_file)
-            test_app = webtest.TestApp(
-                get_app('{}/tmp_testing.ini'.format(parent_dir))
-            )
-            os.remove('{}/tmp_testing.ini'.format(parent_dir))
+            config_path = '{}/testing.ini'.format(parent_dir)
+            if options:
+                tmp_cfg = configparser.ConfigParser()
+                tmp_cfg.read(config_path)
+                tmp_cfg['app:main'].update(options or {})
+                config_path = '{}/tmp_testing.ini'.format(parent_dir)
+                with open(config_path, 'w') as tmp_file:
+                    tmp_cfg.write(tmp_file)
+            test_app = webtest.TestApp(get_app(config_path))
+            if options:
+                os.remove(config_path)
             return test_app
 
 
