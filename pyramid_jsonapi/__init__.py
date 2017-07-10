@@ -354,21 +354,16 @@ class PyramidJSONAPI():
             expose_fields: set of field names to expose.
         '''
 
-        CollectionView = type(  # pylint:disable=invalid-name
-            'CollectionView<{}>'.format(collection_name),
-            (CollectionViewBase, ),
-            {}
-        )
+        class_attrs = {}
+        class_attrs['config'] = self.config
+        class_attrs['model'] = model
+        class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
+        class_attrs['collection_name'] = collection_name or model.__tablename__
+        class_attrs['get_dbsession'] = self.get_dbsession
+        class_attrs['endpoint_data'] = self.endpoint_data
+        class_attrs['view_classes'] = self.view_classes
 
-        CollectionView.config = self.config
-        CollectionView.model = model
-        CollectionView.key_column = sqlalchemy.inspect(model).primary_key[0]
-        CollectionView.collection_name = collection_name or model.__tablename__
-        CollectionView.get_dbsession = self.get_dbsession
-        CollectionView.endpoint_data = self.endpoint_data
-        CollectionView.view_classes = self.view_classes
-
-        CollectionView.exposed_fields = expose_fields
+        class_attrs['exposed_fields'] = expose_fields
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
         # fields is atts + hybrid_atts + relationships
@@ -376,30 +371,30 @@ class PyramidJSONAPI():
         hybrid_atts = {}
         fields = {}
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-            if key == CollectionView.key_column.name or col.foreign_keys:  # pylint:disable=no-member
+            if key == class_attrs['key_column'].name or col.foreign_keys:  # pylint:disable=no-member
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
                 fields[key] = col
-        CollectionView.attributes = atts
+        class_attrs['attributes'] = atts
         for item in sqlalchemy.inspect(model).all_orm_descriptors:
             if isinstance(item, hybrid_property):
                 if expose_fields is None or item.__name__ in expose_fields:
                     hybrid_atts[item.__name__] = item
                     fields[item.__name__] = item
-        CollectionView.hybrid_attributes = hybrid_atts
+        class_attrs['hybrid_attributes'] = hybrid_atts
         rels = {}
         for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
             if expose_fields is None or key in expose_fields:
                 rels[key] = rel
-        CollectionView.relationships = rels
+        class_attrs['relationships'] = rels
         fields.update(rels)
-        CollectionView.fields = fields
-        CollectionView.filter_registry = self.filter_registry
+        class_attrs['fields'] = fields
+        class_attrs['filter_registry'] = self.filter_registry
 
         # All callbacks have the current view as the first argument. The comments
         # below detail subsequent args.
-        CollectionView.callbacks = {
+        class_attrs['callbacks'] = {
             'after_serialise_identifier': deque(),  # args: identifier(dict)
             'after_serialise_object': deque(),      # args: object(dict)
             'after_get': deque(),                   # args: document(dict)
@@ -415,7 +410,11 @@ class PyramidJSONAPI():
                 deque(),                            # args: parent_item(sqlalchemy)
         }
 
-        return CollectionView
+        return type(
+            'CollectionView<{}>'.format(collection_name),
+            (CollectionViewBase, ),
+            class_attrs
+        )
 
     def append_callback_set_to_all_views(self, set_name):  # pylint:disable=invalid-name
         '''Append a named set of callbacks to all view classes.
