@@ -2468,6 +2468,12 @@ class TestFeatures(DBTestBase):
         )
         test_app.get('/people/1')
 
+    def test_feature_debug_endpoints(self):
+        '''Should create a set of debug endpoints for manipulating the database.'''
+        test_app = self.new_test_app(
+            options={'pyramid_jsonapi.debug.debug_endpoints': 'true'}
+        )
+
 
 class TestBugs(DBTestBase):
 

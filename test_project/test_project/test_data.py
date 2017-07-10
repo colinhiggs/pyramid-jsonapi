@@ -1,7 +1,7 @@
 import sqlalchemy
 import transaction
-from . import models
-from .models import (
+from test_project import models
+from test_project.models import (
     DBSession,
 )
 import datetime
