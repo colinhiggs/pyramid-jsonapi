@@ -1,3 +1,4 @@
+import configparser
 import unittest
 import transaction
 import testing.postgresql
@@ -72,10 +73,16 @@ class DBTestBase(unittest.TestCase):
                 "ignore",
                 category=SAWarning
             )
-            return webtest.TestApp(get_app(
-                '{}/testing.ini'.format(parent_dir),
-                options=options
-            ))
+            tmp_cfg = configparser.ConfigParser()
+            tmp_cfg.read('{}/testing.ini'.format(parent_dir))
+            tmp_cfg['app:main'].update(options or {})
+            with open('{}/tmp_testing.ini'.format(parent_dir), 'w') as tmp_file:
+                tmp_cfg.write(tmp_file)
+            test_app = webtest.TestApp(
+                get_app('{}/tmp_testing.ini'.format(parent_dir))
+            )
+            os.remove('{}/tmp_testing.ini'.format(parent_dir))
+            return test_app
 
 
 class TestSpec(DBTestBase):
