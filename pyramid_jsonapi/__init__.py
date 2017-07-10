@@ -371,7 +371,7 @@ class PyramidJSONAPI():
         hybrid_atts = {}
         fields = {}
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-            if key == class_attrs['key_column'].name or col.foreign_keys:  # pylint:disable=no-member
+            if key == class_attrs['key_column'].name or col.foreign_keys:
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
@@ -432,6 +432,27 @@ class CollectionViewBase:
     Arguments:
         request (pyramid.request): passed by framework.
     '''
+
+    # Define class attributes
+    # Callable attributes use lambda to keep pylint happy
+    attributes = None
+    callbacks = None
+    config = None
+    collection_name = None
+    default_limit = None
+    endpoint_data = None
+    exposed_fields = None
+    fields = None
+    filter_registry = None
+    get_dbsession = lambda: None
+    hybrid_attributes = None
+    key_column = None
+    max_limit = None
+    model = lambda: None
+    request = None
+    relationships = None
+    view_classes = None
+
     def __init__(self, request):
         self.request = request
         self.views = {}
