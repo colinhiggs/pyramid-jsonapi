@@ -13,6 +13,13 @@ from pyramid.httpexceptions import (
     HTTPForbidden
 )
 
+test_settings = {
+    'models_iterable': {
+        'module': models,
+        'list': [models.Person, models.Blog]
+    }
+}
+
 # Used to test that adding JSON adapters works.
 import datetime
 def datetime_adapter(obj, request):
@@ -75,7 +82,13 @@ def main(global_config, **settings):
 
     # Lines specific to pyramid_jsonapi.
     # Create an API instance.
-    pj = pyramid_jsonapi.PyramidJSONAPI(config, models, lambda view: models.DBSession)
+    pj = pyramid_jsonapi.PyramidJSONAPI(
+        config,
+        test_settings['models_iterable'][
+            settings.get('pyramid_jsonapi_tests.models_iterable', 'module')
+        ],
+        lambda view: models.DBSession
+    )
     # Register a bad filter operator for test purposes.
     pj.filter_registry.register('bad_op')
     # Create the routes and views automagically.
