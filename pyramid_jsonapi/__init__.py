@@ -176,6 +176,7 @@ class PyramidJSONAPI():
         self.get_dbsession = get_dbsession
         self.endpoint_data = EndpointData(config)
         self.filter_registry = FilterRegistry()
+        self.schemas = None
         # Register standard supported filter operators
         for comparator_name in (
                 '__eq__',
@@ -210,6 +211,28 @@ class PyramidJSONAPI():
                 comparator_name,
                 column_type=JSONB
             )
+
+        # Add schema if pyramid_jsonapi.schema_validation is not 'false'
+        validation = True
+        if self.config.registry.settings.get('pyramid_jsonapi.schema_validation') == 'false':
+            validation = False
+        if validation:
+            schema_file = self.config.registry.settings.get(
+                'pyramid_jsonapi.schema_file')
+            if schema_file:
+                with open(schema_file) as schema_f:
+                    schema = json.loads(schema_f.read())
+            else:
+                schema = json.loads(
+                    pkgutil.get_data(__name__,
+                                     'schema/jsonapi-schema.json').decode('utf-8'))
+            # POST uses full schema, may omit 'id'
+            post_schema = copy.deepcopy(schema)
+            post_schema['definitions']['resource']['required'].remove('id')
+            self.schemas = {
+                'full': schema,
+                'post': post_schema
+            }
 
     @staticmethod
     def error(exc, request):
@@ -413,6 +436,9 @@ class PyramidJSONAPI():
                 deque(),                            # args: parent_item(sqlalchemy)
         }
 
+        if self.schemas:
+            class_attrs['schemas'] = {'api': self.schemas}
+
         return type(
             'CollectionView<{}>'.format(collection_name),
             (CollectionViewBase, ),
@@ -455,6 +481,7 @@ class CollectionViewBase:
     request = None
     relationships = None
     view_classes = None
+    schemas = None
 
     def __init__(self, request):
         self.request = request
@@ -495,27 +522,14 @@ class CollectionViewBase:
                     '(http://jsonapi.org/format).'
                 )
 
-            validation = True
-            if self.config.registry.settings.get('pyramid_jsonapi.schema_validation') == 'false':
-                validation = False
-            if validation:
-                schema_file = self.config.registry.settings.get(
-                    'pyramid_jsonapi.schema_file')
-                if schema_file:
-                    with open(schema_file) as schema_f:
-                        schema = json.loads(schema_f.read())
-                else:
-                    schema = json.loads(
-                        pkgutil.get_data(__name__,
-                                         'schema/jsonapi-schema.json').decode('utf-8'))
-
+            if self.schemas:
                 # Validate request JSON against the JSONAPI jsonschema
                 if self.request.content_length and self.request.method != 'PATCH':
-                    modified_schema = copy.deepcopy(schema)
-                    # POST uses full schema, may omit 'id'
-                    modified_schema['definitions']['resource']['required'].remove('id')
                     try:
-                        jsonschema.validate(self.request.json_body, modified_schema)
+                        jsonschema.validate(
+                            self.request.json_body,
+                            self.schemas['api']['post']
+                        )
                     except jsonschema.exceptions.ValidationError as exc:
                         raise HTTPBadRequest(exc.message)
 
