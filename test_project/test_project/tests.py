@@ -2522,7 +2522,7 @@ class TestFeatures(DBTestBase):
     def test_feature_alternate_schema_file(self):
         '''Should load alternate schema file.'''
         test_app = self.test_app(
-            options={'pyramid_jsonapi.schema_file': 'test_project/test-alt-schema.json'}
+            options={'pyramid_jsonapi.schema_file': '{}/test-alt-schema.json'.format(parent_dir)}
         )
         test_app.post_json(
             '/people',
