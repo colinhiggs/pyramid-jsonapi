@@ -2319,6 +2319,15 @@ class TestErrors(DBTestBase):
         self.assertIn('title', err)
         self.assertIn('detail', err)
 
+    def test_errors_composite_key(self):
+        '''Should raise exception if a model has a composite key.'''
+        self.assertRaisesRegex(
+            Exception,
+            r'^Model \S+ has more than one primary key.$',
+            self.test_app,
+            {'pyramid_jsonapi.tests.models_iterable': 'composite_key'}
+        )
+
 
 class TestMalformed(DBTestBase):
     '''Various malformed POSTs and PATCHes.'''
@@ -2483,6 +2492,31 @@ class TestFeatures(DBTestBase):
                 'pyramid_jsonapi.debug.debug_endpoints': 'true',
                 'pyramid_jsonapi.debug.test_data_module': 'test_project.test_data'
             }
+        )
+        test_app.get('/debug/populate')
+
+    def test_feature_disable_schema_validation(self):
+        '''Should disable schema validation.'''
+        # Create an app without schema validation.
+        test_app = self.test_app(
+            options = {
+                'pyramid_jsonapi.schema_validation': 'false'
+            }
+        )
+        # Schema validation produces 400 without 'type', without validation we
+        # get 409 (Unsupported type None)
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'not_type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
         )
 
 
