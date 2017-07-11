@@ -2519,6 +2519,24 @@ class TestFeatures(DBTestBase):
             status=409
         )
 
+    def test_feature_alternate_schema_file(self):
+        '''Should load alternate schema file.'''
+        test_app = self.test_app(
+            options={'pyramid_jsonapi.schema_file': 'test_project/test-alt-schema.json'}
+        )
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'not_type': 'people',
+                    'attributes': {
+                        'name': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
 
 class TestBugs(DBTestBase):
 
