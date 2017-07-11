@@ -49,9 +49,11 @@ def tearDownModule():
 
 class DBTestBase(unittest.TestCase):
 
+    _test_app = None
+
     @classmethod
     def setUpClass(cls):
-        cls._test_app = None
+        cls._test_app = cls.new_test_app()
 
     def setUp(self):
         Base.metadata.create_all(engine)
@@ -64,10 +66,22 @@ class DBTestBase(unittest.TestCase):
         Base.metadata.drop_all(engine)
 
     def test_app(self, options=None):
-        '''Create a test app.'''
-        if not options and self._test_app:
+        if (not options) and self._test_app:
             # If there are no options and we have a cached app, return it.
             return self._test_app
+        return self.new_test_app(options)
+
+    @classmethod
+    def new_test_app(cls, options=None):
+        '''Create a test app.'''
+        config_path = '{}/testing.ini'.format(parent_dir)
+        if options:
+            tmp_cfg = configparser.ConfigParser()
+            tmp_cfg.read(config_path)
+            tmp_cfg['app:main'].update(options or {})
+            config_path = '{}/tmp_testing.ini'.format(parent_dir)
+            with open(config_path, 'w') as tmp_file:
+                tmp_cfg.write(tmp_file)
         with warnings.catch_warnings():
             # Suppress SAWarning: about Property _jsonapi_id being replaced by
             # Propery _jsonapi_id every time a new app is instantiated.
@@ -75,22 +89,11 @@ class DBTestBase(unittest.TestCase):
                 "ignore",
                 category=SAWarning
             )
-            config_path = '{}/testing.ini'.format(parent_dir)
-            if options:
-                tmp_cfg = configparser.ConfigParser()
-                tmp_cfg.read(config_path)
-                tmp_cfg['app:main'].update(options or {})
-                config_path = '{}/tmp_testing.ini'.format(parent_dir)
-                with open(config_path, 'w') as tmp_file:
-                    tmp_cfg.write(tmp_file)
             test_app = webtest.TestApp(get_app(config_path))
-            if options:
-                os.remove(config_path)
-            else:
-                # Cache a no options version of test_app since most test
-                # cases can happily use it.
-                self._test_app = test_app
-            return test_app
+        if options:
+            os.remove(config_path)
+        print('new app: {}'.format(test_app))
+        return test_app
 
 
 class TestSpec(DBTestBase):
