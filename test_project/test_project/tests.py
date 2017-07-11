@@ -2557,6 +2557,26 @@ class TestBugs(DBTestBase):
         ).json['data']
         self.assertIsInstance(data['id'], str)
 
+    def test_56_post_with_non_id_primary_key(self):
+        '''POST to model with non 'id' primary key should work.
+
+        #56: POSTing a new item where the primary key column is not 'id' causes
+        an error.
+        '''
+        data = self.test_app().post_json(
+            '/comments',
+            {
+                'data': {
+                    'id': '1000',
+                    'type': 'comments',
+                    'attributes': {
+                        'content': 'test'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']
+        self.assertEqual(data['id'],'1000')
 
 if __name__ == "__main__":
     unittest.main()
