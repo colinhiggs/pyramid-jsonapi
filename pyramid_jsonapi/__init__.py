@@ -1026,7 +1026,7 @@ class CollectionViewBase:
         except KeyError:
             atts = {}
         if 'id' in data:
-            atts['id'] = data['id']
+            atts[self.model.__pyramid_jsonapi__['id_col_name']] = data['id']
         item = self.model(**atts)
         mapper = sqlalchemy.inspect(self.model).mapper
         with db_session.no_autoflush:
