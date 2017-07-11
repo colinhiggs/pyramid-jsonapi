@@ -2538,6 +2538,13 @@ class TestFeatures(DBTestBase):
             status=400
         )
 
+    def test_feature_debug_meta(self):
+        '''Should add meta information.'''
+        test_app = self.test_app(
+            options={'pyramid_jsonapi.debug.meta': 'true'}
+        )
+        self.assertIn('debug',test_app.get('/people/1').json['meta'])
+
 class TestBugs(DBTestBase):
 
     def test_19_last_negative_offset(self):
