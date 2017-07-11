@@ -2606,7 +2606,7 @@ class CollectionViewBase:
                 }
             }
 
-    def acso_after_get(view, ret):  # pylint:disable=unused-argument,no-self-argument
+    def acso_after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, no-self-use
         '''Standard callback throwing 403 (Forbidden) based on information in meta.
 
         Args:
