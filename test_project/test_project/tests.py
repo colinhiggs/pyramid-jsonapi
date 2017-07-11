@@ -1,4 +1,5 @@
 import configparser
+from functools import lru_cache
 import unittest
 import transaction
 import testing.postgresql
@@ -48,10 +49,11 @@ def tearDownModule():
 
 class DBTestBase(unittest.TestCase):
 
+    _test_app = None
+
     @classmethod
     def setUpClass(cls):
-        '''Create a test app for the class.'''
-        cls.test_app = cls.new_test_app()
+        cls._test_app = cls.new_test_app()
 
     def setUp(self):
         Base.metadata.create_all(engine)
@@ -63,9 +65,23 @@ class DBTestBase(unittest.TestCase):
         transaction.abort()
         Base.metadata.drop_all(engine)
 
+    def test_app(self, options=None):
+        if (not options) and self._test_app:
+            # If there are no options and we have a cached app, return it.
+            return self._test_app
+        return self.new_test_app(options)
+
     @classmethod
     def new_test_app(cls, options=None):
         '''Create a test app.'''
+        config_path = '{}/testing.ini'.format(parent_dir)
+        if options:
+            tmp_cfg = configparser.ConfigParser()
+            tmp_cfg.read(config_path)
+            tmp_cfg['app:main'].update(options or {})
+            config_path = '{}/tmp_testing.ini'.format(parent_dir)
+            with open(config_path, 'w') as tmp_file:
+                tmp_cfg.write(tmp_file)
         with warnings.catch_warnings():
             # Suppress SAWarning: about Property _jsonapi_id being replaced by
             # Propery _jsonapi_id every time a new app is instantiated.
@@ -73,18 +89,11 @@ class DBTestBase(unittest.TestCase):
                 "ignore",
                 category=SAWarning
             )
-            config_path = '{}/testing.ini'.format(parent_dir)
-            if options:
-                tmp_cfg = configparser.ConfigParser()
-                tmp_cfg.read(config_path)
-                tmp_cfg['app:main'].update(options or {})
-                config_path = '{}/tmp_testing.ini'.format(parent_dir)
-                with open(config_path, 'w') as tmp_file:
-                    tmp_cfg.write(tmp_file)
             test_app = webtest.TestApp(get_app(config_path))
-            if options:
-                os.remove(config_path)
-            return test_app
+        if options:
+            os.remove(config_path)
+        print('new app: {}'.format(test_app))
+        return test_app
 
 
 class TestSpec(DBTestBase):
@@ -106,7 +115,7 @@ class TestSpec(DBTestBase):
         '''
         # Fetch a representative page
 
-        r = self.test_app.get('/people')
+        r = self.test_app().get('/people')
         self.assertEqual(r.content_type, 'application/vnd.api+json')
 
     def test_spec_incorrect_client_content_type(self):
@@ -116,7 +125,7 @@ class TestSpec(DBTestBase):
         request specifies the header Content-Type: application/vnd.api+json with
         any media type parameters.
         '''
-        r = self.test_app.get(
+        r = self.test_app().get(
             '/people',
             headers={ 'Content-Type': 'application/vnd.api+json; param=val' },
             status=415,
@@ -130,18 +139,18 @@ class TestSpec(DBTestBase):
         instances of that media type are modified with media type parameters.
         '''
         # Should work with correct accepts header.
-        r = self.test_app.get(
+        r = self.test_app().get(
             '/people',
             headers={ 'Accept': 'application/vnd.api+json' },
         )
         # 406 with one incorrect type.
-        r = self.test_app.get(
+        r = self.test_app().get(
             '/people',
             headers={ 'Accept': 'application/vnd.api+json; param=val' },
             status=406,
         )
         # 406 with more than one type but none without params.
-        r = self.test_app.get(
+        r = self.test_app().get(
             '/people',
             headers={ 'Accept': 'application/vnd.api+json; param=val,' +
                 'application/vnd.api+json; param2=val2' },
@@ -161,13 +170,13 @@ class TestSpec(DBTestBase):
             * meta: a meta object that contains non-standard meta-information.
         '''
         # Should be object with data member.
-        r = self.test_app.get('/people')
+        r = self.test_app().get('/people')
         self.assertIn('data', r.json)
         # Should also have a meta member.
         self.assertIn('meta', r.json)
 
         # Should be object with an array of errors.
-        r = self.test_app.get(
+        r = self.test_app().get(
             '/people',
             headers={ 'Content-Type': 'application/vnd.api+json; param=val' },
             status=415,
@@ -185,7 +194,7 @@ class TestSpec(DBTestBase):
         A logical collection of resources MUST be represented as an array, even
         if it... is empty.
         '''
-        r = self.test_app.get('/people?filter[name:eq]=doesnotexist')
+        r = self.test_app().get('/people?filter[name:eq]=doesnotexist')
         self.assertEqual(len(r.json['data']), 0)
 
     def test_spec_get_primary_data_array(self):
@@ -198,7 +207,7 @@ class TestSpec(DBTestBase):
             collections
         '''
         # Data should be an array of person resource objects or identifiers.
-        r = self.test_app.get('/people')
+        r = self.test_app().get('/people')
         self.assertIn('data', r.json)
         self.assertIsInstance(r.json['data'], list)
         item = r.json['data'][0]
@@ -210,7 +219,7 @@ class TestSpec(DBTestBase):
         A logical collection of resources MUST be represented as an array, even
         if it only contains one item...
         '''
-        r = self.test_app.get('/people?page[limit]=1')
+        r = self.test_app().get('/people?page[limit]=1')
         self.assertIn('data', r.json)
         self.assertIsInstance(r.json['data'], list)
         self.assertEqual(len(r.json['data']), 1)
@@ -224,12 +233,12 @@ class TestSpec(DBTestBase):
             null, for requests that target single resources
         '''
         # Find the id of alice.
-        r = self.test_app.get('/people?filter[name:eq]=alice')
+        r = self.test_app().get('/people?filter[name:eq]=alice')
         item = r.json['data'][0]
         self.assertEqual(item['attributes']['name'], 'alice')
         alice_id = item['id']
         # Now get alice object.
-        r = self.test_app.get('/people/' + alice_id)
+        r = self.test_app().get('/people/' + alice_id)
         alice = r.json['data']
         self.assertEqual(alice['attributes']['name'], 'alice')
 
@@ -242,7 +251,7 @@ class TestSpec(DBTestBase):
 
         The values of the id and type members MUST be strings.
         '''
-        r = self.test_app.get('/people?page[limit]=1')
+        r = self.test_app().get('/people?page[limit]=1')
         item = r.json['data'][0]
         # item must have at least a type and id.
         self.assertEqual(item['type'], 'people')
@@ -267,7 +276,7 @@ class TestSpec(DBTestBase):
               a resource that can not be represented as an attribute or
               relationship.
         '''
-        r = self.test_app.get('/people?page[limit]=1')
+        r = self.test_app().get('/people?page[limit]=1')
         item = r.json['data'][0]
         self.assertIn('attributes', item)
         #self.assertIn('relationships', item)
@@ -281,13 +290,13 @@ class TestSpec(DBTestBase):
         identify a single, unique resource.
         '''
         # Find the id of alice.
-        r = self.test_app.get('/people?filter[name:eq]=alice')
+        r = self.test_app().get('/people?filter[name:eq]=alice')
         item = r.json['data'][0]
         self.assertEqual(item['attributes']['name'], 'alice')
         alice_id = item['id']
 
         # Search for alice by id. We should get one result whose name is alice.
-        r = self.test_app.get('/people?filter[id:eq]={}'.format(alice_id))
+        r = self.test_app().get('/people?filter[id:eq]={}'.format(alice_id))
         self.assertEqual(len(r.json['data']), 1)
         item = r.json['data'][0]
         self.assertEqual(item['id'], alice_id)
@@ -301,7 +310,7 @@ class TestSpec(DBTestBase):
         information about the resource object in which it’s defined.
         '''
         # Fetch a single post.
-        r = self.test_app.get('/posts?page[limit]=1')
+        r = self.test_app().get('/posts?page[limit]=1')
         item = r.json['data'][0]
         # Check attributes.
         self.assertIn('attributes', item)
@@ -322,7 +331,7 @@ class TestSpec(DBTestBase):
         # relationships instead).
 
         # Fetch a single post.
-        r = self.test_app.get('/posts?page[limit]=1')
+        r = self.test_app().get('/posts?page[limit]=1')
         item = r.json['data'][0]
         # Check for forreign keys.
         self.assertNotIn('author_id', item['attributes'])
@@ -337,7 +346,7 @@ class TestSpec(DBTestBase):
         other resource objects.
         '''
         # Fetch a single blog (has to-one and to-many realtionships)
-        r = self.test_app.get('/blogs?page[limit]=1')
+        r = self.test_app().get('/blogs?page[limit]=1')
         item = r.json['data'][0]
         # Should have relationships key
         self.assertIn('relationships', item)
@@ -365,7 +374,7 @@ class TestSpec(DBTestBase):
         '''Relationships links object should have 'self' and 'related' links.
         '''
         # Fetch a single blog (has to-one and to-many relationships)
-        r = self.test_app.get('/blogs?page[limit]=1')
+        r = self.test_app().get('/blogs?page[limit]=1')
         item = r.json['data'][0]
         # Should have relationships key
         links = item['relationships']['owner']['links']
@@ -389,18 +398,18 @@ class TestSpec(DBTestBase):
         the relationship isn’t currently associated with any target resources.
         '''
         # Fetch a single blog (has to-one and to-many relationships)
-        r = self.test_app.get('/blogs/1')
+        r = self.test_app().get('/blogs/1')
         item = r.json['data']
         owner_url = item['relationships']['owner']['links']['related']
         posts_url = item['relationships']['posts']['links']['related']
 
-        owner_data = self.test_app.get(owner_url).json['data']
+        owner_data = self.test_app().get(owner_url).json['data']
         # owner should be a single object.
         self.assertIsInstance(owner_data, dict)
         # owner should be of type 'people'
         self.assertEqual(owner_data['type'], 'people')
 
-        posts_data = self.test_app.get(posts_url).json['data']
+        posts_data = self.test_app().get(posts_url).json['data']
         # posts should be a collection.
         self.assertIsInstance(posts_data, list)
         # each post should be of type 'posts'
@@ -425,26 +434,26 @@ class TestSpec(DBTestBase):
         '''
         # An anonymous comment.
         # 'null for empty to-one relationships.'
-        comment = self.test_app.get('/comments/5').json['data']
+        comment = self.test_app().get('/comments/5').json['data']
         self.assertIsNone(comment['relationships']['author']['data'])
 
         # A comment with an author.
         # 'a single resource identifier object for non-empty to-one
         # relationships.'
-        comment = self.test_app.get('/comments/1').json['data']
+        comment = self.test_app().get('/comments/1').json['data']
         author = comment['relationships']['author']['data']
         self.assertEqual(author['type'], 'people')
 
         # A post with no comments.
         # 'an empty array ([]) for empty to-many relationships.'
-        post = self.test_app.get('/posts/1').json['data']
+        post = self.test_app().get('/posts/1').json['data']
         comments = post['relationships']['comments']['data']
         self.assertEqual(len(comments), 0)
 
         # A post with comments.
         # 'an array of resource identifier objects for non-empty to-many
         # relationships.'
-        post = self.test_app.get('/posts/4').json['data']
+        post = self.test_app().get('/posts/4').json['data']
         comments = post['relationships']['comments']['data']
         self.assertGreater(len(comments), 0)
         self.assertEqual(comments[0]['type'], 'comments')
@@ -461,12 +470,12 @@ class TestSpec(DBTestBase):
         A server MUST respond to a GET request to the specified URL with a
         response that includes the resource as the primary data.
         '''
-        person = self.test_app.get('/people/1').json['data']
+        person = self.test_app().get('/people/1').json['data']
         # Make sure we got the expected person.
         self.assertEqual(person['type'], 'people')
         self.assertEqual(person['id'], '1')
         # Now fetch the self link.
-        person_again = self.test_app.get(person['links']['self']).json['data']
+        person_again = self.test_app().get(person['links']['self']).json['data']
         # Make sure we got the same person.
         self.assertEqual(person_again['type'], 'people')
         self.assertEqual(person_again['id'], '1')
@@ -477,7 +486,7 @@ class TestSpec(DBTestBase):
         In a compound document, all included resources MUST be represented as an
         array of resource objects in a top-level included member.
         '''
-        person = self.test_app.get('/people/1?include=blogs').json
+        person = self.test_app().get('/people/1?include=blogs').json
         self.assertIsInstance(person['included'], list)
         # Each item in the list should be a resource object: we'll look for
         # type, id and attributes.
@@ -494,7 +503,7 @@ class TestSpec(DBTestBase):
         Request.
         '''
         # Try to include a relationship that doesn't exist.
-        r = self.test_app.get('/people/1?include=frogs', status=400)
+        r = self.test_app().get('/people/1?include=frogs', status=400)
 
     def test_spec_nested_include(self):
         '''Should return includes for nested resources.
@@ -504,7 +513,7 @@ class TestSpec(DBTestBase):
 
             * GET /articles/1?include=comments.author
         '''
-        r = self.test_app.get('/people/1?include=comments.author')
+        r = self.test_app().get('/people/1?include=comments.author')
         people_seen = set()
         types_expected = {'people', 'comments'}
         types_seen = set()
@@ -543,7 +552,7 @@ class TestSpec(DBTestBase):
         included resources.
         '''
         # get a person with included blogs and comments.
-        person = self.test_app.get('/people/1?include=blogs,comments').json
+        person = self.test_app().get('/people/1?include=blogs,comments').json
         # Find all the resource identifiers.
         rids = set()
         for rel in person['data']['relationships'].values():
@@ -563,7 +572,7 @@ class TestSpec(DBTestBase):
         fields that would otherwise contain linkage data are excluded via sparse
         fieldsets.
         '''
-        person = self.test_app.get(
+        person = self.test_app().get(
             '/people/1?include=blogs&fields[people]=name,comments'
         ).json
         # Find all the resource identifiers.
@@ -582,7 +591,7 @@ class TestSpec(DBTestBase):
         each type and id pair.
         '''
         # get some people with included blogs and comments.
-        people = self.test_app.get('/people?include=blogs,comments').json
+        people = self.test_app().get('/people?include=blogs,comments').json
         # Check that each resource only appears once.
         seen = set()
         # Add the main resource objects.
@@ -611,7 +620,7 @@ class TestSpec(DBTestBase):
 
         Note: only URL string links are currently generated by jsonapi.
         '''
-        links = self.test_app.get('/people').json['links']
+        links = self.test_app().get('/people').json['links']
         self.assertIsInstance(links['self'], str)
         self.assertIsInstance(links['first'], str)
         self.assertIsInstance(links['last'], str)
@@ -622,7 +631,7 @@ class TestSpec(DBTestBase):
         A server MUST respond with 404 Not Found when processing a request to
         fetch a single resource that does not exist,
         '''
-        r = self.test_app.get('/people/1000', status=404)
+        r = self.test_app().get('/people/1000', status=404)
 
     def test_spec_fetch_non_existent_related(self):
         '''Should return primary data of null, not 404.
@@ -630,7 +639,7 @@ class TestSpec(DBTestBase):
         null is only an appropriate response when the requested URL is one that
         might correspond to a single resource, but doesn’t currently.
         '''
-        data = self.test_app.get('/comments/5/author').json['data']
+        data = self.test_app().get('/comments/5/author').json['data']
         self.assertIsNone(data)
 
     def test_spec_fetch_relationship_link(self):
@@ -643,12 +652,12 @@ class TestSpec(DBTestBase):
         value for resource linkage, as described above for relationship objects.
         '''
         # Blogs have both many to one and one to many relationships.
-        blog1 = self.test_app.get('/blogs/1').json['data']
+        blog1 = self.test_app().get('/blogs/1').json['data']
 
         # to one
         owner_url = blog1['relationships']['owner']['links']['self']
         # A server MUST support fetching relationship data...
-        owner_data = self.test_app.get(owner_url).json['data']
+        owner_data = self.test_app().get(owner_url).json['data']
         # the response document MUST match the appropriate value for resource
         # linkage...
         #
@@ -661,7 +670,7 @@ class TestSpec(DBTestBase):
         # to many
         posts_url = blog1['relationships']['posts']['links']['self']
         # A server MUST support fetching relationship data...
-        posts_data = self.test_app.get(posts_url).json['data']
+        posts_data = self.test_app().get(posts_url).json['data']
         # the response document MUST match the appropriate value for resource
         # linkage...
         #
@@ -680,8 +689,8 @@ class TestSpec(DBTestBase):
             "data": null
         '''
         # comment 5 has no author
-        comment5 = self.test_app.get('/comments/5').json['data']
-        author = self.test_app.get(
+        comment5 = self.test_app().get('/comments/5').json['data']
+        author = self.test_app().get(
             comment5['relationships']['author']['links']['self']
         ).json['data']
         self.assertIsNone(author)
@@ -695,8 +704,8 @@ class TestSpec(DBTestBase):
             "data": []
         '''
         # post 1 has no comments
-        post1 = self.test_app.get('/posts/1').json['data']
-        comments = self.test_app.get(
+        post1 = self.test_app().get('/posts/1').json['data']
+        comments = self.test_app().get(
             post1['relationships']['comments']['links']['self']
         ).json['data']
         self.assertEqual(len(comments), 0)
@@ -708,7 +717,7 @@ class TestSpec(DBTestBase):
         relationship link URL that does not exist.
         '''
         # Try to get the author of a non existent post.
-        r = self.test_app.get('/posts/1000/relationships/author', status=404)
+        r = self.test_app().get('/posts/1000/relationships/author', status=404)
 
     def test_spec_sparse_fields(self):
         '''Should return only requested fields.
@@ -725,7 +734,7 @@ class TestSpec(DBTestBase):
         of that type in its response.
         '''
         # Ask for just the title, content and author fields of a post.
-        r = self.test_app.get('/posts/1?fields[posts]=title,content,author')
+        r = self.test_app().get('/posts/1?fields[posts]=title,content,author')
         data = r.json['data']
 
         atts = data['attributes']
@@ -746,7 +755,7 @@ class TestSpec(DBTestBase):
 
             * GET /people?sort=age
         '''
-        data = self.test_app.get('/posts?sort=content').json['data']
+        data = self.test_app().get('/posts?sort=content').json['data']
         prev = ''
         for item in data:
             self.assertGreaterEqual(item['attributes']['content'], prev)
@@ -762,7 +771,7 @@ class TestSpec(DBTestBase):
 
             * GET /people?sort=age,name
         '''
-        data = self.test_app.get('/posts?sort=content,id').json['data']
+        data = self.test_app().get('/posts?sort=content,id').json['data']
         prev_content = ''
         prev_id = 0
         for item in data:
@@ -785,7 +794,7 @@ class TestSpec(DBTestBase):
 
             * GET /articles?sort=-created,title
         '''
-        data = self.test_app.get('/posts?sort=-content').json['data']
+        data = self.test_app().get('/posts?sort=-content').json['data']
         prev = 'zzz'
         for item in data:
             self.assertLessEqual(item['attributes']['content'], prev)
@@ -814,7 +823,7 @@ class TestSpec(DBTestBase):
             * prev: the previous page of data
             * next: the next page of data
         '''
-        json = self.test_app.get('/posts?page[limit]=2&page[offset]=2').json
+        json = self.test_app().get('/posts?page[limit]=2&page[offset]=2').json
         self.assertEqual(len(json['data']), 2)
         self.assertIn('first', json['links'])
         self.assertIn('last', json['links'])
@@ -827,9 +836,9 @@ class TestSpec(DBTestBase):
         Keys MUST either be omitted or have a null value to indicate that a
         particular link is unavailable.
         '''
-        r = self.test_app.get('/posts?page[limit]=1')
+        r = self.test_app().get('/posts?page[limit]=1')
         available = r.json['meta']['results']['available']
-        json = self.test_app.get(
+        json = self.test_app().get(
             '/posts?page[limit]=2&page[offset]=' + str(available - 2)
         ).json
         self.assertEqual(len(json['data']), 2)
@@ -841,7 +850,7 @@ class TestSpec(DBTestBase):
         Concepts of order, as expressed in the naming of pagination links, MUST
         remain consistent with JSON API’s sorting rules.
         '''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?page[limit]=4&sort=content&fields[posts]=content'
         ).json['data']
         self.assertEqual(len(data), 4)
@@ -860,14 +869,14 @@ class TestSpec(DBTestBase):
         The filter query parameter is reserved for filtering data. Servers and
         clients SHOULD use this key for filtering operations.
         '''
-        data = self.test_app.get('/people?filter[name:eq]=alice').json['data']
+        data = self.test_app().get('/people?filter[name:eq]=alice').json['data']
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['type'], 'people')
         self.assertEqual(data[0]['attributes']['name'], 'alice')
 
     def test_spec_filterop_ne(self):
         '''Should return collection of people whose name is not alice.'''
-        data = self.test_app.get('/people?filter[name:ne]=alice').json['data']
+        data = self.test_app().get('/people?filter[name:ne]=alice').json['data']
         for item in data:
             try:
                 errors = item['meta']['errors']
@@ -876,7 +885,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_startswith(self):
         '''Should return collection where titles start with "post1".'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[title:startswith]=post1'
         ).json['data']
         for item in data:
@@ -884,7 +893,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_endswith(self):
         '''Should return collection where titles end with "main".'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[title:endswith]=main'
         ).json['data']
         for item in data:
@@ -892,7 +901,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_contains(self):
         '''Should return collection where titles contain "bob".'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[title:contains]=bob'
         ).json['data']
         for item in data:
@@ -900,7 +909,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_lt(self):
         '''Should return posts with published_at less than 2015-01-03.'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[published_at:lt]=2015-01-03'
         ).json['data']
         ref_date = datetime.datetime(2015,1,3)
@@ -914,7 +923,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_gt(self):
         '''Should return posts with published_at greater than 2015-01-03.'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[published_at:gt]=2015-01-03'
         ).json['data']
         ref_date = datetime.datetime(2015,1,3)
@@ -928,7 +937,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_le(self):
         '''Should return posts with published_at <= 2015-01-03.'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[published_at:le]=2015-01-03'
         ).json['data']
         ref_date = datetime.datetime(2015,1,3)
@@ -942,7 +951,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_ge(self):
         '''Should return posts with published_at >= 2015-01-03.'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[published_at:ge]=2015-01-03'
         ).json['data']
         ref_date = datetime.datetime(2015,1,3)
@@ -956,7 +965,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_like(self):
         '''Should return collection where content matches "*thing*".'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[content:like]=*thing*'
         ).json['data']
         for item in data:
@@ -965,7 +974,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_ilike(self):
         '''Should return collection where content case insensitive matches "*thing*".'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[content:ilike]=*THING*'
         ).json['data']
         for item in data:
@@ -973,7 +982,7 @@ class TestSpec(DBTestBase):
 
     def test_spec_filterop_json_contains(self):
         '''Should return collection where json_content contains {"b": 2}.'''
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[json_content:contains]={"b": 2}'
         ).json['data']
         for item in data:
@@ -983,7 +992,7 @@ class TestSpec(DBTestBase):
         '''Should return collection where json_content contained by expression.'''
         containing_expr = '{"a":1, "b": 2, "c": 3}'
         containing_json = json.loads(containing_expr)
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/posts?filter[json_content:contained_by]={}'.format(containing_expr)
         ).json['data']
         for item in data:
@@ -997,11 +1006,11 @@ class TestSpec(DBTestBase):
     def test_spec_post_collection(self):
         '''Should create a new person object.'''
         # Make sure there is no test person.
-        data = self.test_app.get('/people?filter[name:eq]=test').json['data']
+        data = self.test_app().get('/people?filter[name:eq]=test').json['data']
         self.assertEqual(len(data),0)
 
         # Try adding a test person.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1015,12 +1024,12 @@ class TestSpec(DBTestBase):
         )
 
         # Make sure they are there.
-        data = self.test_app.get('/people?filter[name:eq]=test').json['data']
+        data = self.test_app().get('/people?filter[name:eq]=test').json['data']
         self.assertEqual(len(data),1)
 
     def test_spec_post_collection_no_attributes(self):
         '''Should create a person with no attributes.'''
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1041,7 +1050,7 @@ class TestSpec(DBTestBase):
         when it was required and when it was not. Therefore, to improve
         consistency and minimize confusion, type is always required.
         '''
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1063,7 +1072,7 @@ class TestSpec(DBTestBase):
         to have.
         '''
         # Add a test blog with owner alice.
-        created_id = self.test_app.post_json(
+        created_id = self.test_app().post_json(
             '/blogs',
             {
                 'data': {
@@ -1082,14 +1091,14 @@ class TestSpec(DBTestBase):
         ).json['data']['id']
 
         # Make sure they are there.
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/blogs/{}'.format(created_id)
         ).json['data']
         self.assertEqual(data['id'], created_id)
 
         # Test where there is a relationship with nullable=False
         # Add a test post with author alice.
-        created_id = self.test_app.post_json(
+        created_id = self.test_app().post_json(
             '/posts',
             {
                 'data': {
@@ -1112,7 +1121,7 @@ class TestSpec(DBTestBase):
         #
         # its value MUST be a relationship object with a data
         # member.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/blogs',
             {
                 'data': {
@@ -1131,7 +1140,7 @@ class TestSpec(DBTestBase):
             status=400
         )
         # Malformed data member
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/blogs',
             {
                 'data': {
@@ -1150,7 +1159,7 @@ class TestSpec(DBTestBase):
             status=400
         )
         # No id in relationship
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/blogs',
             {
                 'data': {
@@ -1179,7 +1188,7 @@ class TestSpec(DBTestBase):
         to have.
         '''
         # Add two test blogs first.
-        blog1_id = self.test_app.post_json(
+        blog1_id = self.test_app().post_json(
             '/blogs',
             {
                 'data': {
@@ -1191,7 +1200,7 @@ class TestSpec(DBTestBase):
             },
             headers={'Content-Type': 'application/vnd.api+json'}
         ).json['data']['id']
-        blog2_id = self.test_app.post_json(
+        blog2_id = self.test_app().post_json(
             '/blogs',
             {
                 'data': {
@@ -1205,7 +1214,7 @@ class TestSpec(DBTestBase):
         ).json['data']['id']
 
         # Add a test user who owns both blogs.
-        person_id = self.test_app.post_json(
+        person_id = self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1227,7 +1236,7 @@ class TestSpec(DBTestBase):
         ).json['data']['id']
 
         # Make sure the person exists and does own the blogs.
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/people/{}'.format(person_id)
         ).json['data']
         self.assertEqual(data['id'], person_id)
@@ -1239,7 +1248,7 @@ class TestSpec(DBTestBase):
 
         # Now attempt to add another person with malformed requests.
         # No data element in blogs.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1258,7 +1267,7 @@ class TestSpec(DBTestBase):
             status=400
         )
         # Not an array
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1277,7 +1286,7 @@ class TestSpec(DBTestBase):
             status=400
         )
         # Not an array
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1296,7 +1305,7 @@ class TestSpec(DBTestBase):
             status=400
         )
         # Item with incorrect type
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1317,7 +1326,7 @@ class TestSpec(DBTestBase):
             status=409
         )
         # Item with no id
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1342,7 +1351,7 @@ class TestSpec(DBTestBase):
         '''Should create an article_by_assoc with two authors.
         '''
         # Create article_by_assoc with authors alice and bob.
-        article_id = self.test_app.post_json(
+        article_id = self.test_app().post_json(
             '/articles_by_assoc',
             {
                 'data': {
@@ -1364,7 +1373,7 @@ class TestSpec(DBTestBase):
         ).json['data']['id']
 
         # GET it back and check that authors is correct.
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/articles_by_assoc/{}'.format(article_id)
         ).json['data']
         created_people_ids = {"1", "2"}
@@ -1377,7 +1386,7 @@ class TestSpec(DBTestBase):
         '''Should create an article_by_obj with two authors.
         '''
         # Create the article_by_obj.
-        article_id = self.test_app.post_json(
+        article_id = self.test_app().post_json(
             '/articles_by_obj',
             {
                 'data': {
@@ -1391,7 +1400,7 @@ class TestSpec(DBTestBase):
         ).json['data']['id']
 
         # Create the relationships to the two authors.
-        rel1_id = self.test_app.post_json(
+        rel1_id = self.test_app().post_json(
             '/article_author_associations',
             {
                 'data': {
@@ -1410,7 +1419,7 @@ class TestSpec(DBTestBase):
                 }
             }
         ).json['data']['id']
-        rel2_id = self.test_app.post_json(
+        rel2_id = self.test_app().post_json(
             '/article_author_associations',
             {
                 'data': {
@@ -1431,7 +1440,7 @@ class TestSpec(DBTestBase):
         ).json['data']['id']
 
         # Check that the article has authors 1 and 3
-        data = self.test_app.get(
+        data = self.test_app().get(
             '/articles_by_obj/{}'.format(article_id)
         ).json['data']
         assoc_ids = {
@@ -1440,7 +1449,7 @@ class TestSpec(DBTestBase):
         }
         author_ids = set()
         for assoc_id in assoc_ids:
-            data = self.test_app.get(
+            data = self.test_app().get(
                 '/article_author_associations/{}'.format(assoc_id)
             ).json['data']
             author_ids.add(data['relationships']['author']['data']['id'])
@@ -1472,7 +1481,7 @@ class TestSpec(DBTestBase):
         isn't RFC4122 UUID, but we're not enforcing that since there may be
         other globally unique id strategies in use.
         '''
-        r = self.test_app.post_json(
+        r = self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1507,7 +1516,7 @@ class TestSpec(DBTestBase):
         to create a resource with a client-generated ID.
         '''
         # We need a test_app with different settings.
-        test_app = self.new_test_app(
+        test_app = self.test_app(
             options={'pyramid_jsonapi.allow_client_ids': 'false'}
         )
         test_app.post_json(
@@ -1531,7 +1540,7 @@ class TestSpec(DBTestBase):
         A server MUST return 409 Conflict when processing a POST request to
         create a resource with a client-generated ID that already exists.
         '''
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1553,7 +1562,7 @@ class TestSpec(DBTestBase):
         which the resource object’s type is not among the type(s) that
         constitute the collection represented by the endpoint.
         '''
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {
                 'data': {
@@ -1579,7 +1588,7 @@ class TestSpec(DBTestBase):
         # Make sure that comments/4,5 are not attached to posts/1.
         comment_ids = {
             comment['id'] for comment in
-                self.test_app.get(
+                self.test_app().get(
                     '/posts/1/relationships/comments'
                 ).json['data']
         }
@@ -1587,7 +1596,7 @@ class TestSpec(DBTestBase):
         self.assertNotIn('5', comment_ids)
 
         # Add comments 4 and 5.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/posts/1/relationships/comments',
             {
                 'data': [
@@ -1601,14 +1610,14 @@ class TestSpec(DBTestBase):
         # Make sure they are there.
         comment_ids = {
             comment['id'] for comment in
-                self.test_app.get(
+                self.test_app().get(
                     '/posts/1/relationships/comments'
                 ).json['data']
         }
         self.assertEqual(comment_ids, {'4', '5'})
 
         # Make sure adding comments/4 again doesn't result in two comments/4.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/posts/1/relationships/comments',
             {
                 'data': [
@@ -1619,7 +1628,7 @@ class TestSpec(DBTestBase):
         )
         comment_ids = [
             comment['id'] for comment in
-                self.test_app.get(
+                self.test_app().get(
                     '/posts/1/relationships/comments'
                 ).json['data']
         ]
@@ -1627,7 +1636,7 @@ class TestSpec(DBTestBase):
 
         # Make sure adding comments/1 adds to the comments list, rather than
         # replacing it.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/posts/1/relationships/comments',
             {
                 'data': [
@@ -1638,7 +1647,7 @@ class TestSpec(DBTestBase):
         )
         comment_ids = [
             comment['id'] for comment in
-                self.test_app.get(
+                self.test_app().get(
                     '/posts/1/relationships/comments'
                 ).json['data']
         ]
@@ -1656,7 +1665,7 @@ class TestSpec(DBTestBase):
         # Make sure that people/1,3 are not attached to articles_by_assoc/2.
         author_ids = {
             author['id'] for author in
-                self.test_app.get(
+                self.test_app().get(
                     '/articles_by_assoc/2/relationships/authors'
                 ).json['data']
         }
@@ -1664,7 +1673,7 @@ class TestSpec(DBTestBase):
         self.assertNotIn('3', author_ids)
 
         # Add people/1.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/articles_by_assoc/2/relationships/authors',
             {
                 'data': [
@@ -1677,14 +1686,14 @@ class TestSpec(DBTestBase):
         # Make sure people/2 has been added.
         author_ids = {
             author['id'] for author in
-                self.test_app.get(
+                self.test_app().get(
                     '/articles_by_assoc/2/relationships/authors'
                 ).json['data']
         }
         self.assertEqual(author_ids, {'1', '2'})
 
         # Make sure adding people/1 again doesn't result in multiple entries.
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/articles_by_assoc/2/relationships/authors',
             {
                 'data': [
@@ -1695,7 +1704,7 @@ class TestSpec(DBTestBase):
         )
         author_ids = [
             author['id'] for author in
-                self.test_app.get(
+                self.test_app().get(
                     '/articles_by_assoc/2/relationships/authors'
                 ).json['data']
         ]
@@ -1708,7 +1717,7 @@ class TestSpec(DBTestBase):
     def test_spec_patch(self):
         '''Should change alice's name to alice2'''
         # Patch alice.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/people/1',
             {
                 'data': {
@@ -1722,7 +1731,7 @@ class TestSpec(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
         )
         # Fetch alice back...
-        data = self.test_app.get('/people/1').json['data']
+        data = self.test_app().get('/people/1').json['data']
         # ...should now be alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
 
@@ -1733,7 +1742,7 @@ class TestSpec(DBTestBase):
         The resource object MUST contain type and id members.
         '''
         # No id.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/people/1',
             {
                 'data': {
@@ -1747,7 +1756,7 @@ class TestSpec(DBTestBase):
             status=409
         )
         # No type.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/people/1',
             {
                 'data': {
@@ -1761,7 +1770,7 @@ class TestSpec(DBTestBase):
             status=409
         )
         # No type or id.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/people/1',
             {
                 'data': {
@@ -1782,7 +1791,7 @@ class TestSpec(DBTestBase):
         responds only with top-level meta data. In this case the server MUST NOT
         include a representation of the updated resource(s).
         '''
-        json = self.test_app.patch_json(
+        json = self.test_app().patch_json(
             '/people/1',
             {
                 'data': {
@@ -1804,7 +1813,7 @@ class TestSpec(DBTestBase):
         A server MUST return 404 Not Found when processing a request to modify a
         resource that does not exist.
         '''
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/people/1000',
             {
                 'data': {
@@ -1836,7 +1845,7 @@ class TestSpec(DBTestBase):
         specified in this member.
         '''
         # Check that posts/1 does not have people/2 as an author.
-        data = self.test_app.get('/posts/1').json['data']
+        data = self.test_app().get('/posts/1').json['data']
         author_data = data['relationships']['author']['data']
         if author_data:
             self.assertNotEqual(author_data['id'], '2')
@@ -1847,7 +1856,7 @@ class TestSpec(DBTestBase):
         orig_comments = data['relationships']['comments']['data']
 
         # PATCH posts/1 to have author people/2.
-        r = self.test_app.patch_json(
+        r = self.test_app().patch_json(
             '/posts/1',
             {
                 'data': {
@@ -1864,7 +1873,7 @@ class TestSpec(DBTestBase):
         )
 
         # Check that posts/1 now has people/2 as an author.
-        data = self.test_app.get('/posts/1').json['data']
+        data = self.test_app().get('/posts/1').json['data']
         author_data = data['relationships']['author']['data']
         self.assertEqual(author_data['id'], '2')
 
@@ -1881,14 +1890,14 @@ class TestSpec(DBTestBase):
         '''Should replace a post's comments.
         '''
         # Check that posts/1 does not have comments/4 or comments/5.
-        data = self.test_app.get('/posts/1').json['data']
+        data = self.test_app().get('/posts/1').json['data']
         comments = data['relationships']['comments']['data']
         comment_ids = {'4', '5'}
         for comment in comments:
             self.assertNotIn(comment['id'], comment_ids)
 
         # PATCH posts/1 to have comments/4 and 5.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/posts/1',
             {
                 'data': {
@@ -1906,7 +1915,7 @@ class TestSpec(DBTestBase):
         )
 
         # Check that posts/1 now has comments/4 and comments/5.
-        data = self.test_app.get('/posts/1').json['data']
+        data = self.test_app().get('/posts/1').json['data']
         comments = data['relationships']['comments']['data']
         found_ids = {comment['id'] for comment in comments}
         self.assertEqual(comment_ids, found_ids)
@@ -1916,13 +1925,13 @@ class TestSpec(DBTestBase):
         '''
         author_ids = {'1', '3'}
         # Check that articles_by_assoc/2 does not have author ids 1 and 3
-        data = self.test_app.get('/articles_by_assoc/2').json['data']
+        data = self.test_app().get('/articles_by_assoc/2').json['data']
         authors = data['relationships']['authors']['data']
         found_ids = {author['id'] for author in authors}
         self.assertNotEqual(author_ids, found_ids)
 
         # PATCH articles_by_assoc/2 to have authors 1 and 3
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/articles_by_assoc/2',
             {
                 'data': {
@@ -1940,7 +1949,7 @@ class TestSpec(DBTestBase):
         )
 
         # Check that articles_by_assoc/2 now has authors 1 and 3
-        data = self.test_app.get('/articles_by_assoc/2').json['data']
+        data = self.test_app().get('/articles_by_assoc/2').json['data']
         authors = data['relationships']['authors']['data']
         found_ids = {author['id'] for author in authors}
         self.assertEqual(author_ids, found_ids)
@@ -1957,13 +1966,13 @@ class TestSpec(DBTestBase):
             ...
         '''
         # Make sure the current author of post/1 is not people/3
-        author_id = self.test_app.get(
+        author_id = self.test_app().get(
             '/posts/1/relationships/author'
         ).json['data']['id']
         self.assertNotEqual(author_id, '3')
 
         # Set the author to be people/3
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/posts/1/relationships/author',
             {
                 'data': {'type': 'people', 'id': '3'}
@@ -1972,7 +1981,7 @@ class TestSpec(DBTestBase):
         )
 
         # Now the author should be people/3
-        author_id = self.test_app.get(
+        author_id = self.test_app().get(
             '/posts/1/relationships/author'
         ).json['data']['id']
         self.assertEqual(author_id, '3')
@@ -1989,13 +1998,13 @@ class TestSpec(DBTestBase):
 
         '''
         # Make sure the current post of comment/1 is not null.
-        comment_id = self.test_app.get(
+        comment_id = self.test_app().get(
             '/comments/1/relationships/post'
         ).json['data']['id']
         self.assertNotEqual(comment_id, None)
 
         # Set the post to None.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/comments/1/relationships/post',
             {
                 'data': None
@@ -2004,7 +2013,7 @@ class TestSpec(DBTestBase):
         )
 
         # Now the post should be None.
-        comment = self.test_app.get(
+        comment = self.test_app().get(
             '/comments/1/relationships/post'
         ).json['data']
         self.assertEqual(comment, None)
@@ -2021,13 +2030,13 @@ class TestSpec(DBTestBase):
         # Check that posts/1 does not have comments/4 or comments/5.
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/1/relationships/comments').json['data']
+            self.test_app().get('/posts/1/relationships/comments').json['data']
         }
         for cid in comment_ids:
             self.assertNotIn(cid, {'4', '5'})
 
         # PATCH posts/1 to have comments/4 and 5.
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/posts/1/relationships/comments',
             {
                 'data': [
@@ -2041,7 +2050,7 @@ class TestSpec(DBTestBase):
         # Test that posts/1 has comments/4 and 5 (and only those).
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/1/relationships/comments').json['data']
+            self.test_app().get('/posts/1/relationships/comments').json['data']
         }
         self.assertEqual(comment_ids, {'4', '5'})
 
@@ -2058,14 +2067,14 @@ class TestSpec(DBTestBase):
         # Check that articles_by_assoc/2 does not have author ids 1 and 3
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/2/relationships/authors'
             ).json['data']
         }
         self.assertNotEqual(author_ids, found_ids)
 
         # PATCH articles_by_assoc/2 to have authors 1 and 3
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/articles_by_assoc/2/relationships/authors',
             {
                 'data': [
@@ -2079,7 +2088,7 @@ class TestSpec(DBTestBase):
         # Check that articles_by_assoc/2 now has authors 1 and 3
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/2/relationships/authors'
             ).json['data']
         }
@@ -2097,13 +2106,13 @@ class TestSpec(DBTestBase):
         '''
 
         # Check that comments/5 exists.
-        self.test_app.get('/comments/5')
+        self.test_app().get('/comments/5')
 
         # Delete comments/5.
-        self.test_app.delete('/comments/5')
+        self.test_app().delete('/comments/5')
 
         # Check that comments/5 no longer exists.
-        self.test_app.get('/comments/5', status=404)
+        self.test_app().get('/comments/5', status=404)
 
     def test_spec_delete_no_such_item(self):
         '''Should fail to delete non-existent comments/99999
@@ -2113,7 +2122,7 @@ class TestSpec(DBTestBase):
         '''
 
         # Delete comments/99999.
-        self.test_app.delete('/comments/99999', status=404)
+        self.test_app().delete('/comments/99999', status=404)
 
     def test_spec_delete_relationships_onetomany(self):
         '''Should remove a comment from a post.
@@ -2127,12 +2136,12 @@ class TestSpec(DBTestBase):
         # Get the current set of comments for posts/4.
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/4/relationships/comments').json['data']
+            self.test_app().get('/posts/4/relationships/comments').json['data']
         }
         self.assertEqual(comment_ids, {'1', '2', '5'})
 
         # DELETE comments/1 and 2
-        self.test_app.delete_json(
+        self.test_app().delete_json(
             '/posts/4/relationships/comments',
             {
                 'data': [
@@ -2146,7 +2155,7 @@ class TestSpec(DBTestBase):
         # Test that posts/4 now only has comments/5
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/4/relationships/comments').json['data']
+            self.test_app().get('/posts/4/relationships/comments').json['data']
         }
         self.assertEqual(comment_ids, {'5'})
 
@@ -2159,12 +2168,12 @@ class TestSpec(DBTestBase):
         # Get the current set of comments for posts/4.
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/4/relationships/comments').json['data']
+            self.test_app().get('/posts/4/relationships/comments').json['data']
         }
         self.assertEqual(comment_ids, {'1', '2', '5'})
 
         # DELETE comments/1.
-        self.test_app.delete_json(
+        self.test_app().delete_json(
             '/posts/4/relationships/comments',
             {
                 'data': [
@@ -2177,12 +2186,12 @@ class TestSpec(DBTestBase):
         # Test that comments/1 has been deleted.
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/4/relationships/comments').json['data']
+            self.test_app().get('/posts/4/relationships/comments').json['data']
         }
         self.assertEqual(comment_ids, {'2', '5'})
 
         # DELETE comments/1 again.
-        self.test_app.delete_json(
+        self.test_app().delete_json(
             '/posts/4/relationships/comments',
             {
                 'data': [
@@ -2194,7 +2203,7 @@ class TestSpec(DBTestBase):
         # Test that we still have the same list of comments.
         comment_ids = {
             comment['id'] for comment in
-            self.test_app.get('/posts/4/relationships/comments').json['data']
+            self.test_app().get('/posts/4/relationships/comments').json['data']
         }
         self.assertEqual(comment_ids, {'2', '5'})
 
@@ -2209,14 +2218,14 @@ class TestSpec(DBTestBase):
         '''
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/1/relationships/authors'
             ).json['data']
         }
         self.assertEqual(found_ids, {'1', '2'})
 
         # DELETE people/1 from rel.
-        self.test_app.delete_json(
+        self.test_app().delete_json(
             '/articles_by_assoc/1/relationships/authors',
             {
                 'data': [
@@ -2229,7 +2238,7 @@ class TestSpec(DBTestBase):
         # Check that articles_by_assoc/2 now has authors 2
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/1/relationships/authors'
             ).json['data']
         }
@@ -2243,14 +2252,14 @@ class TestSpec(DBTestBase):
         '''
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/1/relationships/authors'
             ).json['data']
         }
         self.assertEqual(found_ids, {'1', '2'})
 
         # DELETE people/1 from rel.
-        self.test_app.delete_json(
+        self.test_app().delete_json(
             '/articles_by_assoc/1/relationships/authors',
             {
                 'data': [
@@ -2263,14 +2272,14 @@ class TestSpec(DBTestBase):
         # Check that articles_by_assoc/2 now has authors 2
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/1/relationships/authors'
             ).json['data']
         }
         self.assertEqual(found_ids, {'2'})
 
         # Try to DELETE people/1 again.
-        self.test_app.delete_json(
+        self.test_app().delete_json(
             '/articles_by_assoc/1/relationships/authors',
             {
                 'data': [
@@ -2283,7 +2292,7 @@ class TestSpec(DBTestBase):
         # Check that articles_by_assoc/2 still has authors 2
         found_ids = {
             author['id'] for author in
-            self.test_app.get(
+            self.test_app().get(
                 '/articles_by_assoc/1/relationships/authors'
             ).json['data']
         }
@@ -2299,7 +2308,7 @@ class TestErrors(DBTestBase):
 
     def test_errors_structure(self):
         '''Errors should be array of objects with code, title, detail members.'''
-        r = self.test_app.get(
+        r = self.test_app().get(
             '/people',
             headers={ 'Content-Type': 'application/vnd.api+json; param=val' },
             status=415,
@@ -2317,7 +2326,7 @@ class TestMalformed(DBTestBase):
 
     def test_malformed_collection_post_no_data(self):
         '''Should complain about lack of data attribute.'''
-        self.test_app.post_json(
+        self.test_app().post_json(
             '/people',
             {'type': 'people'},
             headers={'Content-Type': 'application/vnd.api+json'},
@@ -2326,7 +2335,7 @@ class TestMalformed(DBTestBase):
 
     def test_malformed_item_patch_no_data(self):
         '''Should complain about lack of data attribute.'''
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/people/1',
             {'type': 'people', 'id': '1'},
             headers={'Content-Type': 'application/vnd.api+json'},
@@ -2335,21 +2344,21 @@ class TestMalformed(DBTestBase):
 
     def test_malformed_filter_unregistered_operator(self):
         '''Unkown filter operator should raise 400 BadRequest.'''
-        self.test_app.get(
+        self.test_app().get(
             '/people?filter[name:not_an_op]=splat',
             status=400
         )
 
     def test_malformed_filter_bad_operator(self):
         '''Known filter with no comparator should raise 500 InternalServerError.'''
-        self.test_app.get(
+        self.test_app().get(
             '/people?filter[name:bad_op]=splat',
             status=500
         )
 
     def test_malformed_filter_unknown_column(self):
         '''Unkown column should raise 400 BadRequest.'''
-        self.test_app.get(
+        self.test_app().get(
             '/people?filter[unknown_column:eq]=splat',
             status=400
         )
@@ -2360,7 +2369,7 @@ class TestHybrid(DBTestBase):
 
     def test_hybrid_readonly_get(self):
         '''Blog object should have owner_name attribute.'''
-        atts = self.test_app.get(
+        atts = self.test_app().get(
             '/blogs/1'
         ).json['data']['attributes']
         self.assertIn('owner_name', atts)
@@ -2368,7 +2377,7 @@ class TestHybrid(DBTestBase):
 
     def test_hybrid_readonly_patch(self):
         '''Updating owner_name should fail with 409.'''
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/blogs/1',
             {
                 'data': {
@@ -2386,7 +2395,7 @@ class TestHybrid(DBTestBase):
     def test_hybrid_writeable_patch(self):
         '''Should be able to update author_name of Post object.'''
         # Patch post 1 and change author_name to 'alice2'
-        self.test_app.patch_json(
+        self.test_app().patch_json(
             '/posts/1',
             {
                 'data': {
@@ -2400,7 +2409,7 @@ class TestHybrid(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
         )
         # Fetch alice back...
-        data = self.test_app.get('/people/1').json['data']
+        data = self.test_app().get('/people/1').json['data']
         # ...should now be called alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
 
@@ -2412,7 +2421,7 @@ class TestJoinedTableInheritance(DBTestBase):
         '''Should create BenignComment with author people/1 and then fetch it.'''
         content = 'Main content.'
         fawning_text = 'You are so great.'
-        created = self.test_app.post_json(
+        created = self.test_app().post_json(
             '/benign_comments',
             {
                 'data': {
@@ -2432,7 +2441,7 @@ class TestJoinedTableInheritance(DBTestBase):
             status=201
         ).json['data']
         # Fetch the object back
-        fetched = self.test_app.get(
+        fetched = self.test_app().get(
             '/benign_comments/{}'.format(created['id'])
         ).json['data']
         self.assertEqual(fetched['attributes']['content'], content)
@@ -2448,7 +2457,7 @@ class TestFeatures(DBTestBase):
 
     def test_feature_invisible_column(self):
         '''people object should not have attribute "invisible".'''
-        atts = self.test_app.get(
+        atts = self.test_app().get(
             '/people/1'
         ).json['data']['attributes']
         self.assertNotIn('invisible', atts)
@@ -2457,20 +2466,20 @@ class TestFeatures(DBTestBase):
     def test_feature_rename_collection(self):
         '''Should be able to fetch from whatsits even though table is things.'''
         # There should be whatsits...
-        self.test_app.get('/whatsits')
+        self.test_app().get('/whatsits')
         # ...but not things.
-        self.test_app.get('/things', status=404)
+        self.test_app().get('/things', status=404)
 
     def test_feature_construct_with_models_list(self):
         '''Should construct an api from a list of models.'''
-        test_app = self.new_test_app(
+        test_app = self.test_app(
             options={'pyramid_jsonapi.tests.models_iterable': 'list'}
         )
         test_app.get('/people/1')
 
     def test_feature_debug_endpoints(self):
         '''Should create a set of debug endpoints for manipulating the database.'''
-        test_app = self.new_test_app(
+        test_app = self.test_app(
             options={
                 'pyramid_jsonapi.debug.debug_endpoints': 'true',
                 'pyramid_jsonapi.debug.test_data_module': 'test_project.test_data'
@@ -2486,7 +2495,7 @@ class TestBugs(DBTestBase):
         #19: 'last' link has negative offset if zero results are returned
         '''
         # Need an empty collection: use a filter that will not match.
-        last = self.test_app.get(
+        last = self.test_app().get(
             '/posts?filter[title:eq]=frog'
         ).json['links']['last']
         offset = int(
@@ -2501,7 +2510,7 @@ class TestBugs(DBTestBase):
 
         #20: creating single object returns non string id
         '''
-        data = self.test_app.post_json(
+        data = self.test_app().post_json(
             '/people',
             {
                 'data': {
