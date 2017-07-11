@@ -92,7 +92,6 @@ class DBTestBase(unittest.TestCase):
             test_app = webtest.TestApp(get_app(config_path))
         if options:
             os.remove(config_path)
-        print('new app: {}'.format(test_app))
         return test_app
 
 
