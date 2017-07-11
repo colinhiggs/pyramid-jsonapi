@@ -2319,6 +2319,15 @@ class TestErrors(DBTestBase):
         self.assertIn('title', err)
         self.assertIn('detail', err)
 
+    def test_errors_composite_key(self):
+        '''Should raise exception if a model has a composite key.'''
+        self.assertRaisesRegex(
+            Exception,
+            r'^Model \S+ has more than one primary key.$',
+            self.test_app,
+            {'pyramid_jsonapi.tests.models_iterable': 'composite_key'}
+        )
+
 
 class TestMalformed(DBTestBase):
     '''Various malformed POSTs and PATCHes.'''

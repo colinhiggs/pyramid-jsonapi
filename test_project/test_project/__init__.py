@@ -8,6 +8,7 @@ import pyramid_jsonapi
 
 # Import models as a module: needed for create_jsonapi...
 from . import models
+from . import models2
 
 from pyramid.httpexceptions import (
     HTTPForbidden
@@ -16,7 +17,8 @@ from pyramid.httpexceptions import (
 test_settings = {
     'models_iterable': {
         'module': models,
-        'list': [models.Person, models.Blog]
+        'list': [models.Person, models.Blog],
+        'composite_key': [models2.CompositeKey]
     }
 }
 
