@@ -307,7 +307,7 @@ class PyramidJSONAPI():
                 ``collection_view_factory()``
         '''
 
-        # Find the primary key column from the model and add it as _jsonapi_id.
+        # Find the primary key column from the model and use as 'id_col_name'
         try:
             keycols = sqlalchemy.inspect(model).primary_key
         except sqlalchemy.exc.NoInspectionAvailable:
@@ -322,7 +322,10 @@ class PyramidJSONAPI():
                 )
             )
 
-        model._jsonapi_id = getattr(model, keycols[0].name)
+        if not hasattr(model, '__pyramid_jsonapi__'):
+            model.__pyramid_jsonapi__ = {}
+        if 'id_col_name' not in model.__pyramid_jsonapi__:
+            model.__pyramid_jsonapi__['id_col_name'] = keycols[0].name
 
         # Create a view class for use in the various add_view() calls below.
         view = self.collection_view_factory(model,
@@ -456,6 +459,10 @@ class CollectionViewBase:
     def __init__(self, request):
         self.request = request
         self.views = {}
+
+    @staticmethod
+    def id_col(item):
+        return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
     def jsonapi_view(func):  # pylint: disable=no-self-argument
         '''Decorator for view functions. Adds jsonapi boilerplate.'''
@@ -1083,7 +1090,7 @@ class CollectionViewBase:
         self.request.response.status_code = 201
         self.request.response.headers['Location'] = self.request.route_url(
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
-            **{'id': item._jsonapi_id}
+            **{'id': self.id_col(item)}
         )
         return {
             'data': self.serialise_db_item(item, {})
@@ -1621,7 +1628,7 @@ class CollectionViewBase:
         ).options(
             load_only(*self.allowed_requested_query_columns.keys())
         ).filter(
-            self.model._jsonapi_id == self.request.matchdict['id']
+            self.id_col(self.model) == self.request.matchdict['id']
         )
 
     def single_return(self, query, not_found_message=None, identifier=False):
@@ -1670,7 +1677,7 @@ class CollectionViewBase:
             else:
                 return {'data': None}
         if identifier:
-            ret['data'] = self.serialise_resource_identifier(item._jsonapi_id)
+            ret['data'] = self.serialise_resource_identifier(self.id_col(item))
         else:
             ret['data'] = self.serialise_db_item(item, included)
             if self.requested_include_names():
@@ -1735,7 +1742,7 @@ class CollectionViewBase:
         # Primary data
         if identifiers:
             ret['data'] = [
-                self.serialise_resource_identifier(dbitem._jsonapi_id)
+                self.serialise_resource_identifier(self.id_col(dbitem))
                 for dbitem in query.all()
             ]
         else:
@@ -1956,13 +1963,13 @@ class CollectionViewBase:
             query = query.filter(
                 obj_id == rel.primaryjoin.right
             ).filter(
-                rel_class._jsonapi_id == rel.secondaryjoin.right
+                self.id_col(rel_class) == rel.secondaryjoin.right
             )
         elif rel.direction is MANYTOONE:
             query = query.filter(
-                local_col == rel_class._jsonapi_id
+                local_col == self.id_col(rel_class)
             ).filter(
-                self.model._jsonapi_id == obj_id
+                self.id_col(self.model) == obj_id
             )
         else:
             raise HTTPError('Unknown relationships direction, "{}".'.format(
@@ -2040,12 +2047,12 @@ class CollectionViewBase:
         # Item's id and type are required at the top level of json-api
         # objects.
         # The item's id.
-        item_id = item._jsonapi_id
+        item_id = self.id_col(item)
         # JSON API type.
         type_name = self.collection_name
         item_url = self.request.route_url(
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
-            **{'id': item._jsonapi_id}
+            **{'id': item_id}
         )
 
         atts = {
@@ -2076,7 +2083,7 @@ class CollectionViewBase:
             if rel_path_str in self.requested_include_names():
                 is_included = True
             query = self.related_query(
-                item._jsonapi_id, rel, full_object=is_included
+                item_id, rel, full_object=is_included
             )
             if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                 limit = self.related_limit(rel)
@@ -2087,12 +2094,12 @@ class CollectionViewBase:
                 for ritem in query.all():
                     rel_dict['data'].append(
                         rel_view.serialise_resource_identifier(
-                            ritem._jsonapi_id
+                            self.id_col(ritem)
                         )
                     )
                     if is_included:
                         included[
-                            (rel_view.collection_name, ritem._jsonapi_id)
+                            (rel_view.collection_name, self.id_col(ritem))
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
@@ -2108,7 +2115,7 @@ class CollectionViewBase:
                         rel_dict['data'] = None
                     if ritem:
                         included[
-                            (rel_view.collection_name, ritem._jsonapi_id)
+                            (rel_view.collection_name, self.id_col(ritem))
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
