@@ -1923,6 +1923,23 @@ class TestSpec(DBTestBase):
             {item['id'] for item in new_comments}
         )
 
+        # MUST be a relationship object with a data member
+        # Try without a data member...
+        r = self.test_app().patch_json(
+            '/posts/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'posts',
+                    'relationships': {
+                        'author': {'type': 'people', 'id': '1'}
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_patch_resources_relationships_onetomany(self):
         '''Should replace a post's comments.
         '''
