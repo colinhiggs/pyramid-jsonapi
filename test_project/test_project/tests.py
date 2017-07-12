@@ -1853,7 +1853,9 @@ class TestSpec(DBTestBase):
                         'name': 'splat'
                     },
                     'relationships': {
-                        'non_existent': {}
+                        'non_existent': {
+                            'data': None
+                        }
                     }
                 }
             },
@@ -1899,7 +1901,7 @@ class TestSpec(DBTestBase):
                     'type': 'posts',
                     'relationships': {
                         'author': {
-                            'type': 'people', 'id': '2'
+                            'data': {'type': 'people', 'id': '2'}
                         }
                     }
                 }
@@ -1921,6 +1923,23 @@ class TestSpec(DBTestBase):
             {item['id'] for item in new_comments}
         )
 
+        # MUST be a relationship object with a data member
+        # Try without a data member...
+        r = self.test_app().patch_json(
+            '/posts/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'posts',
+                    'relationships': {
+                        'author': {'type': 'people', 'id': '1'}
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_patch_resources_relationships_onetomany(self):
         '''Should replace a post's comments.
         '''
@@ -1939,10 +1958,12 @@ class TestSpec(DBTestBase):
                     'id': '1',
                     'type': 'posts',
                     'relationships': {
-                        'comments': [
-                            {'type': 'comments', 'id': '4'},
-                            {'type': 'comments', 'id': '5'}
-                        ]
+                        'comments': {
+                            'data': [
+                                {'type': 'comments', 'id': '4'},
+                                {'type': 'comments', 'id': '5'}
+                            ]
+                        }
                     }
                 }
             },
@@ -1973,10 +1994,12 @@ class TestSpec(DBTestBase):
                     'id': '2',
                     'type': 'articles_by_assoc',
                     'relationships': {
-                        'authors': [
-                            {'type': 'people', 'id': '1'},
-                            {'type': 'people', 'id': '3'}
-                        ]
+                        'authors': {
+                            'data': [
+                                {'type': 'people', 'id': '1'},
+                                {'type': 'people', 'id': '3'}
+                            ]
+                        }
                     }
                 }
             },

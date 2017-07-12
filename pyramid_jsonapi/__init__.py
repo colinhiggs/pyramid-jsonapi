@@ -755,7 +755,7 @@ class CollectionViewBase:
                 )
 
         rels = data.get('relationships', {})
-        for relname, data in rels.items():
+        for relname, reldict in rels.items():
             if relname not in self.relationships:
                 raise HTTPNotFound(
                     'Collection {} has no relationship {}'.format(
@@ -765,6 +765,12 @@ class CollectionViewBase:
             rel = self.relationships[relname]
             rel_class = rel.mapper.class_
             rel_view = self.view_instance(rel_class)
+            try:
+                data = reldict['data']
+            except KeyError:
+                raise HTTPBadRequest(
+                    "Relationship '{}' has no 'data' member.".format(relname)
+                )
             if data is None:
                 setattr(item, relname, None)
             elif isinstance(data, dict):
