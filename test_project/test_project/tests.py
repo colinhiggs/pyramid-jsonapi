@@ -1853,7 +1853,9 @@ class TestSpec(DBTestBase):
                         'name': 'splat'
                     },
                     'relationships': {
-                        'non_existent': {}
+                        'non_existent': {
+                            'data': None
+                        }
                     }
                 }
             },
@@ -1899,7 +1901,7 @@ class TestSpec(DBTestBase):
                     'type': 'posts',
                     'relationships': {
                         'author': {
-                            'type': 'people', 'id': '2'
+                            'data': {'type': 'people', 'id': '2'}
                         }
                     }
                 }
@@ -1939,10 +1941,12 @@ class TestSpec(DBTestBase):
                     'id': '1',
                     'type': 'posts',
                     'relationships': {
-                        'comments': [
-                            {'type': 'comments', 'id': '4'},
-                            {'type': 'comments', 'id': '5'}
-                        ]
+                        'comments': {
+                            'data': [
+                                {'type': 'comments', 'id': '4'},
+                                {'type': 'comments', 'id': '5'}
+                            ]
+                        }
                     }
                 }
             },
@@ -1973,10 +1977,12 @@ class TestSpec(DBTestBase):
                     'id': '2',
                     'type': 'articles_by_assoc',
                     'relationships': {
-                        'authors': [
-                            {'type': 'people', 'id': '1'},
-                            {'type': 'people', 'id': '3'}
-                        ]
+                        'authors': {
+                            'data': [
+                                {'type': 'people', 'id': '1'},
+                                {'type': 'people', 'id': '3'}
+                            ]
+                        }
                     }
                 }
             },
