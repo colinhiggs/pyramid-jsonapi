@@ -1826,6 +1826,42 @@ class TestSpec(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
             status=404
         )
+        # Patching non existent attribute
+        detail = self.test_app().patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'type': 'people',
+                    'id': '1',
+                    'attributes': {
+                        'non_existent': 'splat'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        ).json['errors'][0]['detail']
+        self.assertIn('has no attribute',detail)
+        # Patching non existent relationship
+        detail = self.test_app().patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'type': 'people',
+                    'id': '1',
+                    'attributes': {
+                        'name': 'splat'
+                    },
+                    'relationships': {
+                        'non_existent': {}
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        ).json['errors'][0]['detail']
+        self.assertIn('has no relationship',detail)
+
 
     def test_spec_patch_resources_relationships_manytoone(self):
         '''Should replace a post's author and no other relationship.
