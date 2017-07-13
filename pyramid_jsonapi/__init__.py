@@ -771,6 +771,10 @@ class CollectionViewBase:
                 raise HTTPBadRequest(
                     "Relationship '{}' has no 'data' member.".format(relname)
                 )
+            except:
+                raise HTTPBadRequest(
+                    "Relationship '{}' is not a dictionary with a data member.".format(relname)
+                )
             if data is None:
                 setattr(item, relname, None)
             elif isinstance(data, dict):
