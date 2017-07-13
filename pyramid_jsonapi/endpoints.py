@@ -5,10 +5,44 @@ class RoutePattern():
     '''Hold and manipulate pyramid_jsonapi route patterns.'''
 
     def __init__(
-        self, prefix='', sep='/',
-        metadata=True,
+        self, sep='/', main_prefix='',
+        api_prefix='api', metadata_prefix='metadata'
     ):
-        pass
+        self.sep = sep
+        self.main_prefix = main_prefix
+        self.api_prefix = api_prefix
+        self.metadata_prefix = metadata_prefix
+
+    def pattern_from_components(self, *components):
+        '''Construct a route pattern from iterable of components.'''
+        components = components or []
+        new_comps = []
+        prev = None
+        for comp in components:
+            if comp == '' and prev == '':
+                prev = comp
+                continue
+            prev = comp
+            new_comps.append(comp)
+        return self.sep.join(new_comps).rstrip(self.sep)
+
+    def api_pattern(self, name, suffix=''):
+        '''Attach prefix and suffix to name to generate a route_pattern.
+
+        Arguments:
+            name: A collection name.
+
+        Keyword Arguments:
+            suffix: An (optional) suffix to append to the route pattern.
+        '''
+        return self.pattern_from_components(
+            '', self.main_prefix, self.api_prefix, name, suffix
+        )
+
+    def metadata_pattern(self, metadata_type, *components):
+        return self.pattern_from_components(
+            '', self.main_prefix, self.metadata_prefix, metadata_type, *components
+        )
 
 
 class EndpointData():
