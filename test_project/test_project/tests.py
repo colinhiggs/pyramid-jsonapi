@@ -1923,6 +1923,33 @@ class TestSpec(DBTestBase):
             {item['id'] for item in new_comments}
         )
 
+        # Make sure that comments/1 has an author.
+        c1_author = self.test_app().get(
+            '/comments/1'
+        ).json['data']['relationships']['author']['data']
+        self.assertIn('id', c1_author)
+        # Set author of comments/1 to None.
+        self.test_app().patch_json(
+            '/comments/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'comments',
+                    'relationships': {
+                        'author': {
+                            'data': None
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Check that there is now no author.
+        c1_author = self.test_app().get(
+            '/comments/1'
+        ).json['data']['relationships']['author']['data']
+        self.assertIs(c1_author, None)
+
         # MUST be a relationship object with a data member
         # Try without a data member...
         r = self.test_app().patch_json(
