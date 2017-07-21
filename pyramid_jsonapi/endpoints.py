@@ -14,34 +14,44 @@ class RoutePattern():
         self.metadata_prefix = metadata_prefix
 
     def pattern_from_components(self, *components):
-        '''Construct a route pattern from iterable of components.'''
-        components = components or []
-        new_comps = []
-        prev = None
-        for comp in components:
-            if comp == '' and prev == '':
-                prev = comp
-                continue
-            prev = comp
-            new_comps.append(comp)
-        return self.sep.join(new_comps).rstrip(self.sep)
+        '''Construct a route pattern from components.
 
-    def api_pattern(self, name, suffix=''):
-        '''Attach prefix and suffix to name to generate a route_pattern.
+        Join components together with self.sep. Remove all occurrences of '',
+        except at the beginning and the end, so that there are no double
+        separators.
 
         Arguments:
-            name: A collection name.
+            *components (str): route pattern components.
+        '''
+        components = components or []
+        new_comps = []
+        for i in range(len(components)):
+            if components[i] == '' and (i != 0 and i != ( len(components) - 1 ) ):
+                continue
+            new_comps.append(components[i])
+        return self.sep.join(new_comps)
 
-        Keyword Arguments:
-            suffix: An (optional) suffix to append to the route pattern.
+    def api_pattern(self, name, *components):
+        '''Generate a route pattern from a collection name and suffix components.
+
+        Arguments:
+            name (str): A collection name.
+            *components (str): components to add after collection name.
         '''
         return self.pattern_from_components(
             '', self.main_prefix, self.api_prefix, name, suffix
         )
 
     def metadata_pattern(self, metadata_type, *components):
+        '''Generate a metadata route pattern.
+
+        Arguments:
+            metadata_type (str): Metadata type (e.g. swagger, json-schema).
+            *components (str): components to add after metadata type.
+        '''
         return self.pattern_from_components(
-            '', self.main_prefix, self.metadata_prefix, metadata_type, *components
+            '', self.main_prefix, self.metadata_prefix,
+            metadata_type, *components
         )
 
 
