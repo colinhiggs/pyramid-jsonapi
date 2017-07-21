@@ -39,7 +39,7 @@ class RoutePattern():
             *components (str): components to add after collection name.
         '''
         return self.pattern_from_components(
-            '', self.main_prefix, self.api_prefix, name, suffix
+            '', self.main_prefix, self.api_prefix, name, *components
         )
 
     def metadata_pattern(self, metadata_type, *components):
