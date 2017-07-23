@@ -1,8 +1,8 @@
 from pyramid.settings import asbool
 
 
-class RoutePattern():
-    '''Hold and manipulate pyramid_jsonapi route patterns.'''
+class RoutePatternConstructor():
+    '''Construct pyramid_jsonapi route patterns.'''
 
     def __init__(
         self, sep='/', main_prefix='',
@@ -73,10 +73,6 @@ class EndpointData():
             'pyramid_jsonapi.route_name_sep', ':'
         )
 
-        self.route_pattern_prefix_components = ['']
-        self.route_pattern_prefix = settings.get(
-            'pyramid_jsonapi.route_pattern_prefix', ''
-        )
         self.metadata_endpoints = asbool(settings.get(
             'pyramid_jsonapi.metadata_endpoints', 'true'
         ))
@@ -84,12 +80,21 @@ class EndpointData():
             default_api_prefix = 'api'
         else:
             default_api_prefix = ''
-        self.route_pattern_api_prefix = self.config.registry.settings.get(
-            'pyramid_jsonapi.route_pattern_api_prefix', default_api_prefix
+        self.rp_constructor = RoutePatternConstructor(
+            sep=settings.get(
+                'pyramid_jsonapi.route_pattern_sep', '/'
+            ),
+            main_prefix=settings.get(
+                'pyramid_jsonapi.route_pattern_prefix', ''
+            ),
+            api_prefix=settings.get(
+                'pyramid_jsonapi.route_pattern_api_prefix', default_api_prefix
+            ),
+            metadata_prefix=settings.get(
+                'pyramid_jsonapi.route_pattern_metadata_prefix', 'metadata'
+            )
         )
-        self.route_pattern_sep = self.config.registry.settings.get(
-            'pyramid_jsonapi.route_pattern_sep', '/'
-        )
+
         # Mapping of endpoints, http_methods and options for constructing routes and views.
         # Update this dictionary prior to calling create_jsonapi()
         # Mandatory 'endpoint' keys: http_methods
@@ -178,11 +183,20 @@ class EndpointData():
         '''
 
         for endpoint, endpoint_opts in self.endpoints.items():
-            route_name = self.make_route_name(view.collection_name, suffix=endpoint)
-            route_pattern = self.make_route_pattern(view.collection_name,
-                                                    suffix=endpoint_opts.get('route_pattern_suffix', ''))
+            route_name = self.make_route_name(
+                view.collection_name,
+                suffix=endpoint
+            )
+            route_pattern = self.rp_constructor.api_pattern(
+                view.collection_name,
+                endpoint_opts.get('route_pattern_suffix', '')
+            ).rstrip(self.rp_constructor.sep)
             self.config.add_route(route_name, route_pattern)
             for http_method, method_opts in endpoint_opts['http_methods'].items():
-                self.config.add_view(view, attr=method_opts['function'],
-                                     request_method=http_method, route_name=route_name,
-                                     renderer=method_opts.get('renderer', 'json'))
+                self.config.add_view(
+                    view,
+                    attr=method_opts['function'],
+                    request_method=http_method,
+                    route_name=route_name,
+                    renderer=method_opts.get('renderer', 'json')
+                )
