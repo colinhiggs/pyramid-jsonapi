@@ -26,7 +26,7 @@ class RoutePatternConstructor():
         components = components or []
         new_comps = []
         for i in range(len(components)):
-            if components[i] == '' and (i != 0 and i != ( len(components) - 1 ) ):
+            if components[i] == '' and (i != 0 and i != (len(components) - 1)):
                 continue
             new_comps.append(components[i])
         return self.sep.join(new_comps)
