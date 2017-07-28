@@ -164,16 +164,6 @@ class EndpointData():
         '''
         return self.route_name_sep.join((self.route_name_prefix, name, suffix)).rstrip(self.route_name_sep)
 
-    def make_route_pattern(self, name, suffix=''):
-        '''Attach prefix and suffix to name to generate a route_name.
-
-        Arguments:
-            name: A pyramid route name.
-
-        Keyword Arguments:
-            suffix: An (optional) suffix to append to the route name.
-        '''
-        return self.route_pattern_sep.join((self.route_pattern_prefix, name, suffix)).rstrip(self.route_pattern_sep)
 
     def add_routes_views(self, view):
         '''Generate routes and views from the endpoints data object.
