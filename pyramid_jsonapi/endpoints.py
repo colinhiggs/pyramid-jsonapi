@@ -1,3 +1,4 @@
+'''Classes to store and manipulate endpoints and routes.'''
 from pyramid.settings import asbool
 
 
@@ -5,8 +6,8 @@ class RoutePatternConstructor():
     '''Construct pyramid_jsonapi route patterns.'''
 
     def __init__(
-        self, sep='/', main_prefix='',
-        api_prefix='api', metadata_prefix='metadata'
+            self, sep='/', main_prefix='',
+            api_prefix='api', metadata_prefix='metadata'
     ):
         self.sep = sep
         self.main_prefix = main_prefix
@@ -25,10 +26,10 @@ class RoutePatternConstructor():
         '''
         components = components or []
         new_comps = []
-        for i in range(len(components)):
-            if components[i] == '' and (i != 0 and i != (len(components) - 1)):
+        for i, component in enumerate(components):
+            if component == '' and (i != 0 and i != (len(components) - 1)):
                 continue
-            new_comps.append(components[i])
+            new_comps.append(component)
         return self.sep.join(new_comps)
 
     def api_pattern(self, name, *components):
@@ -162,8 +163,9 @@ class EndpointData():
         Keyword Arguments:
             suffix: An (optional) suffix to append to the route name.
         '''
-        return self.route_name_sep.join((self.route_name_prefix, name, suffix)).rstrip(self.route_name_sep)
-
+        return self.route_name_sep.join(
+            (self.route_name_prefix, name, suffix)
+        ).rstrip(self.route_name_sep)
 
     def add_routes_views(self, view):
         '''Generate routes and views from the endpoints data object.
