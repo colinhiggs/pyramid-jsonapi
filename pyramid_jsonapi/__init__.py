@@ -1840,8 +1840,8 @@ class CollectionViewBase:
             prop = getattr(rel[i].mapper.class_, related_attribute[i])
             q1 = self.get_dbsession().query(self.key_column)
             q1 = q1.join(rel[i].mapper.class_)
-            op_func, val = self.get_operator_func(prop, op[i], val[i])
-            q1 = q1.filter(op_func(val)).filter(rel[i].comparator.property.primaryjoin).subquery()
+            op_func, op_val = self.get_operator_func(prop, op[i], val[i])
+            q1 = q1.filter(op_func(op_val)).filter(rel[i].comparator.property.primaryjoin).subquery()
             qs.append(q1)
 
         q = q.filter(or_(*[self.key_column.in_(x) for x in qs]))
