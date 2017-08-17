@@ -1836,12 +1836,12 @@ class CollectionViewBase:
         '''Add filtering clauses for relationship to query
         '''
         qs = []
-        for i in range(0, len(rel)-1):
+        for i in range(0, len(rel)):
             prop = getattr(rel[i].mapper.class_, related_attribute[i])
             q1 = self.get_dbsession().query(self.key_column)
             q1 = q1.join(rel[i].mapper.class_)
             op_func, val = self.get_operator_func(prop, op[i], val[i])
-            q1 = q1.filter(op_func(val)).subquery()
+            q1 = q1.filter(op_func(val)).filter(rel[i].comparator.property.primaryjoin).subquery()
             qs.append(q1)
 
         q = q.filter(or_(*[self.key_column.in_(x) for x in qs]))
@@ -1936,6 +1936,7 @@ class CollectionViewBase:
             else:
                 op_func, val = self.get_operator_func(prop, op[0], val[0])
                 q = q.filter(or_(*[x for x in op_func(val)]))
+
 
         return q
 
@@ -2127,16 +2128,12 @@ class CollectionViewBase:
                any(rel_path_str in s for s in requested_include_names) or\
                rel_path_str in self.requested_include_names():
                 is_included = True
-
-            print(item._jsonapi_id)
-            print(rel)
             q = self.related_query(
                 item._jsonapi_id, rel, full_object=is_included
             )
             if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                 qinfo = self.collection_query_info(self.request)
                 limit = self.related_limit(rel)
-                print(q)
                 rel_dict['meta']['results']['limit'] = limit
                 rel_dict['meta']['results']['available'] = q.count()
                 q = q.limit(limit)
