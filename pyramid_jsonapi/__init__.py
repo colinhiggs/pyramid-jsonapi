@@ -1824,6 +1824,7 @@ class CollectionViewBase:
             op_func = getattr(prop, '__ge__')
         elif op == 'like' or op == 'ilike':
             op_func = getattr(prop, op)
+            val = '*' + val + '*'
             val = re.sub(r'\*', '%', val)
         else:
             raise HTTPBadRequest(
