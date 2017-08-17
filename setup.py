@@ -10,6 +10,7 @@ setup(
   name = 'pyramid_jsonapi',
   packages = ['pyramid_jsonapi'],
   setup_requires=['setuptools_scm'],
+  install_requires=requires,
   use_scm_version=True,
   description = 'Auto-build JSON API from sqlalchemy models using the pyramid framework',
   author = 'Colin Higgs',
