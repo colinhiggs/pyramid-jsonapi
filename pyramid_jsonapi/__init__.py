@@ -1833,7 +1833,7 @@ class CollectionViewBase:
 
         return op_func, val
 
-    def filter_on_relationships(self, q, rel, related_attribute, op, val):
+    def filter_on_relationships(self, q, rel, related_attribute, op, val, qinfo):
         '''Add filtering clauses for relationship to query
         '''
         qs = []
@@ -1846,6 +1846,12 @@ class CollectionViewBase:
             qs.append(q1)
 
         q = q.filter(or_(*[self.key_column.in_(x) for x in qs]))
+
+        if 'offset' in qinfo['_page']:
+            q = q.offset(qinfo['_page']['offset'])
+        if 'limit' in qinfo['_page']:
+            q = q.limit(qinfo['_page']['limit'])
+
         return q
 
     def query_add_filtering(self, q):
@@ -1933,7 +1939,7 @@ class CollectionViewBase:
                     use_rel_filter = True
 
             if use_rel_filter:
-                q = self.filter_on_relationships(q, prop, colspec, op, val)
+                q = self.filter_on_relationships(q, prop, colspec, op, val, qinfo)
             else:
                 op_func, val = self.get_operator_func(prop, op[0], val[0])
                 q = q.filter(or_(*[x for x in op_func(val)]))
