@@ -1833,8 +1833,7 @@ class CollectionViewBase:
 
         return op_func, val
 
-    def filter_on_relationships(
-        self, q, rel, related_attribute, op, val, qinfo):
+    def filter_on_relationships(self, q, rel, related_attribute, op, val, qinfo):
         '''Add filtering clauses for relationship to query
         '''
         qs = []
@@ -1849,11 +1848,13 @@ class CollectionViewBase:
             qs.append(op_func(op_val))
 
         q = q.filter(or_(*qs))
+        q = q.distinct(sqlalchemy.inspect(self.model).primary_key[0])
 
         if 'offset' in qinfo['_page']:
             q = q.offset(qinfo['_page']['offset'])
         if 'limit' in qinfo['_page']:
             q = q.limit(qinfo['_page']['limit'])
+            
         return q
 
     def query_add_filtering(self, q):
@@ -1918,6 +1919,7 @@ class CollectionViewBase:
             Support dotted (relationship) attribute specifications.
         '''
         qinfo = self.collection_query_info(self.request)
+
         # Filters
         for p, finfo in qinfo['_filters'].items():
             val = []
