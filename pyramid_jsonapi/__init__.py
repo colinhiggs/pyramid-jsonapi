@@ -1833,25 +1833,27 @@ class CollectionViewBase:
 
         return op_func, val
 
-    def filter_on_relationships(self, q, rel, related_attribute, op, val, qinfo):
+    def filter_on_relationships(
+        self, q, rel, related_attribute, op, val, qinfo):
         '''Add filtering clauses for relationship to query
         '''
         qs = []
+        joins = set([x.mapper.class_ for x in rel])
+
+        for j in joins:
+            q = q.join(j)
+
         for i in range(0, len(rel)):
             prop = getattr(rel[i].mapper.class_, related_attribute[i])
-            q1 = self.get_dbsession().query(self.key_column)
-            q1 = q1.join(rel[i].mapper.class_)
             op_func, op_val = self.get_operator_func(prop, op[i], val[i])
-            q1 = q1.filter(op_func(op_val)).filter(rel[i].comparator.property.primaryjoin).subquery()
-            qs.append(q1)
+            qs.append(op_func(op_val))
 
-        q = q.filter(or_(*[self.key_column.in_(x) for x in qs]))
+        q = q.filter(or_(*qs))
 
         if 'offset' in qinfo['_page']:
             q = q.offset(qinfo['_page']['offset'])
         if 'limit' in qinfo['_page']:
             q = q.limit(qinfo['_page']['limit'])
-
         return q
 
     def query_add_filtering(self, q):
