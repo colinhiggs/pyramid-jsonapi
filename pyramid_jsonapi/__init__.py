@@ -1837,10 +1837,11 @@ class CollectionViewBase:
         '''Add filtering clauses for relationship to query
         '''
         qs = []
-        joins = set([x.mapper.class_ for x in rel])
+        joins = set([(x.mapper.class_, x.property.primaryjoin) for x in rel])
 
         for j in joins:
-            q = q.join(j)
+            q = q.join(j[0])
+            q = q.filter(j[1])
 
         for i in range(0, len(rel)):
             prop = getattr(rel[i].mapper.class_, related_attribute[i])
@@ -1854,7 +1855,7 @@ class CollectionViewBase:
             q = q.offset(qinfo['_page']['offset'])
         if 'limit' in qinfo['_page']:
             q = q.limit(qinfo['_page']['limit'])
-            
+
         return q
 
     def query_add_filtering(self, q):
@@ -1947,7 +1948,6 @@ class CollectionViewBase:
             else:
                 op_func, val = self.get_operator_func(prop, op[0], val[0])
                 q = q.filter(or_(*[x for x in op_func(val)]))
-
 
         return q
 
