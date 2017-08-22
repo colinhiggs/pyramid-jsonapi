@@ -166,7 +166,6 @@ def create_resource(
         expose_fields: set of field names to be exposed. Passed through to
             ``collection_view_factory()``
     '''
-
     # Find the primary key column from the model and add it as _jsonapi_id.
     try:
         keycols = sqlalchemy.inspect(model).primary_key
@@ -275,7 +274,7 @@ def create_resource(
         view, attr='relationships_delete', request_method='DELETE',
         route_name=view.relationships_route_name, renderer='json'
     )
-
+    config.commit()
 
 def collection_view_factory(
         config,
