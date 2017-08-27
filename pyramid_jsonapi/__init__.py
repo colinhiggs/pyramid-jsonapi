@@ -2109,10 +2109,11 @@ class CollectionViewBase:
         }
 
         for key, col in sqlalchemy.inspect(self.model).all_orm_descriptors.items():
-            if isinstance(col, hybrid_property):
-                atts[key] = getattr(item, key)
-            if self.invisible_column(col):
-                atts.pop(key, None)
+            if key in self.requested_field_names:
+                if isinstance(col, hybrid_property):
+                    atts[key] = getattr(item, key)
+                if self.invisible_column(col):
+                    atts.pop(key, None)
 
         rels = {}
         for key, rel in self.relationships.items():
