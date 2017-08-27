@@ -2109,7 +2109,7 @@ class CollectionViewBase:
         }
 
         for key, col in sqlalchemy.inspect(self.model).all_orm_descriptors.items():
-            if key in self.requested_field_names:
+            if self.request.params.get('fields[{}]'.format(self.collection_name)) is None or key in self.requested_field_names:
                 if isinstance(col, hybrid_property):
                     atts[key] = getattr(item, key)
                 if self.invisible_column(col):
