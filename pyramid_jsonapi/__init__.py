@@ -1825,6 +1825,7 @@ class CollectionViewBase:
             op_func = getattr(prop, op)
             val = '*' + val + '*'
             val = re.sub(r'\*', '%', val)
+            val = re.sub(r'\ ', '%', val)
         else:
             raise HTTPBadRequest(
                 "No such filter operator: '{}'".format(op)
