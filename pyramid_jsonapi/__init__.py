@@ -49,6 +49,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 import transaction
 
 import pyramid_jsonapi.endpoints
+import pyramid_jsonapi.jsonapi
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
@@ -1955,6 +1956,12 @@ class CollectionViewBase:
             dict: resource object dictionary.
         '''
 
+        jsonapi = pyramid_jsonapi.jsonapi.Resource(self)
+        import pprint
+        pprint.pprint(jsonapi.__dict__)
+
+        root = pyramid_jsonapi.jsonapi.Root()
+
         include_path = include_path or []
 
         # Item's id and type are required at the top level of json-api
@@ -2062,6 +2069,15 @@ class CollectionViewBase:
 
         for callback in self.callbacks['after_serialise_object']:
             ret = callback(self, ret)
+
+        jsonapi.id = ret['id']
+        jsonapi.type = ret['type']
+        jsonapi.attributes = ret['attributes']
+        jsonapi.links = ret['links']
+        jsonapi.relationships = ret['relationships']
+
+        root.add_resource(jsonapi)
+        pprint.pprint(root.as_dict())
 
         return ret
 
