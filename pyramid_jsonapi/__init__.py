@@ -1956,12 +1956,6 @@ class CollectionViewBase:
             dict: resource object dictionary.
         '''
 
-        jsonapi = pyramid_jsonapi.jsonapi.Resource(self)
-        import pprint
-        pprint.pprint(jsonapi.__dict__)
-
-        root = pyramid_jsonapi.jsonapi.Root()
-
         include_path = include_path or []
 
         # Item's id and type are required at the top level of json-api
@@ -2057,29 +2051,21 @@ class CollectionViewBase:
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
-        ret = {
-            'id': str(item_id),
-            'type': type_name,
-            'attributes': atts,
-            'links': {
-                'self': item_url
-            },
-            'relationships': rels
-        }
+        root_json = pyramid_jsonapi.jsonapi.Root()
+        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
+
+        resource_json.id = str(item_id)
+        resource_json.type = type_name
+        resource_json.attributes = atts
+        resource_json.links = {'links': {'self': item_url}}
+        resource_json.relationships = rels
+
+        root_json.add_resource(resource_json)
 
         for callback in self.callbacks['after_serialise_object']:
-            ret = callback(self, ret)
+            callback(self, root_json)
 
-        jsonapi.id = ret['id']
-        jsonapi.type = ret['type']
-        jsonapi.attributes = ret['attributes']
-        jsonapi.links = ret['links']
-        jsonapi.relationships = ret['relationships']
-
-        root.add_resource(jsonapi)
-        pprint.pprint(root.as_dict())
-
-        return ret
+        return root_json.as_dict()
 
     @classmethod
     @functools.lru_cache(maxsize=128)
