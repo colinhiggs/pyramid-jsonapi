@@ -806,18 +806,10 @@ class CollectionViewBase:
         q = self.query_add_sorting(q)
         q = self.query_add_filtering(q)
         qinfo = self.collection_query_info(self.request)
-        try:
-            count = q.count()
-        except sqlalchemy.exc.ProgrammingError as e:
-            raise HTTPBadRequest(
-                "Could not use operator '{}' with field '{}'".format(
-                    op, prop.name
-                )
-            )
         q = q.offset(qinfo['page[offset]'])
         q = q.limit(qinfo['page[limit]'])
 
-        ret = self.collection_return(q, count=count)
+        ret = self.collection_return(q)
 
         # Alter return dict with any callbacks.
         for callback in self.callbacks['after_collection_get']:
@@ -1031,13 +1023,9 @@ class CollectionViewBase:
             q = rel_view.query_add_sorting(q)
             q = rel_view.query_add_filtering(q)
             qinfo = rel_view.collection_query_info(self.request)
-            try:
-                count = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
-                raise HTTPBadRequest("error {}".format(e))
             q = q.offset(qinfo['page[offset]'])
             q = q.limit(qinfo['page[limit]'])
-            ret = rel_view.collection_return(q, count=count)
+            ret = rel_view.collection_return(q)
         else:
             ret = rel_view.single_return(q)
 
@@ -1708,22 +1696,7 @@ class CollectionViewBase:
 
         # Add information to the return dict
         ret = {'meta': {'results': {}}}
-
-        if count is None:
-            try:
-                count = q.count()
-            except sqlalchemy.exc.ProgrammingError as e:
-                raise HTTPBadRequest(
-                    "Could not use operator '{}' with field '{}'".format(
-                        op, prop.name
-                    )
-                )
-        ret['meta']['results']['available'] = count
-
-        # Pagination links
-        ret['links'] = self.pagination_links(
-            count=ret['meta']['results']['available']
-        )
+   
         ret['meta']['results']['limit'] = qinfo['page[limit]']
         ret['meta']['results']['offset'] = qinfo['page[offset]']
 
@@ -1744,6 +1717,14 @@ class CollectionViewBase:
                 ret['included'] = [obj for obj in included.values()]
 
         ret['meta']['results']['returned'] = len(ret['data'])
+        ret['meta']['results']['available'] =\
+            ret['meta']['results']['returned']
+
+        # Pagination links
+        ret['links'] = self.pagination_links(
+            count=ret['meta']['results']['available']
+        )
+
         return ret
 
     def query_add_sorting(self, q):
@@ -1826,6 +1807,7 @@ class CollectionViewBase:
             val = '*' + val + '*'
             val = re.sub(r'\*', '%', val)
             val = re.sub(r'\ ', '%', val)
+            print(val)
         else:
             raise HTTPBadRequest(
                 "No such filter operator: '{}'".format(op)
