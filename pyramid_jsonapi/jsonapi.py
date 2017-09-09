@@ -46,14 +46,26 @@ class Common():
         """Generate a dictionary representing the entire jsonapi object.
         Update 'data' to contain a single resource item, or list of items.
         """
-        if len(self.resources) > 1:
-            data = []
-            for resource in self.resources:
-                data.append(resource.as_dict())
-            self._jsonapi['data'] = data
-        elif len(self.resources) == 1:
-            # Get the only item in the set
-            self._jsonapi['data'] = next(iter(self.resources)).as_dict()
+
+        data = []
+        for resource in self.resources:
+            data.append(resource.as_dict())
+
+        if data:
+            # If existing list, append to it
+            if isinstance(self._jsonapi['data'], list):
+                    self._jsonapi['data'].extend(data)
+            # If not a list, but contains an entry, needs to be a list
+            elif self._jsonapi['data']:
+                    # Insert at start of new data
+                    data.insert(0, self._jsonapi['data'])
+                    self._jsonapi['data'] = data
+            #
+            else:
+                if len(data) > 1:
+                    self._jsonapi['data'] = data
+                else:
+                    self._jsonapi['data'] = data[0]
 
         return self._jsonapi
 
