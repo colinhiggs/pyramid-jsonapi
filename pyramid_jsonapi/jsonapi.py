@@ -69,6 +69,8 @@ class Common():
 
         return self._jsonapi
 
+    def update(self, res):
+        self._jsonapi.update(res)
 
 class Root(Common):
     """JSONAPI 'root' object."""
