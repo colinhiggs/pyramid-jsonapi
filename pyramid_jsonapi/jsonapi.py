@@ -17,60 +17,45 @@ class Common():
         """Update _jsonapi dict on attribute modification.
         Only allow modification of values for existing keys.
         """
-        if attr in self._jsonapi:
+        if attr == 'data':
+            self.data_to_resource(value)
+        elif attr in self._jsonapi:
             self._jsonapi[attr] = value
         else:
             super().__setattr__(attr, value)
 
     def __getattr__(self, attr):
         """Return dict key as if an attribute."""
+        if attr == 'data':
+            return self.data_from_resources()
         try:
             return self._jsonapi[attr]
         # Convert KeyError to AttributeError for consistency
         except KeyError:
-            raise AttributeError("No such attribute")
-
-    def add_resource(self, resource):
-        """Helper method to prevent confusion with attr immutability."""
-        if not isinstance(resource, Resource):
-            raise TypeError("Resource {} is not of type {}".format(resource, Resource))
-        self.resources.add(resource)
-
-    def remove_resource(self, resource):
-        """Helper method to prevent confusion with attr immutability."""
-        if not isinstance(resource, Resource):
-            raise TypeError("Resource {} is not of type {}".format(resource, Resource))
-        self.resources.remove(resource)
+            raise AttributeError("object has no attribute '{}'".format(attr))
 
     def as_dict(self):
         """Generate a dictionary representing the entire jsonapi object.
         Update 'data' to contain a single resource item, or list of items.
         """
 
-        data = []
-        for resource in self.resources:
-            data.append(resource.as_dict())
+        jsonapi = self._jsonapi.copy()
+        try:
+            jsonapi.update(self.data_from_resources())
+        except AttributeError:
+            pass
+        return jsonapi
 
-        if data:
-            # If existing list, append to it
-            if isinstance(self._jsonapi['data'], list):
-                    self._jsonapi['data'].extend(data)
-            # If not a list, but contains an entry, needs to be a list
-            elif self._jsonapi['data']:
-                    # Insert at start of new data
-                    data.insert(0, self._jsonapi['data'])
-                    self._jsonapi['data'] = data
-            #
+    def update(self, doc):
+        """Update class from jsonapi document."""
+        for key, val in doc.items():
+            # data contains a single resources, or list of resources
+            # Convert to Resource objects, then add to self.resources
+            if key == "data":
+                self.data_to_resources(val)
             else:
-                if len(data) > 1:
-                    self._jsonapi['data'] = data
-                else:
-                    self._jsonapi['data'] = data[0]
+                self._jsonapi[key] = val
 
-        return self._jsonapi
-
-    def update(self, res):
-        self._jsonapi.update(res)
 
 class Root(Common):
     """JSONAPI 'root' object."""
@@ -79,10 +64,36 @@ class Root(Common):
         """Extend _jsonapi to contain top-level keys."""
         super().__init__()
         self._jsonapi.update({
-            'data': {},
             'links': {},
             'meta': {},
         })
+
+    def data_from_resources(self):
+        """Generate 'data' part of jsonapi document from resources list."""
+        data = []
+        for resource in self.resources:
+            data.append(resource.as_dict())
+
+        if len(data) > 1:
+            return {'data': data}
+        elif len(data) == 1:
+            return {'data': data[0]}
+        else:
+            return {}
+
+    def data_to_resources(self, data):
+        """Convert 'data' part of jsonapi document to resource(s).
+        Add resources to the resources list.
+        """
+        reslist = []
+        if isinstance(data, list):
+            reslist.extend(data)
+        else:
+            reslist.append(data)
+        for item in reslist:
+            res = Resource()
+            res.update(item)
+            self.resources.add(res)
 
 
 class Resource(Common):
