@@ -67,6 +67,7 @@ class Root(Common):
         self._jsonapi.update({
             'links': {},
             'meta': {},
+            'included': {},
         })
 
     def data_from_resources(self):
