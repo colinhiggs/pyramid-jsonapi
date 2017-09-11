@@ -13,12 +13,12 @@ class Common():
         super().__setattr__('resources', set())
         super().__setattr__('schema', {})
 
-    def __setattr__(self, item, value):
+    def __setattr__(self, attr, value):
         """Update _jsonapi dict on attribute modification.
         Only allow modification of values for existing keys.
         """
-        if item in self._jsonapi:
-            self._jsonapi[item] = value
+        if attr in self._jsonapi:
+            self._jsonapi[attr] = value
         else:
             raise AttributeError("No such attribute")
 
