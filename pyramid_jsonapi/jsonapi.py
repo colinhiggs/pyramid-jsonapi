@@ -20,7 +20,7 @@ class Common():
         if attr in self._jsonapi:
             self._jsonapi[attr] = value
         else:
-            raise AttributeError("No such attribute")
+            super().__setattr__(attr, value)
 
     def __getattr__(self, attr):
         """Return dict key as if an attribute."""
