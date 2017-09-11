@@ -1804,10 +1804,9 @@ class CollectionViewBase:
             op_func = getattr(prop, '__ge__')
         elif op == 'like' or op == 'ilike':
             op_func = getattr(prop, op)
-            val = '*' + val + '*'
+            val = '*' + val.lower() + '*'
             val = re.sub(r'\*', '%', val)
             val = re.sub(r'\ ', '%', val)
-            print(val)
         else:
             raise HTTPBadRequest(
                 "No such filter operator: '{}'".format(op)
