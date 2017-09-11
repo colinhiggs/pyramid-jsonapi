@@ -18,7 +18,7 @@ class Common():
         Only allow modification of values for existing keys.
         """
         if attr == 'data':
-            self.data_to_resource(value)
+            self.data_to_resources(value)
         elif attr in self._jsonapi:
             self._jsonapi[attr] = value
         else:
