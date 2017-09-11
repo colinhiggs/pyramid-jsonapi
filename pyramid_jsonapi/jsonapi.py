@@ -60,9 +60,10 @@ class Common():
 class Root(Common):
     """JSONAPI 'root' object."""
 
-    def __init__(self):
+    def __init__(self, collection=False):
         """Extend _jsonapi to contain top-level keys."""
         super().__init__()
+        self.collection = collection
         self._jsonapi.update({
             'links': {},
             'meta': {},
@@ -74,10 +75,12 @@ class Root(Common):
         for resource in self.resources:
             data.append(resource.as_dict())
 
-        if len(data) > 1:
+        if data and self.collection:
             return {'data': data}
-        elif len(data) == 1:
+        elif data:
             return {'data': data[0]}
+        elif self.collection:
+            return {'data': []}
         else:
             return {}
 
