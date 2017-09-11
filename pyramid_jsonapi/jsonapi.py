@@ -106,7 +106,7 @@ class Resource(Common):
 
         # Update class attributes with sourced data
         if view_class:
-            self._resource['type'] = view_class.collection_name
+            self.type = view_class.collection_name
             # TODO(mrichar1): Convert this to jsonschema from sqlalchemy type constraints
-            self._resource['schema'] = view_class.attributes
-            self._resource['attributes'] = dict.fromkeys(view_class.attributes, None)
+            self.schema = view_class.attributes
+            self.attributes = dict.fromkeys(view_class.attributes, None)
