@@ -60,8 +60,8 @@ class Common():
                     self._jsonapi[key] = val
 
 
-class Root(Common):
-    """JSONAPI 'root' object."""
+class Document(Common):
+    """JSONAPI 'root' document object."""
 
     def __init__(self, collection=False):
         """Extend _jsonapi to contain top-level keys."""
