@@ -46,8 +46,7 @@ class Common():
                 jsonapi_dict.update(resources)
 
         # Only return keys which are in filter_keys
-        return {k:v for k, v in jsonapi_dict.items() if k in self.filter_keys}
-
+        return {k: v for k, v in jsonapi_dict.items() if k in self.filter_keys}
 
     def update(self, doc):
         """Update class from jsonapi document."""
