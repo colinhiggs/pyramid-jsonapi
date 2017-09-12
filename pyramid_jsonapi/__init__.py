@@ -1833,7 +1833,7 @@ class CollectionViewBase:
         q = q.filter(or_(*qs))
         unique_clause = sqlalchemy.inspect(self.model).primary_key[0]
         q = q.distinct(unique_clause)
-        org_ord = [str(x.right) for x in q._order_by]
+        org_ord = [str(x) for x in q._order_by]
         q = q.order_by(None)
         q = q.order_by(unique_clause)
         for x in org_ord:
