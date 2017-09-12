@@ -5,11 +5,6 @@ import logging
 import alchemyjsonschema
 
 
-# Example of how to update the schema mapping got alchemyjsonschema
-# from sqlalchemy.dialects.postgresql import JSONB
-# alchemyjsonschema.default_column_to_schema.update({JSONB: 'string'})
-
-
 class Common():
     """Common class for magic attr <-> dict classes."""
 
@@ -21,6 +16,7 @@ class Common():
         super().__setattr__('resources', [])
         super().__setattr__('schema', None)
         if generate_schema:
+            super().__setattr__('column_to_schema', alchemyjsonschema.default_column_to_schema)
             super().__setattr__('schema', {})
 
     def __setattr__(self, attr, value):
@@ -141,7 +137,12 @@ class Resource(Common):
         if view_class:
             self.type = view_class.collection_name
             if isinstance(self.schema, dict):
-                factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker)
+                # Example of updating the schema mapping for alchemyjsonschema
+                # from sqlalchemy.dialects.postgresql import JSONB
+                # self.column_to_schema[JSONB] = 'string'
+                classifier = alchemyjsonschema.Classifier(mapping=self.column_to_schema)
+                factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker,
+                                                          classifier=classifier)
                 try:
                     self.schema.update(factory(view_class.model))
                 except alchemyjsonschema.InvalidStatus as exc:
