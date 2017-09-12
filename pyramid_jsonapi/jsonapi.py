@@ -48,13 +48,14 @@ class Common():
 
     def update(self, doc):
         """Update class from jsonapi document."""
-        for key, val in doc.items():
-            # data contains a single resources, or list of resources
-            # Convert to Resource objects, then add to self.resources
-            if key == "data":
-                self.data_to_resources(val)
-            else:
-                self._jsonapi[key] = val
+        if doc:
+            for key, val in doc.items():
+                # data contains a single resources, or list of resources
+                # Convert to Resource objects, then add to self.resources
+                if key == "data":
+                    self.data_to_resources(val)
+                else:
+                    self._jsonapi[key] = val
 
 
 class Root(Common):
@@ -83,7 +84,7 @@ class Root(Common):
         elif self.collection:
             return {'data': []}
         else:
-            return {}
+            return {'data': None}
 
     def data_to_resources(self, data):
         """Convert 'data' part of jsonapi document to resource(s).
