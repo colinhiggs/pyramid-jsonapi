@@ -1766,7 +1766,8 @@ class CollectionViewBase:
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
-                q = q.join(order_att)
+                if order_att not in [mapper.class_ for mapper in q._join_entities]:
+                    q = q.join(order_att)
                 rel = order_att.property
                 try:
                     sub_key = sort_keys[1]
@@ -1819,9 +1820,9 @@ class CollectionViewBase:
         '''
         qs = []
         joins = set([(x.mapper.class_, x.property.primaryjoin) for x in rel])
-
-        for j in joins:
-            q = q.join(j[0])
+        for j in joins:  
+            if j[0] not in [mapper.class_ for mapper in q._join_entities]:
+                q = q.join(j[0])
             q = q.filter(j[1])
 
         for i in range(0, len(rel)):
@@ -1830,7 +1831,13 @@ class CollectionViewBase:
             qs.append(op_func(op_val))
 
         q = q.filter(or_(*qs))
-        q = q.distinct(sqlalchemy.inspect(self.model).primary_key[0])
+        unique_clause = sqlalchemy.inspect(self.model).primary_key[0]
+        q = q.distinct(unique_clause)
+        org_ord = [str(x.right) for x in q._order_by]
+        q = q.order_by(None)
+        q = q.order_by(unique_clause)
+        for x in org_ord:
+            q = q.order_by(x)
 
         if 'offset' in qinfo['_page']:
             q = q.offset(qinfo['_page']['offset'])
