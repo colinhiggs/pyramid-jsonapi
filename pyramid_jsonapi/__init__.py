@@ -435,41 +435,36 @@ class CollectionViewBase:
             # Spec says set Content-Type to application/vnd.api+json.
             self.request.response.content_type = 'application/vnd.api+json'
 
-            # Eventually each method will return a dictionary to be rendered
-            # using the JSON renderer.
-            ret = {
-                'meta': {}
-            }
-
             # Update the dictionary with the reults of the wrapped method.
-            ret.update(func(self, *args))  # pylint:disable=not-callable
+            ret = (func(self, *args))  # pylint:disable=not-callable
+            if ret:
+                # Include a self link unless the method is PATCH.
+                if self.request.method != 'PATCH':
+                    selfie = {'self': self.request.url}
+                    if hasattr(ret, 'links'):
+                        ret.links.update(selfie)
+                    else:
+                        ret.links = selfie
 
-            # Include a self link unless the method is PATCH.
-            if self.request.method != 'PATCH':
-                selfie = {'self': self.request.url}
-                if 'links' in ret:
-                    ret['links'].update(selfie)
-                else:
-                    ret['links'] = selfie
-
-            # Potentially add some debug information.
-            if self.request.registry.settings.get(
-                    'pyramid_jsonapi.debug.meta', 'false'
-            ) == 'true':
-                debug = {
-                    'accept_header': {
-                        a: None for a in jsonapi_accepts
-                    },
-                    'qinfo_page':
-                        self.collection_query_info(self.request)['_page'],
-                    'atts': {k: None for k in self.attributes.keys()},
-                    'includes': {
-                        k: None for k in self.requested_include_names()
+                # Potentially add some debug information.
+                if self.request.registry.settings.get(
+                        'pyramid_jsonapi.debug.meta', 'false'
+                ) == 'true':
+                    debug = {
+                        'accept_header': {
+                            a: None for a in jsonapi_accepts
+                        },
+                        'qinfo_page':
+                            self.collection_query_info(self.request)['_page'],
+                        'atts': {k: None for k in self.attributes.keys()},
+                        'includes': {
+                            k: None for k in self.requested_include_names()
+                        }
                     }
-                }
-                ret['meta'].update({'debug': debug})
-
-            return ret
+                    ret.meta.update({'debug': debug})
+                return ret.as_dict()
+            else:
+                return {}
         return new_func
 
     @jsonapi_view
@@ -483,7 +478,7 @@ class CollectionViewBase:
             **id** (*str*): resource id
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -533,7 +528,7 @@ class CollectionViewBase:
             **Partial resource object** (*json*)
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -704,17 +699,20 @@ class CollectionViewBase:
                 setattr(item, relname, rel_items)
 
         db_session.flush()
-        return {
-            'meta': {
-                'updated': {
-                    'attributes': [
-                        att for att in atts
-                        if att != self.key_column.name
-                    ],
-                    'relationships': [r for r in rels]
-                }
+        doc = pyramid_jsonapi.jsonapi.Document()
+        doc.meta = {
+            'updated': {
+                'attributes': [
+                    att for att in atts
+                    if att != self.key_column.name
+                ],
+                'relationships': [r for r in rels]
             }
         }
+        # if an update is successful ... the server
+        # responds only with top-level meta data
+        doc.filter_keys = {'meta': {}}
+        return doc
 
     @jsonapi_view
     def delete(self):
@@ -727,7 +725,7 @@ class CollectionViewBase:
             **id** (*str*): resource id
 
         Returns:
-            dict: Resource Identifier for deleted object.
+            jsonapi.Document: Resource Identifier for deleted object.
 
         Raises:
             HTTPFailedDependency: if collection/id does not exist
@@ -741,6 +739,7 @@ class CollectionViewBase:
         '''
 
         db_session = self.get_dbsession()
+        doc = pyramid_jsonapi.jsonapi.Document()
         try:
             item = db_session.query(
                 self.model
@@ -764,11 +763,12 @@ class CollectionViewBase:
                 db_session.flush()
             except sqlalchemy.exc.IntegrityError as exc:
                 raise HTTPFailedDependency(str(exc))
-            return {
+            doc.update({
                 'data': self.serialise_resource_identifier(
                     self.request.matchdict['id']
-                )
-            }
+                )})
+            return doc
+
         else:
             raise HTTPNotFound(
                 'Cannot DELETE a non existent resource ({}/{})'.format(
@@ -801,7 +801,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -873,7 +873,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1006,9 +1006,9 @@ class CollectionViewBase:
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': self.id_col(item)}
         )
-        return {
-            'data': self.serialise_db_item(item, {})
-        }
+        doc = pyramid_jsonapi.jsonapi.Document()
+        doc.update({'data': self.serialise_db_item(item, {})})
+        return doc
 
     @jsonapi_view
     def related_get(self):
@@ -1027,7 +1027,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             For a TOONE relationship (return one object):
 
@@ -1128,7 +1128,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             For a TOONE relationship (return one identifier):
 
@@ -1236,7 +1236,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1339,7 +1339,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1448,7 +1448,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1561,7 +1561,7 @@ class CollectionViewBase:
             identifier: return identifier if True, object if false.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1582,24 +1582,24 @@ class CollectionViewBase:
             HTTPNotFound: if the item is not found.
         '''
         included = {}
-        ret = {}
+        doc = pyramid_jsonapi.jsonapi.Document()
         try:
             item = query.one()
         except NoResultFound:
             if not_found_message:
                 raise HTTPNotFound(not_found_message)
             else:
-                return {'data': None}
+                return doc
         if identifier:
-            ret['data'] = self.serialise_resource_identifier(self.id_col(item))
+            doc.data = self.serialise_resource_identifier(self.id_col(item))
         else:
-            ret['data'] = self.serialise_db_item(item, included)
+            doc.data = self.serialise_db_item(item, included)
             if self.requested_include_names():
-                ret['included'] = [obj for obj in included.values()]
-        return ret
+                doc.included = [obj for obj in included.values()]
+        return doc
 
     def collection_return(self, query, count=None, identifiers=False):
-        '''Populate return dictionary for collections.
+        '''Populate return document for collections.
 
         Arguments:
             query (sqlalchemy.orm.query.Query): query designed to return multiple
@@ -1611,7 +1611,7 @@ class CollectionViewBase:
             identifiers(bool): return identifiers if True, objects if false.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1636,7 +1636,8 @@ class CollectionViewBase:
         qinfo = self.collection_query_info(self.request)
 
         # Add information to the return dict
-        ret = {'meta': {'results': {}}}
+        doc = pyramid_jsonapi.jsonapi.Document(collection=True)
+        results = {}
 
         try:
             count = count or query.count()
@@ -1644,33 +1645,38 @@ class CollectionViewBase:
             raise HTTPInternalServerError(
                 'An error occurred querying the database. Server logs may have details.'
             )
-        ret['meta']['results']['available'] = count
+        results['available'] = count
 
         # Pagination links
-        ret['links'] = self.pagination_links(
-            count=ret['meta']['results']['available']
+        doc.links = self.pagination_links(
+            count=results['available']
         )
-        ret['meta']['results']['limit'] = qinfo['page[limit]']
-        ret['meta']['results']['offset'] = qinfo['page[offset]']
+        results['limit'] = qinfo['page[limit]']
+        results['offset'] = qinfo['page[offset]']
 
         # Primary data
         if identifiers:
-            ret['data'] = [
+            data = [
                 self.serialise_resource_identifier(self.id_col(dbitem))
                 for dbitem in query.all()
             ]
         else:
             included = {}
-            ret['data'] = [
+            data = [
                 self.serialise_db_item(dbitem, included)
                 for dbitem in query.all()
             ]
             # Included objects
             if self.requested_include_names():
-                ret['included'] = [obj for obj in included.values()]
+                doc.included = [obj for obj in included.values()]
+        for item in data:
+            res = pyramid_jsonapi.jsonapi.Resource()
+            res.update(item)
+            doc.resources.append(res)
+        results['returned'] = len(doc.data)
 
-        ret['meta']['results']['returned'] = len(ret['data'])
-        return ret
+        doc.meta = {'results': results}
+        return doc
 
     def query_add_sorting(self, query):
         '''Add sorting to query.
@@ -1953,7 +1959,7 @@ class CollectionViewBase:
                 recursive calls.
 
         Returns:
-            dict: resource object dictionary.
+            jsonapi.Resource:
         '''
 
         include_path = include_path or []
@@ -1963,7 +1969,6 @@ class CollectionViewBase:
         # The item's id.
         item_id = self.id_col(item)
         # JSON API type.
-        type_name = self.collection_name
         item_url = self.request.route_url(
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': item_id}
@@ -2051,21 +2056,17 @@ class CollectionViewBase:
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
-        root_json = pyramid_jsonapi.jsonapi.Root()
         resource_json = pyramid_jsonapi.jsonapi.Resource(self)
 
         resource_json.id = str(item_id)
-        resource_json.type = type_name
         resource_json.attributes = atts
-        resource_json.links = {'links': {'self': item_url}}
+        resource_json.links = {'self': item_url}
         resource_json.relationships = rels
 
-        root_json.add_resource(resource_json)
-
         for callback in self.callbacks['after_serialise_object']:
-            callback(self, root_json)
+            callback(self, resource_json)
 
-        return root_json.as_dict()
+        return resource_json.as_dict()
 
     @classmethod
     @functools.lru_cache(maxsize=128)
@@ -2478,65 +2479,61 @@ class CollectionViewBase:
 
             # Keep track so we can tell the caller which ones were forbidden.
             forbidden = set()
-            if 'attributes' in obj:
+            if hasattr(obj, 'attributes'):
                 atts = {}
-                for name, val in obj['attributes'].items():
+                for name, val in obj.attributes.items():
                     if name in view.allowed_fields:
                         atts[name] = val
                     else:
                         forbidden.add(name)
-                obj['attributes'] = atts
-            if 'relationships' in obj:
+                obj.attributes = atts
+            if hasattr(obj, 'relationships'):
                 rels = {}
-                for name, val in obj['relationships'].items():
+                for name, val in obj.relationships.items():
                     if name in view.allowed_fields:
                         rels[name] = val
                     else:
                         forbidden.add(name)
-                obj['relationships'] = rels
+                obj.relationships = rels
             # Now add all the forbidden fields from the model to the forbidden
             # list. They don't need to be removed from the serialised object
             # because they should not have been added in the first place.
             for field in view.requested_field_names:
                 if field not in view.allowed_fields:
                     forbidden.add(field)
-            if 'meta' not in obj:
-                obj['meta'] = {}
-            obj['meta']['forbidden_fields'] = list(forbidden)
-            return obj
+            if not hasattr(obj, 'meta'):
+                obj.meta = {}
+            obj.meta['forbidden_fields'] = list(forbidden)
         else:
-            return {
-                'type': obj['type'],
-                'id': obj['id'],
-                'meta': {
-                    'errors': [
-                        {
-                            'code': 403,
-                            'title': 'Forbidden',
-                            'detail': 'No permission to view {}/{}.'.format(
-                                obj['type'], obj['id']
-                            )
-                        }
-                    ]
-                }
+            obj.meta = {
+                'errors': [
+                    {
+                        'code': 403,
+                        'title': 'Forbidden',
+                        'detail': 'No permission to view {}/{}.'.format(
+                            obj.type, obj.id
+                        )
+                    }
+                ]
             }
+        return obj
 
     def acso_after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, no-self-use
         '''Standard callback throwing 403 (Forbidden) based on information in meta.
 
         Args:
-            ret (dict): dict which would have been returned from get().
+            ret (jsonapi.Document): object which would have been returned from get().
 
         Returns:
-            dict: the same object if an error has not been raised.
+            jsonapi.Document: the same object if an error has not been raised.
 
         Raises:
             HTTPForbidden
         '''
-        obj = ret['data']
+        obj = ret
         errors = []
         try:
-            errors = obj['meta']['errors']
+            errors = obj.meta['errors']
         except KeyError:
             return ret
         for error in errors:
