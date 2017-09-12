@@ -39,12 +39,15 @@ class Common():
         Update 'data' to contain a single resource item, or list of items.
         """
 
-        jsonapi = self._jsonapi.copy()
-        try:
-            jsonapi.update(self.data_from_resources())
-        except AttributeError:
-            pass
-        return jsonapi
+        jsonapi_dict = self._jsonapi.copy()
+        if hasattr(self, 'data_from_resources'):
+            resources = self.data_from_resources()
+            if resources:
+                jsonapi_dict.update(resources)
+
+        # Only return keys which are in filter_keys
+        return {k:v for k, v in jsonapi_dict.items() if k in self.filter_keys}
+
 
     def update(self, doc):
         """Update class from jsonapi document."""
@@ -65,11 +68,15 @@ class Root(Common):
         """Extend _jsonapi to contain top-level keys."""
         super().__init__()
         self.collection = collection
-        self._jsonapi.update({
+        # filter_keys controls which keys are included in as_dict() output
+        # It's also used to build the internal dictionary
+        self.filter_keys = {
+            'data': [],
+            'included': [],
             'links': {},
             'meta': {},
-            'included': {},
-        })
+        }
+        self._jsonapi.update(self.filter_keys)
 
     def data_from_resources(self):
         """Generate 'data' part of jsonapi document from resources list."""
@@ -110,7 +117,7 @@ class Resource(Common):
         Also create attributes with values as jsonschema in 'schema'.
         """
         super().__init__()
-        self._jsonapi.update({
+        self.filter_keys = {
             'id': "",
             'type': "",
             'attributes': {},
@@ -118,7 +125,8 @@ class Resource(Common):
             'related': {},
             'relationships': {},
             'meta': {},
-        })
+        }
+        self._jsonapi.update(self.filter_keys)
 
         # Update class attributes with sourced data
         if view_class:
