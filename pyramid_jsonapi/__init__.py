@@ -1832,12 +1832,17 @@ class CollectionViewBase:
 
         q = q.filter(or_(*qs))
         unique_clause = sqlalchemy.inspect(self.model).primary_key[0]
-        q = q.distinct(unique_clause)
-        org_ord = [str(x) for x in q._order_by]
+        org_ord = [x for x in q._order_by]
         q = q.order_by(None)
-        q = q.order_by(unique_clause)
         for x in org_ord:
-            q = q.order_by(x)
+            if 'element' in x.__dict__:
+                k = x.element
+            else:
+                k = x.key
+            q = q.distinct(str(k))
+            q = q.order_by(str(x))
+        q = q.order_by(unique_clause)
+        q = q.distinct(unique_clause)
 
         if 'offset' in qinfo['_page']:
             q = q.offset(qinfo['_page']['offset'])
