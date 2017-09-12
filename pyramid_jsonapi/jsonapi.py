@@ -1,17 +1,27 @@
 """A series of classes which store jsonapi in an internal dictionary,
 and provide access through class attributes and helper methods."""
 
+import logging
+import alchemyjsonschema
+
+
+# Example of how to update the schema mapping got alchemyjsonschema
+# from sqlalchemy.dialects.postgresql import JSONB
+# alchemyjsonschema.default_column_to_schema.update({JSONB: 'string'})
+
 
 class Common():
     """Common class for magic attr <-> dict classes."""
 
-    def __init__(self):
+    def __init__(self, generate_schema=True):
         """Create initial 'real' attributes."""
         # We override __setattr__ so must use the 'original' to create new attrs
         # Value modification is allowed (update, pop etc) but not replacement
         super().__setattr__('_jsonapi', {})
         super().__setattr__('resources', [])
-        super().__setattr__('schema', {})
+        super().__setattr__('schema', None)
+        if generate_schema:
+            super().__setattr__('schema', {})
 
     def __setattr__(self, attr, value):
         """Update _jsonapi dict on attribute modification.
@@ -130,6 +140,10 @@ class Resource(Common):
         # Update class attributes with sourced data
         if view_class:
             self.type = view_class.collection_name
-            # TODO(mrichar1): Convert this to jsonschema from sqlalchemy type constraints
-            self.schema = view_class.attributes
+            if isinstance(self.schema, dict):
+                factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker)
+                try:
+                    self.schema.update(factory(view_class.model))
+                except alchemyjsonschema.InvalidStatus as exc:
+                    logging.warning("Schema Error: %s", exc)
             self.attributes = dict.fromkeys(view_class.attributes, None)
