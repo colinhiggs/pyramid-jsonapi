@@ -10,7 +10,7 @@ class Common():
         # We override __setattr__ so must use the 'original' to create new attrs
         # Value modification is allowed (update, pop etc) but not replacement
         super().__setattr__('_jsonapi', {})
-        super().__setattr__('resources', set())
+        super().__setattr__('resources', [])
         super().__setattr__('schema', {})
 
     def __setattr__(self, attr, value):
@@ -97,7 +97,7 @@ class Root(Common):
         for item in reslist:
             res = Resource()
             res.update(item)
-            self.resources.add(res)
+            self.resources.append(res)
 
 
 class Resource(Common):
