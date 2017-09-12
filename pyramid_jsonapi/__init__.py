@@ -2681,8 +2681,8 @@ def create_jsonapi(
             the database.
     '''
 
-    pyramid_jsonapi = PyramidJSONAPI(config, models, get_dbsession)
-    pyramid_jsonapi.create_jsonapi(engine=engine, test_data=test_data)
+    py_json = PyramidJSONAPI(config, models, get_dbsession)
+    py_json.create_jsonapi(engine=engine, test_data=test_data)
 
 
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
