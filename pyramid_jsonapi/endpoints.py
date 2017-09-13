@@ -70,30 +70,35 @@ class EndpointData():
         self.route_name_prefix = settings.get(
             'pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi'
         )
+
+        self.route_pattern_prefix = settings.get(
+            'pyramid_jsonapi.route_pattern_prefix', ''
+        )
+
         self.route_name_sep = settings.get(
             'pyramid_jsonapi.route_name_sep', ':'
         )
 
-        self.metadata_endpoints = asbool(settings.get(
-            'pyramid_jsonapi.metadata_endpoints', 'true'
-        ))
-        if self.metadata_endpoints:
-            default_api_prefix = 'api'
-        else:
-            default_api_prefix = ''
+        self.route_pattern_sep = settings.get(
+            'pyramid_jsonapi.route_pattern_sep', '/'
+        )
+
+        self.api_prefix = settings.get(
+            'pyramid_jsonapi.route_pattern_api_prefix',
+            asbool(settings.get(
+                'pyramid_jsonapi.metadata_endpoints', 'true'
+            )) and 'api' or ''
+        )
+
+        self.metadata_prefix = settings.get(
+            'pyramid_jsonapi.route_pattern_metadata_prefix', 'metadata'
+        )
+
         self.rp_constructor = RoutePatternConstructor(
-            sep=settings.get(
-                'pyramid_jsonapi.route_pattern_sep', '/'
-            ),
-            main_prefix=settings.get(
-                'pyramid_jsonapi.route_pattern_prefix', ''
-            ),
-            api_prefix=settings.get(
-                'pyramid_jsonapi.route_pattern_api_prefix', default_api_prefix
-            ),
-            metadata_prefix=settings.get(
-                'pyramid_jsonapi.route_pattern_metadata_prefix', 'metadata'
-            )
+            sep=self.route_pattern_sep,
+            main_prefix=self.route_pattern_prefix,
+            api_prefix=self.api_prefix,
+            metadata_prefix=self.metadata_prefix,
         )
 
         # Mapping of endpoints, http_methods and options for constructing routes and views.
