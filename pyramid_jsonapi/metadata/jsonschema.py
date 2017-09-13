@@ -1,5 +1,6 @@
 import itertools
 
+
 class ViewSchema:
 
     def __init__(self, view_class):
