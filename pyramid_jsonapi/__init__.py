@@ -16,6 +16,7 @@ from collections import deque, Sequence, Mapping
 
 import jsonschema
 import pyramid
+from pyramid.settings import asbool
 from pyramid.view import (
     view_config,
     notfound_view_config,
@@ -170,7 +171,7 @@ class PyramidJSONAPI():
         settings = self.config.registry.settings
 
         # Add the debug endpoints if required.
-        if settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false') == 'true':
+        if asbool(settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false')):
             DebugView.engine = engine or model_list[0].metadata.bind
             DebugView.metadata = model_list[0].metadata
             DebugView.test_data = test_data or importlib.import_module(
@@ -452,9 +453,9 @@ class CollectionViewBase:
                     ret['links'] = selfie
 
             # Potentially add some debug information.
-            if self.request.registry.settings.get(
+            if asbool(self.request.registry.settings.get(
                     'pyramid_jsonapi.debug.meta', 'false'
-            ) == 'true':
+            )):
                 debug = {
                     'accept_header': {
                         a: None for a in jsonapi_accepts
@@ -926,9 +927,9 @@ class CollectionViewBase:
             data = callback(self, data)
 
         # Check to see if we're allowing client ids
-        if self.request.registry.settings.get(
+        if not asbool(self.request.registry.settings.get(
                 'pyramid_jsonapi.allow_client_ids',
-                'false') != 'true' and 'id' in data:
+                'false')) and 'id' in data:
             raise HTTPForbidden('Client generated ids are not supported.')
         # Type should be correct or raise 409 Conflict
         datatype = data.get('type')
