@@ -7,6 +7,8 @@ under the 'metadata' endpoint."""
 
 import collections
 import importlib
+import os.path
+import pkgutil
 
 from pyramid.settings import aslist
 
@@ -28,11 +30,21 @@ class MetaData():
 
     def __init__(self, api):
         self.api = api
-        # TODO(mrichar1): defaults list from package introspection
-        self.modules = aslist(self.api.config.registry.settings.get(
-            'pyramid_jsonapi.metadata_modules',
-            'JSONSchema'
-        ))
+        # aslist expects space-separated strings to convert to lists.
+        # iter_modules returns a list of tuples - we only want name ([1])
+        self.modules = aslist(
+            self.api.config.registry.settings.get(
+                'pyramid_jsonapi.metadata_modules',
+                ' '.join(
+                    [
+                        x[1] for x in pkgutil.iter_modules(
+                            [os.path.dirname(__file__)]
+                        )
+                    ]
+                )
+            ),
+            flatten=True
+        )
         self.make_routes_views()
 
     def make_routes_views(self):
