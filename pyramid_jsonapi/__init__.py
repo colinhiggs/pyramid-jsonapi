@@ -50,6 +50,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 import transaction
 
 import pyramid_jsonapi.endpoints
+import pyramid_jsonapi.metadata
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
@@ -65,6 +66,7 @@ class PyramidJSONAPI():
         self.models = models
         self.get_dbsession = get_dbsession
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(config)
+        pyramid_jsonapi.metadata.MetaData(self)
         self.filter_registry = FilterRegistry()
         self.schemas = None
         # Register standard supported filter operators
