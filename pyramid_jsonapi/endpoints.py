@@ -18,7 +18,7 @@ class RoutePatternConstructor():
         '''Construct a route pattern from components.
 
         Join components together with self.sep. Remove all occurrences of '',
-        except at the beginning and the end, so that there are no double
+        except at the beginning, so that there are no double or trailing
         separators.
 
         Arguments:
@@ -27,7 +27,7 @@ class RoutePatternConstructor():
         components = components or []
         new_comps = []
         for i, component in enumerate(components):
-            if component == '' and (i != 0 and i != (len(components) - 1)):
+            if component == '' and (i != 0):
                 continue
             new_comps.append(component)
         return self.sep.join(new_comps)
