@@ -17,8 +17,15 @@ class Base():
         Attributes:
             _jsonapi (dict): JSONAPI document object.
             resources (list): List of associated Resource objects.
-            column_to_schema (dict): alchemyjsonschema column to schema mapping.
             schema (dict): jsonschema representation.
+            column_to_schema (dict): alchemyjsonschema column to schema mapping.
+                This defaults to alchemyjsonschema.default_column_to_schema,
+                but can be extended or overridden.
+
+                For example, to add a mapping of 'JSONB' to 'string'::
+                    from sqlalchemy.dialects.postgresql import JSONB
+                    self.column_to_schema[JSONB] = 'string'
+
         """
         # We override __setattr__ so must use the 'original' to create new attrs
         # Value modification is allowed (update, pop etc) but not replacement
@@ -175,9 +182,6 @@ class Resource(Base):
         if view_class:
             self.type = view_class.collection_name
             if isinstance(self.schema, dict):
-                # Example of updating the schema mapping for alchemyjsonschema
-                # from sqlalchemy.dialects.postgresql import JSONB
-                # self.column_to_schema[JSONB] = 'string'
                 classifier = alchemyjsonschema.Classifier(mapping=self.column_to_schema)
                 factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker,
                                                           classifier=classifier)
