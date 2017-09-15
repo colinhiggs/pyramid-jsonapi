@@ -59,7 +59,7 @@ class Base():
             raise AttributeError("object has no attribute '{}'".format(attr))
 
     def as_dict(self):
-        """Generate a dictionary representing the entire jsonapi object.
+        """Generate a dictionary representing the entire JSONAPI object.
         Update 'data' to contain a single resource item, or list of items.
 
         Returns:
@@ -76,7 +76,7 @@ class Base():
         return {k: v for k, v in jsonapi_dict.items() if k in self.filter_keys}
 
     def update(self, doc):
-        """Update class from jsonapi document.
+        """Update class from JSONAPI document.
         'data' keys will be converted to Resource objects and added to
         'resources' attribute.
 
