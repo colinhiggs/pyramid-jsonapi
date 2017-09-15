@@ -1,9 +1,9 @@
-'''Classes to store and manipulate endpoints and routes.'''
+"""Classes to store and manipulate endpoints and routes."""
 from pyramid.settings import asbool
 
 
 class RoutePatternConstructor():
-    '''Construct pyramid_jsonapi route patterns.'''
+    """Construct pyramid_jsonapi route patterns."""
 
     def __init__(
             self, sep='/', main_prefix='',
@@ -15,7 +15,7 @@ class RoutePatternConstructor():
         self.metadata_prefix = metadata_prefix
 
     def pattern_from_components(self, *components):
-        '''Construct a route pattern from components.
+        """Construct a route pattern from components.
 
         Join components together with self.sep. Remove all occurrences of '',
         except at the beginning, so that there are no double or trailing
@@ -23,7 +23,7 @@ class RoutePatternConstructor():
 
         Arguments:
             *components (str): route pattern components.
-        '''
+        """
         components = components or []
         new_comps = []
         for i, component in enumerate(components):
@@ -33,23 +33,23 @@ class RoutePatternConstructor():
         return self.sep.join(new_comps)
 
     def api_pattern(self, name, *components):
-        '''Generate a route pattern from a collection name and suffix components.
+        """Generate a route pattern from a collection name and suffix components.
 
         Arguments:
             name (str): A collection name.
             *components (str): components to add after collection name.
-        '''
+        """
         return self.pattern_from_components(
             '', self.main_prefix, self.api_prefix, name, *components
         )
 
     def metadata_pattern(self, metadata_type, *components):
-        '''Generate a metadata route pattern.
+        """Generate a metadata route pattern.
 
         Arguments:
             metadata_type (str): Metadata type (e.g. swagger, json-schema).
             *components (str): components to add after metadata type.
-        '''
+        """
         return self.pattern_from_components(
             '', self.main_prefix, self.metadata_prefix,
             metadata_type, *components
@@ -57,12 +57,12 @@ class RoutePatternConstructor():
 
 
 class EndpointData():
-    '''Class to hold endpoint data and utility methods.
+    """Class to hold endpoint data and utility methods.
 
     Arguments:
         config: A pyramid Configurator object.
 
-    '''
+    """
 
     def __init__(self, config):
         self.config = config
@@ -160,24 +160,24 @@ class EndpointData():
         }
 
     def make_route_name(self, name, suffix=''):
-        '''Attach prefix and suffix to name to generate a route_name.
+        """Attach prefix and suffix to name to generate a route_name.
 
         Arguments:
             name: A pyramid route name.
 
         Keyword Arguments:
             suffix: An (optional) suffix to append to the route name.
-        '''
+        """
         return self.route_name_sep.join(
             (self.route_name_prefix, name, suffix)
         ).rstrip(self.route_name_sep)
 
     def add_routes_views(self, view):
-        '''Generate routes and views from the endpoints data object.
+        """Generate routes and views from the endpoints data object.
 
         Arguments:
             view: A view_class to associate routes and views with.
-        '''
+        """
 
         for endpoint, endpoint_opts in self.endpoints.items():
             route_name = self.make_route_name(
