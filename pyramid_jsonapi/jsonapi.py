@@ -5,7 +5,7 @@ import logging
 import alchemyjsonschema
 
 
-class Common():
+class Base():
     """Common class for magic attr <-> dict classes."""
 
     def __init__(self, generate_schema=True):
@@ -66,7 +66,7 @@ class Common():
                     self._jsonapi[key] = val
 
 
-class Document(Common):
+class Document(Base):
     """JSONAPI 'root' document object."""
 
     def __init__(self, collection=False):
@@ -113,7 +113,7 @@ class Document(Common):
             self.resources.append(res)
 
 
-class Resource(Common):
+class Resource(Base):
     """JSONAPI Resource object."""
 
     def __init__(self, view_class=None):
