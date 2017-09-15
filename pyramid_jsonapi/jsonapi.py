@@ -9,7 +9,17 @@ class Base():
     """Common class for magic attr <-> dict classes."""
 
     def __init__(self, generate_schema=True):
-        """Create initial 'real' attributes."""
+        """Create initial 'real' attributes.
+
+        Args:
+            generate_schema (bool): Generate jsonschema for attributes.
+
+        Attributes:
+            _jsonapi (dict): JSONAPI document object.
+            resources (list): List of associated Resource objects.
+            column_to_schema (dict): alchemyjsonschema column to schema mapping.
+            schema (dict): jsonschema representation.
+        """
         # We override __setattr__ so must use the 'original' to create new attrs
         # Value modification is allowed (update, pop etc) but not replacement
         super().__setattr__('_jsonapi', {})
@@ -20,9 +30,10 @@ class Base():
             super().__setattr__('schema', {})
 
     def __setattr__(self, attr, value):
-        """Update _jsonapi dict on attribute modification.
-        Only allow modification of values for existing keys.
+        """If attr is a key in _jsonapi, set it's value.
+        Otherwise, set a class attribute as usual.
         """
+
         if attr == 'data':
             self.data_to_resources(value)
         elif attr in self._jsonapi:
@@ -43,6 +54,9 @@ class Base():
     def as_dict(self):
         """Generate a dictionary representing the entire jsonapi object.
         Update 'data' to contain a single resource item, or list of items.
+
+        Returns:
+            dict: JSONAPI object.
         """
 
         jsonapi_dict = self._jsonapi.copy()
@@ -55,7 +69,13 @@ class Base():
         return {k: v for k, v in jsonapi_dict.items() if k in self.filter_keys}
 
     def update(self, doc):
-        """Update class from jsonapi document."""
+        """Update class from jsonapi document.
+        'data' keys will be converted to Resource objects and added to
+        'resources' attribute.
+
+        Args:
+            doc (dict): JSONAPI object.
+        """
         if doc:
             for key, val in doc.items():
                 # data contains a single resources, or list of resources
@@ -70,7 +90,12 @@ class Document(Base):
     """JSONAPI 'root' document object."""
 
     def __init__(self, collection=False):
-        """Extend _jsonapi to contain top-level keys."""
+        """Extend _jsonapi to contain top-level keys.
+
+        Args:
+            collection (bool): Is this document a collection, or a single item?
+            filter_keys (dict): Keys to be returned when as_dict() is called.
+        """
         super().__init__()
         self.collection = collection
         # filter_keys controls which keys are included in as_dict() output
@@ -84,7 +109,11 @@ class Document(Base):
         self._jsonapi.update(self.filter_keys)
 
     def data_from_resources(self):
-        """Generate 'data' part of jsonapi document from resources list."""
+        """Generate 'data' part of jsonapi document from resources list.
+
+        Returns:
+            dict, list or None: JSONAPI 'data' resource element.
+        """
         data = []
         for resource in self.resources:
             data.append(resource.as_dict())
@@ -101,6 +130,9 @@ class Document(Base):
     def data_to_resources(self, data):
         """Convert 'data' part of jsonapi document to resource(s).
         Add resources to the resources list.
+
+        Args:
+            data (dict): JSONAPI 'data' resource element.
         """
         reslist = []
         if isinstance(data, list):
@@ -120,6 +152,12 @@ class Resource(Base):
         """Extend _jsonapi to contain resource keys.
         If view_class provided, update attributes.
         Also create attributes with values as jsonschema in 'schema'.
+
+        Args:
+            view_class (jsonapi.view_class): Resource data extracted from the view_class
+
+        Attributes:
+            filter_keys (dict): Keys to be returned when as_dict() is called.
         """
         super().__init__()
         self.filter_keys = {
