@@ -49,11 +49,11 @@ class MetaData():
 
     def make_routes_views(self):
         """Generate routes and views for plugin modules."""
-        for module in self.modules:
+        for mod_name in self.modules:
             # Import the module from the name provided
-            module = importlib.import_module("{}.{}".format(__name__, module))
+            module = importlib.import_module("{}.{}".format(__name__, mod_name))
             # Each module should have a class with the same name
-            class_name = module.__name__.lstrip(__name__)
+            class_name = mod_name
             mclass = getattr(module, class_name)(self.api)
             views = getattr(mclass, 'views', [])
             for view in views:
