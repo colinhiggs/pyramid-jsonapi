@@ -10,7 +10,7 @@ requires = [
 
 setup(
   name = 'pyramid_jsonapi',
-  packages = ['pyramid_jsonapi'],
+  packages = find_packages(),
   install_requires=requires,
   version=get_version(),
   description = 'Auto-build JSON API from sqlalchemy models using the pyramid framework',
