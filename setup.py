@@ -17,7 +17,7 @@ setup(
   author = 'Colin Higgs',
   author_email = 'colin.higgs70@gmail.com',
   url = 'https://github.com/colinhiggs/pyramid-jsonapi',
-  keywords = ['json', 'api', 'API', 'JSON-API', 'pyramid', 'sqlalchemy'],
+  keywords = ['json', 'api', 'json-api', 'jsonapi', 'pyramid', 'sqlalchemy'],
   classifiers = [],
   package_data={'': ['schema/*.json']}
   )
