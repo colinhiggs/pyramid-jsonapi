@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from version import get_version
 
 requires = [
     'alchemyjsonschema',
@@ -10,9 +11,8 @@ requires = [
 setup(
   name = 'pyramid_jsonapi',
   packages = ['pyramid_jsonapi'],
-  setup_requires=['setuptools_scm'],
   install_requires=requires,
-  use_scm_version=True,
+  version=get_version(),
   description = 'Auto-build JSON API from sqlalchemy models using the pyramid framework',
   author = 'Colin Higgs',
   author_email = 'colin.higgs70@gmail.com',
