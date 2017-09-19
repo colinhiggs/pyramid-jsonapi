@@ -2072,7 +2072,7 @@ class CollectionViewBase:
         return resource_json.as_dict()
 
     @classmethod
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def collection_query_info(cls, request):
         """Return dictionary of information used during DB query.
 
@@ -2253,7 +2253,7 @@ class CollectionViewBase:
         return True
 
     @property
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def requested_field_names(self):
         """Get the sparse field names from request.
 
@@ -2388,7 +2388,7 @@ class CollectionViewBase:
         )
         return ret
 
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def requested_include_names(self):
         """Parse any 'include' param in http request.
 
@@ -2443,7 +2443,7 @@ class CollectionViewBase:
                             bad.add('.'.join(curname))
         return bad
 
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def view_instance(self, model):
         """(memoised) get an instance of view class for model.
 
