@@ -47,7 +47,6 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import JSONB
-import transaction
 
 import pyramid_jsonapi.endpoints
 import pyramid_jsonapi.jsonapi
