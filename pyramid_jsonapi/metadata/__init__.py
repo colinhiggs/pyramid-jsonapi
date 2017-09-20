@@ -55,6 +55,8 @@ class MetaData():
             # Each module should have a class with the same name
             class_name = mod_name
             mclass = getattr(module, class_name)(self.api)
+            # Attach the instance as an attribute named after the class
+            setattr(self, mod_name, mclass)
             views = getattr(mclass, 'views', [])
             for view in views:
                 rp_constructor = self.api.endpoint_data.rp_constructor
