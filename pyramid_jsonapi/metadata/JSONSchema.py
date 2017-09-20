@@ -33,7 +33,7 @@ class JSONSchema():
                 renderer=''
             ),
             VIEWS(
-                attr='resource_view',
+                attr='resource_attributes_view',
                 route_name='resource/{endpoint}',
                 request_method='',
                 renderer=''
