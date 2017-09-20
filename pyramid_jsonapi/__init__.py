@@ -930,6 +930,9 @@ class CollectionViewBase:
         except KeyError:
             raise HTTPBadRequest('data attribute required in POSTs.')
 
+        if not isinstance(data, dict):
+            raise HTTPBadRequest('data attribute must contain a single resource object.')
+
         # Alter data with any callbacks.
         for callback in self.callbacks['before_collection_post']:
             data = callback(self, data)
