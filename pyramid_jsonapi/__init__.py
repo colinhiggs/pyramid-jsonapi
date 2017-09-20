@@ -420,6 +420,12 @@ class CollectionViewBase:
                     '(http://jsonapi.org/format).'
                 )
 
+            if self.request.content_length:
+                try:
+                    self.request.json_body
+                except ValueError:
+                    raise HTTPBadRequest("Body is not valid JSON.")
+
             if self.schemas:
                 # Validate request JSON against the JSONAPI jsonschema
                 if self.request.content_length and self.request.method != 'PATCH':
