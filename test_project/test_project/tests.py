@@ -1024,6 +1024,17 @@ class TestSpec(DBTestBase):
     # POST tests.
     ###############################################
 
+    def test_spec_post_invalid_json(self):
+        '''Invalid json should raise an error.'''
+
+        # Send garbage json
+        self.test_app().post(
+            '/people',
+            '{,,,}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_post_collection(self):
         '''Should create a new person object.'''
         # Make sure there is no test person.
@@ -1755,6 +1766,17 @@ class TestSpec(DBTestBase):
         data = self.test_app().get('/people/1').json['data']
         # ...should now be alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
+
+    def test_spec_patch_invalid_json(self):
+        '''Invalid json should raise an error.'''
+
+        # Send garbage json
+        self.test_app().patch(
+            '/people/1',
+            '{,,,}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
 
     def test_spec_patch_no_type_id(self):
         '''Should 409 if id or type do not exist.
