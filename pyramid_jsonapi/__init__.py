@@ -61,10 +61,12 @@ class PyramidJSONAPI():
 
     view_classes = {}
 
-    def __init__(self, config, models, get_dbsession):
+    def __init__(self, config, models, get_dbsession=None):
         self.config = config
         self.models = models
-        self.get_dbsession = get_dbsession
+        self.get_dbsession = CollectionViewBase.default_dbsession
+        if get_dbsession:
+            self.get_dbsession = get_dbsession
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(config)
         self.metadata = pyramid_jsonapi.metadata.MetaData(self)
         self.filter_registry = FilterRegistry()
@@ -378,6 +380,10 @@ class CollectionViewBase:
     def __init__(self, request):
         self.request = request
         self.views = {}
+
+    def default_dbsession(self):
+        """Use the dbsesison in self.request as default."""
+        return self.request.dbsession
 
     @staticmethod
     def id_col(item):
