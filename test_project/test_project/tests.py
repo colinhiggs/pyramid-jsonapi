@@ -2418,6 +2418,15 @@ class TestErrors(DBTestBase):
 class TestMalformed(DBTestBase):
     '''Various malformed POSTs and PATCHes.'''
 
+    def test_malformed_collection_post_not_single_item(self):
+        '''Should complain about data being a list.'''
+        self.test_app().post_json(
+            '/people',
+            {'type': 'people', 'data': []},
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_malformed_collection_post_no_data(self):
         '''Should complain about lack of data attribute.'''
         self.test_app().post_json(
