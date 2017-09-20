@@ -183,6 +183,28 @@ class TestSpec(DBTestBase):
         self.assertIn('errors', r.json)
         self.assertIsInstance(r.json['errors'], list)
 
+    def test_spec_get_no_such_item(self):
+        '''Should fail to get non-existent comments/99999
+
+        A server MUST respond with 404 Not Found when processing a request
+        to fetch a single resource that does not exist
+
+        '''
+
+        # Get comments/99999
+        self.test_app().get('/comments/99999', status=404)
+
+    def test_spec_get_invalid_item(self):
+        '''Should fail to get invalid item comments/cat
+
+        A server MUST respond with 404 Not Found when processing a request
+        to fetch a single resource that does not exist
+
+        '''
+
+        # Get comments/cat
+        self.test_app().get('/comments/cat', status=404)
+
     def test_spec_get_primary_data_empty(self):
         '''Should return an empty list of results.
 
