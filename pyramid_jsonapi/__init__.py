@@ -510,13 +510,23 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people/1
         """
-        ret = self.single_return(
-            self.single_item_query,
-            'No id {} in collection {}'.format(
-                self.request.matchdict['id'],
-                self.collection_name
+        try:
+            ret = self.single_return(
+                self.single_item_query,
+                'No id {} in collection {}'.format(
+                    self.request.matchdict['id'],
+                    self.collection_name
+                )
             )
-        )
+        except (sqlalchemy.exc.DataError, ValueError):
+            # DataError is caused by e.g. id (int) = cat
+            # ValueError is caused by e.g. id (uuid) = 1
+            raise HTTPNotFound(
+                'Cannot find resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
+
         for callback in self.callbacks['after_get']:
             ret = callback(self, ret)
         return ret
@@ -756,7 +766,7 @@ class CollectionViewBase:
             ).get(
                 self.request.matchdict['id']
             )
-        except sqlalchemy.exc.DataError:
+        except (sqlalchemy.exc.DataError, ValueError):
             raise HTTPNotFound(
                 'Cannot DELETE a non existent resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
