@@ -6,6 +6,8 @@ Reference Documentation
 
 .. automodule:: pyramid_jsonapi
   :members:
+  :undoc-members:
+  :inherited-members:
   :member-order: bysource
 
 Callback Reference
