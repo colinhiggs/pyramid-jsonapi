@@ -4,7 +4,6 @@
 from os.path import dirname, isdir, join
 import re
 from subprocess import CalledProcessError, check_output
-import sys
 
 
 PREFIX = ''
@@ -21,8 +20,7 @@ def get_version():
 
     d = dirname(__file__)
 
-    try:
-        git_dir = check_output('git rev-parse --git-dir'.split())
+    if isdir(join(d, '.git')):
         # Get the version using "git describe".
         cmd = 'git describe --tags --match %s[0-9]* --dirty' % PREFIX
         try:
@@ -33,13 +31,12 @@ def get_version():
         # PEP 440 compatibility
         if '-' in version:
             if version.endswith('-dirty'):
-                print('WARNING: The working tree is dirty: {}'.format(version),
-                      file=sys.stderr)
+                raise RuntimeError('The working tree is dirty')
             version = '.post'.join(version.split('-')[:2])
 
-    except CalledProcessError:
+    else:
         # Extract the version from the PKG-INFO file.
-        with open(join(d, '../PKG-INFO')) as f:
+        with open(join(d, 'PKG-INFO')) as f:
             version = version_re.search(f.read()).group(1)
 
     return version

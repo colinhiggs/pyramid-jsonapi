@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from pyramid_jsonapi.version import get_version
+from version import get_version
 
 requires = [
     'alchemyjsonschema',

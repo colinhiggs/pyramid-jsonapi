@@ -1,1 +1,1 @@
-pyramid_jsonapi/version.py export-subst
+version.py export-subst
