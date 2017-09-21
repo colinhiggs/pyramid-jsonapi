@@ -8,7 +8,7 @@
    :hidden:
    :maxdepth: 2
 
-   pyramid_jsonapi
+   apidoc/pyramid_jsonapi
 
 
 .. include:: readme.inc
