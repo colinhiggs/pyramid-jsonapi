@@ -2455,7 +2455,7 @@ class TestErrors(DBTestBase):
             Exception,
             r'^Model \S+ has more than one primary key.$',
             self.test_app,
-            {'pyramid_jsonapi.tests.models_iterable': 'composite_key'}
+            {'pyramid_jsonapi.tests_models_iterable': 'composite_key'}
         )
 
 
@@ -2620,7 +2620,7 @@ class TestFeatures(DBTestBase):
     def test_feature_construct_with_models_list(self):
         '''Should construct an api from a list of models.'''
         test_app = self.test_app(
-            options={'pyramid_jsonapi.tests.models_iterable': 'list'}
+            options={'pyramid_jsonapi.tests_models_iterable': 'list'}
         )
         test_app.get('/people/1')
 
@@ -2628,8 +2628,8 @@ class TestFeatures(DBTestBase):
         '''Should create a set of debug endpoints for manipulating the database.'''
         test_app = self.test_app(
             options={
-                'pyramid_jsonapi.debug.debug_endpoints': 'true',
-                'pyramid_jsonapi.debug.test_data_module': 'test_project.test_data'
+                'pyramid_jsonapi.debug_endpoints': 'true',
+                'pyramid_jsonapi.debug_test_data_module': 'test_project.test_data'
             }
         )
         test_app.get('/debug/populate')
@@ -2680,7 +2680,7 @@ class TestFeatures(DBTestBase):
     def test_feature_debug_meta(self):
         '''Should add meta information.'''
         test_app = self.test_app(
-            options={'pyramid_jsonapi.debug.meta': 'true'}
+            options={'pyramid_jsonapi.debug_meta': 'true'}
         )
         self.assertIn('debug',test_app.get('/people/1').json['meta'])
 

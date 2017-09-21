@@ -1,5 +1,4 @@
 """Classes to store and manipulate endpoints and routes."""
-from pyramid.settings import asbool
 
 
 class RoutePatternConstructor():
@@ -60,40 +59,21 @@ class EndpointData():
     """Class to hold endpoint data and utility methods.
 
     Arguments:
-        config: A pyramid Configurator object.
+        api: A PyramidJSONAPI object.
 
     """
 
-    def __init__(self, config):
-        self.config = config
-        settings = self.config.registry.settings
-        self.route_name_prefix = settings.get(
-            'pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi'
-        )
-
-        self.route_pattern_prefix = settings.get(
-            'pyramid_jsonapi.route_pattern_prefix', ''
-        )
-
-        self.route_name_sep = settings.get(
-            'pyramid_jsonapi.route_name_sep', ':'
-        )
-
-        self.route_pattern_sep = settings.get(
-            'pyramid_jsonapi.route_pattern_sep', '/'
-        )
-
-        self.api_prefix = settings.get(
-            'pyramid_jsonapi.route_pattern_api_prefix',
-            asbool(settings.get(
-                'pyramid_jsonapi.metadata_endpoints', 'true'
-            )) and 'api' or ''
-        )
-
-        self.metadata_prefix = settings.get(
-            'pyramid_jsonapi.route_pattern_metadata_prefix', 'metadata'
-        )
-
+    def __init__(self, api):
+        self.config = api.config
+        settings = api.settings
+        self.route_name_prefix = settings.route_name_prefix
+        self.route_pattern_prefix = settings.route_pattern_prefix
+        self.route_name_sep = settings.route_name_sep
+        self.route_pattern_sep = settings.route_pattern_sep
+        self.api_prefix = ''
+        if settings.metadata_endpoints:
+            self.api_prefix = settings.route_pattern_api_prefix
+        self.metadata_prefix = settings.route_pattern_metadata_prefix
         self.rp_constructor = RoutePatternConstructor(
             sep=self.route_pattern_sep,
             main_prefix=self.route_pattern_prefix,

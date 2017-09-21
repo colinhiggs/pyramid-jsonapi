@@ -61,10 +61,7 @@ class JSONSchema():
         Reads 'pyramid_jsonapi.schema_file' from config,
         or defaults to one provided with the package.
         """
-        schema_file = self.api.config.registry.settings.get(
-            'pyramid_jsonapi.schema_file'
-        )
-
+        schema_file = self.api.settings.schema_file
         if schema_file:
             with open(schema_file) as schema_f:
                 schema = schema_f.read()

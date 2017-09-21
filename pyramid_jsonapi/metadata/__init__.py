@@ -10,8 +10,6 @@ import importlib
 import os.path
 import pkgutil
 
-from pyramid.settings import aslist
-
 
 class MetaData():
     """Adds routes and views for all metadata modules.
@@ -32,19 +30,10 @@ class MetaData():
         self.api = api
         # aslist expects space-separated strings to convert to lists.
         # iter_modules returns a list of tuples - we only want name ([1])
-        self.modules = aslist(
-            self.api.config.registry.settings.get(
-                'pyramid_jsonapi.metadata_modules',
-                ' '.join(
-                    [
-                        x[1] for x in pkgutil.iter_modules(
-                            [os.path.dirname(__file__)]
-                        )
-                    ]
-                )
-            ),
-            flatten=True
-        )
+        self.modules = self.api.settings.metadata_modules.aslist()
+        if not self.modules:
+            self.modules = [x[1] for x in pkgutil.iter_modules([os.path.dirname(__file__)])]
+
         self.make_routes_views()
 
     def make_routes_views(self):

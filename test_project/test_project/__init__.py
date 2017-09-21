@@ -87,7 +87,7 @@ def main(global_config, **settings):
     pj = pyramid_jsonapi.PyramidJSONAPI(
         config,
         test_settings['models_iterable'][
-            settings.get('pyramid_jsonapi.tests.models_iterable', 'module')
+            settings.get('pyramid_jsonapi.tests_models_iterable', 'module')
         ],
         lambda view: models.DBSession
     )
