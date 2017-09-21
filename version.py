@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Source: https://github.com/Changaco/version.py
 
 from os.path import dirname, isdir, join
