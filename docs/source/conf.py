@@ -111,7 +111,24 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'classic'
+html_theme = 'alabaster'
+
+# Custom sidebar templates, must be a dictionary that maps document names
+# to template names.
+#
+# This is required for the alabaster theme
+# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
+# Show different sidebars for index and apidoc pages
+html_sidebars = {
+    'pyramid_jsonapi': [
+        'navigation.html',
+    ],
+    'index': [
+        'navigation.html',
+        'localtoc.html',
+        'searchbox.html',
+    ]
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
