@@ -5,18 +5,21 @@ pyramid-jsonapi Documentation
 Create a JSON-API (`<http://jsonapi.org/>`_) standard API from a database using
 the sqlAlchemy ORM and pyramid framework.
 
-.. note:: Now approaching version 1.0.0. There have been some significant
-  changes since 0.4.3:
+.. note:: There will be a version 2.0.0 release soon. This will introduce the
+  ability to construct API metadata, resulting in some default behaviour that
+  is not backwards compatible (largely in endpoint naming).
 
-  * The JSON API is now constructed at class level (using the
-    :py:class:`PyramidJSONAPI` class), rather than module level. This has
-    implications for the way that an API instance is constructed.
+  You can view, follow, check, or contribute to the upcoming version in the
+  ``metadata`` branch.
 
-  * There is now a way of altering the set of endpoints before the views are
-    constructed. New endpoints can be added at this stage.
+  The backwards incompatible change is to move the api endpoints from
+  ``/collection_name`` to ``/api/collection_name`` to make room for a set of
+  endpoints under ``/metadata``. To get the old behaviour back, put the
+  following in your ini file:
 
-  * There is now a way to add new search/filter operators (using an instance of
-    :py:class:`FilterRegistry` associated with the API instance).
+  ``pyramid_jsonapi.route_pattern_api_prefix =``
+
+  (There really is nothing after the '='.)
 
 The core idea behind pyramid-jsonapi is to create a working JSON-API
 automatically, starting from the sort of ``models.py`` file shipped with a
