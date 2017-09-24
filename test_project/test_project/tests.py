@@ -71,8 +71,8 @@ class DBTestBase(unittest.TestCase):
             return self._test_app
         return self.new_test_app(options)
 
-    @classmethod
-    def new_test_app(cls, options=None):
+    @staticmethod
+    def new_test_app(options=None):
         '''Create a test app.'''
         config_path = '{}/testing.ini'.format(parent_dir)
         if options:
