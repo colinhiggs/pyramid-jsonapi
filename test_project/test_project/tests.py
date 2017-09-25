@@ -2455,7 +2455,7 @@ class TestErrors(DBTestBase):
             Exception,
             r'^Model \S+ has more than one primary key.$',
             self.test_app,
-            {'pyramid_jsonapi.tests_models_iterable': 'composite_key'}
+            {'pyramid_jsonapi_tests.models_iterable': 'composite_key'}
         )
 
 
@@ -2620,7 +2620,7 @@ class TestFeatures(DBTestBase):
     def test_feature_construct_with_models_list(self):
         '''Should construct an api from a list of models.'''
         test_app = self.test_app(
-            options={'pyramid_jsonapi.tests_models_iterable': 'list'}
+            options={'pyramid_jsonapi_tests.models_iterable': 'list'}
         )
         test_app.get('/people/1')
 
