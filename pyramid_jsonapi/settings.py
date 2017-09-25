@@ -36,9 +36,9 @@ class Settings():
         'route_pattern_sep': {'val': '/', 'desc': 'Separator for pyramid route patterns.'},
         'schema_file': {'val': '', 'desc': 'File containing jsonschema JSON for validation.'},
         'schema_validation': {'val': True, 'desc': 'jsonschema schema validation enabled?'},
-        'debug_endpoints': {'val': False, 'desc': ''},
-        'debug_test_data_module': {'val': 'test_data', 'desc': ''},
-        'debug_meta': {'val': False, 'desc': ''},
+        'debug_endpoints': {'val': False, 'desc': 'Whether or not to add debugging endpoints.'},
+        'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
+        'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
     }
 
     def __init__(self, settings):
