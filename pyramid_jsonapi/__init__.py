@@ -16,7 +16,6 @@ from collections import deque, Sequence, Mapping
 
 import jsonschema
 import pyramid
-from pyramid.settings import asbool
 from pyramid.view import (
     view_config,
     notfound_view_config,
@@ -51,6 +50,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 import pyramid_jsonapi.endpoints
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
+import pyramid_jsonapi.settings
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
@@ -63,11 +63,12 @@ class PyramidJSONAPI():
 
     def __init__(self, config, models, get_dbsession=None):
         self.config = config
+        self.settings = pyramid_jsonapi.settings.Settings(config.registry.settings)
         self.models = models
         self.get_dbsession = CollectionViewBase.default_dbsession
         if get_dbsession:
             self.get_dbsession = get_dbsession
-        self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(config)
+        self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
         self.metadata = pyramid_jsonapi.metadata.MetaData(self)
         self.filter_registry = FilterRegistry()
         self.schemas = None
@@ -107,12 +108,8 @@ class PyramidJSONAPI():
             )
 
         # Add schema if pyramid_jsonapi.schema_validation is not 'false'
-        validation = True
-        if self.config.registry.settings.get('pyramid_jsonapi.schema_validation') == 'false':
-            validation = False
-        if validation:
-            schema_file = self.config.registry.settings.get(
-                'pyramid_jsonapi.schema_file')
+        if self.settings.schema_validation:
+            schema_file = self.settings.schema_file
             if schema_file:
                 with open(schema_file) as schema_f:
                     schema = json.loads(schema_f.read())
@@ -172,15 +169,13 @@ class PyramidJSONAPI():
         else:
             model_list = list(self.models)
 
-        settings = self.config.registry.settings
-
         # Add the debug endpoints if required.
-        if asbool(settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false')):
+        if self.settings.debug_endpoints:
             DebugView.engine = engine or model_list[0].metadata.bind
             DebugView.metadata = model_list[0].metadata
             DebugView.test_data = test_data or importlib.import_module(
-                settings.get('pyramid_jsonapi.debug.test_data_module',
-                             'test_data'))
+                str(self.settings.debug_test_data_module)
+            )
             self.config.add_route('debug', '/debug/{action}')
             self.config.add_view(
                 DebugView,
@@ -255,11 +250,8 @@ class PyramidJSONAPI():
 
         self.view_classes[model] = view
 
-        settings = self.config.registry.settings
-        view.default_limit =\
-            int(settings.get('pyramid_jsonapi.paging.default_limit', 10))
-        view.max_limit =\
-            int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
+        view.default_limit = int(self.settings.paging_default_limit)
+        view.max_limit = int(self.settings.paging_max_limit)
 
         self.endpoint_data.add_routes_views(view)
 
@@ -277,6 +269,7 @@ class PyramidJSONAPI():
         class_attrs = {}
         class_attrs['config'] = self.config
         class_attrs['model'] = model
+        class_attrs['settings'] = self.settings
         class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
         class_attrs['collection_name'] = collection_name or model.__tablename__
         class_attrs['get_dbsession'] = self.get_dbsession
@@ -376,6 +369,7 @@ class CollectionViewBase:
     relationships = None
     view_classes = None
     schemas = None
+    settings = None
 
     def __init__(self, request):
         self.request = request
@@ -461,9 +455,7 @@ class CollectionViewBase:
                         ret.links = selfie
 
                 # Potentially add some debug information.
-                if asbool(self.request.registry.settings.get(
-                        'pyramid_jsonapi.debug.meta', 'false'
-                )):
+                if self.settings.debug_meta:
                     debug = {
                         'accept_header': {
                             a: None for a in jsonapi_accepts
@@ -954,9 +946,7 @@ class CollectionViewBase:
             data = callback(self, data)
 
         # Check to see if we're allowing client ids
-        if not asbool(self.request.registry.settings.get(
-                'pyramid_jsonapi.allow_client_ids',
-                'false')) and 'id' in data:
+        if not self.settings.allow_client_ids and 'id' in data:
             raise HTTPForbidden('Client generated ids are not supported.')
         # Type should be correct or raise 409 Conflict
         datatype = data.get('type')
@@ -2649,7 +2639,7 @@ class DebugView:
     """Pyramid view class defining a debug API.
 
     These are available as ``/debug/{action}`` if
-    ``pyramid_jsonapi.debug.debug_endpoints == 'true'``.
+    ``pyramid_jsonapi.debug_endpoints == 'true'``.
 
     Attributes:
         engine: sqlalchemy engine with connection to the db.
