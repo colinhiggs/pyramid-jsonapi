@@ -24,7 +24,6 @@ class Settings():
     # Default configuration values
     _defaults = {
         'allow_client_ids': {'val': False, 'desc': 'Allow client to specify resource ids.'},
-        'filter_operator_groups': {'val': '', 'desc': ''},
         'metadata_endpoints': {'val': True, 'desc': 'Should /metadata endpoint be enabled?'},
         'metadata_modules': {'val': '', 'desc': 'Modules to load to provide metadata endpoints (defaults to all modules in the metadata package).'},
         'paging_default_limit': {'val': 10, 'desc': 'Default pagination limit for collections.'},
