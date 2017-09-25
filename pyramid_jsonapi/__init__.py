@@ -744,7 +744,8 @@ class CollectionViewBase:
             jsonapi.Document: Resource Identifier for deleted object.
 
         Raises:
-            HTTPFailedDependency: if collection/id does not exist
+            HTTPFailedDependency: if a database constraint would be broken by
+            deleting the specified resource from the relationship.
 
         Example:
             delete person 1:
