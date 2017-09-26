@@ -1,4 +1,9 @@
+import sys
 from setuptools import setup, find_packages
+# Append project to sys.path so that we can import version 'directly'.
+# Importing as 'from pyramid_jsonapi import version' needs the deps we
+# haven't installed yet!
+sys.path.append("pyramid_jsonapi")
 from version import get_version
 
 requires = [

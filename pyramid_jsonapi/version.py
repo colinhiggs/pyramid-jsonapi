@@ -20,7 +20,7 @@ def get_version():
 
     d = dirname(__file__)
 
-    if isdir(join(d, '.git')):
+    if isdir(join(d, '../.git')):
         # Get the version using "git describe".
         cmd = 'git describe --tags --match %s[0-9]* --dirty' % PREFIX
         try:
@@ -30,13 +30,11 @@ def get_version():
 
         # PEP 440 compatibility
         if '-' in version:
-            if version.endswith('-dirty'):
-                raise RuntimeError('The working tree is dirty')
             version = '.post'.join(version.split('-')[:2])
 
     else:
         # Extract the version from the PKG-INFO file.
-        with open(join(d, 'PKG-INFO')) as f:
+        with open(join(d, '../PKG-INFO')) as f:
             version = version_re.search(f.read()).group(1)
 
     return version
