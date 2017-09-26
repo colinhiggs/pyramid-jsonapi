@@ -30,7 +30,7 @@ def get_version():
 
         # PEP 440 compatibility
         if '-' in version:
-            version = '.post'.join(version.split('-')[:2])
+            version = '.dev'.join(version.split('-')[:2])
 
     else:
         # Extract the version from the PKG-INFO file.
