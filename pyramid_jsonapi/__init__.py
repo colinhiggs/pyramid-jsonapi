@@ -51,6 +51,9 @@ import pyramid_jsonapi.endpoints
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 import pyramid_jsonapi.settings
+import pyramid_jsonapi.version
+
+__version__ = pyramid_jsonapi.version.get_version()
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
