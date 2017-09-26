@@ -215,6 +215,9 @@ There's not much there yet, but you can build the narrative and API docs using s
 First make sure you have sphinx installed. I did that with pip whilst inside the virtual environment to make sure I had the latest version. Then `make` the documentation.
 
 ```bash
+sphinx-apidoc -T -e -o docs/source/apidoc pyramid_jsonapi
+# Generate configuration docs
+python -c 'import pyramid_jsonapi.settings as pjs; s = pjs.Settings({}); s.sphinx_doc()' >docs/source/apidoc/settings.inc
 cd doc
 make html # or some other supported target. Type make on its own to see a list.
 ```
