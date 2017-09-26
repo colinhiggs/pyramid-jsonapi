@@ -38,7 +38,7 @@ ea+QCo3WnRcxHk0Ir0JUoBINW5HVoPlpT64eNmHftNiWSaDo7SaPfV1wIN9TbCJcm05IZtk3l8RiyWf/
 wFpYNnan9SIyD5HU="
   - provider: pypi
     user: "colinhiggs"
-    server: https://testpypi.python.org/pypi
+    server: https://test.pypi.org/legacy/
     on:
       all-branches: true
     password:
