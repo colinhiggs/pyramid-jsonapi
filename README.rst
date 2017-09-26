@@ -103,13 +103,12 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     config.add_renderer('json', renderer)
 
     # Instantiate a PyramidJSONAPI class instance
-    # The third argument should be a callable which accepts a
+    # The third argument is optional, and should be a callable which accepts a
     # CollectionView instance as an argument and returns a database session.
-    # Notably the request is available as view.request, so if you're doing
-    # something like this post
-    # https://metaclassical.com/what-the-zope-transaction-manager-means-to-me-and-you
-    # you can return the per-request session. In this case we just return the
-    # usual DBSession from the models module.
+    # This is only needed if you are using the 'old-style' pyramid approach
+    # of passing around a single dbsession object.
+    # If this argument is unused, pyramid_jsonapi will use the dbsession
+    # object contained in the pyramid view.request.
     pj = pyramid_jsonapi.PyramidJSONAPI(config, models, lambda view: models.DBSession)
 
     # Create the routes and views automagically:
@@ -136,7 +135,7 @@ The constructor has three mandatory arguments.
 * ``models`` can either be a module (as in the example above) defining classes
   which inherit from :py:func:`declarative_base` or an iterable of such classes.
 
-* ``get_dbsession`` (to which we passed the lambda function above) should be a
+* ``get_dbsession`` (optional - see above) should be a
   callable which accepts an instance of
   :py:class:`pyramid_jsonapi.CollectionViewBase` and returns a
   :py:class:`sqlalchemy.orm.session.Session` (or an equivalent, like a
@@ -151,7 +150,7 @@ constructed:
 
 .. code-block:: python
 
-  pj_api = pyramid_jsonapi.PyramidJSONAPI(config, models, session_getter)
+  pj_api = pyramid_jsonapi.PyramidJSONAPI(config, models)
 
   # Do something here like add an view for OPTIONS requests.
 
@@ -164,12 +163,10 @@ Auto-Create Assumptions
    ``declarative-base()``.
 
 #. Each model has a single primary_key column. This will be auto-detected and
-   copied to an attribute called ``_jsonapi_id``, so...
+   stored in ``__pyramid_jsonapi__`` dict attr in the model.
 
-   #. ...don't create any columns called ``_jsonapi_id`` and
-
-   #. use a separate primary key for association objects rather than the
-      composite key defined by the left and right referenced foreign keys.
+#. use a separate primary key for association objects rather than the
+   composite key defined by the left and right referenced foreign keys.
 
 #. You are happy to give your collection end-points the same name as the
    corresponding database table (can be overridden).
@@ -243,6 +240,14 @@ You don't need a ``views.py`` unless you have some other routes and views.
 
 Customising the Generated API
 =============================
+
+Configuration Options
+---------------------
+
+Configuration options are managed by :py:class:`pyramid_jsonapi.settings.Settings`.
+This provides default values as class attributes.
+
+.. include:: apidoc/settings.inc
 
 Selectively Passing Models for API Generation
 ---------------------------------------------
