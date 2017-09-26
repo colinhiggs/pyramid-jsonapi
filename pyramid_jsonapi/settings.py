@@ -19,7 +19,14 @@ class ConfigString(str):
 
 class Settings():
     """Class to store pyramid configuration settings (from the ini file)
-    and provide easier programatic access to them."""
+    and provide easier programatic access to them.
+
+    .. include:: settings.inc
+
+    """
+
+    # Prefix to be added/removed from config values
+    _prefix = 'pyramid_jsonapi.'
 
     # Default configuration values
     _defaults = {
@@ -41,6 +48,14 @@ class Settings():
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
     }
 
+    def sphinx_doc(self):
+        print("**Configuration Options**\n")
+        print("These options can be overriden in the pyramid app ini-file.\n")
+        print(".. code-block:: python\n")
+        for key, data in sorted(self._defaults.items()):
+            print("   # {}".format(data['desc']))
+            print("   {}{} = {}\n".format(self._prefix, key, data['val']))
+
     def __init__(self, settings):
         """
         Create attributes from settings, overriding defaults
@@ -50,9 +65,9 @@ class Settings():
             settings: Pyramid config.registry.settings dictionary.
 
         """
-        prefix = 'pyramid_jsonapi.'
+
         # Extract pyramid_jsonapi config from settings, stripping prefix
-        pj_settings = {k[len(prefix):]: v for k, v in settings.items() if k.startswith(prefix)}
+        pj_settings = {k[len(self._prefix):]: v for k, v in settings.items() if k.startswith(self._prefix)}
 
         # Create attributes from  _defaults, overriding with pj_settings
         for key, opts in self._defaults.items():
@@ -62,4 +77,5 @@ class Settings():
             setattr(self, key, ConfigString(val))
 
         # Remaining keys must have ben invalid config options
-        logging.warning("Invalid configuration options: %s", pj_settings)
+        if pj_settings:
+            logging.warning("Invalid configuration options: %s", pj_settings)
