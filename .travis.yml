@@ -38,7 +38,9 @@ ea+QCo3WnRcxHk0Ir0JUoBINW5HVoPlpT64eNmHftNiWSaDo7SaPfV1wIN9TbCJcm05IZtk3l8RiyWf/
 wFpYNnan9SIyD5HU="
   - provider: pypi
     user: "colinhiggs"
-    server: https://test.pypi.org/legacy/
+    server: https://testpypi.python.org/pypi
+    on:
+      all-branches: true
     password:
       secure: "dI9e1N3EPZBBtSnnSFLTjv8mm6TjyYRGwUDKOZhgsxaaDYU1URbadsoAW8izdrTb97CNGVkH/6NrknjoLyDqYyzboiMNzsK54o/ssu2nMrRESHUKVFaEMlv/Vy23fyLI+cuZLEMBF8ECi4LJJWp8ChXOzf1fHv6rvZ2KE16Ddrlz655wIjI1H2OqvO/bXRnxBmhIOtx6Ok3mvB3iuhDrxpv
 1+pR26YYvDmFg2T2ePku5A1K95kZaPhGN6oq9d3uk0raFvlGL0g6UN3AVDAohFKhds3XtYRsxQHHg3ejKyIr0ri6XT2kuSVXulLAzJ6LjRGke7B0NhyMG5m9QgsASti+UKL/pOePTkYR6+tJvZCBEUNEHHaxXTgGB7p8wpv3a3JpA55Mp9boP82KRQ6vVVIzXPYJ1t/kStOBxL094FdohaegOao7+CBnX/
