@@ -71,8 +71,8 @@ class DBTestBase(unittest.TestCase):
             return self._test_app
         return self.new_test_app(options)
 
-    @classmethod
-    def new_test_app(cls, options=None):
+    @staticmethod
+    def new_test_app(options=None):
         '''Create a test app.'''
         config_path = '{}/testing.ini'.format(parent_dir)
         if options:
@@ -182,6 +182,28 @@ class TestSpec(DBTestBase):
         )
         self.assertIn('errors', r.json)
         self.assertIsInstance(r.json['errors'], list)
+
+    def test_spec_get_no_such_item(self):
+        '''Should fail to get non-existent comments/99999
+
+        A server MUST respond with 404 Not Found when processing a request
+        to fetch a single resource that does not exist
+
+        '''
+
+        # Get comments/99999
+        self.test_app().get('/comments/99999', status=404)
+
+    def test_spec_get_invalid_item(self):
+        '''Should fail to get invalid item comments/cat
+
+        A server MUST respond with 404 Not Found when processing a request
+        to fetch a single resource that does not exist
+
+        '''
+
+        # Get comments/cat
+        self.test_app().get('/comments/cat', status=404)
 
     def test_spec_get_primary_data_empty(self):
         '''Should return an empty list of results.
@@ -1002,6 +1024,17 @@ class TestSpec(DBTestBase):
     # POST tests.
     ###############################################
 
+    def test_spec_post_invalid_json(self):
+        '''Invalid json should raise an error.'''
+
+        # Send garbage json
+        self.test_app().post(
+            '/people',
+            '{,,,}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_post_collection(self):
         '''Should create a new person object.'''
         # Make sure there is no test person.
@@ -1734,6 +1767,17 @@ class TestSpec(DBTestBase):
         # ...should now be alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
 
+    def test_spec_patch_invalid_json(self):
+        '''Invalid json should raise an error.'''
+
+        # Send garbage json
+        self.test_app().patch(
+            '/people/1',
+            '{,,,}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_patch_no_type_id(self):
         '''Should 409 if id or type do not exist.
 
@@ -2411,12 +2455,21 @@ class TestErrors(DBTestBase):
             Exception,
             r'^Model \S+ has more than one primary key.$',
             self.test_app,
-            {'pyramid_jsonapi.tests.models_iterable': 'composite_key'}
+            {'pyramid_jsonapi_tests.models_iterable': 'composite_key'}
         )
 
 
 class TestMalformed(DBTestBase):
     '''Various malformed POSTs and PATCHes.'''
+
+    def test_malformed_collection_post_not_single_item(self):
+        '''Should complain about data being a list.'''
+        self.test_app().post_json(
+            '/people',
+            {'type': 'people', 'data': []},
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
 
     def test_malformed_collection_post_no_data(self):
         '''Should complain about lack of data attribute.'''
@@ -2567,7 +2620,7 @@ class TestFeatures(DBTestBase):
     def test_feature_construct_with_models_list(self):
         '''Should construct an api from a list of models.'''
         test_app = self.test_app(
-            options={'pyramid_jsonapi.tests.models_iterable': 'list'}
+            options={'pyramid_jsonapi_tests.models_iterable': 'list'}
         )
         test_app.get('/people/1')
 
@@ -2575,8 +2628,8 @@ class TestFeatures(DBTestBase):
         '''Should create a set of debug endpoints for manipulating the database.'''
         test_app = self.test_app(
             options={
-                'pyramid_jsonapi.debug.debug_endpoints': 'true',
-                'pyramid_jsonapi.debug.test_data_module': 'test_project.test_data'
+                'pyramid_jsonapi.debug_endpoints': 'true',
+                'pyramid_jsonapi.debug_test_data_module': 'test_project.test_data'
             }
         )
         test_app.get('/debug/populate')
@@ -2627,7 +2680,7 @@ class TestFeatures(DBTestBase):
     def test_feature_debug_meta(self):
         '''Should add meta information.'''
         test_app = self.test_app(
-            options={'pyramid_jsonapi.debug.meta': 'true'}
+            options={'pyramid_jsonapi.debug_meta': 'true'}
         )
         self.assertIn('debug',test_app.get('/people/1').json['meta'])
 

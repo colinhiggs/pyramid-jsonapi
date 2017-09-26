@@ -1,4 +1,4 @@
-'''Tools for constructing a JSON-API from sqlalchemy models in Pyramid.'''
+"""Tools for constructing a JSON-API from sqlalchemy models in Pyramid."""
 
 # pylint:disable=line-too-long
 
@@ -46,135 +46,33 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import JSONB
-import transaction
 
+import pyramid_jsonapi.endpoints
+import pyramid_jsonapi.jsonapi
+import pyramid_jsonapi.metadata
+import pyramid_jsonapi.settings
+import pyramid_jsonapi.version
+
+__version__ = pyramid_jsonapi.version.get_version()
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 
-class EndpointData():
-    '''Class to hold endpoint data and utility methods.
-
-    Arguments:
-        config: A pyramid Configurator object.
-
-    '''
-
-    def __init__(self, config):
-        self.config = config
-        self.route_name_prefix = self.config.registry.settings.get('pyramid_jsonapi.route_name_prefix', 'pyramid_jsonapi')
-        self.route_pattern_prefix = self.config.registry.settings.get('pyramid_jsonapi.route_pattern_prefix', '')
-        self.route_name_sep = self.config.registry.settings.get('pyramid_jsonapi.route_name_sep', ':')
-        self.route_pattern_sep = self.config.registry.settings.get('pyramid_jsonapi.route_pattern_sep', '/')
-        # Mapping of endpoints, http_methods and options for constructing routes and views.
-        # Update this dictionary prior to calling create_jsonapi()
-        # Mandatory 'endpoint' keys: http_methods
-        # Optional 'endpoint' keys: route_pattern_suffix
-        # Mandatory 'http_method' keys: function
-        # Optional 'http_method' keys: renderer
-        self.endpoints = {
-            'collection': {
-                'http_methods': {
-                    'GET': {
-                        'function': 'collection_get',
-                    },
-                    'POST': {
-                        'function': 'collection_post',
-                    },
-                },
-            },
-            'item': {
-                'route_pattern_suffix': '{id}',
-                'http_methods': {
-                    'DELETE': {
-                        'function': 'delete',
-                    },
-                    'GET': {
-                        'function': 'get',
-                    },
-                    'PATCH': {
-                        'function': 'patch',
-                    },
-                },
-            },
-            'related': {
-                'route_pattern_suffix': '{id}/{relationship}',
-                'http_methods': {
-                    'GET': {
-                        'function': 'related_get',
-                    },
-                },
-            },
-            'relationships': {
-                'route_pattern_suffix': '{id}/relationships/{relationship}',
-                'http_methods': {
-                    'DELETE': {
-                        'function': 'relationships_delete',
-                    },
-                    'GET': {
-                        'function': 'relationships_get',
-                    },
-                    'PATCH': {
-                        'function': 'relationships_patch',
-                    },
-                    'POST': {
-                        'function': 'relationships_post',
-                    },
-                },
-            },
-        }
-
-    def make_route_name(self, name, suffix=''):
-        '''Attach prefix and suffix to name to generate a route_name.
-
-        Arguments:
-            name: A pyramid route name.
-
-        Keyword Arguments:
-            suffix: An (optional) suffix to append to the route name.
-        '''
-        return self.route_name_sep.join((self.route_name_prefix, name, suffix)).rstrip(self.route_name_sep)
-
-    def make_route_pattern(self, name, suffix=''):
-        '''Attach prefix and suffix to name to generate a route_name.
-
-        Arguments:
-            name: A pyramid route name.
-
-        Keyword Arguments:
-            suffix: An (optional) suffix to append to the route name.
-        '''
-        return self.route_pattern_sep.join((self.route_pattern_prefix, name, suffix)).rstrip(self.route_pattern_sep)
-
-    def add_routes_views(self, view):
-        '''Generate routes and views from the endpoints data object.
-
-        Arguments:
-            view: A view_class to associate routes and views with.
-        '''
-
-        for endpoint, endpoint_opts in self.endpoints.items():
-            route_name = self.make_route_name(view.collection_name, suffix=endpoint)
-            route_pattern = self.make_route_pattern(view.collection_name,
-                                                    suffix=endpoint_opts.get('route_pattern_suffix', ''))
-            self.config.add_route(route_name, route_pattern)
-            for http_method, method_opts in endpoint_opts['http_methods'].items():
-                self.config.add_view(view, attr=method_opts['function'],
-                                     request_method=http_method, route_name=route_name,
-                                     renderer=method_opts.get('renderer', 'json'))
-
-
 class PyramidJSONAPI():
 
     view_classes = {}
 
-    def __init__(self, config, models, get_dbsession):
+    def __init__(self, config, models, get_dbsession=None):
         self.config = config
+        self.settings = pyramid_jsonapi.settings.Settings(config.registry.settings)
         self.models = models
-        self.get_dbsession = get_dbsession
-        self.endpoint_data = EndpointData(config)
+        self.get_dbsession = CollectionViewBase.default_dbsession
+        if get_dbsession:
+            self.get_dbsession = get_dbsession
+        self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
+        self.metadata = pyramid_jsonapi.metadata.MetaData(self)
         self.filter_registry = FilterRegistry()
         self.schemas = None
         # Register standard supported filter operators
@@ -213,12 +111,8 @@ class PyramidJSONAPI():
             )
 
         # Add schema if pyramid_jsonapi.schema_validation is not 'false'
-        validation = True
-        if self.config.registry.settings.get('pyramid_jsonapi.schema_validation') == 'false':
-            validation = False
-        if validation:
-            schema_file = self.config.registry.settings.get(
-                'pyramid_jsonapi.schema_file')
+        if self.settings.schema_validation:
+            schema_file = self.settings.schema_file
             if schema_file:
                 with open(schema_file) as schema_f:
                     schema = json.loads(schema_f.read())
@@ -236,7 +130,7 @@ class PyramidJSONAPI():
 
     @staticmethod
     def error(exc, request):
-        '''Error method to return jsonapi compliant errors.'''
+        """Error method to return jsonapi compliant errors."""
         request.response.content_type = 'application/vnd.api+json'
         request.response.status_code = exc.code
         return {
@@ -250,14 +144,14 @@ class PyramidJSONAPI():
         }
 
     def create_jsonapi(self, engine=None, test_data=None):
-        '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
+        """Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
         Keyword Args:
             engine: a sqlalchemy.engine.Engine instance. Only required if using the
                 debug view.
             test_data: a module with an ``add_to_db()`` method which will populate
                 the database.
-        '''
+        """
 
         self.config.add_notfound_view(self.error, renderer='json')
         self.config.add_forbidden_view(self.error, renderer='json')
@@ -278,15 +172,13 @@ class PyramidJSONAPI():
         else:
             model_list = list(self.models)
 
-        settings = self.config.registry.settings
-
         # Add the debug endpoints if required.
-        if settings.get('pyramid_jsonapi.debug.debug_endpoints', 'false') == 'true':
+        if self.settings.debug_endpoints:
             DebugView.engine = engine or model_list[0].metadata.bind
             DebugView.metadata = model_list[0].metadata
             DebugView.test_data = test_data or importlib.import_module(
-                settings.get('pyramid_jsonapi.debug.test_data_module',
-                             'test_data'))
+                str(self.settings.debug_test_data_module)
+            )
             self.config.add_route('debug', '/debug/{action}')
             self.config.add_view(
                 DebugView,
@@ -318,7 +210,7 @@ class PyramidJSONAPI():
     create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
 
     def create_resource(self, model, collection_name=None, expose_fields=None):
-        '''Produce a set of resource endpoints.
+        """Produce a set of resource endpoints.
 
         Arguments:
             model: a model class derived from DeclarativeMeta.
@@ -328,7 +220,7 @@ class PyramidJSONAPI():
                 ``collection_view_factory()``
             expose_fields: set of field names to be exposed. Passed through to
                 ``collection_view_factory()``
-        '''
+        """
 
         # Find the primary key column from the model and use as 'id_col_name'
         try:
@@ -361,16 +253,13 @@ class PyramidJSONAPI():
 
         self.view_classes[model] = view
 
-        settings = self.config.registry.settings
-        view.default_limit =\
-            int(settings.get('pyramid_jsonapi.paging.default_limit', 10))
-        view.max_limit =\
-            int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
+        view.default_limit = int(self.settings.paging_default_limit)
+        view.max_limit = int(self.settings.paging_max_limit)
 
         self.endpoint_data.add_routes_views(view)
 
     def collection_view_factory(self, model, collection_name=None, expose_fields=None):
-        '''Build a class to handle requests for model.
+        """Build a class to handle requests for model.
 
         Arguments:
             model: a model class derived from DeclarativeMeta.
@@ -378,11 +267,12 @@ class PyramidJSONAPI():
         Keyword Args:
             collection_name: string name of collection.
             expose_fields: set of field names to expose.
-        '''
+        """
 
         class_attrs = {}
         class_attrs['config'] = self.config
         class_attrs['model'] = model
+        class_attrs['settings'] = self.settings
         class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
         class_attrs['collection_name'] = collection_name or model.__tablename__
         class_attrs['get_dbsession'] = self.get_dbsession
@@ -446,21 +336,21 @@ class PyramidJSONAPI():
         )
 
     def append_callback_set_to_all_views(self, set_name):  # pylint:disable=invalid-name
-        '''Append a named set of callbacks to all view classes.
+        """Append a named set of callbacks to all view classes.
 
         Args:
             set_name (str): key in ``callback_sets``.
-        '''
+        """
         for view_class in self.view_classes.values():
             view_class.append_callback_set(set_name)
 
 
 class CollectionViewBase:
-    '''Base class for all view classes.
+    """Base class for all view classes.
 
     Arguments:
         request (pyramid.request): passed by framework.
-    '''
+    """
 
     # Define class attributes
     # Callable attributes use lambda to keep pylint happy
@@ -482,20 +372,25 @@ class CollectionViewBase:
     relationships = None
     view_classes = None
     schemas = None
+    settings = None
 
     def __init__(self, request):
         self.request = request
         self.views = {}
+
+    def default_dbsession(self):
+        """Use the dbsesison in self.request as default."""
+        return self.request.dbsession
 
     @staticmethod
     def id_col(item):
         return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
     def jsonapi_view(func):  # pylint: disable=no-self-argument
-        '''Decorator for view functions. Adds jsonapi boilerplate.'''
+        """Decorator for view functions. Adds jsonapi boilerplate."""
         @functools.wraps(func)
         def new_func(self, *args):
-            '''jsonapi boilerplate function to wrap decorated functions.'''
+            """jsonapi boilerplate function to wrap decorated functions."""
             # Spec says to reject (with 415) any request with media type
             # params.
             if len(self.request.headers.get('content-type', '').split(';')) > 1:
@@ -522,6 +417,12 @@ class CollectionViewBase:
                     '(http://jsonapi.org/format).'
                 )
 
+            if self.request.content_length:
+                try:
+                    self.request.json_body
+                except ValueError:
+                    raise HTTPBadRequest("Body is not valid JSON.")
+
             if self.schemas:
                 # Validate request JSON against the JSONAPI jsonschema
                 if self.request.content_length and self.request.method != 'PATCH':
@@ -545,46 +446,39 @@ class CollectionViewBase:
             # Spec says set Content-Type to application/vnd.api+json.
             self.request.response.content_type = 'application/vnd.api+json'
 
-            # Eventually each method will return a dictionary to be rendered
-            # using the JSON renderer.
-            ret = {
-                'meta': {}
-            }
-
             # Update the dictionary with the reults of the wrapped method.
-            ret.update(func(self, *args))  # pylint:disable=not-callable
+            ret = (func(self, *args))  # pylint:disable=not-callable
+            if ret:
+                # Include a self link unless the method is PATCH.
+                if self.request.method != 'PATCH':
+                    selfie = {'self': self.request.url}
+                    if hasattr(ret, 'links'):
+                        ret.links.update(selfie)
+                    else:
+                        ret.links = selfie
 
-            # Include a self link unless the method is PATCH.
-            if self.request.method != 'PATCH':
-                selfie = {'self': self.request.url}
-                if 'links' in ret:
-                    ret['links'].update(selfie)
-                else:
-                    ret['links'] = selfie
-
-            # Potentially add some debug information.
-            if self.request.registry.settings.get(
-                    'pyramid_jsonapi.debug.meta', 'false'
-            ) == 'true':
-                debug = {
-                    'accept_header': {
-                        a: None for a in jsonapi_accepts
-                    },
-                    'qinfo_page':
-                        self.collection_query_info(self.request)['_page'],
-                    'atts': {k: None for k in self.attributes.keys()},
-                    'includes': {
-                        k: None for k in self.requested_include_names()
+                # Potentially add some debug information.
+                if self.settings.debug_meta:
+                    debug = {
+                        'accept_header': {
+                            a: None for a in jsonapi_accepts
+                        },
+                        'qinfo_page':
+                            self.collection_query_info(self.request)['_page'],
+                        'atts': {k: None for k in self.attributes.keys()},
+                        'includes': {
+                            k: None for k in self.requested_include_names()
+                        }
                     }
-                }
-                ret['meta'].update({'debug': debug})
-
-            return ret
+                    ret.meta.update({'debug': debug})
+                return ret.as_dict()
+            else:
+                return {}
         return new_func
 
     @jsonapi_view
     def get(self):
-        '''Handle GET request for a single item.
+        """Handle GET request for a single item.
 
         Get a single item from the collection, referenced by id.
 
@@ -593,7 +487,7 @@ class CollectionViewBase:
             **id** (*str*): resource id
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -616,21 +510,31 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http GET http://localhost:6543/people/1
-        '''
-        ret = self.single_return(
-            self.single_item_query,
-            'No id {} in collection {}'.format(
-                self.request.matchdict['id'],
-                self.collection_name
+        """
+        try:
+            ret = self.single_return(
+                self.single_item_query,
+                'No id {} in collection {}'.format(
+                    self.request.matchdict['id'],
+                    self.collection_name
+                )
             )
-        )
+        except (sqlalchemy.exc.DataError, ValueError):
+            # DataError is caused by e.g. id (int) = cat
+            # ValueError is caused by e.g. id (uuid) = 1
+            raise HTTPNotFound(
+                'Cannot find resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
+
         for callback in self.callbacks['after_get']:
             ret = callback(self, ret)
         return ret
 
     @jsonapi_view
     def patch(self):
-        '''Handle PATCH request for a single item.
+        """Handle PATCH request for a single item.
 
         Update an existing item from a partially defined representation.
 
@@ -643,7 +547,7 @@ class CollectionViewBase:
             **Partial resource object** (*json*)
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -701,7 +605,7 @@ class CollectionViewBase:
                         ]
                     }
                 }' Content-Type:application/vnd.api+json
-        '''
+        """
         if not self.object_exists(self.request.matchdict['id']):
             raise HTTPNotFound(
                 'Cannot PATCH a non existent resource ({}/{})'.format(
@@ -814,21 +718,24 @@ class CollectionViewBase:
                 setattr(item, relname, rel_items)
 
         db_session.flush()
-        return {
-            'meta': {
-                'updated': {
-                    'attributes': [
-                        att for att in atts
-                        if att != self.key_column.name
-                    ],
-                    'relationships': [r for r in rels]
-                }
+        doc = pyramid_jsonapi.jsonapi.Document()
+        doc.meta = {
+            'updated': {
+                'attributes': [
+                    att for att in atts
+                    if att != self.key_column.name
+                ],
+                'relationships': [r for r in rels]
             }
         }
+        # if an update is successful ... the server
+        # responds only with top-level meta data
+        doc.filter_keys = {'meta': {}}
+        return doc
 
     @jsonapi_view
     def delete(self):
-        '''Handle DELETE request for single item.
+        """Handle DELETE request for single item.
 
         Delete the referenced item from the collection.
 
@@ -837,7 +744,7 @@ class CollectionViewBase:
             **id** (*str*): resource id
 
         Returns:
-            dict: Resource Identifier for deleted object.
+            jsonapi.Document: Resource Identifier for deleted object.
 
         Raises:
             HTTPFailedDependency: if collection/id does not exist
@@ -848,9 +755,10 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http DELETE http://localhost:6543/people/1
-        '''
+        """
 
         db_session = self.get_dbsession()
+        doc = pyramid_jsonapi.jsonapi.Document()
         try:
             item = db_session.query(
                 self.model
@@ -859,7 +767,7 @@ class CollectionViewBase:
             ).get(
                 self.request.matchdict['id']
             )
-        except sqlalchemy.exc.DataError:
+        except (sqlalchemy.exc.DataError, ValueError):
             raise HTTPNotFound(
                 'Cannot DELETE a non existent resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
@@ -874,11 +782,12 @@ class CollectionViewBase:
                 db_session.flush()
             except sqlalchemy.exc.IntegrityError as exc:
                 raise HTTPFailedDependency(str(exc))
-            return {
+            doc.update({
                 'data': self.serialise_resource_identifier(
                     self.request.matchdict['id']
-                )
-            }
+                )})
+            return doc
+
         else:
             raise HTTPNotFound(
                 'Cannot DELETE a non existent resource ({}/{})'.format(
@@ -888,7 +797,7 @@ class CollectionViewBase:
 
     @jsonapi_view
     def collection_get(self):
-        '''Handle GET requests for the collection.
+        """Handle GET requests for the collection.
 
         Get a set of items from the collection, possibly matching search/filter
         parameters. Optionally sort the results, page them, return only certain
@@ -911,7 +820,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -938,7 +847,7 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http GET http://localhost:6543/people?page[limit]=2&page[offset]=2&sort=-name&include=posts
-        '''
+        """
         db_session = self.get_dbsession()
 
         # Set up the query
@@ -968,7 +877,7 @@ class CollectionViewBase:
 
     @jsonapi_view
     def collection_post(self):
-        '''Handle POST requests for the collection.
+        """Handle POST requests for the collection.
 
         Create a new object in collection.
 
@@ -983,7 +892,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1025,21 +934,22 @@ class CollectionViewBase:
                         "name": "monty"
                     }
                 }' Content-Type:application/vnd.api+json
-        '''
+        """
         db_session = self.get_dbsession()
         try:
             data = self.request.json_body['data']
         except KeyError:
             raise HTTPBadRequest('data attribute required in POSTs.')
 
+        if not isinstance(data, dict):
+            raise HTTPBadRequest('data attribute must contain a single resource object.')
+
         # Alter data with any callbacks.
         for callback in self.callbacks['before_collection_post']:
             data = callback(self, data)
 
         # Check to see if we're allowing client ids
-        if self.request.registry.settings.get(
-                'pyramid_jsonapi.allow_client_ids',
-                'false') != 'true' and 'id' in data:
+        if not self.settings.allow_client_ids and 'id' in data:
             raise HTTPForbidden('Client generated ids are not supported.')
         # Type should be correct or raise 409 Conflict
         datatype = data.get('type')
@@ -1116,13 +1026,13 @@ class CollectionViewBase:
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': self.id_col(item)}
         )
-        return {
-            'data': self.serialise_db_item(item, {})
-        }
+        doc = pyramid_jsonapi.jsonapi.Document()
+        doc.update({'data': self.serialise_db_item(item, {})})
+        return doc
 
     @jsonapi_view
     def related_get(self):
-        '''Handle GET requests for related URLs.
+        """Handle GET requests for related URLs.
 
         Get object(s) related to a specified object.
 
@@ -1137,7 +1047,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             For a TOONE relationship (return one object):
 
@@ -1176,7 +1086,7 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http GET http://localhost:6543/posts/1/author
-        '''
+        """
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1223,7 +1133,7 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_get(self):
-        '''Handle GET requests for relationships URLs.
+        """Handle GET requests for relationships URLs.
 
         Get object identifiers for items referred to by a relationship.
 
@@ -1238,7 +1148,7 @@ class CollectionViewBase:
             **filter[<attribute>:<op>]:** filter operation.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             For a TOONE relationship (return one identifier):
 
@@ -1275,7 +1185,7 @@ class CollectionViewBase:
             .. parsed-literal::
 
                 http GET http://localhost:6543/posts/1/relationships/author
-        '''
+        """
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1326,7 +1236,7 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_post(self):
-        '''Handle POST requests for TOMANY relationships.
+        """Handle POST requests for TOMANY relationships.
 
         Add the specified member to the relationship.
 
@@ -1346,7 +1256,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1378,7 +1288,7 @@ class CollectionViewBase:
                 [
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
-        '''
+        """
         db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
@@ -1419,7 +1329,7 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_patch(self):
-        '''Handle PATCH requests for relationships (TOMANY or TOONE).
+        """Handle PATCH requests for relationships (TOMANY or TOONE).
 
         Completely replace the relationship membership.
 
@@ -1449,7 +1359,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1480,7 +1390,7 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" },
                     { "type": "comments", "id": "2" }
                 ]' Content-Type:application/vnd.api+json
-        '''
+        """
         db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
@@ -1538,7 +1448,7 @@ class CollectionViewBase:
 
     @jsonapi_view
     def relationships_delete(self):
-        '''Handle DELETE requests for TOMANY relationships.
+        """Handle DELETE requests for TOMANY relationships.
 
         Delete the specified member from the relationship.
 
@@ -1558,7 +1468,7 @@ class CollectionViewBase:
                 }
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1590,7 +1500,7 @@ class CollectionViewBase:
                 [
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
-        '''
+        """
         db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
@@ -1636,7 +1546,7 @@ class CollectionViewBase:
 
     @property
     def single_item_query(self):
-        '''A query representing the single item referenced by the request.
+        """A query representing the single item referenced by the request.
 
         **URL (matchdict) Parameters**
 
@@ -1645,7 +1555,7 @@ class CollectionViewBase:
         Returns:
             sqlalchemy.orm.query.Query: query which will fetch item with id
             'id'.
-        '''
+        """
         db_session = self.get_dbsession()
         return db_session.query(
             self.model
@@ -1656,7 +1566,7 @@ class CollectionViewBase:
         )
 
     def single_return(self, query, not_found_message=None, identifier=False):
-        '''Populate return dictionary for a single item.
+        """Populate return dictionary for a single item.
 
         Arguments:
             query (sqlalchemy.orm.query.Query): query designed to return one item.
@@ -1671,7 +1581,7 @@ class CollectionViewBase:
             identifier: return identifier if True, object if false.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1690,26 +1600,26 @@ class CollectionViewBase:
 
         Raises:
             HTTPNotFound: if the item is not found.
-        '''
+        """
         included = {}
-        ret = {}
+        doc = pyramid_jsonapi.jsonapi.Document()
         try:
             item = query.one()
         except NoResultFound:
             if not_found_message:
                 raise HTTPNotFound(not_found_message)
             else:
-                return {'data': None}
+                return doc
         if identifier:
-            ret['data'] = self.serialise_resource_identifier(self.id_col(item))
+            doc.data = self.serialise_resource_identifier(self.id_col(item))
         else:
-            ret['data'] = self.serialise_db_item(item, included)
+            doc.data = self.serialise_db_item(item, included)
             if self.requested_include_names():
-                ret['included'] = [obj for obj in included.values()]
-        return ret
+                doc.included = [obj for obj in included.values()]
+        return doc
 
     def collection_return(self, query, count=None, identifiers=False):
-        '''Populate return dictionary for collections.
+        """Populate return document for collections.
 
         Arguments:
             query (sqlalchemy.orm.query.Query): query designed to return multiple
@@ -1721,7 +1631,7 @@ class CollectionViewBase:
             identifiers(bool): return identifiers if True, objects if false.
 
         Returns:
-            dict: dict in the form:
+            jsonapi.Document: in the form:
 
             .. parsed-literal::
 
@@ -1741,12 +1651,13 @@ class CollectionViewBase:
         Raises:
             HTTPBadRequest: If a count was not supplied and an attempt to call
             q.count() failed.
-        '''
+        """
         # Get info for query.
         qinfo = self.collection_query_info(self.request)
 
         # Add information to the return dict
-        ret = {'meta': {'results': {}}}
+        doc = pyramid_jsonapi.jsonapi.Document(collection=True)
+        results = {}
 
         try:
             count = count or query.count()
@@ -1754,36 +1665,41 @@ class CollectionViewBase:
             raise HTTPInternalServerError(
                 'An error occurred querying the database. Server logs may have details.'
             )
-        ret['meta']['results']['available'] = count
+        results['available'] = count
 
         # Pagination links
-        ret['links'] = self.pagination_links(
-            count=ret['meta']['results']['available']
+        doc.links = self.pagination_links(
+            count=results['available']
         )
-        ret['meta']['results']['limit'] = qinfo['page[limit]']
-        ret['meta']['results']['offset'] = qinfo['page[offset]']
+        results['limit'] = qinfo['page[limit]']
+        results['offset'] = qinfo['page[offset]']
 
         # Primary data
         if identifiers:
-            ret['data'] = [
+            data = [
                 self.serialise_resource_identifier(self.id_col(dbitem))
                 for dbitem in query.all()
             ]
         else:
             included = {}
-            ret['data'] = [
+            data = [
                 self.serialise_db_item(dbitem, included)
                 for dbitem in query.all()
             ]
             # Included objects
             if self.requested_include_names():
-                ret['included'] = [obj for obj in included.values()]
+                doc.included = [obj for obj in included.values()]
+        for item in data:
+            res = pyramid_jsonapi.jsonapi.Resource()
+            res.update(item)
+            doc.resources.append(res)
+        results['returned'] = len(doc.data)
 
-        ret['meta']['results']['returned'] = len(ret['data'])
-        return ret
+        doc.meta = {'results': results}
+        return doc
 
     def query_add_sorting(self, query):
-        '''Add sorting to query.
+        """Add sorting to query.
 
         Use information from the ``sort`` query parameter (via
         :py:func:`collection_query_info`) to contruct an ``order_by`` clause on
@@ -1800,7 +1716,7 @@ class CollectionViewBase:
 
         Returns:
             sqlalchemy.orm.query.Query: query with ``order_by`` clause.
-        '''
+        """
         # Get info for query.
         qinfo = self.collection_query_info(self.request)
 
@@ -1839,7 +1755,7 @@ class CollectionViewBase:
         return query
 
     def query_add_filtering(self, query):
-        '''Add filtering clauses to query.
+        """Add filtering clauses to query.
 
         Use information from the ``filter`` query parameter (via
         :py:func:`collection_query_info`) to filter query results.
@@ -1889,7 +1805,7 @@ class CollectionViewBase:
 
         Todo:
             Support dotted (relationship) attribute specifications.
-        '''
+        """
         qinfo = self.collection_query_info(self.request)
         # Filters
         for finfo in qinfo['_filters'].values():
@@ -1927,7 +1843,7 @@ class CollectionViewBase:
         return query
 
     def related_limit(self, relationship):
-        '''Paging limit for related resources.
+        """Paging limit for related resources.
 
         **Query Parameters**
 
@@ -1940,7 +1856,7 @@ class CollectionViewBase:
 
         Returns:
             int: paging limit for related resources.
-        '''
+        """
         limit_comps = ['limit', 'relationships', relationship.key]
         limit = self.default_limit
         qinfo = self.collection_query_info(self.request)
@@ -1952,7 +1868,7 @@ class CollectionViewBase:
         return min(limit, self.max_limit)
 
     def related_query(self, obj_id, relationship, full_object=True):
-        '''Construct query for related objects.
+        """Construct query for related objects.
 
         Parameters:
             obj_id (str): id of an item in this view's collection.
@@ -1968,7 +1884,7 @@ class CollectionViewBase:
         Returns:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
-        '''
+        """
         db_session = self.get_dbsession()
         rel = relationship
         rel_class = rel.mapper.class_
@@ -2003,14 +1919,14 @@ class CollectionViewBase:
         return query
 
     def object_exists(self, obj_id):
-        '''Test if object with id obj_id exists.
+        """Test if object with id obj_id exists.
 
         Args:
             obj_id (str): object id
 
         Returns:
             bool: True if object exists, False if not.
-        '''
+        """
         db_session = self.get_dbsession()
         item = db_session.query(
             self.model
@@ -2020,7 +1936,7 @@ class CollectionViewBase:
         return bool(item)
 
     def column_info_from_name(self, name, model=None):
-        '''Get the pyramid_jsonapi info dictionary for a column.
+        """Get the pyramid_jsonapi info dictionary for a column.
 
         Parameters:
             name (str): name of column.
@@ -2028,15 +1944,15 @@ class CollectionViewBase:
             model (sqlalchemy.ext.declarative.declarative_base): model to
                 inspect. Defaults to self.model.
 
-        '''
+        """
         return sqlalchemy.inspect(model or self.model).all_orm_descriptors.get(
             name
         ).info.get('pyramid_jsonapi', {})
 
     def serialise_resource_identifier(self, obj_id):
-        '''Return a resource identifier dictionary for id "obj_id"
+        """Return a resource identifier dictionary for id "obj_id"
 
-        '''
+        """
         ret = {
             'type': self.collection_name,
             'id': str(obj_id)
@@ -2051,7 +1967,7 @@ class CollectionViewBase:
             self, item,
             included, include_path=None,
     ):
-        '''Serialise an individual database item to JSON-API.
+        """Serialise an individual database item to JSON-API.
 
         Arguments:
             item: item to serialise.
@@ -2063,8 +1979,8 @@ class CollectionViewBase:
                 recursive calls.
 
         Returns:
-            dict: resource object dictionary.
-        '''
+            jsonapi.Resource:
+        """
 
         include_path = include_path or []
 
@@ -2073,7 +1989,6 @@ class CollectionViewBase:
         # The item's id.
         item_id = self.id_col(item)
         # JSON API type.
-        type_name = self.collection_name
         item_url = self.request.route_url(
             self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': item_id}
@@ -2161,25 +2076,22 @@ class CollectionViewBase:
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
-        ret = {
-            'id': str(item_id),
-            'type': type_name,
-            'attributes': atts,
-            'links': {
-                'self': item_url
-            },
-            'relationships': rels
-        }
+        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
+
+        resource_json.id = str(item_id)
+        resource_json.attributes = atts
+        resource_json.links = {'self': item_url}
+        resource_json.relationships = rels
 
         for callback in self.callbacks['after_serialise_object']:
-            ret = callback(self, ret)
+            callback(self, resource_json)
 
-        return ret
+        return resource_json.as_dict()
 
     @classmethod
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def collection_query_info(cls, request):
-        '''Return dictionary of information used during DB query.
+        """Return dictionary of information used during DB query.
 
         Args:
             request (pyramid.request): request object.
@@ -2212,7 +2124,7 @@ class CollectionViewBase:
                 }
 
             Keys beginning with '_' are derived.
-        '''
+        """
         info = {}
 
         # Paging by limit and offset.
@@ -2288,14 +2200,14 @@ class CollectionViewBase:
         return info
 
     def pagination_links(self, count=0):
-        '''Return a dictionary of pagination links.
+        """Return a dictionary of pagination links.
 
         Args:
             count (int): total number of results available.
 
         Returns:
             dict: dictionary of named links.
-        '''
+        """
         links = {}
         req = self.request
         route_name = req.matched_route.name
@@ -2342,25 +2254,25 @@ class CollectionViewBase:
 
     @property
     def allowed_fields(self):
-        '''Set of fields to which current action is allowed.
+        """Set of fields to which current action is allowed.
 
         Returns:
             set: set of allowed field names.
-        '''
+        """
         return set(self.fields)
 
     def allowed_object(self, obj):  # pylint:disable=no-self-use,unused-argument
-        '''Whether or not current action is allowed on object.
+        """Whether or not current action is allowed on object.
 
         Returns:
             bool:
-        '''
+        """
         return True
 
     @property
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def requested_field_names(self):
-        '''Get the sparse field names from request.
+        """Get the sparse field names from request.
 
         **Query Parameters**
 
@@ -2369,7 +2281,7 @@ class CollectionViewBase:
 
         Returns:
             set: set of field names.
-        '''
+        """
         param = self.request.params.get(
             'fields[{}]'.format(self.collection_name)
         )
@@ -2385,7 +2297,7 @@ class CollectionViewBase:
 
     @property
     def requested_attributes(self):
-        '''Return a dictionary of attributes.
+        """Return a dictionary of attributes.
 
         **Query Parameters**
 
@@ -2401,7 +2313,7 @@ class CollectionViewBase:
                         <colname>: <column_object>,
                         ...
                     }
-        '''
+        """
         return {
             k: v for k, v in itertools.chain(
                 self.attributes.items(), self.hybrid_attributes.items()
@@ -2411,7 +2323,7 @@ class CollectionViewBase:
 
     @property
     def requested_relationships(self):
-        '''Return a dictionary of relationships.
+        """Return a dictionary of relationships.
 
         **Query Parameters**
 
@@ -2427,7 +2339,7 @@ class CollectionViewBase:
                         <relname>: <relationship_object>,
                         ...
                     }
-        '''
+        """
         return {
             k: v for k, v in self.relationships.items()
             if k in self.requested_field_names
@@ -2435,7 +2347,7 @@ class CollectionViewBase:
 
     @property
     def requested_fields(self):
-        '''Union of attributes and relationships.
+        """Union of attributes and relationships.
 
         **Query Parameters**
 
@@ -2454,7 +2366,7 @@ class CollectionViewBase:
                         ...
                     }
 
-        '''
+        """
         ret = self.requested_attributes
         ret.update(
             self.requested_relationships
@@ -2463,11 +2375,11 @@ class CollectionViewBase:
 
     @property
     def allowed_requested_relationships_local_columns(self):  # pylint:disable=invalid-name
-        '''Finds all the local columns for allowed MANYTOONE relationships.
+        """Finds all the local columns for allowed MANYTOONE relationships.
 
         Returns:
             dict: local columns indexed by column name.
-        '''
+        """
         return {
             pair[0].name: pair[0]
             for k, rel in self.requested_relationships.items()
@@ -2477,13 +2389,13 @@ class CollectionViewBase:
 
     @property
     def allowed_requested_query_columns(self):
-        '''All columns required in query to fetch allowed requested fields from
+        """All columns required in query to fetch allowed requested fields from
         db.
 
         Returns:
             dict: Union of allowed requested_attributes and
             allowed_requested_relationships_local_columns
-        '''
+        """
         ret = {
             k: v for k, v in self.requested_attributes.items()
             if k in self.allowed_fields and k not in self.hybrid_attributes
@@ -2493,16 +2405,16 @@ class CollectionViewBase:
         )
         return ret
 
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def requested_include_names(self):
-        '''Parse any 'include' param in http request.
+        """Parse any 'include' param in http request.
 
         Returns:
             set: names of all requested includes.
 
         Default:
             set: names of all direct relationships of self.model.
-        '''
+        """
         inc = set()
         param = self.request.params.get('include')
 
@@ -2516,7 +2428,7 @@ class CollectionViewBase:
 
     @property
     def bad_include_paths(self):
-        '''Return a set of invalid 'include' parameters.
+        """Return a set of invalid 'include' parameters.
 
         **Query Parameters**
 
@@ -2526,7 +2438,7 @@ class CollectionViewBase:
         Returns:
             set: set of requested include paths with no corresponding
             attribute.
-        '''
+        """
         param = self.request.params.get('include')
         bad = set()
         if param:
@@ -2548,30 +2460,30 @@ class CollectionViewBase:
                             bad.add('.'.join(curname))
         return bad
 
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache()
     def view_instance(self, model):
-        '''(memoised) get an instance of view class for model.
+        """(memoised) get an instance of view class for model.
 
         Args:
             model (DeclarativeMeta): model class.
 
         Returns:
             class: subclass of CollectionViewBase providing view for ``model``.
-        '''
+        """
         return self.view_classes[model](self.request)
 
     @classmethod
     def append_callback_set(cls, set_name):
-        '''Append a named set of callbacks from ``callback_sets``.
+        """Append a named set of callbacks from ``callback_sets``.
 
         Args:
             set_name (str): key in ``callback_sets``.
-        '''
+        """
         for cb_name, callback in cls.callback_sets[set_name].items():
             cls.callbacks[cb_name].append(callback)
 
     def acso_after_serialise_object(view, obj):  # pylint:disable=no-self-argument
-        '''Standard callback altering object to take account of permissions.
+        """Standard callback altering object to take account of permissions.
 
         Args:
             obj (dict): the object immediately after serialisation.
@@ -2579,7 +2491,7 @@ class CollectionViewBase:
         Returns:
             dict: the object, possibly with some fields removed, or meta
             information indicating permission was denied to the whole object.
-        '''
+        """
         if view.allowed_object(obj):
             # Remove any forbidden fields that have been added by other
             # callbacks. Those from the model won't have been added in the first
@@ -2587,65 +2499,61 @@ class CollectionViewBase:
 
             # Keep track so we can tell the caller which ones were forbidden.
             forbidden = set()
-            if 'attributes' in obj:
+            if hasattr(obj, 'attributes'):
                 atts = {}
-                for name, val in obj['attributes'].items():
+                for name, val in obj.attributes.items():
                     if name in view.allowed_fields:
                         atts[name] = val
                     else:
                         forbidden.add(name)
-                obj['attributes'] = atts
-            if 'relationships' in obj:
+                obj.attributes = atts
+            if hasattr(obj, 'relationships'):
                 rels = {}
-                for name, val in obj['relationships'].items():
+                for name, val in obj.relationships.items():
                     if name in view.allowed_fields:
                         rels[name] = val
                     else:
                         forbidden.add(name)
-                obj['relationships'] = rels
+                obj.relationships = rels
             # Now add all the forbidden fields from the model to the forbidden
             # list. They don't need to be removed from the serialised object
             # because they should not have been added in the first place.
             for field in view.requested_field_names:
                 if field not in view.allowed_fields:
                     forbidden.add(field)
-            if 'meta' not in obj:
-                obj['meta'] = {}
-            obj['meta']['forbidden_fields'] = list(forbidden)
-            return obj
+            if not hasattr(obj, 'meta'):
+                obj.meta = {}
+            obj.meta['forbidden_fields'] = list(forbidden)
         else:
-            return {
-                'type': obj['type'],
-                'id': obj['id'],
-                'meta': {
-                    'errors': [
-                        {
-                            'code': 403,
-                            'title': 'Forbidden',
-                            'detail': 'No permission to view {}/{}.'.format(
-                                obj['type'], obj['id']
-                            )
-                        }
-                    ]
-                }
+            obj.meta = {
+                'errors': [
+                    {
+                        'code': 403,
+                        'title': 'Forbidden',
+                        'detail': 'No permission to view {}/{}.'.format(
+                            obj.type, obj.id
+                        )
+                    }
+                ]
             }
+        return obj
 
     def acso_after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, no-self-use
-        '''Standard callback throwing 403 (Forbidden) based on information in meta.
+        """Standard callback throwing 403 (Forbidden) based on information in meta.
 
         Args:
-            ret (dict): dict which would have been returned from get().
+            ret (jsonapi.Document): object which would have been returned from get().
 
         Returns:
-            dict: the same object if an error has not been raised.
+            jsonapi.Document: the same object if an error has not been raised.
 
         Raises:
             HTTPForbidden
-        '''
-        obj = ret['data']
+        """
+        obj = ret
         errors = []
         try:
-            errors = obj['meta']['errors']
+            errors = obj.meta['errors']
         except KeyError:
             return ret
         for error in errors:
@@ -2662,11 +2570,11 @@ class CollectionViewBase:
 
 
 class FilterRegistry:
-    '''Registry of allowed filter operators.
+    """Registry of allowed filter operators.
 
     Attributes:
         data (dict): data store for filter op information.
-    '''
+    """
 
     def __init__(self):
         self.data = {}
@@ -2678,7 +2586,7 @@ class FilterRegistry:
             value_transform=lambda val: val,
             column_type='__ALL__'
     ):
-        ''' Register a new filter operator.
+        """ Register a new filter operator.
 
         Args:
             comparator_name (str): name of sqlalchemy comparator method.
@@ -2691,7 +2599,7 @@ class FilterRegistry:
             column_type (class): type (class object, not name) for which this
                 operator is to be registered. Defaults to '__ALL__' (the string)
                 which makes the operator valid for all column types.
-        '''
+        """
         try:
             registry = self.data[column_type]
         except KeyError:
@@ -2702,7 +2610,7 @@ class FilterRegistry:
         }
 
     def get_filter(self, column_type, filter_name):
-        '''Get dictionary of filter information.
+        """Get dictionary of filter information.
 
         Args:
             column_type (class): type (class object, not name) of a Column.
@@ -2714,14 +2622,14 @@ class FilterRegistry:
 
         Raises:
             KeyError: if filter_name is not in the type specific or ALL sections.
-        '''
+        """
         try:
             return self.data[column_type][filter_name]
         except KeyError:
             return self.data['__ALL__'][filter_name]
 
     def valid_filter_names(self, column_types=None):
-        '''Return set of supported filter operator names.'''
+        """Return set of supported filter operator names."""
         ops = set()
         column_types = set(column_types or {k for k in self.data})
         column_types.add('__ALL__')
@@ -2731,29 +2639,29 @@ class FilterRegistry:
 
 
 class DebugView:
-    '''Pyramid view class defining a debug API.
+    """Pyramid view class defining a debug API.
 
     These are available as ``/debug/{action}`` if
-    ``pyramid_jsonapi.debug.debug_endpoints == 'true'``.
+    ``pyramid_jsonapi.debug_endpoints == 'true'``.
 
     Attributes:
         engine: sqlalchemy engine with connection to the db.
         metadata: sqlalchemy model metadata
         test_data: module with an ``add_to_db()`` method which will populate
             the database
-    '''
+    """
     def __init__(self, request):
         self.request = request
 
     def drop(self):
-        '''Drop all tables from the database!!!
-        '''
+        """Drop all tables from the database!!!
+        """
         self.metadata.drop_all(self.engine)
         return 'dropped'
 
     def populate(self):
-        '''Create tables and populate with test data.
-        '''
+        """Create tables and populate with test data.
+        """
         # Create or update tables and schema. Safe if tables already exist.
         self.metadata.create_all(self.engine)
         # Add test data. Safe if test data already exists.
@@ -2761,8 +2669,8 @@ class DebugView:
         return 'populated'
 
     def reset(self):
-        '''The same as 'drop' and then 'populate'.
-        '''
+        """The same as 'drop' and then 'populate'.
+        """
         self.drop()
         self.populate()
         return "reset"
@@ -2774,7 +2682,7 @@ def create_jsonapi(
         engine=None,
         test_data=None
 ):
-    '''Auto-create jsonapi from module or iterable of sqlAlchemy models.
+    """Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
     DEPRECATED: This module method is deprecated!
     Please use the PyramidJSONAPI class method instead.
@@ -2791,10 +2699,10 @@ def create_jsonapi(
             debug view.
         test_data: a module with an ``add_to_db()`` method which will populate
             the database.
-    '''
+    """
 
-    pyramid_jsonapi = PyramidJSONAPI(config, models, get_dbsession)
-    pyramid_jsonapi.create_jsonapi(engine=engine, test_data=test_data)
+    py_json = PyramidJSONAPI(config, models, get_dbsession)
+    py_json.create_jsonapi(engine=engine, test_data=test_data)
 
 
 create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name

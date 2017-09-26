@@ -37,9 +37,9 @@ def person_callback_add_information(view, ret):
     else:
         requested_fields = view.requested_field_names
     if 'name_copy' in requested_fields:
-        ret['attributes']['name_copy'] = ret['attributes']['name']
+        ret.attributes['name_copy'] = ret.attributes['name']
     if 'age' in requested_fields:
-        ret['attributes']['age'] = 42
+        ret.attributes['age'] = 42
     return ret
 
 
@@ -53,7 +53,7 @@ def person_allowed_fields(self):
 def person_allowed_object(self, obj):
     if self.request.method == 'GET':
         try:
-            name = obj['attributes']['name']
+            name = obj.attributes['name']
         except KeyError:
             return True
         if name == 'secret_squirrel':
@@ -87,7 +87,7 @@ def main(global_config, **settings):
     pj = pyramid_jsonapi.PyramidJSONAPI(
         config,
         test_settings['models_iterable'][
-            settings.get('pyramid_jsonapi.tests.models_iterable', 'module')
+            settings.get('pyramid_jsonapi_tests.models_iterable', 'module')
         ],
         lambda view: models.DBSession
     )
