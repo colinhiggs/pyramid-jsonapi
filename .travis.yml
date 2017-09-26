@@ -26,24 +26,12 @@ install:
 after_success:
 - travis/sphinx.sh
 deploy:
-  - provider: pypi
-    user: "colinhiggs"
-    on:
-      all-branches: true
-      tags: true
-    password:
-      secure: "YAq6KEOf4LnXgf9MkW0DRHLzxPGob5a6y/b38eQ/wD/KEL6rZjHvS92E1qEuTe+Et6RAoWz6e76j5ntQS9Qf7rJfIuxcqWl19ofXTmACcjHd6Evblqz8llGUlKTBKchkQ7yMm6tbkyYHLrUYgZPyr+0lB8G94wAh+qBd460kAMFEhPPOMCUDdtIA+jeU6dENFO9V/BFOBlOuoIEw6PLT96z
+  provider: pypi
+  user: "colinhiggs"
+  on:
+    branch: master
+  password:
+    secure: "YAq6KEOf4LnXgf9MkW0DRHLzxPGob5a6y/b38eQ/wD/KEL6rZjHvS92E1qEuTe+Et6RAoWz6e76j5ntQS9Qf7rJfIuxcqWl19ofXTmACcjHd6Evblqz8llGUlKTBKchkQ7yMm6tbkyYHLrUYgZPyr+0lB8G94wAh+qBd460kAMFEhPPOMCUDdtIA+jeU6dENFO9V/BFOBlOuoIEw6PLT96z
 gQCvUMza3O2Op4hT7zsyI9U/7jXM1RgV6/HF3TcyQTpTFBMoOeSrASTt6tT4LF7Ws3HL1HIe/Gy0smBseDP45csqP90uiqUvfv8P0lv31tgTrn2e5tjbTHhKeeN3th+hxyzwn2ss1XoH8gvcVdiq7+AKg41WXUgceAXsQfWXf53JjpmRzSw/fj5YBJ3x16gnVtUbZmDE9TnGneAyrwN6QTk56q2SUmDIj5
 ea+QCo3WnRcxHk0Ir0JUoBINW5HVoPlpT64eNmHftNiWSaDo7SaPfV1wIN9TbCJcm05IZtk3l8RiyWf/KQUGy3LRJRb1nZkq8dDPnPBcktWVRFjC55ibFEs6TtSXlX67PPVbNE8SU/bKOkzfcWiYT6bOXn9/t83LwoQj50sBq0052baI3l/fXQh8KfTCQflCsHQ8q4jU3mHIvbZSKzDQp3UNsi8cEM1CEw
 wFpYNnan9SIyD5HU="
-  - provider: pypi
-    user: "colinhiggs"
-    server: https://test.pypi.org/legacy/
-    on:
-      all-branches: true
-      tags: true
-    password:
-      secure: "dI9e1N3EPZBBtSnnSFLTjv8mm6TjyYRGwUDKOZhgsxaaDYU1URbadsoAW8izdrTb97CNGVkH/6NrknjoLyDqYyzboiMNzsK54o/ssu2nMrRESHUKVFaEMlv/Vy23fyLI+cuZLEMBF8ECi4LJJWp8ChXOzf1fHv6rvZ2KE16Ddrlz655wIjI1H2OqvO/bXRnxBmhIOtx6Ok3mvB3iuhDrxpv
-1+pR26YYvDmFg2T2ePku5A1K95kZaPhGN6oq9d3uk0raFvlGL0g6UN3AVDAohFKhds3XtYRsxQHHg3ejKyIr0ri6XT2kuSVXulLAzJ6LjRGke7B0NhyMG5m9QgsASti+UKL/pOePTkYR6+tJvZCBEUNEHHaxXTgGB7p8wpv3a3JpA55Mp9boP82KRQ6vVVIzXPYJ1t/kStOBxL094FdohaegOao7+CBnX/
-zXiQAqF2GIQYRlwFUey1utxpbAPjYkL8cFrEfkkX8fYClj7CrZH7yup6bHNGeqUzXy0ZG9XgDKz4OkXNTR7pP8ITuW4UP+6fH81Jryq9GBzrENb4Fk99VD43h2RQbBmVvepvz1mTfWADPPL6naBn62T+d/o7ppYTNponHlVqOnvhjvsmhz1vSpcDYIAajriXuNcmYbf5gc7Tbvhy8h6dicNgozp2NUldA/
-ErR3fBUhMAP5k8Y8="
