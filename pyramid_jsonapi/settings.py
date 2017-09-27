@@ -64,4 +64,5 @@ class Settings():
             setattr(self, key, ConfigString(val))
 
         # Remaining keys must have ben invalid config options
-        logging.warning("Invalid configuration options: %s", pj_settings)
+        if pj_settings:
+            logging.warning("Invalid configuration options: %s", pj_settings)
