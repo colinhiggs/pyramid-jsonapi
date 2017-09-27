@@ -49,12 +49,20 @@ class Settings():
     }
 
     def sphinx_doc(self):
-        print("**Configuration Options**\n")
-        print("These options can be overriden in the pyramid app ini-file.\n")
-        print(".. code-block:: python\n")
+        """Generate sphinx-doc for inifile options."""
+
+        docslist = []
+        docslist.append("""
+**Configuration Options**
+
+These options can be overridden in the pyramid app ini-file.
+
+.. code-block:: python""")
+
         for key, data in sorted(self._defaults.items()):
-            print("   # {}".format(data['desc']))
-            print("   {}{} = {}\n".format(self._prefix, key, data['val']))
+            docslist.append("   # {}".format(data['desc']))
+            docslist.append("   {}{} = {}\n".format(self._prefix, key, data['val']))
+        return '\n'.join(docslist)
 
     def __init__(self, settings):
         """
