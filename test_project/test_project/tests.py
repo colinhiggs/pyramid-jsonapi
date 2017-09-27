@@ -14,6 +14,7 @@ import os
 import urllib
 import warnings
 import json
+import pyramid_jsonapi.settings
 
 from test_project.models import (
     DBSession,
@@ -2741,6 +2742,52 @@ class TestBugs(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'}
         ).json['data']
         self.assertEqual(data['id'],'1000')
+
+
+class TestSettings(unittest.TestCase):
+    """Tests for pyramid_jsonapi.settings."""
+
+    def test_defaults_as_attributes(self):
+        """Test that attributes are created for all keys in _defaults."""
+
+        settings = pyramid_jsonapi.settings.Settings({})
+        self.assertTrue(all([hasattr(settings, x) for x in settings._defaults.keys()]))
+
+    def test_override_defaults(self):
+        """Test that defaults can be overridden."""
+        conf = {"pyramid_jsonapi.allow_client_ids": True}
+        settings = pyramid_jsonapi.settings.Settings(conf)
+        self.assertTrue(settings.allow_client_ids)
+
+    def test_invalid_settings(self):
+        """Test that invalid settings are spotted."""
+        conf = {"pyramid_jsonapi.no_such_setting": True}
+        with self.assertLogs() as log_handler:
+            pyramid_jsonapi.settings.Settings(conf)
+            # There should be a WARNING log message 'Invalid configuration options...''
+            self.assertTrue(any(log.levelname == "WARNING" and "no_such_setting" in log.message for log in log_handler.records))
+
+    def test_config_string_class_asbool(self):
+        """Check that asbool() works correctly."""
+        confstr = pyramid_jsonapi.settings.ConfigString("yes")
+        self.assertTrue(confstr.asbool())
+        # Implicit __bool__ call
+        self.assertTrue(confstr)
+
+    def test_config_string_class_aslist(self):
+        """Check that aslist() parses strings to lists."""
+        liststr = "cat dog fish\ncow horse\nbear"
+        confstr = pyramid_jsonapi.settings.ConfigString(liststr)
+        self.assertIsInstance(confstr.aslist(), list)
+        self.assertListEqual(confstr.aslist(), liststr.split())
+
+    def test_sphinx_doc(self):
+        """sphinx docs should contain default settings."""
+        conf = {"pyramid_jsonapi.allow_client_ids": True}
+        settings = pyramid_jsonapi.settings.Settings(conf)
+        docs = settings.sphinx_doc()
+        self.assertTrue('pyramid_jsonapi.allow_client_ids' in docs)
+
 
 if __name__ == "__main__":
     unittest.main()
