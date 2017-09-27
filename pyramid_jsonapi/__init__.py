@@ -384,9 +384,46 @@ class CollectionViewBase:
         return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
     def jsonapi_view(func):  # pylint: disable=no-self-argument
-        """Decorator for view functions. Adds jsonapi boilerplate."""
+        """Decorator for view functions. Adds jsonapi boilerplate,
+        and tests response validity."""
+
+        def view_exceptions(func):
+            """Decorator to intercept all exceptions raised by wrapped view methods.
+
+            If the exception is 'valid' according to the schema, raise it.
+            Else raise a generic 4xx or 5xx error and log the real one.
+            """
+            @functools.wraps(func)
+            def new_func(self, *args):
+                try:
+                    return func(self, *args)  # pylint: disable=not-callable
+                except Exception as exc:
+                    ep_dict = self.endpoint_data.endpoints
+                    # Get route_name from route
+                    _, _, endpoint = self.request.matched_route.name.split(':')
+                    method = self.request.method
+                    if exc.__class__ not in (
+                            ep_dict['responses'].keys() |
+                            ep_dict['endpoints'][endpoint]['responses'].keys() |
+                            ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
+                    ):
+                        logging.exception(
+                            "Invalid exception raised: %s for route_name: %s path: %s",
+                            exc.__class__,
+                            self.request.matched_route.name,
+                            self.request.current_route_path()
+                        )
+                        if hasattr(exc, 'code'):
+                            if exc.code.startswith('4'):  # pylint:disable=no-member
+                                raise HTTPBadRequest("Unexpected client error: {}".format(exc))
+                        else:
+                            raise HTTPInternalServerError("Unexpected server error.")
+                    raise
+            return new_func
+
+        @view_exceptions
         @functools.wraps(func)
-        def new_func(self, *args):
+        def view_wrapper(self, *args):
             """jsonapi boilerplate function to wrap decorated functions."""
             # Spec says to reject (with 415) any request with media type
             # params.
@@ -471,7 +508,7 @@ class CollectionViewBase:
                 return ret.as_dict()
             else:
                 return {}
-        return new_func
+        return view_wrapper
 
     @jsonapi_view
     def get(self):
