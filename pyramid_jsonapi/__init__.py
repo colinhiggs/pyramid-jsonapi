@@ -414,7 +414,7 @@ class CollectionViewBase:
                             self.request.current_route_path()
                         )
                         if hasattr(exc, 'code'):
-                            if exc.code.startswith('4'):  # pylint:disable=no-member
+                            if 400 <= exc.code < 500:  # pylint:disable=no-member
                                 raise HTTPBadRequest("Unexpected client error: {}".format(exc))
                         else:
                             raise HTTPInternalServerError("Unexpected server error.")
