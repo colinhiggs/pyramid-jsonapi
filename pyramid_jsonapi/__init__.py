@@ -37,6 +37,7 @@ from pyramid.httpexceptions import (
     HTTPError,
     HTTPFailedDependency,
     HTTPInternalServerError,
+    status_map,
 )
 import sqlalchemy
 from sqlalchemy.orm import load_only
@@ -398,18 +399,28 @@ class CollectionViewBase:
             """
             @functools.wraps(func)
             def new_func(self, *args):
+                ep_dict = self.endpoint_data.endpoints
+                # Get route_name from route
+                _, _, endpoint = self.request.matched_route.name.split(':')
+                method = self.request.method
+                responses = set(
+                    ep_dict['responses'].keys() |
+                    ep_dict['endpoints'][endpoint]['responses'].keys() |
+                    ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
+                )
                 try:
-                    return func(self, *args)  # pylint: disable=not-callable
+                    result = func(self, *args)  # pylint: disable=not-callable
+                    response_class = status_map[self.request.response.status_code]
+                    if response_class not in responses:
+                        logging.error(
+                            "Invalid response: %s for route_name: %s path: %s",
+                            response_class,
+                            self.request.matched_route.name,
+                            self.request.current_route_path()
+                        )
+                    return result
                 except Exception as exc:
-                    ep_dict = self.endpoint_data.endpoints
-                    # Get route_name from route
-                    _, _, endpoint = self.request.matched_route.name.split(':')
-                    method = self.request.method
-                    if exc.__class__ not in (
-                            ep_dict['responses'].keys() |
-                            ep_dict['endpoints'][endpoint]['responses'].keys() |
-                            ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
-                    ):
+                    if exc.__class__ not in responses:
                         logging.exception(
                             "Invalid exception raised: %s for route_name: %s path: %s",
                             exc.__class__,
