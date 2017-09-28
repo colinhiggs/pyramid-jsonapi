@@ -1048,6 +1048,17 @@ class TestSpec(DBTestBase):
             status=400
         )
 
+    def test_spec_post_data_not_item(self):
+        '''Missing data attribute in json should raise an error.'''
+
+        # Send minimal json with no data attribute
+        self.test_app().post(
+            '/people',
+            '{"data": []}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_post_collection(self):
         '''Should create a new person object.'''
         # Make sure there is no test person.
