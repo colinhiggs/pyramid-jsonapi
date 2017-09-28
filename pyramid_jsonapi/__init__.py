@@ -380,7 +380,7 @@ class CollectionViewBase:
         self.views = {}
 
     def default_dbsession(self):
-        """Use the dbsesison in self.request as default."""
+        """Use the dbsession in self.request as default."""
         return self.request.dbsession
 
     @staticmethod
