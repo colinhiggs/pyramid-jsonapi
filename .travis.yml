@@ -16,6 +16,8 @@ script:
 - pep8 --ignore=E501,E731 pyramid_jsonapi
 - pylint -E --rcfile=.pylintrc pyramid_jsonapi
 - python test_project/setup.py test
+- coverage run test_project/setup.py test
+- coveralls
 install:
 - pip install -r requirements.txt
 - pip install coverage
@@ -26,8 +28,6 @@ install:
 - pip install travis-sphinx
 - python setup.py install
 after_success:
-- coverage run test_project/setup.py test
-- coveralls
 - travis/sphinx.sh
 deploy:
   provider: pypi
