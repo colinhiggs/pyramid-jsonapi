@@ -10,7 +10,7 @@ the sqlAlchemy ORM and pyramid framework.
   is not backwards compatible (largely in endpoint naming).
 
   You can view, follow, check, or contribute to the upcoming version in the
-  ``metadata`` branch.
+  ``master`` branch.
 
   The backwards incompatible change is to move the api endpoints from
   ``/collection_name`` to ``/api/collection_name`` to make room for a set of
