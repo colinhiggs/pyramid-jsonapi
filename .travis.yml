@@ -18,12 +18,16 @@ script:
 - python test_project/setup.py test
 install:
 - pip install -r requirements.txt
+- pip install coverage
+- pip install coveralls
 - pip install pep8
 - pip install pylint
 - pip install sphinx
 - pip install travis-sphinx
 - python setup.py install
 after_success:
+- coverage run test_project/setup.py test
+- coveralls
 - travis/sphinx.sh
 deploy:
   provider: pypi

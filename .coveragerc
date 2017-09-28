@@ -1,0 +1,6 @@
+[run]
+source =
+    pyramid_jsonapi
+omit =
+    pyramid_jsonapi/callbacks_doc.py
+    pyramid_jsonapi/version.py
