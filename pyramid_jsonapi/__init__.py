@@ -567,9 +567,9 @@ class CollectionViewBase:
                     self.collection_name
                 )
             )
-        except (sqlalchemy.exc.DataError, ValueError):
+        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
             # DataError is caused by e.g. id (int) = cat
-            # ValueError is caused by e.g. id (uuid) = 1
+            # StatementError is caused by e.g. id (uuid) = 1
             raise HTTPNotFound(
                 'Cannot find resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
@@ -816,7 +816,7 @@ class CollectionViewBase:
             ).get(
                 self.request.matchdict['id']
             )
-        except (sqlalchemy.exc.DataError, ValueError):
+        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
             raise HTTPNotFound(
                 'Cannot DELETE a non existent resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
