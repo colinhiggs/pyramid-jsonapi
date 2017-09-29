@@ -265,6 +265,13 @@ class TestSpec(DBTestBase):
         alice = r.json['data']
         self.assertEqual(alice['attributes']['name'], 'alice')
 
+    def test_spec_get_no_such_relationship(self):
+        """Should fail if no such relationship."""
+        self.test_app().get(
+            '/blogs/1/no_such_relationship',
+            status=400
+        )
+
     def test_spec_resource_object_must(self):
         '''Resource object should have at least id and type.
 
@@ -438,6 +445,18 @@ class TestSpec(DBTestBase):
         # each post should be of type 'posts'
         for post in posts_data:
             self.assertEqual(post['type'], 'posts')
+
+    def test_spec_related_get_no_relationship(self):
+        """Should fail to get an invalid relationship."""
+        self.test_app().get('/blogs/1/no_such_relationship',
+                            status=400,
+                           )
+
+    def test_spec_related_get_no_object(self):
+        """Should fail if 'parent' doesn't exist."""
+        self.test_app().get('/blogs/99999/owner',
+                            status=400,
+                           )
 
     def test_spec_resource_linkage(self):
         '''Appropriate related resource identifiers in relationship.
@@ -1037,6 +1056,28 @@ class TestSpec(DBTestBase):
             status=400
         )
 
+    def test_spec_post_no_data_attribute(self):
+        '''Missing data attribute in json should raise an error.'''
+
+        # Send minimal json with no data attribute
+        self.test_app().post(
+            '/people',
+            '{"meta": {}}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    def test_spec_post_data_not_item(self):
+        '''Missing data attribute in json should raise an error.'''
+
+        # Send minimal json with no data attribute
+        self.test_app().post(
+            '/people',
+            '{"data": []}',
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_post_collection(self):
         '''Should create a new person object.'''
         # Make sure there is no test person.
@@ -1096,6 +1137,99 @@ class TestSpec(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
             status=400
         )
+
+    def test_spec_post_no_such_relationship(self):
+        """Should fail to create an invalid relationship."""
+
+        created_id = self.test_app().post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'no_such_relationship': {
+                            'data': {'type': 'people', 'id': '1'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_spec_post_relationship_no_data(self):
+        "Relationships in posts must have data."
+        created_id = self.test_app(
+            options = {
+                'pyramid_jsonapi.schema_validation': 'false'
+            }
+        ).post_json(
+        '/blogs',
+        {
+            'data': {
+                'type': 'blogs',
+                'attributes': {
+                    'title': 'test'
+                },
+                'relationships': {
+                    'owner': {}
+                }
+            }
+        },
+        headers={'Content-Type': 'application/vnd.api+json'},
+        status=400
+    )
+
+    def test_spec_post_relationship_no_id(self):
+        "Relationships in posts must have id."
+        created_id = self.test_app(
+            options = {
+                'pyramid_jsonapi.schema_validation': 'false'
+            }
+        ).post_json(
+        '/blogs',
+        {
+            'data': {
+                'type': 'blogs',
+                'attributes': {
+                    'title': 'test'
+                },
+                'relationships': {
+                    'owner': {
+                        'data': {'type': 'author'}
+                    }
+                }
+            }
+        },
+        headers={'Content-Type': 'application/vnd.api+json'},
+        status=400
+    )
+
+    def test_spec_relationship_post_toone(self):
+        "Cannot post to TOONE relationship."
+        self.test_app(
+            options = {
+                'pyramid_jsonapi.schema_validation': 'false'
+            }
+        ).post_json(
+            '/blogs/1/relationships/owner',
+            {
+                'type': 'owner', 'id': '1'
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+
+    def test_spec_relationship_delete_toone(self):
+        "Cannot delete from TOONE relationship."
+        self.test_app().delete(
+            '/blogs/1/relationships/owner',
+            status=403
+        )
+
 
     def test_spec_post_with_relationships_manytoone(self):
         '''Should create a blog belonging to alice.

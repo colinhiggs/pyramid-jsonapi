@@ -380,7 +380,7 @@ class CollectionViewBase:
         self.views = {}
 
     def default_dbsession(self):
-        """Use the dbsesison in self.request as default."""
+        """Use the dbsession in self.request as default."""
         return self.request.dbsession
 
     @staticmethod
@@ -567,9 +567,9 @@ class CollectionViewBase:
                     self.collection_name
                 )
             )
-        except (sqlalchemy.exc.DataError, ValueError):
+        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
             # DataError is caused by e.g. id (int) = cat
-            # ValueError is caused by e.g. id (uuid) = 1
+            # StatementError is caused by e.g. id (uuid) = 1
             raise HTTPNotFound(
                 'Cannot find resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
@@ -816,7 +816,7 @@ class CollectionViewBase:
             ).get(
                 self.request.matchdict['id']
             )
-        except (sqlalchemy.exc.DataError, ValueError):
+        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
             raise HTTPNotFound(
                 'Cannot DELETE a non existent resource ({}/{})'.format(
                     self.collection_name, self.request.matchdict['id']
@@ -1350,7 +1350,7 @@ class CollectionViewBase:
                 self.collection_name
             ))
         if rel.direction is MANYTOONE:
-            raise HTTPNotFound('Cannot POST to TOONE relationship link.')
+            raise HTTPForbidden('Cannot POST to TOONE relationship link.')
 
         # Alter data with any callbacks
         data = self.request.json_body['data']
@@ -1562,7 +1562,7 @@ class CollectionViewBase:
                 self.collection_name
             ))
         if rel.direction is MANYTOONE:
-            raise HTTPNotFound('Cannot DELETE to TOONE relationship link.')
+            raise HTTPForbidden('Cannot DELETE to TOONE relationship link.')
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         obj = db_session.query(self.model).get(obj_id)
