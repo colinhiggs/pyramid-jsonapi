@@ -1223,23 +1223,6 @@ class TestSpec(DBTestBase):
             status=404
         )
 
-    def test_spec_relationship_patch_toone(self):
-        "Cannot patch to TOONE relationship."
-        self.test_app(
-            options={
-                'pyramid_jsonapi.schema_validation': 'false'
-            }
-        ).patch_json(
-            '/blogs/1/relationships/owner',
-            {
-                'data': {
-                    'type': 'people', 'id': '1',
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=404
-        )
-
     def test_spec_relationship_delete_toone(self):
         "Cannot delete from TOONE relationship."
         self.test_app().delete(
