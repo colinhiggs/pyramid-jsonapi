@@ -1233,7 +1233,7 @@ class TestSpec(DBTestBase):
             '/blogs/1/relationships/owner',
             {
                 'data': {
-                    'type': 'owner', 'id': '1',
+                    'type': 'people', 'id': '1',
                 }
             },
             headers={'Content-Type': 'application/vnd.api+json'},
