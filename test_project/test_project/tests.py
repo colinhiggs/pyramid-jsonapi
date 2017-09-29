@@ -1220,14 +1220,14 @@ class TestSpec(DBTestBase):
                 'type': 'owner', 'id': '1'
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-            status=404
+            status=403
         )
 
     def test_spec_relationship_delete_toone(self):
         "Cannot delete from TOONE relationship."
         self.test_app().delete(
             '/blogs/1/relationships/owner',
-            status=404
+            status=403
         )
 
 

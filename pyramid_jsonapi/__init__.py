@@ -1350,7 +1350,7 @@ class CollectionViewBase:
                 self.collection_name
             ))
         if rel.direction is MANYTOONE:
-            raise HTTPNotFound('Cannot POST to TOONE relationship link.')
+            raise HTTPForbidden('Cannot POST to TOONE relationship link.')
 
         # Alter data with any callbacks
         data = self.request.json_body['data']
@@ -1562,7 +1562,7 @@ class CollectionViewBase:
                 self.collection_name
             ))
         if rel.direction is MANYTOONE:
-            raise HTTPNotFound('Cannot DELETE to TOONE relationship link.')
+            raise HTTPForbidden('Cannot DELETE to TOONE relationship link.')
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         obj = db_session.query(self.model).get(obj_id)

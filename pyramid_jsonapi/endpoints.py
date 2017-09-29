@@ -201,7 +201,8 @@ class EndpointData():
                                 HTTPOk: {'reason': ['If all of the specified resources are able to be removed from, or are already missing from, the relationship then the server MUST return a successful response.']},
                                 HTTPConflict: {'reason'},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by deleting the specified resource from the relationship.']},
-                                HTTPForbidden: {'reason': ['If the client makes a DELETE request to a URL from a relationship link the server MUST delete the specified members from the relationship or return a 403 Forbidden response.']},
+                                HTTPForbidden: {'reason': ['If the client makes a DELETE request to a URL from a relationship link the server MUST delete the specified members from the relationship or return a 403 Forbidden response.',
+                                                            'DELETE not supported in TOONE relationships and "a server MUST return 403 Forbidden in response to an unsupported request to update a relationship."']},
                             },
                         },
                         'GET': {
@@ -227,6 +228,7 @@ class EndpointData():
                             'responses': {
                                 HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a POST request in which the resource object’s type is not among the type(s) that constitute the collection represented by the endpoint.']},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by adding the specified resource to the relationship.']},
+                                HTTPForbidden: {'reason': ['DELETE not supported in TOONE relationships and "a server MUST return 403 Forbidden in response to an unsupported request to update a relationship."']},
                             },
                         },
                     },
