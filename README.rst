@@ -46,8 +46,7 @@ Installation
     pip install -i pyramid_jsonapi
 
 * Development releases are also uploaded to pypi. These have versions with
-  '.devN' appended, where 'N' is the number of commits since the stable tag.
-  `<https://testpypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`. You
+  '.devN' appended, where 'N' is the number of commits since the stable tag. You
   can install the latest one (perhaps into a virtualenv for play purposes) with
 
   .. code-block:: bash
