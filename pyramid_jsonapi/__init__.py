@@ -173,13 +173,6 @@ def create_resource(
         # Trying to inspect the declarative_base() raises this exception. We
         # don't want to add it to the API.
         return
-    # Only deal with one primary key column.
-    if len(keycols) > 1:
-        raise Exception(
-            'Model {} has more than one primary key.'.format(
-                model.__name__
-            )
-        )
     model._jsonapi_id = getattr(model, keycols[0].name)
 
     if collection_name is None:
