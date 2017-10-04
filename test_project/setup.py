@@ -10,6 +10,7 @@ requires = [
     'psycopg2',
     'pyramid',
     'pyramid_debugtoolbar',
+    'pyramid_jsonapi',
     'pyramid_tm',
     'SQLAlchemy',
     'testing.postgresql',

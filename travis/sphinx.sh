@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PATH=bin/:$PATH
+
 if [[ $TRAVIS_BRANCH == "master" && -n $TRAVIS_TAG ]]; then
   sphinx-apidoc -T -e -o docs/source/apidoc pyramid_jsonapi
   # Generate config docs from python method
