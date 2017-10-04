@@ -22,7 +22,7 @@ def get_version():
 
     if isdir(join(d, '../.git')):
         # Get the version using "git describe".
-        cmd = 'git describe --tags --match %s[0-9]* --dirty' % PREFIX
+        cmd = 'git -C %s describe --tags --match %s[0-9]* --dirty' % (d, PREFIX)
         try:
             version = check_output(cmd.split()).decode().strip()[len(PREFIX):]
         except CalledProcessError:
