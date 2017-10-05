@@ -57,7 +57,9 @@ class Settings():
 
 These options can be overridden in the pyramid app ini-file.
 
-.. code-block:: python""")
+.. code-block:: python
+
+""")
 
         for key, data in sorted(self._defaults.items()):
             docslist.append("   # {}".format(data['desc']))
