@@ -10,25 +10,18 @@ cache:
   - "$HOME/.pyenv"
 python:
 - 3.4
+env:
+ PATH=bin/:$PATH
 virtualenv:
   system_site_packages: true
 script:
 - pep8 --ignore=E501,E731 pyramid_jsonapi
 - pylint -E --rcfile=.pylintrc pyramid_jsonapi
-- python test_project/setup.py test
-- coverage run test_project/setup.py test
+- nosetest -v --with-coverage --cover-package=pyramid_jsonapi
 - coveralls
 install:
-- pip install -r requirements.txt
-- pip install coverage
-- pip install coveralls
-- pip install pep8
-- pip install pylint
-- pip install sphinx
-- pip install travis-sphinx
-- python setup.py install
-after_success:
-- travis/sphinx.sh
+- python bootstrap.py
+- buildout
 deploy:
   provider: pypi
   user: "colinhiggs"
