@@ -18,7 +18,7 @@ typical pyramid + sqlalchemy application.
 Documentation
 -------------
 
-Documentation is available at: `<https://colinhiggs.github.io/pyramid-jsonapi/>`
+Documentation is available at: `<https://colinhiggs.github.io/pyramid-jsonapi/>`_
 
 Installation
 ------------
