@@ -22,8 +22,6 @@ script:
 install:
 - python bootstrap.py
 - buildout
-after_success:
-- travis/sphinx.sh
 deploy:
   provider: pypi
   user: "colinhiggs"
