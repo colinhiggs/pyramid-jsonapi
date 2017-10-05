@@ -35,7 +35,7 @@ Installation
   '.devN' appended, where 'N' is the number of commits since the stable tag. You
   can install the latest one (perhaps into a virtualenv for play purposes) with
 
-   .. code-block:: bash
+  .. code-block:: bash
 
     pip install --pre -i pyramid_jsonapi
 
