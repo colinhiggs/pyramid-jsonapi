@@ -34,19 +34,20 @@ Travis is run against all PRs and commits to ensure consistent, high-quality cod
 Tests
 ^^^^^^
 
-`unittest` tests should be created for all new code. Coverage can be reviewd at:
+``unittest`` tests should be created for all new code. Coverage can be reviewd at:
 `<https://coveralls.io/github/colinhiggs/pyramid-jsonapi>`_
 
 PEP8
 ^^^^
 Code should pass PEP8 validation:
-* long lines should be avoided, but not at the expense of readability. (pep8 --ignore=E501).
+
+  * long lines should be avoided, but not at the expense of readability. (``pep8 --ignore=E501`` is used when testing).
 
 pylint
 ^^^^^^
 
 Code should pass pylint validation.
-# pylint: disable=xxx is allowed where there is a clear reason for doing so. Please document as necessary.
+``# pylint: disable=xxx`` is allowed where there is a clear reason for doing so. Please document as necessary.
 
 Idiomatic Python
 ^^^^^^^^^^^^^^^^
@@ -67,7 +68,7 @@ Documentation
 Docuemntation is built using sphinx. This is done automatically using Travis for
 certain builds (e.g. tagged releases) and pushed to the *gh-pages* branch.
 
-Note that the documentation uses the *sphinx-rtd-theme* which is installed by buildout.
+Note that the documentation uses the ``sphinx-rtd-theme`` which is installed by buildout.
 
 To manually build the documentation:
 
