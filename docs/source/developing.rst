@@ -1,6 +1,28 @@
 Developing pyramid-jsonapi
 ==========================
 
+Development
+-----------
+
+This project is set up to use `buildout` to create a suitable testing environment.
+Buildout works by installing all python dependencies as eggs to `eggs/` and setting up
+scripts in `bin/` which include those eggs in the python path.
+You can set up the buildout environment as follows:
+
+.. code-block:: bash
+
+  # Creates the buildout setup script.
+  python3 bootstrap.py
+  # Installs dependencies, builds documentation etc.
+  bin/buildout
+
+  # To run python with all dependencies satisfied:
+  bin/python
+
+  # To test the project:
+  bin/nosetest
+
+
 Contribution
 -------------
 
@@ -45,19 +67,12 @@ Documentation
 Docuemntation is built using sphinx. This is done automatically using Travis for
 certain builds (e.g. tagged releases) and pushed to the *gh-pages* branch.
 
-Note that the documentation uses the *sphinx-rtd-theme* which may need to be installed
-before the documentation can be built.
+Note that the documentation uses the *sphinx-rtd-theme* which is installed by buildout.
 
 To manually build the documentation:
 
 .. code-block:: bash
 
-  # Generate package documentation automatically
-  sphinx-apidoc -T -e -o docs/source/apidoc pyramid_jsonapi
+  docs/sphinx.sh
 
-  # Generate documentation of configuration options (pyramid inifile)
-  python -c 'import pyramid_jsonapi.settings as pjs; s = pjs.Settings({}); print(s.sphinx_doc())' >docs/source/apidoc/settings.inc
-
-  # Build sphinx documentation
-  cd doc
-  make html # or some other supported target.
+Documentation will be written to `target/doc/build/`
