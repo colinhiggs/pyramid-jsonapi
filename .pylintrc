@@ -1,5 +1,5 @@
 [TYPECHECK]
-ignored-classes=pyramid_jsonapi.settings.Settings
+ignored-classes=pyramid_jsonapi.settings.Settings,pyramid_jsonapi.metadata.MetaData
 
 [MESSAGES CONTROL]
 disable=line-too-long
