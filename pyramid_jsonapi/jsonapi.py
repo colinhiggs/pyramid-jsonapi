@@ -112,8 +112,8 @@ class Document(Base):
             return {'data': data[0]}
         elif self.collection:
             return {'data': []}
-        else:
-            return {'data': None}
+
+        return {'data': None}
 
     def data_to_resources(self, data):
         """Convert 'data' part of jsonapi document to resource(s).

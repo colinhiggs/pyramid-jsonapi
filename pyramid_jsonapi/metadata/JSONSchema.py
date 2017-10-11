@@ -1,3 +1,5 @@
+"""JSONSchema metadata plugin."""
+
 import functools
 import json
 import logging
@@ -9,6 +11,9 @@ from pyramid_jsonapi.metadata import VIEWS
 
 
 class JSONSchema():
+    """Metadata plugin to generate and validate JSONSchema for sqlalchemy,
+    using alchemyjsonschema to map sqlalchemy types.
+    """
 
     def __init__(self, api):
         """
@@ -44,7 +49,7 @@ class JSONSchema():
         self.schema = {}
         self.load_schema()
 
-    def template(self, request=None):
+    def template(self, request=None):  # pylint:disable=unused-argument
         """Return the JSONAPI jsonschema dict (as a pyramid view).
 
         Parameters:

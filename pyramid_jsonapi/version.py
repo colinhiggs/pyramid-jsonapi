@@ -1,30 +1,34 @@
 #!/usr/bin/env python
-# Source: https://github.com/Changaco/version.py
+"""Generate version information from git tags, archive info, or PKG-INFO.
+
+Based on: https://github.com/Changaco/version.py
+
+"""
 
 from os.path import dirname, isdir, join
 import re
 from subprocess import CalledProcessError, check_output
 
 
-PREFIX = ''
-
-tag_re = re.compile(r'\btag: %s([0-9][^,]*)\b' % PREFIX)
-version_re = re.compile('^Version: (.+)$', re.M)
-
-
 def get_version():
+    """Get version in any way possible."""
+
+    prefix = ''
+    tag_re = re.compile(r'\btag: %s([0-9][^,]*)\b' % prefix)
+    version_re = re.compile('^Version: (.+)$', re.M)
+
     # Return the version if it has been injected into the file by git-archive
     version = tag_re.search('$Format:%D$')
     if version:
         return version.group(1)
 
-    d = dirname(__file__)
+    project_dir = dirname(__file__)
 
-    if isdir(join(d, '../.git')):
+    if isdir(join(project_dir, '../.git')):
         # Get the version using "git describe".
-        cmd = 'git -C %s describe --tags --match %s[0-9]* --dirty' % (d, PREFIX)
+        cmd = 'git -C %s describe --tags --match %s[0-9]* --dirty' % (project_dir, prefix)
         try:
-            version = check_output(cmd.split()).decode().strip()[len(PREFIX):]
+            version = check_output(cmd.split()).decode().strip()[len(prefix):]
         except CalledProcessError:
             raise RuntimeError('Unable to get version number from git tags')
 
@@ -34,8 +38,8 @@ def get_version():
 
     else:
         # Extract the version from the PKG-INFO file.
-        with open(join(d, '../PKG-INFO')) as f:
-            version = version_re.search(f.read()).group(1)
+        with open(join(project_dir, '../PKG-INFO')) as info_f:
+            version = version_re.search(info_f.read()).group(1)
 
     return version
 
