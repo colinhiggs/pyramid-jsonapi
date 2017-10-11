@@ -2389,6 +2389,16 @@ class TestSpec(DBTestBase):
         # Delete comments/99999.
         self.test_app().delete('/comments/99999', status=404)
 
+    def test_spec_delete_invalid_item(self):
+        '''Should fail to delete non-existent comments/invalid
+
+        A server SHOULD return a 404 Not Found status code if
+        a deletion request fails due to the resource not existing.
+        '''
+
+        # Delete comments/invalid
+        self.test_app().delete('/comments/invalid', status=404)
+
     def test_spec_delete_relationships_onetomany(self):
         '''Should remove a comment from a post.
 
