@@ -113,14 +113,7 @@ class PyramidJSONAPI():
 
         # Add schema if pyramid_jsonapi.schema_validation is not 'false'
         if self.settings.schema_validation:
-            schema_file = self.settings.schema_file
-            if schema_file:
-                with open(schema_file) as schema_f:
-                    schema = json.loads(schema_f.read())
-            else:
-                schema = json.loads(
-                    pkgutil.get_data(__name__,
-                                     'schema/jsonapi-schema.json').decode('utf-8'))
+            schema = self.metadata.JSONSchema.template()
             # POST uses full schema, may omit 'id'
             post_schema = copy.deepcopy(schema)
             post_schema['definitions']['resource']['required'].remove('id')
