@@ -1,10 +1,12 @@
 import configparser
 from functools import lru_cache
 import unittest
+from unittest.mock import patch, mock_open
 import transaction
 import testing.postgresql
 import webtest
 import datetime
+from pyramid.config import Configurator
 from pyramid.paster import get_app
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SAWarning
@@ -15,6 +17,7 @@ import urllib
 import warnings
 import json
 import pyramid_jsonapi.jsonapi
+import pyramid_jsonapi.metadata
 import pyramid_jsonapi.settings
 
 from test_project.models import (
@@ -3014,6 +3017,47 @@ class TestJSONAPI(unittest.TestCase):
         # Appends data to doc.resources, and updates _jsonapi for other attibutes
         self.assertTrue(len(doc.resources) == 2)
         self.assertEqual(doc._jsonapi['links'], links)
+
+class TestMetaData(DBTestBase):
+    """Tests for the metadata plugins."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup metadata plugins."""
+        super().setUpClass()
+        config = Configurator()
+        cls.api = pyramid_jsonapi.PyramidJSONAPI(config, [])
+        cls.api.create_jsonapi()
+        cls.metadata = pyramid_jsonapi.metadata.MetaData(cls.api)
+
+    def test_jsonapi_template(self):
+        """Test that template() returns valid json."""
+        json.dumps(self.metadata.JSONSchema.template())
+
+    def test_jsonapi_load_schema_file(self):
+        """Test loading jsonschema from file."""
+        path = "/tmp/nosuchfile.json"
+        schema = {"test": "true"}
+        self.api.settings.schema_file = path
+        with patch("builtins.open", mock_open(read_data=json.dumps(schema))) as mock_file:
+            self.metadata.JSONSchema.load_schema()
+            mock_file.assert_called_with(path)
+            self.assertDictEqual(schema, self.metadata.JSONSchema.schema)
+
+    def test_jsonapi_resource_attributes_view(self):
+        """Test that resource_attributes view returns valid json."""
+        self.test_app().get('/metadata/JSONSchema/resource/people', status=200).json
+
+    def test_jsonapi_resource_attributes_view_not_found(self):
+        """Test that view returns 404 for non-existent endpoint."""
+        self.test_app().get('/metadata/JSONSchema/resource/invalid', status=404)
+
+    def test_jsonapi_invalid_schema(self):
+        """Test that invalid schema mappings logs a warning. (posts has JSONB field)."""
+        with self.assertLogs() as log_handler:
+            # There should be a WARNING log message 'Schema Error...''
+            self.test_app().get('/metadata/JSONSchema/resource/posts')
+            self.assertTrue(any(log.levelname == "WARNING" and "Schema Error" in log.message for log in log_handler.records))
 
 
 if __name__ == "__main__":
