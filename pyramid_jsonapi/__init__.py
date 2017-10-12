@@ -1974,11 +1974,14 @@ class CollectionViewBase:
             bool: True if object exists, False if not.
         """
         db_session = self.get_dbsession()
-        item = db_session.query(
-            self.model
-        ).options(
-            load_only(self.key_column.name)
-        ).get(obj_id)
+        try:
+            item = db_session.query(
+                self.model
+            ).options(
+                load_only(self.key_column.name)
+            ).get(obj_id)
+        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
+            item = False
         return bool(item)
 
     def column_info_from_name(self, name, model=None):
