@@ -106,12 +106,13 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+suppress_warnings = ['image.nonlocal_uri']
 
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -119,23 +120,20 @@ html_theme = 'alabaster'
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 # Show different sidebars for index and apidoc pages
-html_sidebars = {
-    'pyramid_jsonapi': [
-        'navigation.html',
-    ],
-    'index': [
-        'navigation.html',
-        'localtoc.html',
-        'searchbox.html',
-    ]
-}
+#html_sidebars = {
+#    'pyramid_jsonapi': [
+#        'navigation.html',
+#    ],
+#    'index': [
+#        'localtoc.html',
+#        'searchbox.html',
+#    ]
+#}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    'page_width': 'auto',
-}
+#html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
