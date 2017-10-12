@@ -889,6 +889,14 @@ class TestSpec(DBTestBase):
         self.assertEqual(len(json['data']), 2)
         self.assertNotIn('next', json['links'])
 
+    def test_spec_negative_offset(self):
+        """Offset must not be negative"""
+        self.test_app().get('/posts?page[offset]=-1', status=400)
+
+    def test_spec_negative_limit(self):
+        """Limit must not be negative"""
+        self.test_app().get('/posts?page[limit]=-1', status=400)
+
     def test_spec_pagination_order(self):
         '''Pages (and results) should order restults as per order param.
 

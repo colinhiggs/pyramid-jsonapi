@@ -1707,6 +1707,7 @@ class CollectionViewBase:
             raise HTTPInternalServerError(
                 'An error occurred querying the database. Server logs may have details.'
             )
+
         results['available'] = count
 
         # Pagination links
@@ -1717,20 +1718,23 @@ class CollectionViewBase:
         results['offset'] = qinfo['page[offset]']
 
         # Primary data
-        if identifiers:
-            data = [
-                self.serialise_resource_identifier(self.id_col(dbitem))
-                for dbitem in query.all()
-            ]
-        else:
-            included = {}
-            data = [
-                self.serialise_db_item(dbitem, included)
-                for dbitem in query.all()
-            ]
-            # Included objects
-            if self.requested_include_names():
-                doc.included = [obj for obj in included.values()]
+        try:
+            if identifiers:
+                data = [
+                    self.serialise_resource_identifier(self.id_col(dbitem))
+                    for dbitem in query.all()
+                ]
+            else:
+                included = {}
+                data = [
+                    self.serialise_db_item(dbitem, included)
+                    for dbitem in query.all()
+                ]
+                # Included objects
+                if self.requested_include_names():
+                    doc.included = [obj for obj in included.values()]
+        except sqlalchemy.exc.DataError as exc:
+            raise HTTPBadRequest(str(exc.orig))
         for item in data:
             res = pyramid_jsonapi.jsonapi.Resource()
             res.update(item)
