@@ -1932,8 +1932,12 @@ class CollectionViewBase:
             if use_rel_filter:
                 q = self.filter_on_relationships(q, prop, colspec, op, val, qinfo)
             else:
-                op_func, val = self.get_operator_func(prop, op[0], val[0])
-                q = q.filter(or_(*[x for x in op_func(val)]))
+                qs = []
+                for p in prop:
+                    op_func, val = self.get_operator_func(p, op[0], val[0])
+                    qs.append(op_func(val))
+
+                q = q.filter(or_(*qs))
 
         return q
 
