@@ -193,7 +193,7 @@ def create_resource(
     view.default_limit =\
         int(settings.get('pyramid_jsonapi.paging.default_limit', 10))
     view.max_limit =\
-        int(settings.get('pyramid_jsonapi.paging.max_limit', 100))
+        int(settings.get('pyramid_jsonapi.paging.max_limit', 500))
 
     # individual item
     config.add_route(view.item_route_name, view.item_route_pattern)
