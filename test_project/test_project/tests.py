@@ -791,6 +791,12 @@ class TestSpec(DBTestBase):
         self.assertEqual(len(rels), 1)
         self.assertIn('author', rels)
 
+    def test_spec_empty_fields(self):
+        """should return no attributes."""
+        person = self.test_app().get(
+            '/people?fields[people]='
+        ).json
+        self.assertEqual(len(person['data'][0]['attributes']), 0)
 
     def test_spec_single_sort(self):
         '''Should return  collection sorted by correct field.
