@@ -1367,6 +1367,11 @@ class CollectionViewBase:
             db_session.flush()
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
+        except sqlalchemy.orm.exc.FlushError as exc:
+            if(str(exc).startswith("Can't flush None value")):
+                raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
+            else:
+                raise
         return {}
 
     @jsonapi_view

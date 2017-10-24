@@ -1898,6 +1898,51 @@ class TestSpec(DBTestBase):
         ]
         self.assertEqual(author_ids, ['1', '2'])
 
+    def test_spec_post_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Try to add people/1 to no_such_relationship.
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_spec_post_relationships_nonexistent_item(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add people/splat as author..
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '200'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    def test_spec_post_relationships_integrity_error(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add blog/1 to people/3 (db constraint precludes this)
+        self.test_app().post_json(
+            '/people/3/relationships/blogs',
+            {
+                'data': [
+                    { 'type': 'blogs', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
     ###############################################
     # PATCH tests.
     ###############################################
