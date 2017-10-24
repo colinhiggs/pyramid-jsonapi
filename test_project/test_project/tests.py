@@ -763,6 +763,9 @@ class TestSpec(DBTestBase):
         '''
         # Try to get the author of a non existent post.
         r = self.test_app().get('/posts/1000/relationships/author', status=404)
+        # Try to get data about a non existing relationships
+        self.test_app().get('/posts/1/relationships/no_such_relationship',
+            status=404)
 
     def test_spec_sparse_fields(self):
         '''Should return only requested fields.
