@@ -763,6 +763,9 @@ class TestSpec(DBTestBase):
         '''
         # Try to get the author of a non existent post.
         r = self.test_app().get('/posts/1000/relationships/author', status=404)
+        # Try to get data about a non existing relationships
+        self.test_app().get('/posts/1/relationships/no_such_relationship',
+            status=404)
 
     def test_spec_sparse_fields(self):
         '''Should return only requested fields.
@@ -1894,6 +1897,51 @@ class TestSpec(DBTestBase):
                 ).json['data']
         ]
         self.assertEqual(author_ids, ['1', '2'])
+
+    def test_spec_post_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Try to add people/1 to no_such_relationship.
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_spec_post_relationships_nonexistent_item(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add people/splat as author..
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '200'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    def test_spec_post_relationships_integrity_error(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add blog/1 to people/3 (db constraint precludes this)
+        self.test_app().post_json(
+            '/people/3/relationships/blogs',
+            {
+                'data': [
+                    { 'type': 'blogs', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
 
     ###############################################
     # PATCH tests.
