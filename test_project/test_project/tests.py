@@ -1916,7 +1916,7 @@ class TestSpec(DBTestBase):
     def test_spec_post_relationships_nonexistent_item(self):
         '''Should return HTTPFailedDependency.
         '''
-        # Try to add people/splat as author..
+        # Try to add people/200 as author..
         self.test_app().post_json(
             '/articles_by_assoc/2/relationships/authors',
             {
