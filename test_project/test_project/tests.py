@@ -1928,6 +1928,21 @@ class TestSpec(DBTestBase):
             status=424
         )
 
+    def test_spec_post_relationships_invalid_id(self):
+        '''Should return HTTPBadRequest.
+        '''
+        # Try to add people/splat as author..
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
     def test_spec_post_relationships_integrity_error(self):
         '''Should return HTTPFailedDependency.
         '''
