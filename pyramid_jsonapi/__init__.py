@@ -1361,7 +1361,10 @@ class CollectionViewBase:
                         resid['type'], rel_view.collection_name
                     )
                 )
-            items.append(db_session.query(rel_class).get(resid['id']))
+            try:
+                items.append(db_session.query(rel_class).get(resid['id']))
+            except sqlalchemy.exc.DataError as exc:
+                raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
         getattr(obj, relname).extend(items)
         try:
             db_session.flush()
