@@ -1599,8 +1599,13 @@ class CollectionViewBase:
                     )
                 )
             try:
-                getattr(obj, relname).\
-                    remove(db_session.query(rel_class).get(resid['id']))
+                item = db_session.query(rel_class).get(resid['id'])
+            except sqlalchemy.exc.DataError as exc:
+                raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
+            if item is None:
+                raise HTTPFailedDependency("One or more objects DELETEd from this relationship do not exist.")
+            try:
+                getattr(obj, relname).remove(item)
             except ValueError as exc:
                 if exc.args[0].endswith(': x not in list'):
                     # The item we were asked to remove is not there.
