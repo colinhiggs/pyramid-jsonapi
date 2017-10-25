@@ -2748,6 +2748,50 @@ class TestSpec(DBTestBase):
         }
         self.assertEqual(found_ids, {'2'})
 
+    def test_spec_delete_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Delete people/1 from no_such_relationship.
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_spec_delete_relationships_nonexistent_item(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to delete people/200 from authors..
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '200'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    def test_spec_delete_relationships_invalid_id(self):
+        '''Should return HTTPBadRequest.
+        '''
+        # Try to delete people/splat from authors.
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
 
 class TestErrors(DBTestBase):
     '''Test that errors are thrown properly.'''
