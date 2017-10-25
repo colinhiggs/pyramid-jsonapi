@@ -1375,7 +1375,7 @@ class CollectionViewBase:
                 raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
             else:
                 # Catch-all. Shouldn't reach here.
-                raise # pragma: no cover
+                raise  # pragma: no cover
         return {}
 
     @jsonapi_view
@@ -1463,6 +1463,7 @@ class CollectionViewBase:
         rel_view = self.view_instance(rel_class)
         obj = db_session.query(self.model).get(obj_id)
         if rel.direction is MANYTOONE:
+            local_col, rem_col = rel.local_remote_pairs[0]
             resid = data
             if resid is None:
                 setattr(obj, relname, None)
@@ -1476,9 +1477,17 @@ class CollectionViewBase:
                     )
                 setattr(
                     obj,
-                    relname,
-                    db_session.query(rel_class).get(resid['id'])
+                    local_col.name,
+                    resid['id']
                 )
+                try:
+                    db_session.flush()
+                except sqlalchemy.exc.IntegrityError as exc:
+                    raise HTTPFailedDependency(
+                        'Object {}/{} does not exist.'.format(resid['type'], resid['id'])
+                    )
+                except sqlalchemy.exc.DataError as exc:
+                    raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
             return {}
         items = []
         for resid in self.request.json_body['data']:
@@ -1489,12 +1498,21 @@ class CollectionViewBase:
                         rel_view.collection_name
                     )
                 )
-            items.append(db_session.query(rel_class).get(resid['id']))
+            try:
+                items.append(db_session.query(rel_class).get(resid['id']))
+            except sqlalchemy.exc.DataError as exc:
+                raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
         setattr(obj, relname, items)
         try:
             db_session.flush()
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
+        except sqlalchemy.orm.exc.FlushError as exc:
+            if(str(exc).startswith("Can't flush None value")):
+                raise HTTPFailedDependency("One or more objects PATCHed to this relationship do not exist.")
+            else:
+                # Catch-all. Shouldn't reach here.
+                raise  # pragma: no cover
         return {}
 
     @jsonapi_view
