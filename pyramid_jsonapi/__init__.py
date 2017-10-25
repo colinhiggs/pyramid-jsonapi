@@ -1374,7 +1374,8 @@ class CollectionViewBase:
             if(str(exc).startswith("Can't flush None value")):
                 raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
             else:
-                raise
+                # Catch-all. Shouldn't reach here.
+                raise # pragma: no cover
         return {}
 
     @jsonapi_view
