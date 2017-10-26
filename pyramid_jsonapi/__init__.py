@@ -73,8 +73,8 @@ class PyramidJSONAPI():
         if get_dbsession:
             self.get_dbsession = get_dbsession
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
-        self.metadata = pyramid_jsonapi.metadata.MetaData(self)
         self.filter_registry = FilterRegistry()
+        self.metadata = pyramid_jsonapi.metadata.MetaData(self)
         self.schemas = None
         # Register standard supported filter operators
         for comparator_name in (
@@ -264,15 +264,12 @@ class PyramidJSONAPI():
         """
 
         class_attrs = {}
-        class_attrs['config'] = self.config
+        class_attrs['api'] = self
         class_attrs['model'] = model
-        class_attrs['settings'] = self.settings
         class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
         class_attrs['collection_name'] = collection_name or model.__tablename__
-        class_attrs['get_dbsession'] = self.get_dbsession
-        class_attrs['endpoint_data'] = self.endpoint_data
-        class_attrs['view_classes'] = self.view_classes
-
+        # TODO (mrichar1): Find out why directly calling self.api.get_dbsession fails
+        class_attrs['get_dbsession'] = class_attrs['api'].get_dbsession
         class_attrs['exposed_fields'] = expose_fields
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
@@ -300,7 +297,6 @@ class PyramidJSONAPI():
         class_attrs['relationships'] = rels
         fields.update(rels)
         class_attrs['fields'] = fields
-        class_attrs['filter_registry'] = self.filter_registry
 
         # All callbacks have the current view as the first argument. The comments
         # below detail subsequent args.
@@ -319,9 +315,6 @@ class PyramidJSONAPI():
             'before_relationships_delete':
                 deque(),                            # args: parent_item(sqlalchemy)
         }
-
-        if self.schemas:
-            class_attrs['schemas'] = {'api': self.schemas}
 
         return type(
             'CollectionView<{}>'.format(collection_name),
@@ -348,15 +341,13 @@ class CollectionViewBase:
 
     # Define class attributes
     # Callable attributes use lambda to keep pylint happy
+    api = None
     attributes = None
     callbacks = None
-    config = None
     collection_name = None
     default_limit = None
-    endpoint_data = None
     exposed_fields = None
     fields = None
-    filter_registry = None
     get_dbsession = lambda: None
     hybrid_attributes = None
     key_column = None
@@ -392,7 +383,7 @@ class CollectionViewBase:
             """
             @functools.wraps(func)
             def new_func(self, *args):
-                ep_dict = self.endpoint_data.endpoints
+                ep_dict = self.api.endpoint_data.endpoints
                 # Get route_name from route
                 _, _, endpoint = self.request.matched_route.name.split(':')
                 method = self.request.method
@@ -464,13 +455,13 @@ class CollectionViewBase:
                 except ValueError:
                     raise HTTPBadRequest("Body is not valid JSON.")
 
-            if self.schemas:
+            if self.api.schemas:
                 # Validate request JSON against the JSONAPI jsonschema
                 if self.request.content_length and self.request.method != 'PATCH':
                     try:
                         jsonschema.validate(
                             self.request.json_body,
-                            self.schemas['api']['post']
+                            self.api.schemas['post']
                         )
                     except jsonschema.exceptions.ValidationError as exc:
                         raise HTTPBadRequest(exc.message)
@@ -499,7 +490,7 @@ class CollectionViewBase:
                         ret.links = selfie
 
                 # Potentially add some debug information.
-                if self.settings.debug_meta:
+                if self.api.settings.debug_meta:
                     debug = {
                         'accept_header': {
                             a: None for a in jsonapi_accepts
@@ -991,7 +982,7 @@ class CollectionViewBase:
             data = callback(self, data)
 
         # Check to see if we're allowing client ids
-        if not self.settings.allow_client_ids and 'id' in data:
+        if not self.api.settings.allow_client_ids and 'id' in data:
             raise HTTPForbidden('Client generated ids are not supported.')
         # Type should be correct or raise 409 Conflict
         datatype = data.get('type')
@@ -1023,7 +1014,7 @@ class CollectionViewBase:
                         )
                     )
                 rel_class = rel.mapper.class_
-                rel_type = self.view_classes[rel_class].collection_name
+                rel_type = self.api.view_classes[rel_class].collection_name
                 if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                     # reldata should be a list/array
                     if not isinstance(reldata, Sequence) or isinstance(reldata, str):
@@ -1065,7 +1056,7 @@ class CollectionViewBase:
             raise HTTPConflict(exc.args[0])
         self.request.response.status_code = 201
         self.request.response.headers['Location'] = self.request.route_url(
-            self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
+            self.api.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': self.id_col(item)}
         )
         doc = pyramid_jsonapi.jsonapi.Document()
@@ -1851,9 +1842,9 @@ class CollectionViewBase:
             ``value`` is the value the comparison operator should compare to.
 
         Valid comparison operators:
-            Only operators added via self.filter_registry.register() are
+            Only operators added via self.api.filter_registry.register() are
             considered valid. Get a list of filter names with
-            self.filter_registry.valid_filter_names()
+            self.api.filter_registry.valid_filter_names()
 
         See Also:
             ``_filters`` key from :py:func:`collection_query_info`
@@ -1902,7 +1893,7 @@ class CollectionViewBase:
                 # TODO(Colin): deal with relationships properly.
                 pass
             try:
-                filtr = self.filter_registry.get_filter(type(prop.type), operator)
+                filtr = self.api.filter_registry.get_filter(type(prop.type), operator)
             except KeyError:
                 raise HTTPBadRequest(
                     "No such filter operator: '{}'".format(operator)
@@ -2071,7 +2062,7 @@ class CollectionViewBase:
         item_id = self.id_col(item)
         # JSON API type.
         item_url = self.request.route_url(
-            self.endpoint_data.make_route_name(self.collection_name, suffix='item'),
+            self.api.endpoint_data.make_route_name(self.collection_name, suffix='item'),
             **{'id': item_id}
         )
 
@@ -2551,7 +2542,7 @@ class CollectionViewBase:
         Returns:
             class: subclass of CollectionViewBase providing view for ``model``.
         """
-        return self.view_classes[model](self.request)
+        return self.api.view_classes[model](self.request)
 
     @classmethod
     def append_callback_set(cls, set_name):
