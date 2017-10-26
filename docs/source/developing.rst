@@ -26,10 +26,11 @@ You can set up the buildout environment as follows:
 Contribution
 -------------
 
-All contributions are welcome!  You can contribute by making *pull requests* to the git repo:
-`<https://github.com/colinhiggs/pyramid-jsonapi>`_
+All contributions are welcome!  You can contribute by making *pull requests* to
+the git repo: `<https://github.com/colinhiggs/pyramid-jsonapi>`_
 
-Travis is run against all PRs and commits to ensure consistent, high-quality code.
+Travis (`<https://travis-ci.org/colinhiggs/pyramid-jsonapi>`_) is run against
+all PRs and commits to ensure consistent, high-quality code.
 
 Tests
 ^^^^^^
