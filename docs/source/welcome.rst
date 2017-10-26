@@ -67,8 +67,6 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
 .. code-block:: python
 
   import pyramid_jsonapi
-  # Or 'from . import pyramid_jsonapi' if you copied pyramid_jsonapi directly
-  # into your project.
 
   from . import models # Your models module.
   def main(global_config, **settings):
