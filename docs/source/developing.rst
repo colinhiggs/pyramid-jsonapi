@@ -56,7 +56,7 @@ Is to be preferred wherever possible.
 
 Python Versions
 ^^^^^^^^^^^^^^^^
-Currently authomatic is built and tested against python 3. 3.4 or later is recommended.
+Currently pyramid_jsonapi is built and tested against python 3. 3.4 or later is recommended.
 
 Versioning
 ^^^^^^^^^^^
