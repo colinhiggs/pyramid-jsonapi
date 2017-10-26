@@ -1916,7 +1916,7 @@ class TestSpec(DBTestBase):
     def test_spec_post_relationships_nonexistent_item(self):
         '''Should return HTTPFailedDependency.
         '''
-        # Try to add people/splat as author..
+        # Try to add people/200 as author..
         self.test_app().post_json(
             '/articles_by_assoc/2/relationships/authors',
             {
@@ -1926,6 +1926,21 @@ class TestSpec(DBTestBase):
             },
             headers={'Content-Type': 'application/vnd.api+json'},
             status=424
+        )
+
+    def test_spec_post_relationships_invalid_id(self):
+        '''Should return HTTPBadRequest.
+        '''
+        # Try to add people/splat as author..
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
         )
 
     def test_spec_post_relationships_integrity_error(self):
@@ -2424,6 +2439,101 @@ class TestSpec(DBTestBase):
         }
         self.assertEqual(author_ids, found_ids)
 
+    def test_spec_patch_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Try set people/1 on no_such_relationship.
+        self.test_app().patch_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_spec_patch_relationships_nonexistent_item(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # TOMANY
+        # Try to add people/200 as author..
+        self.test_app().patch_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '200'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+        # TOONE
+        # Try to set people/200 as owner of blogs/2
+        self.test_app().patch_json(
+            '/blogs/2/relationships/owner',
+            {
+                'data': { 'type': 'people', 'id': '200'}
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    def test_spec_patch_relationships_invalid_id(self):
+        '''Should return HTTPBadRequest.
+        '''
+        # TOMANY
+        # Try to set people/splat as author..
+        self.test_app().patch_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+        #TOONE
+        #
+        # Try to set people/splat as owner of blogs/2
+        self.test_app().patch_json(
+            '/blogs/2/relationships/owner',
+            {
+                'data': { 'type': 'people', 'id': 'splat'}
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    def test_spec_patch_relationships_integrity_error(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add blog/1 to people/3 (db constraint precludes this)
+        self.test_app().patch_json(
+            '/people/3/relationships/blogs',
+            {
+                'data': [
+                    { 'type': 'blogs', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+        # and the other way round
+        self.test_app().patch_json(
+            '/blogs/1/relationships/owner',
+            {
+                'data': { 'type': 'people', 'id': '3'}
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+
     ###############################################
     # DELETE tests.
     ###############################################
@@ -2638,6 +2748,50 @@ class TestSpec(DBTestBase):
         }
         self.assertEqual(found_ids, {'2'})
 
+    def test_spec_delete_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Delete people/1 from no_such_relationship.
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_spec_delete_relationships_nonexistent_item(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to delete people/200 from authors..
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '200'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    def test_spec_delete_relationships_invalid_id(self):
+        '''Should return HTTPBadRequest.
+        '''
+        # Try to delete people/splat from authors.
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/authors',
+            {
+                'data': [
+                    { 'type': 'people', 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
 
 class TestErrors(DBTestBase):
     '''Test that errors are thrown properly.'''
