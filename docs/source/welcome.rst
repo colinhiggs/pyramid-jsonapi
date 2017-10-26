@@ -69,6 +69,8 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
   import pyramid_jsonapi
 
   from . import models # Your models module.
+
+
   def main(global_config, **settings):
 
     # The usual stuff from the pyramid alchemy setup.
