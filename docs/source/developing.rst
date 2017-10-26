@@ -26,10 +26,11 @@ You can set up the buildout environment as follows:
 Contribution
 -------------
 
-All contributions are welcome!  You can contribute by making *pull requests* to the git repo:
-`<https://github.com/colinhiggs/pyramid-jsonapi>`_
+All contributions are welcome!  You can contribute by making *pull requests* to
+the git repo: `<https://github.com/colinhiggs/pyramid-jsonapi>`_
 
-Travis is run against all PRs and commits to ensure consistent, high-quality code.
+Travis (`<https://travis-ci.org/colinhiggs/pyramid-jsonapi>`_) is run against
+all PRs and commits to ensure consistent, high-quality code.
 
 Tests
 ^^^^^^
@@ -55,7 +56,7 @@ Is to be preferred wherever possible.
 
 Python Versions
 ^^^^^^^^^^^^^^^^
-Currently authomatic is built and tested against python 3. 3.4 or later is recommended.
+Currently pyramid_jsonapi is built and tested against python 3. 3.4 or later is recommended.
 
 Versioning
 ^^^^^^^^^^^
@@ -65,7 +66,7 @@ Semantic versioning should be used, see `<https://semver.org>`_ for details.
 Documentation
 =============
 
-Docuemntation is built using sphinx. This is done automatically using Travis for
+Documentation is built using sphinx. This is done automatically using Travis for
 certain builds (e.g. tagged releases) and pushed to the *gh-pages* branch.
 
 Note that the documentation uses the ``sphinx-rtd-theme`` which is installed by buildout.
