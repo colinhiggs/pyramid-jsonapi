@@ -12,8 +12,8 @@ Contents
 
    welcome
    api-creation
-   customisation
    client
+   customisation
    developing
    apidoc/pyramid_jsonapi
 
