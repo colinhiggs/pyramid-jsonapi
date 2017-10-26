@@ -104,6 +104,21 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
 
     return config.make_wsgi_app()
 
+Or, without all the comments:
+
+.. code-block:: python
+
+  import pyramid_jsonapi
+
+  from . import models
+
+
+  def main(global_config, **settings):
+    config = Configurator(settings=settings)
+    pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
+    pj.create_jsonapi_using_magic_and_pixie_dust()
+    return config.make_wsgi_app()
+
 Yes, there really is a method called
 :func:`pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust`. No, you
 don't *have* to call it that. If you are feeling more sensible you can use the
