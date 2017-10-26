@@ -77,9 +77,10 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     # pyramid_jsonapi uses the renderer labeled 'json'. As usual, if you have
     # any types to serialise that the default JSON renderer can't handle, you
     # must alter it. For example:
-    renderer = JSON()
-    renderer.add_adapter(datetime.date, datetime_adapter)
-    config.add_renderer('json', renderer)
+    #
+    #renderer = JSON()
+    #renderer.add_adapter(datetime.date, datetime_adapter)
+    #config.add_renderer('json', renderer)
 
     # Instantiate a PyramidJSONAPI class instance
     # The third argument is optional, and should be a callable which accepts a
