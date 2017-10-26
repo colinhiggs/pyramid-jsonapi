@@ -82,20 +82,24 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     #renderer.add_adapter(datetime.date, datetime_adapter)
     #config.add_renderer('json', renderer)
 
-    # Instantiate a PyramidJSONAPI class instance
-    # The third argument is optional, and should be a callable which accepts a
-    # CollectionView instance as an argument and returns a database session.
-    # This is only needed if you are using the 'old-style' pyramid approach
-    # of passing around a single dbsession object.
-    # If this argument is unused, pyramid_jsonapi will use the dbsession
-    # object contained in the pyramid view.request.
-    pj = pyramid_jsonapi.PyramidJSONAPI(config, models, lambda view: models.DBSession)
+    # Instantiate a PyramidJSONAPI class instance.
+    pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
+
+    # If you are using pyramid 1.7 or older, you will need to pass a third
+    # argument to the constructor: a callable which accepts a CollectionView
+    # instance as an argument and returns a sqlalchemy database session.
+    #
+    # For example:
+    # pj = pyramid_jsonapi.PyramidJSONAPI(
+    #   config, models, lambda view: models.DBSession
+    # )
 
     # Create the routes and views automagically:
     pj.create_jsonapi_using_magic_and_pixie_dust()
 
     # Routes and views are added imperatively, so no need for a scan - unless
     # you have defined other routes and views declaratively.
+
     return config.make_wsgi_app()
 
 Yes, there really is a method called
