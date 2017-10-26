@@ -106,6 +106,12 @@ class EndpointData():
         # Mandatory 'http_method' keys: function
         # Optional 'http_method' keys: renderer
         self.endpoints = {
+            'query_parameters': {
+                'fields': '',
+                'filter': '',
+                'page': ['limit', 'offset'],
+                'sort': '',
+            },
             'responses': {
                 # Top-level: apply to all endpoints
                 HTTPUnsupportedMediaType: {'reason': ['Servers MUST respond with a 415 Unsupported Media Type status code if a request specifies the header Content-Type: application/vnd.api+json with any media type parameters.']},
@@ -129,6 +135,7 @@ class EndpointData():
                         },
                         'POST': {
                             'function': 'collection_post',
+                            'request_schema': True,
                             'responses': {
                                 HTTPCreated: {'reason': ['If a POST request did not include a Client-Generated ID and the requested resource has been created successfully, the server MUST return a 201 Created status code.']},
                                 HTTPForbidden: {'reason': ['A server MUST return 403 Forbidden in response to an unsupported request to create a resource with a client-generated ID.',
@@ -165,6 +172,7 @@ class EndpointData():
                         },
                         'PATCH': {
                             'function': 'patch',
+                            'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If an update is successful and the server doesn’t update any attributes besides those provided, the server MUST return either a 200 OK status code and response document']},
                                 HTTPForbidden: {'reason': ['A server MUST return 403 Forbidden in response to an unsupported request to update a resource or relationship.']},
@@ -201,6 +209,7 @@ class EndpointData():
                     'http_methods': {
                         'DELETE': {
                             'function': 'relationships_delete',
+                            'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If all of the specified resources are able to be removed from, or are already missing from, the relationship then the server MUST return a successful response.']},
                                 HTTPConflict: {'reason'},
@@ -223,6 +232,7 @@ class EndpointData():
                         },
                         'PATCH': {
                             'function': 'relationships_patch',
+                            'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If a server accepts an update but also changes the targeted relationship(s) in other ways than those specified by the request, it MUST return a 200 OK response']},
                                 HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a PATCH request in which the resource object’s type and id do not match the server’s endpoint.']},
@@ -233,6 +243,7 @@ class EndpointData():
                         },
                         'POST': {
                             'function': 'relationships_post',
+                            'request_schema': True,
                             'responses': {
                                 HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a POST request in which the resource object’s type is not among the type(s) that constitute the collection represented by the endpoint.']},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by adding the specified resource to the relationship.']},

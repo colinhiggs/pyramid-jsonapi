@@ -33,6 +33,7 @@ class Settings():
         'allow_client_ids': {'val': False, 'desc': 'Allow client to specify resource ids.'},
         'metadata_endpoints': {'val': True, 'desc': 'Should /metadata endpoint be enabled?'},
         'metadata_modules': {'val': '', 'desc': 'Modules to load to provide metadata endpoints (defaults to all modules in the metadata package).'},
+        'openapi_file': {'val': '', 'desc': 'File containing OpenAPI data (YAML or JSON)'},
         'paging_default_limit': {'val': 10, 'desc': 'Default pagination limit for collections.'},
         'paging_max_limit': {'val': 100, 'desc': 'Default limit on the number of items returned for collections.'},
         'route_name_prefix': {'val': 'pyramid_jsonapi', 'desc': 'Prefix for pyramid route names for view_classes.'},
