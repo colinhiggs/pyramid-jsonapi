@@ -64,7 +64,7 @@ Semantic versioning should be used, see `<https://semver.org>`_ for details.
 
 
 Documentation
-=============
+-------------
 
 Documentation is built using sphinx. This is done automatically using Travis for
 certain builds (e.g. tagged releases) and pushed to the *gh-pages* branch.
