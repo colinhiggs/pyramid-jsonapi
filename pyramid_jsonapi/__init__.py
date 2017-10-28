@@ -716,7 +716,7 @@ class CollectionViewBase:
                 raise HTTPBadRequest(
                     "Relationship '{}' has no 'data' member.".format(relname)
                 )
-            except:
+            except TypeError:
                 raise HTTPBadRequest(
                     "Relationship '{}' is not a dictionary with a data member.".format(relname)
                 )
