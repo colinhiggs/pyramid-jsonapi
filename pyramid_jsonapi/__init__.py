@@ -69,9 +69,7 @@ class PyramidJSONAPI():
         self.config = config
         self.settings = pyramid_jsonapi.settings.Settings(config.registry.settings)
         self.models = models
-        self.get_dbsession = CollectionViewBase.default_dbsession
-        if get_dbsession:
-            self.get_dbsession = get_dbsession
+        self.get_dbsession = get_dbsession
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
         self.filter_registry = FilterRegistry()
         self.metadata = pyramid_jsonapi.metadata.MetaData(self)
@@ -268,8 +266,6 @@ class PyramidJSONAPI():
         class_attrs['model'] = model
         class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
         class_attrs['collection_name'] = collection_name or model.__tablename__
-        # TODO (mrichar1): Find out why directly calling self.api.get_dbsession fails
-        class_attrs['get_dbsession'] = class_attrs['api'].get_dbsession
         class_attrs['exposed_fields'] = expose_fields
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
@@ -348,7 +344,7 @@ class CollectionViewBase:
     default_limit = None
     exposed_fields = None
     fields = None
-    get_dbsession = lambda: None
+    dbsession = None
     hybrid_attributes = None
     key_column = None
     max_limit = None
@@ -361,11 +357,11 @@ class CollectionViewBase:
 
     def __init__(self, request):
         self.request = request
+        if self.api.get_dbsession:
+            self.dbsession = self.api.get_dbsession(self)
+        else:
+            self.dbsession = self.request.dbsession
         self.views = {}
-
-    def default_dbsession(self):
-        """Use the dbsession in self.request as default."""
-        return self.request.dbsession
 
     @staticmethod
     def id_col(item):
@@ -644,7 +640,6 @@ class CollectionViewBase:
                     self.collection_name, self.request.matchdict['id']
                 )
             )
-        db_session = self.get_dbsession()
         try:
             data = self.request.json_body['data']
         except KeyError:
@@ -679,7 +674,7 @@ class CollectionViewBase:
                     )
                 )
         atts[self.key_column.name] = req_id
-        item = db_session.merge(self.model(**atts))
+        item = self.dbsession.merge(self.model(**atts))
         for att, value in hybrid_atts.items():
             try:
                 setattr(item, att, value)
@@ -724,7 +719,7 @@ class CollectionViewBase:
                     raise HTTPBadRequest(
                         'An id is required in a resource identifier.'
                     )
-                rel_item = db_session.query(
+                rel_item = self.dbsession.query(
                     rel_class
                 ).options(
                     load_only(rel_view.key_column.name)
@@ -737,7 +732,7 @@ class CollectionViewBase:
             elif isinstance(data, list):
                 rel_items = []
                 for res_ident in data:
-                    rel_item = db_session.query(
+                    rel_item = self.dbsession.query(
                         rel_class
                     ).options(
                         load_only(rel_view.key_column.name)
@@ -749,7 +744,7 @@ class CollectionViewBase:
                     rel_items.append(rel_item)
                 setattr(item, relname, rel_items)
 
-        db_session.flush()
+        self.dbsession.flush()
         doc = pyramid_jsonapi.jsonapi.Document()
         doc.meta = {
             'updated': {
@@ -790,10 +785,9 @@ class CollectionViewBase:
                 http DELETE http://localhost:6543/people/1
         """
 
-        db_session = self.get_dbsession()
         doc = pyramid_jsonapi.jsonapi.Document()
         try:
-            item = db_session.query(
+            item = self.dbsession.query(
                 self.model
             ).options(
                 load_only(self.key_column.name)
@@ -811,8 +805,8 @@ class CollectionViewBase:
             for callback in self.callbacks['before_delete']:
                 callback(self, item)
             try:
-                db_session.delete(item)
-                db_session.flush()
+                self.dbsession.delete(item)
+                self.dbsession.flush()
             except sqlalchemy.exc.IntegrityError as exc:
                 raise HTTPFailedDependency(str(exc))
             doc.update({
@@ -881,10 +875,8 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people?page[limit]=2&page[offset]=2&sort=-name&include=posts
         """
-        db_session = self.get_dbsession()
-
         # Set up the query
-        query = db_session.query(
+        query = self.dbsession.query(
             self.model
         ).options(
             load_only(*self.allowed_requested_query_columns.keys())
@@ -968,7 +960,6 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         """
-        db_session = self.get_dbsession()
         try:
             data = self.request.json_body['data']
         except KeyError:
@@ -996,7 +987,7 @@ class CollectionViewBase:
             atts[self.model.__pyramid_jsonapi__['id_col_name']] = data['id']
         item = self.model(**atts)
         mapper = sqlalchemy.inspect(self.model).mapper
-        with db_session.no_autoflush:
+        with self.dbsession.no_autoflush:
             for relname, reldict in data.get('relationships', {}).items():
                 try:
                     reldata = reldict['data']
@@ -1035,7 +1026,7 @@ class CollectionViewBase:
                             raise HTTPBadRequest(
                                 'Relationship identifier must have an id member'
                             )
-                        rel_items.append(db_session.query(rel_class).get(rid_id))
+                        rel_items.append(self.dbsession.query(rel_class).get(rid_id))
                     setattr(item, relname, rel_items)
                 else:
                     try:
@@ -1047,11 +1038,11 @@ class CollectionViewBase:
                     setattr(
                         item,
                         relname,
-                        db_session.query(rel_class).get(related_id)
+                        self.dbsession.query(rel_class).get(related_id)
                     )
         try:
-            db_session.add(item)
-            db_session.flush()
+            self.dbsession.add(item)
+            self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPConflict(exc.args[0])
         self.request.response.status_code = 201
@@ -1322,7 +1313,6 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1343,7 +1333,7 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = db_session.query(self.model).get(obj_id)
+        obj = self.dbsession.query(self.model).get(obj_id)
         items = []
         for resid in data:
             if resid['type'] != rel_view.collection_name:
@@ -1353,12 +1343,12 @@ class CollectionViewBase:
                     )
                 )
             try:
-                items.append(db_session.query(rel_class).get(resid['id']))
+                items.append(self.dbsession.query(rel_class).get(resid['id']))
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
         getattr(obj, relname).extend(items)
         try:
-            db_session.flush()
+            self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
         except sqlalchemy.orm.exc.FlushError as exc:
@@ -1433,7 +1423,6 @@ class CollectionViewBase:
                     { "type": "comments", "id": "2" }
                 ]' Content-Type:application/vnd.api+json
         """
-        db_session = self.get_dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1452,7 +1441,7 @@ class CollectionViewBase:
 
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = db_session.query(self.model).get(obj_id)
+        obj = self.dbsession.query(self.model).get(obj_id)
         if rel.direction is MANYTOONE:
             local_col, rem_col = rel.local_remote_pairs[0]
             resid = data
@@ -1472,7 +1461,7 @@ class CollectionViewBase:
                     resid['id']
                 )
                 try:
-                    db_session.flush()
+                    self.dbsession.flush()
                 except sqlalchemy.exc.IntegrityError as exc:
                     raise HTTPFailedDependency(
                         'Object {}/{} does not exist.'.format(resid['type'], resid['id'])
@@ -1490,12 +1479,12 @@ class CollectionViewBase:
                     )
                 )
             try:
-                items.append(db_session.query(rel_class).get(resid['id']))
+                items.append(self.dbsession.query(rel_class).get(resid['id']))
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
         setattr(obj, relname, items)
         try:
-            db_session.flush()
+            self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
         except sqlalchemy.orm.exc.FlushError as exc:
@@ -1561,7 +1550,7 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        db_session = self.get_dbsession()
+        self.dbsession = self.dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
@@ -1576,7 +1565,7 @@ class CollectionViewBase:
             raise HTTPForbidden('Cannot DELETE to TOONE relationship link.')
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
-        obj = db_session.query(self.model).get(obj_id)
+        obj = self.dbsession.query(self.model).get(obj_id)
 
         # Call callbacks
         for callback in self.callbacks['before_relationships_delete']:
@@ -1590,7 +1579,7 @@ class CollectionViewBase:
                     )
                 )
             try:
-                item = db_session.query(rel_class).get(resid['id'])
+                item = self.dbsession.query(rel_class).get(resid['id'])
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
             if item is None:
@@ -1604,7 +1593,7 @@ class CollectionViewBase:
                 else:
                     raise
         try:
-            db_session.flush()
+            self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
         return {}
@@ -1621,8 +1610,7 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch item with id
             'id'.
         """
-        db_session = self.get_dbsession()
-        return db_session.query(
+        return self.dbsession.query(
             self.model
         ).options(
             load_only(*self.allowed_requested_query_columns.keys())
@@ -1954,12 +1942,11 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        db_session = self.get_dbsession()
         rel = relationship
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         local_col, rem_col = rel.local_remote_pairs[0]
-        query = db_session.query(rel_class)
+        query = self.dbsession.query(rel_class)
         if full_object:
             query = query.options(
                 load_only(*rel_view.allowed_requested_query_columns.keys())
@@ -1996,9 +1983,8 @@ class CollectionViewBase:
         Returns:
             bool: True if object exists, False if not.
         """
-        db_session = self.get_dbsession()
         try:
-            item = db_session.query(
+            item = self.dbsession.query(
                 self.model
             ).options(
                 load_only(self.key_column.name)
