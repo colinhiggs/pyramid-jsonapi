@@ -13,17 +13,38 @@ class OpenAPI():
     def __init__(self, api):
         self.api = api
         self.metadata = {}
+        # Load mako templating
+        self.api.config.include('pyramid_mako')
         self.views = [
             VIEWS(
-                attr='openapi_view',
-                route_name='',
+                attr='openapi_spec',
+                route_name='specification',
                 request_method='',
                 renderer=''
+            ),
+            VIEWS(
+                attr='swagger_ui',
+                route_name='',
+                request_method='',
+                renderer='pyramid_jsonapi.metadata.OpenAPI:swagger-ui/index.mako'
             )
         ]
 
-    def openapi_view(self, request=None):  # pylint:disable=unused-argument
-        """Return the OpenAPI dict (as a pyramid view).
+    @staticmethod
+    def swagger_ui(request):
+        """Dynamically generate the swagger-ui index.html
+
+        Parameters:
+            request (optional): Pyramid Request object.
+
+        Returns:
+            dict containing variables for template substitution.
+        """
+
+        return {'openapi_url': "{}/specification".format(request.current_route_url())}
+
+    def openapi_spec(self, request=None):  # pylint:disable=unused-argument
+        """Return the OpenAPI specification dict (as a pyramid view).
 
         Parameters:
             request (optional): Pyramid Request object.
