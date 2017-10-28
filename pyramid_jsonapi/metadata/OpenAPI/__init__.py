@@ -1,4 +1,22 @@
-"""Generate OpenAPI documentation from Models, Schema and Endpoint info."""
+"""Generate OpenAPI documentation from Models, Schema and Endpoint info.
+
+This module provides 2 ``metadata`` views:
+
+* ``OpenAPI`` - the Swagger UI.
+* ``OpenAPI/specification`` - the project OpenAPI specification (JSON).
+
+Configuration
+-------------
+
+The config option ``openapi_file`` can be used to provide a JSON or YAML
+file which will be used to update the dynamically generated documentation.
+
+Metadata for the OpenAPI documentation will be extracted from the ``PKG-INFO``
+data provided with the pyramid package that is using ``pyramid_jsonapi``,
+using the ``pkginfo`` module. This requires that the pyramid package can be
+located in the python path (i.e it can be imported).
+
+"""
 
 import functools
 import pkginfo
