@@ -3,6 +3,7 @@
 import functools
 import pkginfo
 import yaml
+from pyramid.renderers import JSON
 
 from pyramid_jsonapi.metadata import VIEWS
 
@@ -15,12 +16,14 @@ class OpenAPI():
         self.metadata = {}
         # Load mako templating
         self.api.config.include('pyramid_mako')
+        self.api.config.add_renderer('json_sorted', JSON(sort_keys=True))
+
         self.views = [
             VIEWS(
                 attr='openapi_spec',
                 route_name='specification',
                 request_method='',
-                renderer=''
+                renderer='json_sorted'
             ),
             VIEWS(
                 attr='swagger_ui',
