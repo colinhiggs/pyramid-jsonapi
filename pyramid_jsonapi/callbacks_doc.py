@@ -1,3 +1,6 @@
+# pylint: skip-file
+
+
 def after_serialise_object(view_instance, obj):
     """Called after a resource object is serialised, before it is returned.
 

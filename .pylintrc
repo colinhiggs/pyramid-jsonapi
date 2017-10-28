@@ -3,4 +3,6 @@ ignored-classes=pyramid_jsonapi.settings.Settings,pyramid_jsonapi.metadata.MetaD
 
 [MESSAGES CONTROL]
 disable=line-too-long,too-few-public-methods
+# 'id' is a JSONAPI specification field name
+good-names=i,j,k,ex,Run,_,id
 
