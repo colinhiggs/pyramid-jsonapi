@@ -15,7 +15,7 @@ env:
 virtualenv:
   system_site_packages: true
 script:
-- pep8 --ignore=E501,E731 pyramid_jsonapi
+- pycodestyle --ignore=E501,E731 pyramid_jsonapi
 - pylint -E --rcfile=.pylintrc pyramid_jsonapi
 - nosetest -v --with-coverage --cover-package=pyramid_jsonapi
 - coveralls
