@@ -11,6 +11,7 @@ requires = [
     'jsonschema',
     'pkginfo',
     'pyramid',
+    'pyramid_mako',
     'pyyaml',
     'SQLAlchemy',
     ]
