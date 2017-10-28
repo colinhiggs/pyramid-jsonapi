@@ -6,22 +6,17 @@ import copy
 import functools
 import importlib
 import itertools
-import json
 import logging
-import pkgutil
 import re
-import sys
 import types
 from collections import deque, Sequence, Mapping
 
 import jsonschema
-import pyramid
 from pyramid.view import (
     view_config,
     notfound_view_config,
     forbidden_view_config
 )
-from pyramid.renderers import JSON
 from pyramid.httpexceptions import (
     exception_response,
     HTTPException,
