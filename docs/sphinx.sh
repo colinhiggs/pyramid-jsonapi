@@ -8,6 +8,8 @@ PATH=bin/:$PATH
 sphinx-apidoc -f -T -e -o docs/source/apidoc pyramid_jsonapi
 # Generate config docs from python method
 python -c 'import pyramid_jsonapi.settings as pjs; s = pjs.Settings({}); print(s.sphinx_doc())' >docs/source/apidoc/settings.inc
+# Get a pylint badge
+wget https://mperlet.de/pybadge/badges/$(pylint pyramid_jsonapi |grep "rated at" |awk '{print $7}' |cut -f 1 -d '/').svg -O docs/source/pylint-badge.svg
 travis-sphinx build
 if [[ $TRAVIS_BRANCH == "master" && -n $TRAVIS_TAG ]]; then
   travis-sphinx deploy
