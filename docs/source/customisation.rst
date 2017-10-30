@@ -31,10 +31,11 @@ This takes the following format:
 
   {
     'item': {
-      'route_pattern_suffix': '{id}',
+      'route_pattern': '{'fields': ['id'], 'pattern': '{{{}}}'}',
       'http_methods': {
         'DELETE': {
           'function': 'delete',
+          'responses'': { HTTPOk: {'reason': ['A server MUST return a 200 OK status code if a deletion request is successful']}},
         },
         'GET': {
           'function': 'get',
@@ -48,8 +49,10 @@ This takes the following format:
   }
 
 * There are 4 ``endpoints`` defined: ``collection``, ``item``, ``relationships`` and ``related``.
-* Each ``endpoint`` may have ``route_pattern_suffix`` defined (if ommitted, defaults to ``''``).
+* Each ``endpoint`` may have ``route_pattern`` defined. This is a list of fields, and the format string used to join them. (``{sep}`` will be replaced with ``route_name_sep``)
 * Each ``endpoint`` may have 0 or more ``http_methods`` defined. (``GET``, ``POST``, etc).
+* Each ``endpoint`` may have ``responses`` defined. This is a dictionary of ``pyramid.httpexceptions`` keys, the value is a dict with ``reason``
+  containing list of reasons for returning this response.
 * Each ``method`` must have ``function`` defined. This is the name (string) of the view function to call for this endpoint.
 * Each ``method`` may have a ``renderer`` defined (if omitted, this defaults to ``'json'``).
 
