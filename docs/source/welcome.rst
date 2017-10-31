@@ -1,1 +1,1 @@
-/home/mrichar1/git/pyramid-jsonapi/README.rst
+../../README.rst
