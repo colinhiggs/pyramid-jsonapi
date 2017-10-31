@@ -702,7 +702,7 @@ class CollectionViewBase:
                 raise HTTPBadRequest(
                     "Relationship '{}' has no 'data' member.".format(relname)
                 )
-            except:
+            except TypeError:
                 raise HTTPBadRequest(
                     "Relationship '{}' is not a dictionary with a data member.".format(relname)
                 )
@@ -1352,7 +1352,7 @@ class CollectionViewBase:
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
         except sqlalchemy.orm.exc.FlushError as exc:
-            if(str(exc).startswith("Can't flush None value")):
+            if str(exc).startswith("Can't flush None value"):
                 raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
             else:
                 # Catch-all. Shouldn't reach here.
@@ -1443,7 +1443,7 @@ class CollectionViewBase:
         rel_view = self.view_instance(rel_class)
         obj = self.dbsession.query(self.model).get(obj_id)
         if rel.direction is MANYTOONE:
-            local_col, rem_col = rel.local_remote_pairs[0]
+            local_col, _ = rel.local_remote_pairs[0]
             resid = data
             if resid is None:
                 setattr(obj, relname, None)
@@ -1488,7 +1488,7 @@ class CollectionViewBase:
         except sqlalchemy.exc.IntegrityError as exc:
             raise HTTPFailedDependency(str(exc))
         except sqlalchemy.orm.exc.FlushError as exc:
-            if(str(exc).startswith("Can't flush None value")):
+            if str(exc).startswith("Can't flush None value"):
                 raise HTTPFailedDependency("One or more objects PATCHed to this relationship do not exist.")
             else:
                 # Catch-all. Shouldn't reach here.
@@ -2477,9 +2477,9 @@ class CollectionViewBase:
         param = self.request.params.get('include')
 
         if param:
-            for i in param.split(','):
+            for item in param.split(','):
                 curname = []
-                for name in i.split('.'):
+                for name in item.split('.'):
                     curname.append(name)
                     inc.add('.'.join(curname))
         return inc
@@ -2500,11 +2500,11 @@ class CollectionViewBase:
         param = self.request.params.get('include')
         bad = set()
         if param:
-            for i in param.split(','):
+            for item in param.split(','):
                 curname = []
                 curview = self
                 tainted = False
-                for name in i.split('.'):
+                for name in item.split('.'):
                     curname.append(name)
                     if tainted:
                         bad.add('.'.join(curname))
