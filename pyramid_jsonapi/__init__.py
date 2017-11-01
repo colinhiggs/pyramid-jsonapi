@@ -62,6 +62,16 @@ MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 
 class PyramidJSONAPI():
+    """Class encapsulating an API.
+
+    Arguments:
+        config (pyramid.config.Configurator): pyramid config object from app.
+        models (module or iterable): a models module or iterable of models.
+
+    Keyword Args:
+        get_dbsession (callable): function accepting an instance of
+            CollectionViewBase and returning a sqlalchemy database session.
+    """
 
     view_classes = {}
 
