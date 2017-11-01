@@ -1,8 +1,51 @@
+.. _getting-started:
+
 Getting Started
 ================
 
+Installation
+------------
+
+* Stable releases are uploaded to pypi:
+  `<https://pypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`_. You
+  can install it in the usual way:
+
+  .. code-block:: bash
+
+    pip install -i pyramid_jsonapi
+
+* Development releases are also uploaded to pypi. These have versions with
+  '.devN' appended, where 'N' is the number of commits since the stable tag. You
+  can install the latest one (perhaps into a virtualenv for play purposes) with
+
+  .. code-block:: bash
+
+    pip install --pre -i pyramid_jsonapi
+
+* Since pyramid_jsonapi is pure python, You can download the development version from
+  `<https://github.com/colinhiggs/pyramid-jsonapi>`_ and add the directory you
+  downloaded/cloned to to your PYTHONPATH.
+
+Generating an API From Your Models
+----------------------------------
+
+First import the `pyramid_jsonapi` module and any model classes or modules which
+you would like to expose as API collection endpoints. In your application's
+`__init__.py`:
+
+.. code-block:: python
+
+  import pyramid_jsonapi
+  from . import models
+
+Then instantiate an api object:
+
+.. code-block:: python
+
+  pj_api = pyramid_jsonapi.PyramidJSONAPI(config, models, [get_db_session])
+
 This is the class that encapsulates a whole API representing a set of models.
-The constructor has three mandatory arguments.
+The constructor has two mandatory and one optional arguments:
 
 * ``config`` is the usual Configurator object used in pyramid.
 
@@ -17,7 +60,7 @@ The constructor has three mandatory arguments.
 
 Once you have an instance of ``PyramidJSONAPI`` you instruct it to build
 endpoints (routes and views) with the method
-``create_jsonapi_using_magic_and_pixie_dust()`` (or ``create_jsonapi()``). This
+``api.create_jsonapi_using_magic_and_pixie_dust()`` (or ``api.create_jsonapi()``). This
 is deliberately a two step affair to give you the chance to manipulate certain
 things (like the list of available endpoints) before the endpoints are
 constructed:
