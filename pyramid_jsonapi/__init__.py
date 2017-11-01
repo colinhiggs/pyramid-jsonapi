@@ -62,6 +62,16 @@ MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 
 class PyramidJSONAPI():
+    """Class encapsulating an API.
+
+    Arguments:
+        config (pyramid.config.Configurator): pyramid config object from app.
+        models (module or iterable): a models module or iterable of models.
+
+    Keyword Args:
+        get_dbsession (callable): function accepting an instance of
+            CollectionViewBase and returning a sqlalchemy database session.
+    """
 
     view_classes = {}
 
@@ -365,6 +375,7 @@ class CollectionViewBase:
 
     @staticmethod
     def id_col(item):
+        """Return the column holding an item's id."""
         return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
     def jsonapi_view(func):  # pylint: disable=no-self-argument
@@ -378,7 +389,7 @@ class CollectionViewBase:
             Else raise a generic 4xx or 5xx error and log the real one.
             """
             @functools.wraps(func)
-            def new_func(self, *args):
+            def new_func(self, *args):  # pylint: disable=missing-docstring
                 ep_dict = self.api.endpoint_data.endpoints
                 # Get route_name from route
                 _, _, endpoint = self.request.matched_route.name.split(':')
