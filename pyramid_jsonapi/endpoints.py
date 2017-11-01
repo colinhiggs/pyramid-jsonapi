@@ -44,16 +44,20 @@ class RoutePatternConstructor():
             new_comps.append(component)
         return self.sep.join(new_comps)
 
-    def api_pattern(self, name, *components):
+    def api_pattern(self, name, rstrip=True, *components):
         """Generate a route pattern from a collection name and suffix components.
 
         Arguments:
             name (str): A collection name.
+            rstrip (bool): Strip trailing separator (defaults to True).
             *components (str): components to add after collection name.
         """
-        return self.pattern_from_components(
+        pattern = self.pattern_from_components(
             '', self.main_prefix, self.api_prefix, name, *components
-        ).rstrip(self.sep)
+        )
+        if rstrip:
+            pattern = pattern.rstrip(self.sep)
+        return pattern
 
     def metadata_pattern(self, metadata_type, *components):
         """Generate a metadata route pattern.
