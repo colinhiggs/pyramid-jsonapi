@@ -375,6 +375,7 @@ class CollectionViewBase:
 
     @staticmethod
     def id_col(item):
+        """Return the column holding an item's id."""
         return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
     def jsonapi_view(func):  # pylint: disable=no-self-argument
