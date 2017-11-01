@@ -44,16 +44,20 @@ class RoutePatternConstructor():
             new_comps.append(component)
         return self.sep.join(new_comps)
 
-    def api_pattern(self, name, *components):
+    def api_pattern(self, name, *components, rstrip=True):
         """Generate a route pattern from a collection name and suffix components.
 
         Arguments:
             name (str): A collection name.
+            rstrip (bool): Strip trailing separator (defaults to True).
             *components (str): components to add after collection name.
         """
-        return self.pattern_from_components(
+        pattern = self.pattern_from_components(
             '', self.main_prefix, self.api_prefix, name, *components
         )
+        if rstrip:
+            pattern = pattern.rstrip(self.sep)
+        return pattern
 
     def metadata_pattern(self, metadata_type, *components):
         """Generate a metadata route pattern.
@@ -98,7 +102,7 @@ class EndpointData():
         # Update this dictionary prior to calling create_jsonapi()
         # 'responses' can be 'global', 'per-endpoint' and 'per-endpoint-method'
         # Mandatory 'endpoint' keys: http_methods
-        # Optional 'endpoint' keys: route_pattern_suffix
+        # Optional 'endpoint' keys: route_pattern
         # Mandatory 'http_method' keys: function
         # Optional 'http_method' keys: renderer
         self.endpoints = {
@@ -142,7 +146,7 @@ class EndpointData():
                     'responses': {
                         HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.']},
                     },
-                    'route_pattern_suffix': '{id}',
+                    'route_pattern': {'fields': ['id'], 'pattern': '{{{}}}'},
                     'http_methods': {
                         'DELETE': {
                             'function': 'delete',
@@ -177,7 +181,7 @@ class EndpointData():
                     'responses': {
                         HTTPBadRequest: {'reason': ['If a server is unable to identify a relationship path or does not support inclusion of resources from a path, it MUST respond with 400 Bad Request.']},
                     },
-                    'route_pattern_suffix': '{id}/{relationship}',
+                    'route_pattern': {'fields': ['id', 'relationship'], 'pattern': '{{{}}}{sep}{{{}}}'},
                     'http_methods': {
                         'GET': {
                             'function': 'related_get',
@@ -193,7 +197,7 @@ class EndpointData():
                         HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch a relationship with a 200 OK response.']},
                         HTTPNotFound: {'reason': ['A server MUST return 404 Not Found when processing a request to fetch a relationship link URL that does not exist.']},
                     },
-                    'route_pattern_suffix': '{id}/relationships/{relationship}',
+                    'route_pattern': {'fields': ['id', 'relationship'], 'pattern': '{{{}}}{sep}relationships{sep}{{{}}}'},
                     'http_methods': {
                         'DELETE': {
                             'function': 'relationships_delete',
@@ -253,6 +257,12 @@ class EndpointData():
             (self.route_name_prefix, name, suffix)
         ).rstrip(self.route_name_sep)
 
+    def route_pattern_to_suffix(self, pattern_dict):
+        """Convert route_pattern dict to suffix string."""
+        if pattern_dict:
+            return pattern_dict['pattern'].format(sep=self.route_pattern_sep, *pattern_dict['fields'])
+        return ''
+
     def add_routes_views(self, view):
         """Generate routes and views from the endpoints data object.
 
@@ -267,8 +277,10 @@ class EndpointData():
             )
             route_pattern = self.rp_constructor.api_pattern(
                 view.collection_name,
-                endpoint_opts.get('route_pattern_suffix', '')
-            ).rstrip(self.rp_constructor.sep)
+                self.route_pattern_to_suffix(
+                    endpoint_opts.get('route_pattern', {})
+                )
+            )
             self.config.add_route(route_name, route_pattern)
             for http_method, method_opts in endpoint_opts['http_methods'].items():
                 self.config.add_view(
