@@ -389,7 +389,7 @@ class CollectionViewBase:
             Else raise a generic 4xx or 5xx error and log the real one.
             """
             @functools.wraps(func)
-            def new_func(self, *args):
+            def new_func(self, *args):  # pylint: disable=missing-docstring
                 ep_dict = self.api.endpoint_data.endpoints
                 # Get route_name from route
                 _, _, endpoint = self.request.matched_route.name.split(':')
