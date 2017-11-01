@@ -44,7 +44,7 @@ class RoutePatternConstructor():
             new_comps.append(component)
         return self.sep.join(new_comps)
 
-    def api_pattern(self, name, rstrip=True, *components):
+    def api_pattern(self, name, *components, rstrip=True):
         """Generate a route pattern from a collection name and suffix components.
 
         Arguments:
