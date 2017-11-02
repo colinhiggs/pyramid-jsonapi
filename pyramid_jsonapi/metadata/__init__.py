@@ -17,7 +17,7 @@ class MetaData():
     Plugins are added by the module name being added to self.modules
     This may be overriden in the pyramid inifile config option
     'pyramid_jsonapi.metadata_modules'
-    Modules specified in thbis wasy should be space or newline separated
+    Modules specified in this way should be space or newline separated
     (see pyramid.settings aslist())
 
     All modules MUST have a class with the same name as the package.
