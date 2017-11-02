@@ -1889,8 +1889,9 @@ class CollectionViewBase:
                     )
                 )
             if isinstance(prop.property, RelationshipProperty):
-                # TODO(Colin): deal with relationships properly.
-                pass
+                # The property indicated is on the other side of a relationship
+                query = query.join(prop)
+                prop = getattr(prop.property.mapper.class_, colspec[1])
             try:
                 filtr = self.api.filter_registry.get_filter(type(prop.type), operator)
             except KeyError:

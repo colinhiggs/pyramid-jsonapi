@@ -1061,6 +1061,12 @@ class TestSpec(DBTestBase):
             for key in item['attributes']['json_content']:
                 self.assertIn(key, containing_json)
 
+    def test_spec_filter_related_property(self):
+        '''Should return collection of posts with author.name=alice.'''
+        data = self.test_app().get('/posts?filter[author.name:eq]=alice').json['data']
+        for item in data:
+            self.assertEqual(item['attributes']['author_name'], 'alice')
+
     ###############################################
     # POST tests.
     ###############################################
