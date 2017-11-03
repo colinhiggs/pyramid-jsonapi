@@ -118,7 +118,7 @@ Assuming you have a colleciton named 'people' and using the rather lovely httpie
 
 .. code-block:: bash
 
-  $ http http://localhost:6543/people
+  $ http http://localhost:6543/api/people
 
   HTTP/1.1 200 OK
   Content-Length: 1387
@@ -136,7 +136,7 @@ Assuming you have a colleciton named 'people' and using the rather lovely httpie
         },
         "id": "1",
         "links": {
-          "self": "http://localhost:6543/people/1"
+          "self": "http://localhost:6543/api/people/1"
         },
         "relationships": {
           "<some_single_relationship>": {
