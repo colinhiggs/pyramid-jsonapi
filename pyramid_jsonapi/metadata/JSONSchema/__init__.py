@@ -6,7 +6,10 @@ import logging
 import pkgutil
 
 import alchemyjsonschema
-from pyramid.httpexceptions import HTTPNotFound
+from pyramid.httpexceptions import (
+    HTTPBadRequest,
+    HTTPNotFound
+)
 from pyramid_jsonapi.metadata import VIEWS
 
 
@@ -105,7 +108,10 @@ class JSONSchema():
             Dictionary containing jsonschema attributes for the endpoint.
         """
         # Hack relevant view_class out of endpoint name
-        view_class = [x for x in self.api.view_classes.values() if x.collection_name == endpoint][0]
+        try:
+            view_class = [x for x in self.api.view_classes.values() if x.collection_name == endpoint][0]
+        except IndexError:
+            raise HTTPBadRequest("Invalid endpoint specified: {}.".format(endpoint))
         classifier = alchemyjsonschema.Classifier(mapping=self.column_to_schema)
         factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker,
                                                   classifier=classifier)
