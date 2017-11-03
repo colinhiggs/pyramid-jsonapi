@@ -11,7 +11,7 @@ A Collection
 
 .. code-block:: bash
 
-  $ http GET http://localhost:6543/posts
+  $ http GET http://localhost:6543/api/posts
 
 
 .. code-block:: json
@@ -27,7 +27,7 @@ A Collection
           "title": "post1: alice.main"
         },
         "links": {
-          "self": "http://localhost:6543/posts/1"
+          "self": "http://localhost:6543/api/posts/1"
         },
         "relationships": {
           "author": {
@@ -36,8 +36,8 @@ A Collection
               "type": "people"
             },
             "links": {
-              "related": "http://localhost:6543/posts/1/author",
-              "self": "http://localhost:6543/posts/1/relationships/author"
+              "related": "http://localhost:6543/api/posts/1/author",
+              "self": "http://localhost:6543/api/posts/1/relationships/author"
             },
             "meta": {
               "direction": "MANYTOONE",
@@ -50,8 +50,8 @@ A Collection
               "type": "blogs"
             },
             "links": {
-              "related": "http://localhost:6543/posts/1/blog",
-              "self": "http://localhost:6543/posts/1/relationships/blog"
+              "related": "http://localhost:6543/api/posts/1/blog",
+              "self": "http://localhost:6543/api/posts/1/relationships/blog"
             },
             "meta": {
               "direction": "MANYTOONE",
@@ -61,8 +61,8 @@ A Collection
           "comments": {
             "data": [],
             "links": {
-              "related": "http://localhost:6543/posts/1/comments",
-              "self": "http://localhost:6543/posts/1/relationships/comments"
+              "related": "http://localhost:6543/api/posts/1/comments",
+              "self": "http://localhost:6543/api/posts/1/relationships/comments"
             },
             "meta": {
               "direction": "ONETOMANY",
@@ -78,9 +78,9 @@ A Collection
       "... 5 more results ..."
     ],
     "links": {
-      "first": "http://localhost:6543/posts?sort=id&page%5Boffset%5D=0",
-      "last": "http://localhost:6543/posts?sort=id&page%5Boffset%5D=0",
-      "self": "http://localhost:6543/posts"
+      "first": "http://localhost:6543/api/posts?sort=id&page%5Boffset%5D=0",
+      "last": "http://localhost:6543/api/posts?sort=id&page%5Boffset%5D=0",
+      "self": "http://localhost:6543/api/posts"
     },
     "meta": {
       "results": {
@@ -126,7 +126,7 @@ A Single Resource
 
 .. code-block:: bash
 
-  $ http GET http://localhost:6543/posts/1
+  $ http GET http://localhost:6543/api/posts/1
 
 Returns a single resource object in ``data`` and no pagination links.
 
@@ -142,7 +142,7 @@ Returns a single resource object in ``data`` and no pagination links.
         "title": "post1: alice.main"
       },
       "links": {
-        "self": "http://localhost:6543/posts/1"
+        "self": "http://localhost:6543/api/posts/1"
       },
       "relationships": {
         "author": {
@@ -151,8 +151,8 @@ Returns a single resource object in ``data`` and no pagination links.
             "type": "people"
           },
           "links": {
-            "related": "http://localhost:6543/posts/1/author",
-            "self": "http://localhost:6543/posts/1/relationships/author"
+            "related": "http://localhost:6543/api/posts/1/author",
+            "self": "http://localhost:6543/api/posts/1/relationships/author"
           },
           "meta": {
             "direction": "MANYTOONE",
@@ -165,8 +165,8 @@ Returns a single resource object in ``data`` and no pagination links.
             "type": "blogs"
           },
           "links": {
-            "related": "http://localhost:6543/posts/1/blog",
-            "self": "http://localhost:6543/posts/1/relationships/blog"
+            "related": "http://localhost:6543/api/posts/1/blog",
+            "self": "http://localhost:6543/api/posts/1/relationships/blog"
           },
           "meta": {
             "direction": "MANYTOONE",
@@ -176,8 +176,8 @@ Returns a single resource object in ``data`` and no pagination links.
         "comments": {
           "data": [],
           "links": {
-            "related": "http://localhost:6543/posts/1/comments",
-            "self": "http://localhost:6543/posts/1/relationships/comments"
+            "related": "http://localhost:6543/api/posts/1/comments",
+            "self": "http://localhost:6543/api/posts/1/relationships/comments"
           },
           "meta": {
             "direction": "ONETOMANY",
@@ -191,7 +191,7 @@ Returns a single resource object in ``data`` and no pagination links.
       }
     },
     "links": {
-      "self": "http://localhost:6543/posts/1"
+      "self": "http://localhost:6543/api/posts/1"
     },
     "meta": {}
   }
@@ -210,7 +210,7 @@ So, to return only the title attribute and author relationship of each post:
 
 .. code-block:: bash
 
-  $ http GET http://localhost:6543/posts?fields[posts]=title,author
+  $ http GET http://localhost:6543/api/posts?fields[posts]=title,author
 
 The resulting json has a ``data`` element with a list of objects something like
 this:
@@ -223,7 +223,7 @@ this:
     },
     "id": "6",
     "links": {
-      "self": "http://localhost:6543/posts/6"
+      "self": "http://localhost:6543/api/posts/6"
     },
     "relationships": {
       "author": {
@@ -232,8 +232,8 @@ this:
           "type": "people"
         },
         "links": {
-          "related": "http://localhost:6543/posts/6/author",
-          "self": "http://localhost:6543/posts/6/relationships/author"
+          "related": "http://localhost:6543/api/posts/6/author",
+          "self": "http://localhost:6543/api/posts/6/relationships/author"
         },
         "meta": {
           "direction": "MANYTOONE",
@@ -253,13 +253,13 @@ Sort posts by title:
 
 .. code-block:: bash
 
-  $ http GET http://localhost:6543/posts?sort=title
+  $ http GET http://localhost:6543/api/posts?sort=title
 
 and in reverse:
 
 .. code-block:: bash
 
-  $ http GET http://localhost:6543/posts?sort=-title
+  $ http GET http://localhost:6543/api/posts?sort=-title
 
 Sorting by multiple attributes (e.g. ``sort=title,content``) and sorting by attributes of related objects (`sort=author.name`) are supported.
 
@@ -272,7 +272,7 @@ You can specify the pagination limit and offset:
 
 .. code-block:: bash
 
-  $ http GET http://localhost:6543/posts?fields[posts]=title\&page[limit]=2\&page[offset]=2
+  $ http GET http://localhost:6543/api/posts?fields[posts]=title\&page[limit]=2\&page[offset]=2
 
 We asked for only the ``title`` field above so that the results would be more
 compact...
@@ -287,7 +287,7 @@ compact...
         },
         "id": "3",
         "links": {
-          "self": "http://localhost:6543/posts/3"
+          "self": "http://localhost:6543/api/posts/3"
         },
         "relationships": {},
         "type": "posts"
@@ -298,18 +298,18 @@ compact...
         },
         "id": "4",
         "links": {
-          "self": "http://localhost:6543/posts/4"
+          "self": "http://localhost:6543/api/posts/4"
         },
         "relationships": {},
         "type": "posts"
       }
     ],
     "links": {
-      "first": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=0",
-      "last": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=4",
-      "next": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=4",
-      "prev": "http://localhost:6543/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=0",
-      "self": "http://localhost:6543/posts?fields[posts]=title&page[limit]=2&page[offset]=2"
+      "first": "http://localhost:6543/api/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=0",
+      "last": "http://localhost:6543/api/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=4",
+      "next": "http://localhost:6543/api/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=4",
+      "prev": "http://localhost:6543/api/posts?page%5Blimit%5D=2&sort=id&page%5Boffset%5D=0",
+      "self": "http://localhost:6543/api/posts?fields[posts]=title&page[limit]=2&page[offset]=2"
     },
     "meta": {
       "results": {
@@ -356,16 +356,16 @@ Find all the people with name 'alice':
 
 .. code-block:: bash
 
-  http GET http://localhost:6543/people?filter[name:eq]=alice
+  http GET http://localhost:6543/api/people?filter[name:eq]=alice
 
 Find all the posts published after 2015-01-03:
 
 .. code-block:: bash
 
-  http GET http://localhost:6543/posts?filter[published_at:gt]=2015-01-03
+  http GET http://localhost:6543/api/posts?filter[published_at:gt]=2015-01-03
 
 Find all the posts with 'bob' somewhere in the title:
 
 .. code-block:: bash
 
-  http GET http://localhost:6543/posts?filter[title:like]=*bob*
+  http GET http://localhost:6543/api/posts?filter[title:like]=*bob*
