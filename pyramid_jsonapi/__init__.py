@@ -421,28 +421,36 @@ class CollectionViewBase:
                     raise
             return new_func
 
-        @view_exceptions
-        @functools.wraps(func)
-        def view_wrapper(self, *args):
-            """jsonapi boilerplate function to wrap decorated functions."""
+        @functools.lru_cache()
+        def get_jsonapi_accepts(request):
+            """Return a list of all 'application/vnd.api' parts of the accept
+            header.
+            """
+            accepts = re.split(
+                r',\s*',
+                request.headers.get('accept', '')
+            )
+            return {
+                a for a in accepts
+                if a.startswith('application/vnd.api')
+            }
+
+        def check_request_headers(request, jsonapi_accepts):
+            """Check that request headers comply with spec.
+
+            Raises:
+                HTTPUnsupportedMediaType
+                HTTPNotAcceptable
+            """
             # Spec says to reject (with 415) any request with media type
             # params.
-            if len(self.request.headers.get('content-type', '').split(';')) > 1:
+            if len(request.headers.get('content-type', '').split(';')) > 1:
                 raise HTTPUnsupportedMediaType(
                     'Media Type parameters not allowed by JSONAPI ' +
                     'spec (http://jsonapi.org/format).'
                 )
-
             # Spec says throw 406 Not Acceptable if Accept header has no
             # application/vnd.api+json entry without parameters.
-            accepts = re.split(
-                r',\s*',
-                self.request.headers.get('accept', '')
-            )
-            jsonapi_accepts = {
-                a for a in accepts
-                if a.startswith('application/vnd.api')
-            }
             if jsonapi_accepts and\
                     'application/vnd.api+json' not in jsonapi_accepts:
                 raise HTTPNotAcceptable(
@@ -451,22 +459,39 @@ class CollectionViewBase:
                     '(http://jsonapi.org/format).'
                 )
 
-            if self.request.content_length:
+        def check_request_valid_json(request):
+            """Check that the body of any request is valid JSON.
+
+            Raises:
+                HTTPBadRequest
+            """
+            if request.content_length:
                 try:
-                    self.request.json_body
+                    request.json_body
                 except ValueError:
                     raise HTTPBadRequest("Body is not valid JSON.")
 
+        def check_request_against_schema(request, schema):
+            """Check that request validates against appropriate schema.
+
+            Raises:
+                HTTPBadRequest
+            """
+            if request.content_length and request.method != 'PATCH':
+                try:
+                    jsonschema.validate(request.json_body, schema)
+                except jsonschema.exceptions.ValidationError as exc:
+                    raise HTTPBadRequest(exc.message)
+
+        @view_exceptions
+        @functools.wraps(func)
+        def view_wrapper(self, *args):
+            """jsonapi boilerplate function to wrap decorated functions."""
+            check_request_headers(self.request, get_jsonapi_accepts(self.request))
+            check_request_valid_json(self.request)
             if self.api.schemas:
                 # Validate request JSON against the JSONAPI jsonschema
-                if self.request.content_length and self.request.method != 'PATCH':
-                    try:
-                        jsonschema.validate(
-                            self.request.json_body,
-                            self.api.schemas['post']
-                        )
-                    except jsonschema.exceptions.ValidationError as exc:
-                        raise HTTPBadRequest(exc.message)
+                check_request_against_schema(self.request, self.api.schemas['post'])
 
             # Spec says throw BadRequest if any include paths reference non
             # existent attributes or relationships.
@@ -495,7 +520,7 @@ class CollectionViewBase:
                 if self.api.settings.debug_meta:
                     debug = {
                         'accept_header': {
-                            a: None for a in jsonapi_accepts
+                            a: None for a in get_jsonapi_accepts(self.request)
                         },
                         'qinfo_page':
                             self.collection_query_info(self.request)['_page'],
