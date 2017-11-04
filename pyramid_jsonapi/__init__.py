@@ -423,7 +423,7 @@ class CollectionViewBase:
 
         @functools.lru_cache()
         def get_jsonapi_accepts(request):
-            """Return a list of all 'application/vnd.api' parts of the accept
+            """Return a set of all 'application/vnd.api' parts of the accept
             header.
             """
             accepts = re.split(
