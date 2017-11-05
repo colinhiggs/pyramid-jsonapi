@@ -1581,7 +1581,6 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        self.dbsession = self.dbsession()
         obj_id = self.request.matchdict['id']
         relname = self.request.matchdict['relationship']
         mapper = sqlalchemy.inspect(self.model).mapper
