@@ -591,6 +591,146 @@ class CollectionViewBase:
             ret = callback(self, ret)
         return ret
 
+    def patch_check_request(self):
+        """Perform initial checks on a PATCH request."""
+        if not self.object_exists(self.request.matchdict['id']):
+            raise HTTPNotFound(
+                'Cannot PATCH a non existent resource ({}/{})'.format(
+                    self.collection_name, self.request.matchdict['id']
+                )
+            )
+
+        try:
+            data = self.request.json_body['data']
+        except KeyError:
+            raise HTTPBadRequest('data attribute required in PATCHes.')
+
+        if self.collection_name != data.get('type'):
+            raise HTTPConflict(
+                'JSON type ({}) does not match URL type ({}).'.format(
+                    data.get('type'), self.collection_name
+                )
+            )
+
+        req_id = self.request.matchdict['id']
+        data_id = data.get('id')
+        if data_id != req_id:
+            raise HTTPConflict(
+                'JSON id ({}) does not match URL id ({}).'.format(
+                    data_id, req_id
+                )
+            )
+
+    def patch_gen_attributes(self, data):
+        """Return ({dict of attribute name/val}, {dict of hybrid att name/val})."""
+        atts = {}
+        hybrid_atts = {}
+        for key, value in data.get('attributes', {}).items():
+            if key in self.attributes:
+                atts[key] = value
+            elif key in self.hybrid_attributes:
+                hybrid_atts[key] = value
+            else:
+                raise HTTPNotFound(
+                    'Collection {} has no attribute {}'.format(
+                        self.collection_name, key
+                    )
+                )
+        atts[self.key_column.name] = data['id']
+        return (atts, hybrid_atts)
+
+    def patch_update_item(self, atts, hybrid_atts):
+        """Update database item with information in atts and hybrid_atts."""
+        item = self.dbsession.merge(self.model(**atts))
+        for att, value in hybrid_atts.items():
+            try:
+                setattr(item, att, value)
+            except AttributeError:
+                raise HTTPConflict(
+                    'Attribute {} is read only.'.format(
+                        att
+                    )
+                )
+        return item
+
+    def patch_update_relationships(self, item, rels):
+        """Update database with any relationship changes."""
+        data = self.request.json_body['data']
+        for relname, reldict in rels.items():
+            if relname not in self.relationships:
+                raise HTTPNotFound(
+                    'Collection {} has no relationship {}'.format(
+                        self.collection_name, relname
+                    )
+                )
+            rel = self.relationships[relname]
+            rel_class = rel.mapper.class_
+            rel_view = self.view_instance(rel_class)
+            try:
+                data = reldict['data']
+            except KeyError:
+                raise HTTPBadRequest(
+                    "Relationship '{}' has no 'data' member.".format(relname)
+                )
+            except TypeError:
+                raise HTTPBadRequest(
+                    "Relationship '{}' is not a dictionary with a data member.".format(relname)
+                )
+            if data is None:
+                setattr(item, relname, None)
+            elif isinstance(data, dict):
+                if data.get('type') != rel_view.collection_name:
+                    raise HTTPConflict(
+                        'Type {} does not match relationship type {}'.format(
+                            data.get('type', None), rel_view.collection_name
+                        )
+                    )
+                if data.get('id') is None:
+                    raise HTTPBadRequest(
+                        'An id is required in a resource identifier.'
+                    )
+                rel_item = self.dbsession.query(
+                    rel_class
+                ).options(
+                    load_only(rel_view.key_column.name)
+                ).get(data['id'])
+                if not rel_item:
+                    raise HTTPNotFound('{}/{} not found'.format(
+                        rel_view.collection_name, data['id']
+                    ))
+                setattr(item, relname, rel_item)
+            elif isinstance(data, list):
+                rel_items = []
+                for res_ident in data:
+                    rel_item = self.dbsession.query(
+                        rel_class
+                    ).options(
+                        load_only(rel_view.key_column.name)
+                    ).get(res_ident['id'])
+                    if not rel_item:
+                        raise HTTPNotFound('{}/{} not found'.format(
+                            rel_view.collection_name, res_ident['id']
+                        ))
+                    rel_items.append(rel_item)
+                setattr(item, relname, rel_items)
+
+    def patch_construct_document(self, atts, hybrid_atts, rels):
+        """Construct JSON response document for PATCH request."""
+        doc = pyramid_jsonapi.jsonapi.Document()
+        doc.meta = {
+            'updated': {
+                'attributes': [
+                    att for att in itertools.chain(atts, hybrid_atts)
+                    if att != self.key_column.name
+                ],
+                'relationships': [r for r in rels]
+            }
+        }
+        # if an update is successful ... the server
+        # responds only with top-level meta data
+        doc.filter_keys = {'meta': {}}
+        return doc
+
     @jsonapi_view
     def patch(self):
         """Handle PATCH request for a single item.
@@ -665,131 +805,19 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         """
-        if not self.object_exists(self.request.matchdict['id']):
-            raise HTTPNotFound(
-                'Cannot PATCH a non existent resource ({}/{})'.format(
-                    self.collection_name, self.request.matchdict['id']
-                )
-            )
-        try:
-            data = self.request.json_body['data']
-        except KeyError:
-            raise HTTPBadRequest('data attribute required in PATCHes.')
-        req_id = self.request.matchdict['id']
-        data_id = data.get('id')
-        if self.collection_name != data.get('type'):
-            raise HTTPConflict(
-                'JSON type ({}) does not match URL type ({}).'.format(
-                    data.get('type'), self.collection_name
-                )
-            )
-        if data_id != req_id:
-            raise HTTPConflict(
-                'JSON id ({}) does not match URL id ({}).'.format(
-                    data_id, req_id
-                )
-            )
+        self.patch_check_request()
+
+        data = self.request.json_body['data']
         for callback in self.callbacks['before_patch']:
             data = callback(self, data)
-        atts = {}
-        hybrid_atts = {}
-        for key, value in data.get('attributes', {}).items():
-            if key in self.attributes:
-                atts[key] = value
-            elif key in self.hybrid_attributes:
-                hybrid_atts[key] = value
-            else:
-                raise HTTPNotFound(
-                    'Collection {} has no attribute {}'.format(
-                        self.collection_name, key
-                    )
-                )
-        atts[self.key_column.name] = req_id
-        item = self.dbsession.merge(self.model(**atts))
-        for att, value in hybrid_atts.items():
-            try:
-                setattr(item, att, value)
-            except AttributeError:
-                raise HTTPConflict(
-                    'Attribute {} is read only.'.format(
-                        att
-                    )
-                )
 
+        atts, hybrid_atts = self.patch_gen_attributes(data)
+        item = self.patch_update_item(atts, hybrid_atts)
         rels = data.get('relationships', {})
-        for relname, reldict in rels.items():
-            if relname not in self.relationships:
-                raise HTTPNotFound(
-                    'Collection {} has no relationship {}'.format(
-                        self.collection_name, relname
-                    )
-                )
-            rel = self.relationships[relname]
-            rel_class = rel.mapper.class_
-            rel_view = self.view_instance(rel_class)
-            try:
-                data = reldict['data']
-            except KeyError:
-                raise HTTPBadRequest(
-                    "Relationship '{}' has no 'data' member.".format(relname)
-                )
-            except TypeError:
-                raise HTTPBadRequest(
-                    "Relationship '{}' is not a dictionary with a data member.".format(relname)
-                )
-            if data is None:
-                setattr(item, relname, None)
-            elif isinstance(data, dict):
-                if data.get('type') != rel_view.collection_name:
-                    raise HTTPConflict(
-                        'Type {} does not match relationship type {}'.format(
-                            data.get('type', None), rel_view.collection_name
-                        )
-                    )
-                if data.get('id') is None:
-                    raise HTTPBadRequest(
-                        'An id is required in a resource identifier.'
-                    )
-                rel_item = self.dbsession.query(
-                    rel_class
-                ).options(
-                    load_only(rel_view.key_column.name)
-                ).get(data['id'])
-                if not rel_item:
-                    raise HTTPNotFound('{}/{} not found'.format(
-                        rel_view.collection_name, data['id']
-                    ))
-                setattr(item, relname, rel_item)
-            elif isinstance(data, list):
-                rel_items = []
-                for res_ident in data:
-                    rel_item = self.dbsession.query(
-                        rel_class
-                    ).options(
-                        load_only(rel_view.key_column.name)
-                    ).get(res_ident['id'])
-                    if not rel_item:
-                        raise HTTPNotFound('{}/{} not found'.format(
-                            rel_view.collection_name, res_ident['id']
-                        ))
-                    rel_items.append(rel_item)
-                setattr(item, relname, rel_items)
-
+        self.patch_update_relationships(item, rels)
         self.dbsession.flush()
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.meta = {
-            'updated': {
-                'attributes': [
-                    att for att in atts
-                    if att != self.key_column.name
-                ],
-                'relationships': [r for r in rels]
-            }
-        }
-        # if an update is successful ... the server
-        # responds only with top-level meta data
-        doc.filter_keys = {'meta': {}}
-        return doc
+
+        return self.patch_construct_document(atts, hybrid_atts, rels)
 
     @jsonapi_view
     def delete(self):
