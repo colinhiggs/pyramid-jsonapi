@@ -290,3 +290,13 @@ class EndpointData():
                     route_name=route_name,
                     renderer=method_opts.get('renderer', 'json')
                 )
+
+    def recurse_for_key(self, name, dictionary=None):
+        """Generator to recursively fetch the value for all entries of a key."""
+        if not dictionary:
+            dictionary = self.endpoints
+        for key, value in dictionary.items():
+            if key == name:
+                yield value
+            elif isinstance(value, dict):
+                yield from self.recurse_for_key(name, value)
