@@ -390,7 +390,7 @@ class CollectionViewBase:
             Else raise a generic 4xx or 5xx error and log the real one.
             """
             @functools.wraps(func)
-            def new_func(self, *args):  # pylint: disable=missing-docstring
+            def new_func(self):  # pylint: disable=missing-docstring
                 ep_dict = self.api.endpoint_data.endpoints
                 # Get route_name from route
                 _, _, endpoint = self.request.matched_route.name.split(':')
@@ -401,7 +401,7 @@ class CollectionViewBase:
                     ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
                 )
                 try:
-                    result = func(self, *args)  # pylint: disable=not-callable
+                    result = func(self)  # pylint: disable=not-callable
                     response_class = status_map[self.request.response.status_code]
                     if response_class not in responses:
                         logging.error(
@@ -491,7 +491,7 @@ class CollectionViewBase:
 
         @view_exceptions
         @functools.wraps(func)
-        def view_wrapper(self, *args):
+        def view_wrapper(self):
             """jsonapi boilerplate function to wrap decorated functions."""
             check_request_headers(self.request, get_jsonapi_accepts(self.request))
             check_request_valid_json(self.request)
@@ -547,7 +547,7 @@ class CollectionViewBase:
                 self.rel_view = self.view_instance(self.rel_class)
 
             # Update the dictionary with the reults of the wrapped method.
-            ret = (func(self, *args))  # pylint:disable=not-callable
+            ret = func(self)  # pylint:disable=not-callable
             if ret:
                 # Include a self link unless the method is PATCH.
                 if self.request.method != 'PATCH':
