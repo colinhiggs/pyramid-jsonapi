@@ -7,6 +7,7 @@ import logging
 import pkgutil
 
 import alchemyjsonschema
+import jsonschema
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPNotFound
@@ -136,7 +137,6 @@ class JSONSchema():
 
         return schema
 
-
     def endpoint_schema_view(self, request):
         """Pyramid view for endpoint_schema.
         Parameters:
@@ -180,3 +180,19 @@ class JSONSchema():
         props['type']['pattern'] = "^{}$".format(endpoint)
 
         return schema
+
+    def validate(self, json_body, method='get'):
+        """Validate schema against jsonschema."""
+
+        method = method.lower()
+        # TODO: How do we validate PATCH requests?
+        if method != 'patch':
+            schm = self.schema
+            if method == 'post':
+                schm = copy.deepcopy(self.schema)
+                # POSTs should not have an id
+                schm['definitions']['resource']['required'].remove('id')
+            try:
+                jsonschema.validate(json_body, schm)
+            except (jsonschema.exceptions.ValidationError) as exc:
+                raise HTTPBadRequest(str(exc))

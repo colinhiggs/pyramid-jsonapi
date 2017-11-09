@@ -11,7 +11,6 @@ import re
 import types
 from collections import deque, Sequence, Mapping
 
-import jsonschema
 from pyramid.view import (
     view_config,
     notfound_view_config,
@@ -78,7 +77,6 @@ class PyramidJSONAPI():
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
         self.filter_registry = FilterRegistry()
         self.metadata = pyramid_jsonapi.metadata.MetaData(self)
-        self.schemas = None
         # Register standard supported filter operators
         for comparator_name in (
                 '__eq__',
@@ -113,17 +111,6 @@ class PyramidJSONAPI():
                 comparator_name,
                 column_type=JSONB
             )
-
-        # Add schema if pyramid_jsonapi.schema_validation is not 'false'
-        if self.settings.schema_validation:
-            schema = self.metadata.JSONSchema.template()
-            # POST uses full schema, may omit 'id'
-            post_schema = copy.deepcopy(schema)
-            post_schema['definitions']['resource']['required'].remove('id')
-            self.schemas = {
-                'full': schema,
-                'post': post_schema
-            }
 
     @staticmethod
     def error(exc, request):
@@ -357,7 +344,6 @@ class CollectionViewBase:
     request = None
     relationships = None
     view_classes = None
-    schemas = None
     settings = None
 
     def __init__(self, request):
@@ -471,27 +457,16 @@ class CollectionViewBase:
                 except ValueError:
                     raise HTTPBadRequest("Body is not valid JSON.")
 
-        def check_request_against_schema(request, schema):
-            """Check that request validates against appropriate schema.
-
-            Raises:
-                HTTPBadRequest
-            """
-            if request.content_length and request.method != 'PATCH':
-                try:
-                    jsonschema.validate(request.json_body, schema)
-                except jsonschema.exceptions.ValidationError as exc:
-                    raise HTTPBadRequest(exc.message)
-
         @view_exceptions
         @functools.wraps(func)
         def view_wrapper(self, *args):
             """jsonapi boilerplate function to wrap decorated functions."""
             check_request_headers(self.request, get_jsonapi_accepts(self.request))
             check_request_valid_json(self.request)
-            if self.api.schemas:
+
+            if self.request.content_length and self.api.settings.schema_validation:
                 # Validate request JSON against the JSONAPI jsonschema
-                check_request_against_schema(self.request, self.api.schemas['post'])
+                self.api.metadata.JSONSchema.validate(self.request.json_body, self.request.method)
 
             # Spec says throw BadRequest if any include paths reference non
             # existent attributes or relationships.
