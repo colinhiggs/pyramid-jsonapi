@@ -118,7 +118,7 @@ class JSONSchema():
         try:
             view_class = [x for x in self.api.view_classes.values() if x.collection_name == endpoint][0]
         except IndexError:
-            raise HTTPBadRequest("Invalid endpoint specified: {}.".format(endpoint))
+            raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
         classifier = alchemyjsonschema.Classifier(mapping=self.column_to_schema)
         factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker,
                                                   classifier=classifier)
@@ -128,12 +128,11 @@ class JSONSchema():
         except alchemyjsonschema.InvalidStatus as exc:
             logging.warning("Schema Error: %s", exc)
 
-
-
         # Remove 'id' attribute
-        del schema['properties']['id']
-        if 'id' in schema['required']:
-            schema['required'].remove('id')
+        if 'properties' in schema:
+            del schema['properties']['id']
+            if 'id' in schema['required']:
+                schema['required'].remove('id')
 
         return schema
 
