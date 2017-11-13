@@ -338,11 +338,17 @@ class CollectionViewBase:
     fields = None
     dbsession = None
     hybrid_attributes = None
+    item = None
     key_column = None
     max_limit = None
     model = lambda: None
+    obj_id = None
     request = None
+    rel = None
+    rel_class = None
+    rel_view = None
     relationships = None
+    relname = None
     view_classes = None
     settings = None
 
@@ -370,7 +376,7 @@ class CollectionViewBase:
             Else raise a generic 4xx or 5xx error and log the real one.
             """
             @functools.wraps(func)
-            def new_func(self, *args):  # pylint: disable=missing-docstring
+            def new_func(self):  # pylint: disable=missing-docstring
                 ep_dict = self.api.endpoint_data.endpoints
                 # Get route_name from route
                 _, _, endpoint = self.request.matched_route.name.split(':')
@@ -381,7 +387,7 @@ class CollectionViewBase:
                     ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
                 )
                 try:
-                    result = func(self, *args)  # pylint: disable=not-callable
+                    result = func(self)  # pylint: disable=not-callable
                     response_class = status_map[self.request.response.status_code]
                     if response_class not in responses:
                         logging.error(
@@ -459,7 +465,7 @@ class CollectionViewBase:
 
         @view_exceptions
         @functools.wraps(func)
-        def view_wrapper(self, *args):
+        def view_wrapper(self):
             """jsonapi boilerplate function to wrap decorated functions."""
             check_request_headers(self.request, get_jsonapi_accepts(self.request))
             check_request_valid_json(self.request)
@@ -480,8 +486,43 @@ class CollectionViewBase:
             # Spec says set Content-Type to application/vnd.api+json.
             self.request.response.content_type = 'application/vnd.api+json'
 
+            # Extract id and relationship from route, if provided
+            self.obj_id = self.request.matchdict.get('id', None)
+            self.relname = self.request.matchdict.get('relationship', None)
+
+            if self.obj_id:
+                # Try to get the object
+                try:
+                    self.item = self.single_return(
+                        self.single_item_query(),
+                        'No id {} in collection {}'.format(
+                            self.obj_id,
+                            self.collection_name
+                        )
+                    )
+                except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
+                    # DataError is caused by e.g. id (int) = cat
+                    # StatementError is caused by e.g. id (uuid) = 1
+                    raise HTTPNotFound('Object {} not found in collection {}'.format(
+                        self.obj_id,
+                        self.collection_name
+                    ))
+
+            if self.relname:
+                # Gather relationship info
+                mapper = sqlalchemy.inspect(self.model).mapper
+                try:
+                    self.rel = mapper.relationships[self.relname]
+                except KeyError:
+                    raise HTTPNotFound('No relationship {} in collection {}'.format(
+                        self.relname,
+                        self.collection_name
+                    ))
+                self.rel_class = self.rel.mapper.class_
+                self.rel_view = self.view_instance(self.rel_class)
+
             # Update the dictionary with the reults of the wrapped method.
-            ret = (func(self, *args))  # pylint:disable=not-callable
+            ret = func(self)  # pylint:disable=not-callable
             if ret:
                 # Include a self link unless the method is PATCH.
                 if self.request.method != 'PATCH':
@@ -545,26 +586,9 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people/1
         """
-        try:
-            ret = self.single_return(
-                self.single_item_query,
-                'No id {} in collection {}'.format(
-                    self.request.matchdict['id'],
-                    self.collection_name
-                )
-            )
-        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
-            # DataError is caused by e.g. id (int) = cat
-            # StatementError is caused by e.g. id (uuid) = 1
-            raise HTTPNotFound(
-                'Cannot find resource ({}/{})'.format(
-                    self.collection_name, self.request.matchdict['id']
-                )
-            )
-
         for callback in self.callbacks['after_get']:
-            ret = callback(self, ret)
-        return ret
+            self.item = callback(self, self.item)
+        return self.item
 
     @jsonapi_view
     def patch(self):
@@ -640,17 +664,10 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         """
-        if not self.object_exists(self.request.matchdict['id']):
-            raise HTTPNotFound(
-                'Cannot PATCH a non existent resource ({}/{})'.format(
-                    self.collection_name, self.request.matchdict['id']
-                )
-            )
         try:
             data = self.request.json_body['data']
         except KeyError:
             raise HTTPBadRequest('data attribute required in PATCHes.')
-        req_id = self.request.matchdict['id']
         data_id = data.get('id')
         if self.collection_name != data.get('type'):
             raise HTTPConflict(
@@ -658,10 +675,10 @@ class CollectionViewBase:
                     data.get('type'), self.collection_name
                 )
             )
-        if data_id != req_id:
+        if data_id != self.obj_id:
             raise HTTPConflict(
                 'JSON id ({}) does not match URL id ({}).'.format(
-                    data_id, req_id
+                    data_id, self.obj_id
                 )
             )
         for callback in self.callbacks['before_patch']:
@@ -679,7 +696,7 @@ class CollectionViewBase:
                         self.collection_name, key
                     )
                 )
-        atts[self.key_column.name] = req_id
+        atts[self.key_column.name] = self.obj_id
         item = self.dbsession.merge(self.model(**atts))
         for att, value in hybrid_atts.items():
             try:
@@ -792,41 +809,19 @@ class CollectionViewBase:
         """
 
         doc = pyramid_jsonapi.jsonapi.Document()
+        item = self.single_item_query(loadonly=[self.key_column.name]).one()
+        for callback in self.callbacks['before_delete']:
+            callback(self, item)
         try:
-            item = self.dbsession.query(
-                self.model
-            ).options(
-                load_only(self.key_column.name)
-            ).get(
-                self.request.matchdict['id']
-            )
-        except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
-            raise HTTPNotFound(
-                'Cannot DELETE a non existent resource ({}/{})'.format(
-                    self.collection_name, self.request.matchdict['id']
-                )
-            )
-
-        if item:
-            for callback in self.callbacks['before_delete']:
-                callback(self, item)
-            try:
-                self.dbsession.delete(item)
-                self.dbsession.flush()
-            except sqlalchemy.exc.IntegrityError as exc:
-                raise HTTPFailedDependency(str(exc))
-            doc.update({
-                'data': self.serialise_resource_identifier(
-                    self.request.matchdict['id']
-                )})
-            return doc
-
-        else:
-            raise HTTPNotFound(
-                'Cannot DELETE a non existent resource ({}/{})'.format(
-                    self.collection_name, self.request.matchdict['id']
-                )
-            )
+            self.dbsession.delete(item)
+            self.dbsession.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPFailedDependency(str(exc))
+        doc.update({
+            'data': self.serialise_resource_identifier(
+                self.obj_id
+            )})
+        return doc
 
     @jsonapi_view
     def collection_get(self):
@@ -1117,33 +1112,13 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/posts/1/author
         """
-        obj_id = self.request.matchdict['id']
-        relname = self.request.matchdict['relationship']
-        mapper = sqlalchemy.inspect(self.model).mapper
-        try:
-            rel = mapper.relationships[relname]
-        except KeyError:
-            raise HTTPNotFound('No relationship {} in collection {}'.format(
-                relname,
-                self.collection_name
-            ))
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-
-        # Check that the original resource exists.
-        if not self.object_exists(obj_id):
-            raise HTTPNotFound('Object {} not found in collection {}'.format(
-                obj_id,
-                self.collection_name
-            ))
-
         # Set up the query
-        query = self.related_query(obj_id, rel)
+        query = self.related_query(self.obj_id, self.rel)
 
-        if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-            query = rel_view.query_add_sorting(query)
-            query = rel_view.query_add_filtering(query)
-            qinfo = rel_view.collection_query_info(self.request)
+        if self.rel.direction is ONETOMANY or self.rel.direction is MANYTOMANY:
+            query = self.rel_view.query_add_sorting(query)
+            query = self.rel_view.query_add_filtering(query)
+            qinfo = self.rel_view.collection_query_info(self.request)
             try:
                 count = query.count()
             except sqlalchemy.exc.ProgrammingError:
@@ -1152,9 +1127,9 @@ class CollectionViewBase:
                 )
             query = query.offset(qinfo['page[offset]'])
             query = query.limit(qinfo['page[limit]'])
-            ret = rel_view.collection_return(query, count=count)
+            ret = self.rel_view.collection_return(query, count=count)
         else:
-            ret = rel_view.single_return(query)
+            ret = self.rel_view.single_return(query)
 
         # Alter return dict with any callbacks.
         for callback in self.callbacks['after_related_get']:
@@ -1216,33 +1191,13 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/posts/1/relationships/author
         """
-        obj_id = self.request.matchdict['id']
-        relname = self.request.matchdict['relationship']
-        mapper = sqlalchemy.inspect(self.model).mapper
-        try:
-            rel = mapper.relationships[relname]
-        except KeyError:
-            raise HTTPNotFound('No relationship {} in collection {}'.format(
-                relname,
-                self.collection_name
-            ))
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-
-        # Check that the original resource exists.
-        if not self.object_exists(obj_id):
-            raise HTTPNotFound('Object {} not found in collection {}'.format(
-                obj_id,
-                self.collection_name
-            ))
-
         # Set up the query
-        query = self.related_query(obj_id, rel, full_object=False)
+        query = self.related_query(self.obj_id, self.rel, full_object=False)
 
-        if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-            query = rel_view.query_add_sorting(query)
-            query = rel_view.query_add_filtering(query)
-            qinfo = rel_view.collection_query_info(self.request)
+        if self.rel.direction is ONETOMANY or self.rel.direction is MANYTOMANY:
+            query = self.rel_view.query_add_sorting(query)
+            query = self.rel_view.query_add_filtering(query)
+            qinfo = self.rel_view.collection_query_info(self.request)
             try:
                 count = query.count()
             except sqlalchemy.exc.ProgrammingError:
@@ -1251,13 +1206,13 @@ class CollectionViewBase:
                 )
             query = query.offset(qinfo['page[offset]'])
             query = query.limit(qinfo['page[limit]'])
-            ret = rel_view.collection_return(
+            ret = self.rel_view.collection_return(
                 query,
                 count=count,
                 identifiers=True
             )
         else:
-            ret = rel_view.single_return(query, identifier=True)
+            ret = self.rel_view.single_return(query, identifier=True)
 
         # Alter return dict with any callbacks.
         for callback in self.callbacks['after_relationships_get']:
@@ -1319,17 +1274,7 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        obj_id = self.request.matchdict['id']
-        relname = self.request.matchdict['relationship']
-        mapper = sqlalchemy.inspect(self.model).mapper
-        try:
-            rel = mapper.relationships[relname]
-        except KeyError:
-            raise HTTPNotFound('No relationship {} in collection {}'.format(
-                relname,
-                self.collection_name
-            ))
-        if rel.direction is MANYTOONE:
+        if self.rel.direction is MANYTOONE:
             raise HTTPForbidden('Cannot POST to TOONE relationship link.')
 
         # Alter data with any callbacks
@@ -1337,22 +1282,20 @@ class CollectionViewBase:
         for callback in self.callbacks['before_relationships_post']:
             data = callback(self, data)
 
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-        obj = self.dbsession.query(self.model).get(obj_id)
+        obj = self.dbsession.query(self.model).get(self.obj_id)
         items = []
         for resid in data:
-            if resid['type'] != rel_view.collection_name:
+            if resid['type'] != self.rel_view.collection_name:
                 raise HTTPConflict(
                     "Resource identifier type '{}' does not match relationship type '{}'.".format(
-                        resid['type'], rel_view.collection_name
+                        resid['type'], self.rel_view.collection_name
                     )
                 )
             try:
-                items.append(self.dbsession.query(rel_class).get(resid['id']))
+                items.append(self.dbsession.query(self.rel_class).get(resid['id']))
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-        getattr(obj, relname).extend(items)
+        getattr(obj, self.relname).extend(items)
         try:
             self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
@@ -1429,36 +1372,23 @@ class CollectionViewBase:
                     { "type": "comments", "id": "2" }
                 ]' Content-Type:application/vnd.api+json
         """
-        obj_id = self.request.matchdict['id']
-        relname = self.request.matchdict['relationship']
-        mapper = sqlalchemy.inspect(self.model).mapper
-        try:
-            rel = mapper.relationships[relname]
-        except KeyError:
-            raise HTTPNotFound('No relationship {} in collection {}'.format(
-                relname,
-                self.collection_name
-            ))
-
         # Alter data with any callbacks
         data = self.request.json_body['data']
         for callback in self.callbacks['before_relationships_patch']:
             data = callback(self, data)
 
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-        obj = self.dbsession.query(self.model).get(obj_id)
-        if rel.direction is MANYTOONE:
-            local_col, _ = rel.local_remote_pairs[0]
+        obj = self.dbsession.query(self.model).get(self.obj_id)
+        if self.rel.direction is MANYTOONE:
+            local_col, _ = self.rel.local_remote_pairs[0]
             resid = data
             if resid is None:
-                setattr(obj, relname, None)
+                setattr(obj, self.relname, None)
             else:
-                if resid['type'] != rel_view.collection_name:
+                if resid['type'] != self.rel_view.collection_name:
                     raise HTTPConflict(
                         "Resource identifier type '{}' does not match relationship type '{}'.".format(
                             resid['type'],
-                            rel_view.collection_name
+                            self.rel_view.collection_name
                         )
                     )
                 setattr(
@@ -1477,18 +1407,18 @@ class CollectionViewBase:
             return {}
         items = []
         for resid in self.request.json_body['data']:
-            if resid['type'] != rel_view.collection_name:
+            if resid['type'] != self.rel_view.collection_name:
                 raise HTTPConflict(
                     "Resource identifier type '{}' does not match relationship type '{}'.".format(
                         resid['type'],
-                        rel_view.collection_name
+                        self.rel_view.collection_name
                     )
                 )
             try:
-                items.append(self.dbsession.query(rel_class).get(resid['id']))
+                items.append(self.dbsession.query(self.rel_class).get(resid['id']))
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-        setattr(obj, relname, items)
+        setattr(obj, self.relname, items)
         try:
             self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
@@ -1556,41 +1486,29 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        obj_id = self.request.matchdict['id']
-        relname = self.request.matchdict['relationship']
-        mapper = sqlalchemy.inspect(self.model).mapper
-        try:
-            rel = mapper.relationships[relname]
-        except KeyError:
-            raise HTTPNotFound('No relationship {} in collection {}'.format(
-                relname,
-                self.collection_name
-            ))
-        if rel.direction is MANYTOONE:
+        if self.rel.direction is MANYTOONE:
             raise HTTPForbidden('Cannot DELETE to TOONE relationship link.')
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-        obj = self.dbsession.query(self.model).get(obj_id)
+        obj = self.dbsession.query(self.model).get(self.obj_id)
 
         # Call callbacks
         for callback in self.callbacks['before_relationships_delete']:
             callback(self, obj)
 
         for resid in self.request.json_body['data']:
-            if resid['type'] != rel_view.collection_name:
+            if resid['type'] != self.rel_view.collection_name:
                 raise HTTPConflict(
                     "Resource identifier type '{}' does not match relationship type '{}'.".format(
-                        resid['type'], rel_view.collection_name
+                        resid['type'], self.rel_view.collection_name
                     )
                 )
             try:
-                item = self.dbsession.query(rel_class).get(resid['id'])
+                item = self.dbsession.query(self.rel_class).get(resid['id'])
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
             if item is None:
                 raise HTTPFailedDependency("One or more objects DELETEd from this relationship do not exist.")
             try:
-                getattr(obj, relname).remove(item)
+                getattr(obj, self.relname).remove(item)
             except ValueError as exc:
                 if exc.args[0].endswith(': x not in list'):
                     # The item we were asked to remove is not there.
@@ -1603,8 +1521,7 @@ class CollectionViewBase:
             raise HTTPFailedDependency(str(exc))
         return {}
 
-    @property
-    def single_item_query(self):
+    def single_item_query(self, loadonly=None):
         """A query representing the single item referenced by the request.
 
         **URL (matchdict) Parameters**
@@ -1615,12 +1532,14 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch item with id
             'id'.
         """
+        if not loadonly:
+            loadonly = self.allowed_requested_query_columns.keys()
         return self.dbsession.query(
             self.model
         ).options(
-            load_only(*self.allowed_requested_query_columns.keys())
+            load_only(*loadonly)
         ).filter(
-            self.id_col(self.model) == self.request.matchdict['id']
+            self.id_col(self.model) == self.obj_id
         )
 
     def single_return(self, query, not_found_message=None, identifier=False):
