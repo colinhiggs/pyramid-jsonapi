@@ -4,13 +4,16 @@
 cd "$(dirname $0)/.."
 
 PATH=bin/:$PATH
+SOURCE=docs/source
+TARGET=docs/build
 
-sphinx-apidoc -f -T -e -o docs/source/apidoc pyramid_jsonapi
+sphinx-apidoc -f -T -e -o ${SOURCE}/apidoc pyramid_jsonapi
 # Generate config docs from python method
 python -c 'import pyramid_jsonapi.settings as pjs; s = pjs.Settings({}); print(s.sphinx_doc())' >docs/source/apidoc/settings.inc
-travis-sphinx build --source=docs/source
+travis-sphinx build --source=${SOURCE} --outdir=${TARGET}
 # Get a pylint badge
-wget https://mperlet.de/pybadge/badges/$(pylint pyramid_jsonapi |grep "rated at" |awk '{print $7}' |cut -f 1 -d '/').svg -O doc/build/pylint-badge.svg
+wget https://mperlet.de/pybadge/badges/$(pylint pyramid_jsonapi |grep "rated at" |awk '{print $7}' |cut -f 1 -d '/').svg -O ${TARGET}/pylint-badge.svg
 if [[ $TRAVIS_BRANCH == "master" && -n $TRAVIS_TAG ]]; then
-  travis-sphinx deploy
+  echo "Deploying docs to gh-pages..."
+  travis-sphinx deploy --outdir=${TARGET}
 fi
