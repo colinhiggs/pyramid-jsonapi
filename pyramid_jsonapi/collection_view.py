@@ -1,3 +1,4 @@
+"""Provide base class for collection views and utilities."""
 import functools
 import itertools
 import logging
@@ -5,27 +6,22 @@ import re
 from collections import Sequence
 
 from pyramid.httpexceptions import (
-    exception_response,
-    HTTPException,
     HTTPNotFound,
     HTTPForbidden,
-    HTTPUnauthorized,
-    HTTPClientError,
     HTTPBadRequest,
     HTTPConflict,
     HTTPUnsupportedMediaType,
     HTTPNotAcceptable,
-    HTTPNotImplemented,
     HTTPError,
     HTTPFailedDependency,
     HTTPInternalServerError,
     status_map,
 )
-import pyramid_jsonapi
+import pyramid_jsonapi.jsonapi
 import sqlalchemy
 from sqlalchemy.orm import load_only
 from sqlalchemy.orm.relationships import RelationshipProperty
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.exc import NoResultFound
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
