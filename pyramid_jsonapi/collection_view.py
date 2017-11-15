@@ -27,6 +27,7 @@ ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
+
 class CollectionViewBase:
     """Base class for all view classes.
 
