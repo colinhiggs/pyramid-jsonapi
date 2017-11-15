@@ -7,7 +7,7 @@ The pyramid-jsonapi project
 .. image:: https://coveralls.io/repos/github/colinhiggs/pyramid-jsonapi/badge.svg?branch=master
   :target: https://coveralls.io/github/colinhiggs/pyramid-jsonapi?branch=master
 
-.. image:: https://raw.githubusercontent.com/colinhiggs/pyramid-jsonapi/gh-pages/pylint-badge.svg
+.. image:: https://colinhiggs.github.io/pyramid-jsonapi/pylint-badge.svg
 
 Create a JSON-API (`<http://jsonapi.org/>`_) standard API from a database using
 the sqlAlchemy ORM and pyramid framework.
