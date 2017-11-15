@@ -25,9 +25,9 @@ from pyramid.httpexceptions import (
     HTTPUnsupportedMediaType,
     HTTPNotAcceptable,
     HTTPNotImplemented,
+    HTTPInternalServerError,
     HTTPError,
     HTTPFailedDependency,
-    HTTPInternalServerError,
     status_map,
 )
 import sqlalchemy
@@ -297,7 +297,7 @@ class PyramidJSONAPI():
 
         return type(
             'CollectionView<{}>'.format(collection_name),
-            (collection_view.CollectionViewBase, ),
+            (pyramid_jsonapi.collection_view.CollectionViewBase, ),
             class_attrs
         )
 
