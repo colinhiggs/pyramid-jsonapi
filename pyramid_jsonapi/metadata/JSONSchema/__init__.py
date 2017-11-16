@@ -148,29 +148,46 @@ class JSONSchema():
         Raises:
             HTTPNotFound error for unknown endpoints.
 
-        Takes 2 path params: endpoint[/method] (defaults to get).
+        Takes 1 path params: 'endpoint'
+
+        Takes 3 optional query params:
+          'method': http method (defaults to get)
+          'direction': request or response (defaults to response)
+          'code': http status code
         """
 
         endpoint = request.matchdict['endpoint']
-        method = request.matchdict.get('method')
-        return self.endpoint_schema(endpoint, method)
+        method = request.params.get('method')
+        direction = request.params.get('direction')
+        code = request.params.get('code')
+        return self.endpoint_schema(endpoint, method, direction, code)
 
-    def endpoint_schema(self, endpoint, method):
+    def endpoint_schema(self, endpoint, method, direction, code):
         """Generate a full schema for an endpoint.
 
         Parameters:
             endpoint (string): Endpoint name
             method (string): http method (defaults to 'get')
+            direction (string): request or response (defaults to response)
+            code (string): http status code
 
         Returns:
             JSONSchema (dict)
         """
 
-        if not method:
-            method = 'get'
-        method = method.lower()
+        try:
+            method = method.lower()
+            direction = direction.lower()
+            code = int(code)
+        except (AttributeError, ValueError):
+            raise HTTPBadRequest("Invalid parameters specified")
 
         schema = copy.deepcopy(self.schema)
+
+        if direction == 'response' and code >= 400:
+            # Return whole schema as-is
+            return schema
+
         if method == 'post':
             schema['definitions']['resource']['required'].remove('id')
 
