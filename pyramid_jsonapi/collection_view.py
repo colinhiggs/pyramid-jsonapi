@@ -1382,7 +1382,7 @@ class CollectionViewBase:
             res = pyramid_jsonapi.jsonapi.Resource()
             res.update(item)
             doc.resources.append(res)
-        results['returned'] = len(doc.data)
+        results['returned'] = len(doc.resources)
 
         doc.meta = {'results': results}
         return doc
