@@ -130,10 +130,16 @@ class JSONSchema():
             logging.warning("Schema Error: %s", exc)
 
         # Remove 'id' attribute
+        # (returned by db, but not stored in attrs in jsonapi)
         if 'properties' in schema:
-            del schema['properties']['id']
-            if 'id' in schema['required']:
-                schema['required'].remove('id')
+            if 'id' in schema['properties']:
+                del schema['properties']['id']
+            if 'required' in schema:
+                if 'id' in schema['required']:
+                    schema['required'].remove('id')
+                # Empty required list is invalid jsonschema
+                if not schema['required']:
+                    del schema['required']
 
         return schema
 
