@@ -59,6 +59,7 @@ class JSONSchema():
         self.column_to_schema = alchemyjsonschema.default_column_to_schema
         self.schema = {}
         self.load_schema()
+        self.build_definitions()
 
     def template(self, request=None):  # pylint:disable=unused-argument
         """Return the JSONAPI jsonschema dict (as a pyramid view).
@@ -188,21 +189,31 @@ class JSONSchema():
         except (AttributeError, ValueError):
             raise HTTPBadRequest("Invalid parameters specified")
 
+        # reject invalid endpoints
+        if not "{}_attrs".format(endpoint) in self.schema['definitions']:
+            raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
+
         schema = copy.deepcopy(self.schema)
 
         if direction == 'response' and code >= 400:
-            # Return whole schema as-is
-            return schema
+            # Return reference to failure part of schema
+            return {'$ref': '#/definitions/failure'}
 
+        # id is optional for POST
         if method == 'post':
             schema['definitions']['resource']['required'].remove('id')
 
-        attrs = self.resource_attributes(endpoint)
-        props = schema['definitions']['resource']['properties']
-        props['attributes'] = attrs
-        props['type']['pattern'] = "^{}$".format(endpoint)
+        if direction == 'request':
+            # Replace data with single (ep-specific) resource
+            # (POST/PATCH can only be single resource)
+            schema['definitions']['success']['properties'] = {
+                'data': {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
+            }
+        else: # direction == response
+            # Replace data with ep-specific data ref
+            schema['definitions']['success']['properties']['data'] = {'$ref': '#/definitions/{}_data'.format(endpoint)}
 
-        return schema
+        return schema['definitions']['success']
 
     def validate(self, json_body, method='get'):
         """Validate schema against jsonschema."""
@@ -219,3 +230,27 @@ class JSONSchema():
                 jsonschema.validate(json_body, schm)
             except (jsonschema.exceptions.ValidationError) as exc:
                 raise HTTPBadRequest(str(exc))
+
+    def build_definitions(self):
+        """Build data and attribute references for all endpoints."""
+
+        for view_class in self.api.view_classes.values():
+            endpoint = view_class.collection_name
+
+            # Get attributes for this endpoint
+            attrs = self.resource_attributes(endpoint)
+
+            # Add a resource definition for this endpoint to the 'global' schema
+            attr_ref = {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
+            resource = copy.deepcopy(self.schema['definitions']['resource'])
+            resource['properties']['attributes'] = attrs
+            resource['properties']['type']['pattern'] = "^{}$".format(endpoint)
+            self.schema['definitions']["{}_attrs".format(endpoint)] = resource
+
+            # Add a data definition for this endpoint to the 'global' schema
+            ep_data = copy.deepcopy(self.schema['definitions']['data'])
+            # Data can be a single resource...
+            ep_data['oneOf'][0] = attr_ref
+            # Or an array.
+            ep_data['oneOf'][1]['items'] = attr_ref
+            self.schema['definitions']["{}_data".format(endpoint)] = ep_data
