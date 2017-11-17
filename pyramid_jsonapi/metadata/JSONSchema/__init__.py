@@ -1,4 +1,52 @@
-"""JSONSchema metadata plugin."""
+"""JSONSchema metadata plugin.
+
+This plugin provides JSONSchema schemas and validation.
+
+This module provides 3 ``metadata`` views:
+
+* ``JSONSchema``  - The full JSONSchema for JSONAPI (as provided by jsonapi.org)
+* ``JSONSchema/endpoint/{endpoint}`` - JSONSchema for a specific endpoint, with attributes defined.
+* ``JSONSchema/resource/{resource}`` -  JSONSchema of just the attributes for a resource.
+
+Configuration
+-------------
+
+This plugin uses `alchemyjsonschema <https://github.com/podhmo/alchemyjsonschema>`_
+to provide mapping between pyramid model and JSONSchema types.
+
+``alchemyjsonschema`` provides a ``default_column_to_schema`` dictionary, which maps
+column types to jsonschema types. If you wish to extend this, you can do so by importing
+this module and modifying this constant prior to importing pyramid_jsonapi.
+For example, to extend the default mapping to include ``uuid`` types:
+
+.. code-block:: python
+
+    import alchemyjsonschema
+
+    alchemyjsonschema.default_column_to_schema.update(
+        {
+            sqlalchemy_utils.types.uuid.UUIDType: "string"
+        }
+    )
+
+    jsonapi = pyramid_jsonapi.PyramidJSONAPI(config, models)
+
+
+Endpoint View
+-------------
+
+The endpoint view expects the path to include the endpoint in question, and 3 query parameters must be provided:
+
+* method - http method (GET, POST etc)
+* direction - 'request' or 'response'
+* code - http status code (if direction is 'response')
+
+For example:
+
+``https://localhost:6543/metadata/JSONSchema/endpoint/people?method=get&direction=response&code=200``
+
+Will return the schema that matches a valid response (200 OK) to a GET to ``/api/people``
+"""
 
 import copy
 import functools
@@ -91,6 +139,7 @@ class JSONSchema():
 
     def resource_attributes_view(self, request):
         """Call resource() via a pyramid view.
+
         Parameters:
             request: Pyramid Request object.
 
@@ -147,6 +196,7 @@ class JSONSchema():
 
     def endpoint_schema_view(self, request):
         """Pyramid view for endpoint_schema.
+
         Parameters:
             request: Pyramid Request object.
 
@@ -156,12 +206,13 @@ class JSONSchema():
         Raises:
             HTTPNotFound error for unknown endpoints.
 
-        Takes 1 path params: 'endpoint'
+        Takes 1 path parameert:
+          * 'endpoint'
 
-        Takes 3 optional query params:
-          'method': http method (defaults to get)
-          'direction': request or response (defaults to response)
-          'code': http status code
+        Takes 3 optional query parameters:
+          * 'method': http method (defaults to get)
+          * 'direction': request or response (defaults to response)
+          * 'code': http status code
         """
 
         endpoint = request.matchdict['endpoint']
@@ -233,7 +284,9 @@ class JSONSchema():
                 raise HTTPBadRequest(str(exc))
 
     def build_definitions(self):
-        """Build data and attribute references for all endpoints."""
+        """Build data and attribute references for all endpoints,
+        and updates the 'global' schema.
+        """
 
         for view_class in self.api.view_classes.values():
             endpoint = view_class.collection_name
