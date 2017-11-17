@@ -127,15 +127,10 @@ class OpenAPI():
 
         content = self.api.metadata.JSONSchema.endpoint_schema(
             name,
-            method.lower()
-        )['definitions']['success']
-
-        # Replace data ref with resource ref (POST/PATCH can only be single resource)
-        content['properties'] = {
-            'data': {
-                "$ref": "#/definitions/resource"
-            }
-        }
+            method.lower(),
+            'request',
+            '999'  # Code is irrelevant for requests
+        )
 
         return self.build_content(content)
 
@@ -146,14 +141,14 @@ class OpenAPI():
         for resps in self.api.endpoint_data.recurse_for_key('responses'):
             resp_data.update(resps.keys())
         for response in resp_data:
-            response_type = 'success'
-            if response.code >= 400:
-                response_type = 'failure'
             responses[str(response.code)] = self.build_content(
                 self.api.metadata.JSONSchema.endpoint_schema(
                     name,
-                    method.lower()
-                )['definitions'][response_type])
+                    method.lower(),
+                    'response',
+                    response.code,
+                )
+            )
         return responses or None
 
     @functools.lru_cache()
