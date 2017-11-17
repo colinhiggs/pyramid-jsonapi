@@ -209,7 +209,7 @@ class JSONSchema():
             schema['definitions']['success']['properties'] = {
                 'data': {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
             }
-        else: # direction == response
+        else:  # direction == response
             # Replace data with ep-specific data ref
             schema['definitions']['success']['properties']['data'] = {'$ref': '#/definitions/{}_data'.format(endpoint)}
 
