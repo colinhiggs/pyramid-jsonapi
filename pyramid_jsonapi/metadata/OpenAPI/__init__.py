@@ -112,7 +112,14 @@ class OpenAPI():
         # Add 'in: path' parameters extracted from route_pattern
         if 'route_pattern' in opts:
             for field in opts['route_pattern']['fields']:
-                parameters.append({'name': field, 'in': 'path', 'required': True})
+                parameters.append({
+                    'name': field,
+                    'in': 'path',
+                    'required': True,
+                    'schema': {
+                        'type': 'string'
+                    }
+                })
         return parameters or None
 
     def build_request(self, name, method):
