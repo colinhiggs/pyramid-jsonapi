@@ -101,10 +101,11 @@ class JSONSchema():
             HTTPNotFound error for unknown endpoints.
         """
         # Extract endpoint from route pattern, use to get resource schema, return this
+        endpoint = request.matchdict['endpoint']
         try:
-            return self.resource_attributes(endpoint=request.matchdict['endpoint'])
+            return self.resource_attributes(endpoint)
         except IndexError:
-            raise HTTPNotFound
+            raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
 
     @functools.lru_cache()
     def resource_attributes(self, endpoint):

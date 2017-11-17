@@ -3262,11 +3262,11 @@ class TestMetaData(DBTestBase):
         cls.api.create_jsonapi()
         cls.metadata = pyramid_jsonapi.metadata.MetaData(cls.api)
 
-    def test_jsonapi_template(self):
+    def test_jsonschema_template(self):
         """Test that template() returns valid json."""
         json.dumps(self.metadata.JSONSchema.template())
 
-    def test_jsonapi_load_schema_file(self):
+    def test_jsonschema_load_schema_file(self):
         """Test loading jsonschema from file."""
         path = "/tmp/nosuchfile.json"
         schema = {"test": "true"}
@@ -3276,20 +3276,54 @@ class TestMetaData(DBTestBase):
             mock_file.assert_called_with(path)
             self.assertDictEqual(schema, self.metadata.JSONSchema.schema)
 
-    def test_jsonapi_resource_attributes_view(self):
+    def test_jsonschema_resource_attributes_view(self):
         """Test that resource_attributes view returns valid json."""
         self.test_app().get('/metadata/JSONSchema/resource/people', status=200).json
 
-    def test_jsonapi_resource_attributes_view_not_found(self):
+    def test_jsonschema_resource_attributes_view_not_found(self):
         """Test that view returns 404 for non-existent endpoint."""
         self.test_app().get('/metadata/JSONSchema/resource/invalid', status=404)
 
-    def test_jsonapi_invalid_schema(self):
-        """Test that invalid schema mappings logs a warning. (posts has JSONB field)."""
-        with self.assertLogs() as log_handler:
-            # There should be a WARNING log message 'Schema Error...''
-            self.test_app().get('/metadata/JSONSchema/resource/posts')
-            self.assertTrue(any(log.levelname == "WARNING" and "Schema Error" in log.message for log in log_handler.records))
+    def test_jsonschema_endpoint_schema_view(self):
+        """Check that endpoint_schema returns json with appropriate query params."""
+        self.test_app().get('/metadata/JSONSchema/endpoint/people',
+                            params='method=get&direction=request&code=200',
+                            status=200).json
+
+        self.test_app().get('/metadata/JSONSchema/endpoint/people',
+                            params='method=get&direction=response&code=200',
+                            status=200).json
+
+    def test_jsonschema_endpoint_schema_view_failure_schema(self):
+        """Test that a reference to the failure schema is returned for code=4xx."""
+        res = self.test_app().get('/metadata/JSONSchema/endpoint/people',
+                            params='method=get&direction=response&code=404',
+                            status=200).json
+        self.assertEqual(res, {"$ref" : "#/definitions/failure"})
+
+    def test_jsonschema_endpoint_schema_view_bad_params(self):
+        """Test that 400 returned if missing/bad query params specified."""
+        self.test_app().get('/metadata/JSONSchema/endpoint/people', status=400).json
+        self.test_app().get('/metadata/JSONSchema/endpoint/people', params='cat=1', status=400).json
+
+    def test_jsonschema_endpoint_schema_view_not_found(self):
+        self.test_app().get('/metadata/JSONSchema/endpoint/invalid',
+                            params='method=get&direction=request&code=200',
+                            status=404).json
+
+    def test_jsonschema_invalid_schema(self):
+        """Invalid schema mappings generate empty resource attrs."""
+        # posts has JSONB field
+        res = self.test_app().get('/metadata/JSONSchema/resource/posts').json
+        self.assertEqual(res, {})
+
+    def test_openapi_swagger_ui_view(self):
+        """Test that swagger_ui view returns html."""
+        html = self.test_app().get('/metadata/OpenAPI', status=200).html
+
+    def test_openapi_specification_view(self):
+        """Test that specification view returns valid json."""
+        self.test_app().get('/metadata/OpenAPI/specification', status=200).json
 
 
 if __name__ == "__main__":
