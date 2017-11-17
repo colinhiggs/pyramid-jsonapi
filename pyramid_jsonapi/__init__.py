@@ -67,7 +67,7 @@ class PyramidJSONAPI():
         self.get_dbsession = get_dbsession
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
         self.filter_registry = pyramid_jsonapi.filters.FilterRegistry()
-        self.metadata = pyramid_jsonapi.metadata.MetaData(self)
+        self.metadata = {}
 
     @staticmethod
     def error(exc, request):
@@ -147,6 +147,9 @@ class PyramidJSONAPI():
         # any relationships found.
         for model_class in model_list:
             self.create_resource(model_class)
+
+        # Instantiate metadata now that view_class has been populated
+        self.metadata = pyramid_jsonapi.metadata.MetaData(self)
 
     create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
 
