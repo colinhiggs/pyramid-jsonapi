@@ -151,7 +151,7 @@ class EndpointData():
                 },
                 'item': {
                     'responses': {
-                        HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.']},
+                        HTTPInternalServerError: {'reason': ['An error occurred on the server.']}
                     },
                     'route_pattern': {'fields': ['id'], 'pattern': '{{{}}}'},
                     'http_methods': {
@@ -202,7 +202,6 @@ class EndpointData():
                 },
                 'relationships': {
                     'responses': {
-                        HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch a relationship with a 200 OK response.']},
                         HTTPNotFound: {'reason': ['A server MUST return 404 Not Found when processing a request to fetch a relationship link URL that does not exist.']},
                     },
                     'route_pattern': {'fields': ['id', 'relationship'], 'pattern': '{{{}}}{sep}relationships{sep}{{{}}}'},
@@ -212,12 +211,12 @@ class EndpointData():
                             'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If all of the specified resources are able to be removed from, or are already missing from, the relationship then the server MUST return a successful response.']},
-                                HTTPConflict: {'reason'},
+                                HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a DELETE request in which the resource object’s type and id do not match the server’s endpoint.']},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by deleting the specified resource from the relationship.']},
                                 HTTPForbidden: {
                                     'reason': [
                                         'If the client makes a DELETE request to a URL from a relationship link the server MUST delete the specified members from the relationship or return a 403 Forbidden response.',
-                                        'DELETE not supported in TOONE relationships and "a server MUST return 403 Forbidden in response to an unsupported request to update a relationship."'
+                                        'A server MUST return 403 Forbidden in response to an unsupported request to update a relationship.'
                                     ]
                                 },
                             },
@@ -247,7 +246,7 @@ class EndpointData():
                             'responses': {
                                 HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a POST request in which the resource object’s type is not among the type(s) that constitute the collection represented by the endpoint.']},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by adding the specified resource to the relationship.']},
-                                HTTPForbidden: {'reason': ['DELETE not supported in TOONE relationships and "a server MUST return 403 Forbidden in response to an unsupported request to update a relationship."']},
+                                HTTPForbidden: {'reason': ['A server MUST return 403 Forbidden in response to an unsupported request to update a relationship."']},
                             },
                         },
                     },
