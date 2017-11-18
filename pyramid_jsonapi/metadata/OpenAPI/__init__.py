@@ -141,21 +141,26 @@ class OpenAPI():
 
         return self.build_content(content)
 
-    def build_responses(self, name, method):
+    def build_responses(self, name, ep_type, method):
         """Build responses part of schema."""
         responses = {}
-        resp_data = set()
-        for resps in self.api.endpoint_data.recurse_for_key('responses'):
-            resp_data.update(resps.keys())
-        for response in resp_data:
-            responses[str(response.code)] = self.build_content(
-                self.api.metadata.JSONSchema.endpoint_schema(
-                    name,
-                    method.lower(),
-                    'response',
-                    response.code,
+        resp_data = dict()
+        for resps in self.api.endpoint_data.find_all_keys('responses', ep_type, method):
+            for http_class, opts in resps.items():
+                if http_class not in resp_data:
+                    resp_data[http_class] = opts['reason']
+                else:
+                    resp_data[http_class].extend(opts['reason'])
+            for response, reason in resp_data.items():
+                responses[str(response.code)] = self.build_content(
+                    self.api.metadata.JSONSchema.endpoint_schema(
+                        name,
+                        ep_type,
+                        method.lower(),
+                        response.code
+                    ),
+                    description="\n\n".join(set(reason)),
                 )
-            )
         return responses or None
 
     @functools.lru_cache()
@@ -191,7 +196,7 @@ class OpenAPI():
         for model, view_class in self.api.view_classes.items():
             name = view_class.collection_name
             # Iterate through endpoints, adding paths and methods
-            for opts in ep_data.endpoints['endpoints'].values():
+            for ep_type, opts in ep_data.endpoints['endpoints'].items():
                 # Add appropriate suffix to path endpoint
                 path_name = ep_data.rp_constructor.api_pattern(
                     name,
@@ -210,7 +215,7 @@ class OpenAPI():
                         requestBody = self.build_request(name, method)  # pylint:disable=invalid-name
                     # Add responses if required
                     if opts['http_methods'][method].get('response_schema', True):
-                        responses = self.build_responses(name, method)  # pylint:disable=unused-variable
+                        responses = self.build_responses(name, ep_type, method)  # pylint:disable=unused-variable
 
                     # Add contents to path if they are defined.
                     paths[path_name][method.lower()] = {k: v for k, v in locals().items() if k in ['parameters', 'requestBody', 'responses'] and v}
