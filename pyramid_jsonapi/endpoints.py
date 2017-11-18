@@ -301,12 +301,23 @@ class EndpointData():
                     renderer=method_opts.get('renderer', 'json')
                 )
 
-    def recurse_for_key(self, name, dictionary=None):
-        """Generator to recursively fetch the value for all entries of a key."""
-        if not dictionary:
-            dictionary = self.endpoints
-        for key, value in dictionary.items():
-            if key == name:
-                yield value
-            elif isinstance(value, dict):
-                yield from self.recurse_for_key(name, value)
+    def find_all_keys(self, name, ep_type, method):
+        """Generator to fetch all the instances of a particular key in part of the tree.
+
+        Parameters:
+          ep_type: per-endpoint - e.g. collection, item etc.
+          method: http method
+
+          Returns:
+            Yields the value of each matching key.
+        """
+
+        # top-level instance
+        if name in self.endpoints:
+            yield self.endpoints[name]
+        # ep-type instance
+        if name in self.endpoints['endpoints'][ep_type]:
+            yield self.endpoints['endpoints'][ep_type][name]
+        # method instance
+        if name in self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()]:
+            yield self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()][name]
