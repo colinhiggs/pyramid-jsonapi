@@ -127,7 +127,7 @@ class OpenAPI():
                         'type': 'string'
                     }
                 })
-        return parameters or None
+        return parameters
 
     def build_request(self, name, method):
         """Build requestBody part of schema."""
@@ -161,7 +161,7 @@ class OpenAPI():
                     ),
                     description="\n\n".join(set(reason)),
                 )
-        return responses or None
+        return responses
 
     @functools.lru_cache()
     def generate_openapi(self):
@@ -206,19 +206,13 @@ class OpenAPI():
                 )
                 paths[path_name] = {}
                 for method in opts['http_methods']:
-                    parameters = requestBody = responses = None  # pylint:disable=invalid-name,unused-variable
-                    # Generate parameters
-                    parameters = self.build_parameters(opts)  # pylint:disable=unused-variable
-                    # Add request body if required
+                    paths[path_name][method.lower()] = {}
+                    paths[path_name][method.lower()]['parameters'] = self.build_parameters(opts)
                     if opts['http_methods'][method].get('request_schema', False):
-                        # Generate requestBody (if needed)
-                        requestBody = self.build_request(name, method)  # pylint:disable=invalid-name
-                    # Add responses if required
+                        paths[path_name][method.lower()]['requestBody'] = self.build_request(name, method)
                     if opts['http_methods'][method].get('response_schema', True):
-                        responses = self.build_responses(name, ep_type, method)  # pylint:disable=unused-variable
+                        paths[path_name][method.lower()]['responses'] = self.build_responses(name, ep_type, method)
 
-                    # Add contents to path if they are defined.
-                    paths[path_name][method.lower()] = {k: v for k, v in locals().items() if k in ['parameters', 'requestBody', 'responses'] and v}
                     # Add description
                     paths[path_name][method.lower()]['description'] = model.__doc__ or ''
 
