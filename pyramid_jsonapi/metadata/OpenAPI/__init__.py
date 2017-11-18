@@ -84,10 +84,17 @@ class OpenAPI():
         self.metadata = pkginfo.Installed(pkg_name)
 
     @staticmethod
-    def build_content(schema, mediatype='application/vnd.api+json'):
+    def build_content(schema, description='', mediatype='application/vnd.api+json'):
         """Construct a content dictionary for a given schema."""
 
-        return {'content': {mediatype: {'schema': schema}}}
+        return {
+            'description': description,
+            'content': {
+                mediatype: {
+                    'schema': schema
+                }
+            }
+        }
 
     def build_parameters(self, opts):
         """Build paramaters schema."""
