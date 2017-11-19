@@ -163,6 +163,37 @@ class OpenAPI():
                 )
         return responses
 
+    def recurse_remove_keys(self, dictionary, name):
+        """Recursively build a new version of dictionary with named keys removed."""
+        new_dict = {}
+        for key, value in dictionary.items():
+            if key != name:
+                if isinstance(value, dict):
+                    new_dict[key] = self.recurse_remove_keys(value, name)
+                else:
+                    new_dict[key] = value
+        return new_dict
+
+    def replace_in_value_inner(self, val, old, new):
+        """Inner part of recurse_replace_in_value."""
+        if isinstance(val, (dict, list, tuple)):
+            return self.recurse_replace_in_value(val, old, new)
+        elif isinstance(val, str):
+            return val.replace(old, new)
+        return val
+
+    def recurse_replace_in_value(self, obj, old, new):
+        """Recursively replace() strings in values."""
+        if isinstance(obj, dict):
+            new_obj = {}
+            for key, val in obj.items():
+                new_obj[key] = self.replace_in_value_inner(val, old, new)
+        elif isinstance(obj, (list, tuple)):
+            new_obj = []
+            for val in obj:
+                new_obj.append(self.replace_in_value_inner(val, old, new))
+        return new_obj
+
     @functools.lru_cache()
     def generate_openapi(self):
         """Generate openapi documentation."""
@@ -220,12 +251,19 @@ class OpenAPI():
         openapi['paths'].update(paths)
 
         # Add the JSONSchema JSONAPI definitions to the openapi spec
-        openapi.update({'definitions': self.api.metadata.JSONSchema.template()['definitions']})
+        openapi.update({'x-definitions': self.api.metadata.JSONSchema.template()['definitions']})
 
         # Update openapi dict from external yaml/json file, if provided in config.
         openapi_file = self.api.settings.openapi_file
         if openapi_file:
             with open(openapi_file) as oa_f:
                 openapi.update(yaml.safe_load(oa_f.read()))
+
+        # TODO: patternProperties not supported in openapi, so remove all occurrences
+        # https://github.com/OAI/OpenAPI-Specification/issues/687
+        openapi = self.recurse_remove_keys(openapi, 'patternProperties')
+
+        # Re-map all definitions refs to x-definitions
+        openapi = self.recurse_replace_in_value(openapi, 'definitions', 'x-definitions')
 
         return openapi
