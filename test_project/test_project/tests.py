@@ -19,6 +19,7 @@ import json
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 import pyramid_jsonapi.settings
+from openapi_spec_validator import validate_spec
 
 from test_project.models import (
     DBSession,
@@ -3324,6 +3325,11 @@ class TestMetaData(DBTestBase):
     def test_openapi_specification_view(self):
         """Test that specification view returns valid json."""
         self.test_app().get('/metadata/OpenAPI/specification', status=200).json
+
+    def test_openapi_specification_valid(self):
+        """Test that the openapi specification returned is valid."""
+        validate_spec(self.test_app().get('/metadata/OpenAPI/specification', status=200).json)
+
 
 
 if __name__ == "__main__":
