@@ -173,7 +173,11 @@ def create_resource(
         # Trying to inspect the declarative_base() raises this exception. We
         # don't want to add it to the API.
         return
-    model._jsonapi_id = getattr(model, keycols[0].name)
+
+    if len(keycols) == 1:
+        model._jsonapi_id = getattr(model, keycols[0].name)
+    else:
+        model._jsonapi_id = [getattr(model, x.name) for x in keycols]
 
     if collection_name is None:
         if hasattr(model, '__alt_model_name__'):
@@ -928,6 +932,7 @@ class CollectionViewBase:
             self.item_route_name,
             **{'id': item._jsonapi_id}
         )
+        print(self.request.response.headers['Location'])
         return {
             'data': self.serialise_db_item(item, {})
         }
@@ -2029,6 +2034,13 @@ class CollectionViewBase:
         Returns:
             bool: True if object exists, False if not.
         '''
+        print(obj_id)
+        if obj_id[0] == '[':
+            l = ["".join(x.split()) for x in obj_id[1:-1].split(',')]
+            l = [x[1:-1] if x[0] == '\'' or x[0] == '"' else int(x) for x in l]
+            obj_id = tuple(l)
+        print(obj_id)
+        print(self.model)
         DBSession = self.get_dbsession()
         item = DBSession.query(
             self.model
@@ -2086,12 +2098,16 @@ class CollectionViewBase:
         # Item's id and type are required at the top level of json-api
         # objects.
         # The item's id.
-        item_id = item._jsonapi_id
+        if type(item._jsonapi_id) != list:
+            item_id = item._jsonapi_id
+        else:
+            item_id = [getattr(item, x.key) for x in item._jsonapi_id]
+
         # JSON API type.
         type_name = self.collection_name
         item_url = self.request.route_url(
             self.item_route_name,
-            **{'id': item._jsonapi_id}
+            **{'id': item_id}
         )
 
         atts = {
