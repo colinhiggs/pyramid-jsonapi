@@ -95,6 +95,8 @@ Auto-Create Assumptions
 
 #. You are happy to expose any so defined relationship via a relationship URL.
 
+#. API endpoints will be provided at ``/api/...`` by default.
+
 Some of those behaviours can be adjusted, see :ref:`customisation`.
 
 Trying Your API Out
