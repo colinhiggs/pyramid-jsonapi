@@ -116,8 +116,8 @@ Start the server:
 
   $ pserve your_project/development.ini
 
-Assuming you have a colleciton named 'people' and using the rather lovely httpie
-`<https://github.com/jkbrzt/httpie/>`_ to test:
+Assuming you have a collection named 'people' and using the rather lovely
+`httpie <https://github.com/jkbrzt/httpie/>`_ to test:
 
 .. code-block:: bash
 
