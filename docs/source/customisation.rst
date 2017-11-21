@@ -30,31 +30,54 @@ This takes the following format:
 .. code-block:: python
 
   {
-    'item': {
-      'route_pattern': '{'fields': ['id'], 'pattern': '{{{}}}'}',
-      'http_methods': {
-        'DELETE': {
-          'function': 'delete',
-          'responses'': { HTTPOk: {'reason': ['A server MUST return a 200 OK status code if a deletion request is successful']}},
-        },
-        'GET': {
-          'function': 'get',
-        },
-        'PATCH': {
-          'function': 'patch',
+    'query_parameters': {
+      'fields': '',
+      'filter': '',
+      'page': ['limit', 'offset'],
+      'sort': '',
+    },
+    'responses': {HTTPOK: {'reason': ['A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.']}},
+    'endpoints': {
+      'item': {
+        'request_schema': False,
+        'route_pattern': '{'fields': ['id'], 'pattern': '{{{}}}'}',
+        'http_methods': {
+          'DELETE': {
+            'function': 'delete',
+            'responses'': { HTTPOk: {'reason': ['A server MUST return a 200 OK status code if a deletion request is successful']}},
+          },
+          'GET': {
+            'function': 'get',
+          },
+          'PATCH': {
+            'function': 'patch',
+          },
         },
       },
-    },
-    ... # other endpoints ommitted
+    ... # other endpoints omitted
+    }
   }
+
+The ``endpoints`` and ``methods`` are the parts you are most likely to want to modify.
 
 * There are 4 ``endpoints`` defined: ``collection``, ``item``, ``relationships`` and ``related``.
 * Each ``endpoint`` may have ``route_pattern`` defined. This is a list of fields, and the format string used to join them. (``{sep}`` will be replaced with ``route_name_sep``)
 * Each ``endpoint`` may have 0 or more ``http_methods`` defined. (``GET``, ``POST``, etc).
 * Each ``endpoint`` may have ``responses`` defined. This is a dictionary of ``pyramid.httpexceptions`` keys, the value is a dict with ``reason``
   containing list of reasons for returning this response.
+* ``request_schema`` defines whether or not this endpoint expects a request body (for jsonschema generation/validation).
 * Each ``method`` must have ``function`` defined. This is the name (string) of the view function to call for this endpoint.
 * Each ``method`` may have a ``renderer`` defined (if omitted, this defaults to ``'json'``).
+
+Additionally, the following keys are provided (though are less likely to be modified).
+
+* ``query_parameters`` defines the http query parameters that endpoints expect.
+* ``responses`` defines the various http responses (keyed by ``pyramid.httpexceptions`` objects )
+  that may be returned, and the reason(s) why.
+* ``responses`` are used in the code to validate responses, and provide schema information.
+* responses can be defined at a 'global', endpoint, or method level, and will be merged together as appropriate.
+* you may wish to modify ``responses`` if your app wishes to return statuses outside of the schema,
+  to prevent them being flagged as errors.
 
 For example, to extend this structure to handle the ``OPTIONS`` ``http_method`` for all endpoints (e.g. for `CORS <https://enable-cors.org>`_):
 
