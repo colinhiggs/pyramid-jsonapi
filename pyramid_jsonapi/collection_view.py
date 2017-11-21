@@ -35,6 +35,8 @@ class CollectionViewBase:
         request (pyramid.request): passed by framework.
     """
 
+    # pylint:disable=too-many-public-methods
+
     # Define class attributes
     # Callable attributes use lambda to keep pylint happy
     api = None
