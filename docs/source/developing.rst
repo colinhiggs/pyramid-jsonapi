@@ -62,7 +62,9 @@ Currently pyramid_jsonapi is built and tested against python 3. 3.4 or later is 
 
 Versioning
 ^^^^^^^^^^^
-Semantic versioning should be used, see `<https://semver.org>`_ for details.
+Semantic versioning should be used, see
+`PEP440 - Version Identification and Dependency Specification <https://www.python.org/dev/peps/pep-0440/>`_
+for details.
 
 
 Documentation
