@@ -32,9 +32,9 @@ Installation
 Generating an API From Your Models
 ----------------------------------
 
-First import the `pyramid_jsonapi` module and any model classes or modules which
+First import the ``pyramid_jsonapi`` module and any model classes or modules which
 you would like to expose as API collection endpoints. In your application's
-`__init__.py`:
+``__init__.py``:
 
 .. code-block:: python
 
