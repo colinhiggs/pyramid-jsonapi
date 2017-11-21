@@ -420,15 +420,15 @@ class CollectionViewBase:
 
         rels = data.get('relationships', {})
         for relname, reldict in rels.items():
-            if relname not in self.relationships:
+            try:
+                rel = self.relationships[relname]
+            except KeyError:
                 raise HTTPNotFound(
                     'Collection {} has no relationship {}'.format(
                         self.collection_name, relname
                     )
                 )
-            rel = self.relationships[relname]
-            rel_class = rel.mapper.class_
-            rel_view = self.view_instance(rel_class)
+            rel_view = self.view_instance(rel.mapper.class_)
             try:
                 data = reldict['data']
             except KeyError:
@@ -453,7 +453,7 @@ class CollectionViewBase:
                         'An id is required in a resource identifier.'
                     )
                 rel_item = self.dbsession.query(
-                    rel_class
+                    rel.mapper.class_
                 ).options(
                     load_only(rel_view.key_column.name)
                 ).get(data['id'])
@@ -466,7 +466,7 @@ class CollectionViewBase:
                 rel_items = []
                 for res_ident in data:
                     rel_item = self.dbsession.query(
-                        rel_class
+                        rel.mapper.class_
                     ).options(
                         load_only(rel_view.key_column.name)
                     ).get(res_ident['id'])
@@ -697,7 +697,6 @@ class CollectionViewBase:
         if 'id' in data:
             atts[self.model.__pyramid_jsonapi__['id_col_name']] = data['id']
         item = self.model(**atts)
-        mapper = sqlalchemy.inspect(self.model).mapper
         with self.dbsession.no_autoflush:
             for relname, reldict in data.get('relationships', {}).items():
                 try:
@@ -707,7 +706,7 @@ class CollectionViewBase:
                         'relationships within POST must have data member'
                     )
                 try:
-                    rel = mapper.relationships[relname]
+                    rel = sqlalchemy.inspect(self.model).mapper.relationships[relname]
                 except KeyError:
                     raise HTTPNotFound(
                         'No relationship {} in collection {}'.format(
@@ -715,8 +714,7 @@ class CollectionViewBase:
                             self.collection_name
                         )
                     )
-                rel_class = rel.mapper.class_
-                rel_type = self.api.view_classes[rel_class].collection_name
+                rel_type = self.api.view_classes[rel.mapper.class_].collection_name
                 if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                     # reldata should be a list/array
                     if not isinstance(reldata, Sequence) or isinstance(reldata, str):
@@ -732,25 +730,23 @@ class CollectionViewBase:
                                 )
                             )
                         try:
-                            rid_id = rel_identifier['id']
+                            rel_items.append(self.dbsession.query(rel.mapper.class_).get(rel_identifier['id']))
                         except KeyError:
                             raise HTTPBadRequest(
                                 'Relationship identifier must have an id member'
                             )
-                        rel_items.append(self.dbsession.query(rel_class).get(rid_id))
                     setattr(item, relname, rel_items)
                 else:
                     try:
-                        related_id = reldata['id']
-                    except Exception:
+                        setattr(
+                            item,
+                            relname,
+                            self.dbsession.query(rel.mapper.class_).get(reldata['id'])
+                        )
+                    except KeyError:
                         raise HTTPBadRequest(
                             'No id member in relationship data.'
                         )
-                    setattr(
-                        item,
-                        relname,
-                        self.dbsession.query(rel_class).get(related_id)
-                    )
         try:
             self.dbsession.add(item)
             self.dbsession.flush()
