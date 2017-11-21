@@ -1,4 +1,5 @@
 """Provide base class for collection views and utilities."""
+# pylint: disable=too-many-lines; It's mostly docstrings
 import functools
 import itertools
 import logging
