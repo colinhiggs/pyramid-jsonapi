@@ -9,7 +9,10 @@ from version import get_version
 requires = [
     'alchemyjsonschema',
     'jsonschema',
+    'pkginfo',
     'pyramid',
+    'pyramid_mako',
+    'pyyaml',
     'SQLAlchemy',
     ]
 

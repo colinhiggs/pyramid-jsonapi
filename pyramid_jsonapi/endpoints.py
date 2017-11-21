@@ -106,6 +106,12 @@ class EndpointData():
         # Mandatory 'http_method' keys: function
         # Optional 'http_method' keys: renderer
         self.endpoints = {
+            'query_parameters': {
+                'fields': '',
+                'filter': '',
+                'page': ['limit', 'offset'],
+                'sort': '',
+            },
             'responses': {
                 # Top-level: apply to all endpoints
                 HTTPUnsupportedMediaType: {'reason': ['Servers MUST respond with a 415 Unsupported Media Type status code if a request specifies the header Content-Type: application/vnd.api+json with any media type parameters.']},
@@ -129,6 +135,7 @@ class EndpointData():
                         },
                         'POST': {
                             'function': 'collection_post',
+                            'request_schema': True,
                             'responses': {
                                 HTTPCreated: {'reason': ['If a POST request did not include a Client-Generated ID and the requested resource has been created successfully, the server MUST return a 201 Created status code.']},
                                 HTTPForbidden: {'reason': ['A server MUST return 403 Forbidden in response to an unsupported request to create a resource with a client-generated ID.',
@@ -144,7 +151,7 @@ class EndpointData():
                 },
                 'item': {
                     'responses': {
-                        HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.']},
+                        HTTPInternalServerError: {'reason': ['An error occurred on the server.']}
                     },
                     'route_pattern': {'fields': ['id'], 'pattern': '{{{}}}'},
                     'http_methods': {
@@ -165,6 +172,7 @@ class EndpointData():
                         },
                         'PATCH': {
                             'function': 'patch',
+                            'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If an update is successful and the server doesn’t update any attributes besides those provided, the server MUST return either a 200 OK status code and response document']},
                                 HTTPForbidden: {'reason': ['A server MUST return 403 Forbidden in response to an unsupported request to update a resource or relationship.']},
@@ -194,21 +202,21 @@ class EndpointData():
                 },
                 'relationships': {
                     'responses': {
-                        HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch a relationship with a 200 OK response.']},
                         HTTPNotFound: {'reason': ['A server MUST return 404 Not Found when processing a request to fetch a relationship link URL that does not exist.']},
                     },
                     'route_pattern': {'fields': ['id', 'relationship'], 'pattern': '{{{}}}{sep}relationships{sep}{{{}}}'},
                     'http_methods': {
                         'DELETE': {
                             'function': 'relationships_delete',
+                            'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If all of the specified resources are able to be removed from, or are already missing from, the relationship then the server MUST return a successful response.']},
-                                HTTPConflict: {'reason'},
+                                HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a DELETE request in which the resource object’s type and id do not match the server’s endpoint.']},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by deleting the specified resource from the relationship.']},
                                 HTTPForbidden: {
                                     'reason': [
                                         'If the client makes a DELETE request to a URL from a relationship link the server MUST delete the specified members from the relationship or return a 403 Forbidden response.',
-                                        'DELETE not supported in TOONE relationships and "a server MUST return 403 Forbidden in response to an unsupported request to update a relationship."'
+                                        'A server MUST return 403 Forbidden in response to an unsupported request to update a relationship.'
                                     ]
                                 },
                             },
@@ -223,6 +231,7 @@ class EndpointData():
                         },
                         'PATCH': {
                             'function': 'relationships_patch',
+                            'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If a server accepts an update but also changes the targeted relationship(s) in other ways than those specified by the request, it MUST return a 200 OK response']},
                                 HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a PATCH request in which the resource object’s type and id do not match the server’s endpoint.']},
@@ -233,10 +242,11 @@ class EndpointData():
                         },
                         'POST': {
                             'function': 'relationships_post',
+                            'request_schema': True,
                             'responses': {
                                 HTTPConflict: {'reason': ['A server MUST return 409 Conflict when processing a POST request in which the resource object’s type is not among the type(s) that constitute the collection represented by the endpoint.']},
                                 HTTPFailedDependency: {'reason': ['If a database constraint would be broken by adding the specified resource to the relationship.']},
-                                HTTPForbidden: {'reason': ['DELETE not supported in TOONE relationships and "a server MUST return 403 Forbidden in response to an unsupported request to update a relationship."']},
+                                HTTPForbidden: {'reason': ['A server MUST return 403 Forbidden in response to an unsupported request to update a relationship."']},
                             },
                         },
                     },
@@ -290,3 +300,24 @@ class EndpointData():
                     route_name=route_name,
                     renderer=method_opts.get('renderer', 'json')
                 )
+
+    def find_all_keys(self, name, ep_type, method):
+        """Generator to fetch all the instances of a particular key in part of the tree.
+
+        Parameters:
+          ep_type: per-endpoint - e.g. collection, item etc.
+          method: http method
+
+          Returns:
+            Yields the value of each matching key.
+        """
+
+        # top-level instance
+        if name in self.endpoints:
+            yield self.endpoints[name]
+        # ep-type instance
+        if name in self.endpoints['endpoints'][ep_type]:
+            yield self.endpoints['endpoints'][ep_type][name]
+        # method instance
+        if name in self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()]:
+            yield self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()][name]

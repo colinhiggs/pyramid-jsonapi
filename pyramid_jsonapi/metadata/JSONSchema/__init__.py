@@ -1,4 +1,52 @@
-"""JSONSchema metadata plugin."""
+"""JSONSchema metadata plugin.
+
+This plugin provides JSONSchema schemas and validation.
+
+This module provides 3 ``metadata`` views:
+
+* ``JSONSchema``  - The full JSONSchema for JSONAPI (as provided by jsonapi.org)
+* ``JSONSchema/endpoint/{endpoint}`` - JSONSchema for a specific endpoint, with attributes defined.
+* ``JSONSchema/resource/{resource}`` -  JSONSchema of just the attributes for a resource.
+
+Configuration
+-------------
+
+This plugin uses `alchemyjsonschema <https://github.com/podhmo/alchemyjsonschema>`_
+to provide mapping between pyramid model and JSONSchema types.
+
+``alchemyjsonschema`` provides a ``default_column_to_schema`` dictionary, which maps
+column types to jsonschema types. If you wish to extend this, you can do so by importing
+this module and modifying this constant prior to importing pyramid_jsonapi.
+For example, to extend the default mapping to include ``uuid`` types:
+
+.. code-block:: python
+
+    import alchemyjsonschema
+
+    alchemyjsonschema.default_column_to_schema.update(
+        {
+            sqlalchemy_utils.types.uuid.UUIDType: "string"
+        }
+    )
+
+    jsonapi = pyramid_jsonapi.PyramidJSONAPI(config, models)
+
+
+Endpoint View
+-------------
+
+The endpoint view expects the path to include the endpoint in question, and 3 query parameters must be provided:
+
+* method - http method (GET, POST etc)
+* direction - 'request' or 'response'
+* code - http status code (if direction is 'response')
+
+For example:
+
+``https://localhost:6543/metadata/JSONSchema/endpoint/people?method=get&direction=response&code=200``
+
+Will return the schema that matches a valid response (200 OK) to a GET to ``/api/people``
+"""
 
 import copy
 import functools
@@ -59,6 +107,7 @@ class JSONSchema():
         self.column_to_schema = alchemyjsonschema.default_column_to_schema
         self.schema = {}
         self.load_schema()
+        self.build_definitions()
 
     def template(self, request=None):  # pylint:disable=unused-argument
         """Return the JSONAPI jsonschema dict (as a pyramid view).
@@ -90,6 +139,7 @@ class JSONSchema():
 
     def resource_attributes_view(self, request):
         """Call resource() via a pyramid view.
+
         Parameters:
             request: Pyramid Request object.
 
@@ -100,10 +150,11 @@ class JSONSchema():
             HTTPNotFound error for unknown endpoints.
         """
         # Extract endpoint from route pattern, use to get resource schema, return this
+        endpoint = request.matchdict['endpoint']
         try:
-            return self.resource_attributes(endpoint=request.matchdict['endpoint'])
+            return self.resource_attributes(endpoint)
         except IndexError:
-            raise HTTPNotFound
+            raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
 
     @functools.lru_cache()
     def resource_attributes(self, endpoint):
@@ -130,15 +181,22 @@ class JSONSchema():
             logging.warning("Schema Error: %s", exc)
 
         # Remove 'id' attribute
+        # (returned by db, but not stored in attrs in jsonapi)
         if 'properties' in schema:
-            del schema['properties']['id']
-            if 'id' in schema['required']:
-                schema['required'].remove('id')
+            if 'id' in schema['properties']:
+                del schema['properties']['id']
+            if 'required' in schema:
+                if 'id' in schema['required']:
+                    schema['required'].remove('id')
+                # Empty required list is invalid jsonschema
+                if not schema['required']:
+                    del schema['required']
 
         return schema
 
     def endpoint_schema_view(self, request):
         """Pyramid view for endpoint_schema.
+
         Parameters:
             request: Pyramid Request object.
 
@@ -148,38 +206,66 @@ class JSONSchema():
         Raises:
             HTTPNotFound error for unknown endpoints.
 
-        Takes 2 path params: endpoint[/method] (defaults to get).
+        Takes 1 path parameert:
+          * 'endpoint'
+
+        Takes 3 optional query parameters:
+          * 'method': http method (defaults to get)
+          * 'direction': request or response (defaults to response)
+          * 'code': http status code
         """
 
         endpoint = request.matchdict['endpoint']
-        method = request.matchdict.get('method')
-        return self.endpoint_schema(endpoint, method)
+        method = request.params.get('method')
+        direction = request.params.get('direction')
+        code = request.params.get('code')
+        return self.endpoint_schema(endpoint, method, direction, code)
 
-    def endpoint_schema(self, endpoint, method):
+    def endpoint_schema(self, endpoint, method, direction, code):
         """Generate a full schema for an endpoint.
 
         Parameters:
             endpoint (string): Endpoint name
             method (string): http method (defaults to 'get')
+            direction (string): request or response (defaults to response)
+            code (string): http status code
 
         Returns:
             JSONSchema (dict)
         """
 
-        if not method:
-            method = 'get'
-        method = method.lower()
+        try:
+            method = method.lower()
+            direction = direction.lower()
+            code = int(code)
+        except (AttributeError, ValueError):
+            raise HTTPBadRequest("Invalid parameters specified")
+
+        # reject invalid endpoints
+        if not "{}_attrs".format(endpoint) in self.schema['definitions']:
+            raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
 
         schema = copy.deepcopy(self.schema)
+
+        if direction == 'response' and code >= 400:
+            # Return reference to failure part of schema
+            return {'$ref': '#/definitions/failure'}
+
+        # id is optional for POST
         if method == 'post':
             schema['definitions']['resource']['required'].remove('id')
 
-        attrs = self.resource_attributes(endpoint)
-        props = schema['definitions']['resource']['properties']
-        props['attributes'] = attrs
-        props['type']['pattern'] = "^{}$".format(endpoint)
+        if direction == 'request':
+            # Replace data with single (ep-specific) resource
+            # (POST/PATCH can only be single resource)
+            schema['definitions']['success']['properties'] = {
+                'data': {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
+            }
+        else:  # direction == response
+            # Replace data with ep-specific data ref
+            schema['definitions']['success']['properties']['data'] = {'$ref': '#/definitions/{}_data'.format(endpoint)}
 
-        return schema
+        return schema['definitions']['success']
 
     def validate(self, json_body, method='get'):
         """Validate schema against jsonschema."""
@@ -196,3 +282,29 @@ class JSONSchema():
                 jsonschema.validate(json_body, schm)
             except (jsonschema.exceptions.ValidationError) as exc:
                 raise HTTPBadRequest(str(exc))
+
+    def build_definitions(self):
+        """Build data and attribute references for all endpoints,
+        and updates the 'global' schema.
+        """
+
+        for view_class in self.api.view_classes.values():
+            endpoint = view_class.collection_name
+
+            # Get attributes for this endpoint
+            attrs = self.resource_attributes(endpoint)
+
+            # Add a resource definition for this endpoint to the 'global' schema
+            attr_ref = {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
+            resource = copy.deepcopy(self.schema['definitions']['resource'])
+            resource['properties']['attributes'] = attrs
+            resource['properties']['type']['pattern'] = "^{}$".format(endpoint)
+            self.schema['definitions']["{}_attrs".format(endpoint)] = resource
+
+            # Add a data definition for this endpoint to the 'global' schema
+            ep_data = copy.deepcopy(self.schema['definitions']['data'])
+            # Data can be a single resource...
+            ep_data['oneOf'][0] = attr_ref
+            # Or an array.
+            ep_data['oneOf'][1]['items'] = attr_ref
+            self.schema['definitions']["{}_data".format(endpoint)] = ep_data
