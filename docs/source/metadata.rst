@@ -20,7 +20,10 @@ Custom Modules
 --------------
 
 As well as the built-in modules it is possible to write new metadata modules and add them to
-the ``metadata_modules`` list.
+the ``metadata_modules`` list (space or newline seperated).
+
+**Note** - if modifying the ``metadata_modules`` list, you will need to explicitly
+include any of the ones provided with the project you wish to keep active.
 
 Requirements
 ^^^^^^^^^^^^
@@ -30,7 +33,8 @@ Any modules must follow these rules in order to work properly:
 * The module MUST contain a class with the same name as the package.
 * The clas MUST expect to be passed a reference to the :class:`pyramid_jsonapi.JSONAPI` instance as the first argument.
 * The class MAY contain a ``views`` attribute, which contains a list of :class:`pyramid_jsonapi.metadata.VIEWS` namedtuple instances.  These are mapped onto a
-  :func:`pyramid.config.add_view` call. (Views are optional - methods may exist in modules to be called by other methods).
+  :func:`pyramid.config.add_view` call.
+  (Views are optional - methods may exist in modules to be called 'internally by other methods/modules, rather than being web-facing).
 
 
 For example, to add a custom metadata module called ``Foo``, you need to do the following:
@@ -68,4 +72,5 @@ For example, to add a custom metadata module called ``Foo``, you need to do the 
           return "foo: {}".format(request.matchdict['endpoint'])
 
 
-Note the use of the `Route pattern syntax <https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/urldispatch.html#route-pattern-syntax>`_ in the second example would result in ``generate_string()`` being called for route ``/metadata/Foo/resource/baz`` with endpoint set to ``baz``.
+Note the use of the `Route pattern syntax <https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/urldispatch.html#route-pattern-syntax>`_
+in the second example would result in ``generate_string()`` being called for route ``/metadata/Foo/resource/baz`` with endpoint set to ``baz``.
