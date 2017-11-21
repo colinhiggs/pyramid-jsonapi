@@ -42,15 +42,17 @@ Tests
 
 PEP8
 ^^^^
+
 Code should pass PEP8 validation:
 
-  * long lines should be avoided, but not at the expense of readability. (``pep8 --ignore=E501`` is used when testing).
+  * long lines should be avoided, but not at the expense of readability. (``pycodestyle --ignore=E501`` is used when testing).
 
 pylint
 ^^^^^^
 
-Code should pass pylint validation.
-``# pylint: disable=xxx`` is allowed where there is a clear reason for doing so. Please document as necessary.
+Code should pass pylint validation:
+
+  * ``# pylint: disable=xxx`` is allowed where there is a clear reason for doing so. Please document as necessary.
 
 Idiomatic Python
 ^^^^^^^^^^^^^^^^
@@ -81,4 +83,4 @@ To manually build the documentation:
 
   docs/sphinx.sh
 
-Documentation will be written to `target/doc/build/`
+Documentation will be written to `docs/build/` (in .gitignore).
