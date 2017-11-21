@@ -932,7 +932,6 @@ class CollectionViewBase:
             self.item_route_name,
             **{'id': item._jsonapi_id}
         )
-        print(self.request.response.headers['Location'])
         return {
             'data': self.serialise_db_item(item, {})
         }
@@ -2034,13 +2033,11 @@ class CollectionViewBase:
         Returns:
             bool: True if object exists, False if not.
         '''
-        print(obj_id)
         if obj_id[0] == '[':
             l = ["".join(x.split()) for x in obj_id[1:-1].split(',')]
             l = [x[1:-1] if x[0] == '\'' or x[0] == '"' else int(x) for x in l]
             obj_id = tuple(l)
-        print(obj_id)
-        print(self.model)
+
         DBSession = self.get_dbsession()
         item = DBSession.query(
             self.model
