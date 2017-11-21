@@ -1685,19 +1685,24 @@ class CollectionViewBase:
             **{'id': item_id}
         )
 
-        atts = {
+        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
+        resource_json.id = str(item_id)
+        resource_json.attributes = {
             key: getattr(item, key)
             for key in self.requested_attributes.keys()
             if self.column_info_from_name(key).get('visible', True)
         }
+        resource_json.links = {'self': item_url}
 
         rels = {}
         for key, rel in self.relationships.items():
-            rel_path_str = '.'.join(include_path + [key])
-            if key not in self.requested_relationships and\
-                    rel_path_str not in self.requested_include_names():
+            is_included = False
+            if '.'.join(include_path + [key]) in self.requested_include_names():
+                is_included = True
+            if key not in self.requested_relationships and not is_included:
                 continue
             rel_dict = {
+                'data': None,
                 'links': {
                     'self': '{}/relationships/{}'.format(item_url, key),
                     'related': '{}/{}'.format(item_url, key)
@@ -1707,11 +1712,8 @@ class CollectionViewBase:
                     'results': {}
                 }
             }
-            rel_class = rel.mapper.class_
-            rel_view = self.view_instance(rel_class)
-            is_included = False
-            if rel_path_str in self.requested_include_names():
-                is_included = True
+            rel_view = self.view_instance(rel.mapper.class_)
+
             query = self.related_query(
                 item_id, rel, full_object=is_included
             )
@@ -1734,44 +1736,31 @@ class CollectionViewBase:
                             ritem,
                             included, include_path + [key]
                         )
-                rel_dict['meta']['results']['returned'] =\
-                    len(rel_dict['data'])
+                rel_dict['meta']['results']['returned'] = len(rel_dict['data'])
             else:
                 if is_included:
-                    ritem = None
                     try:
                         ritem = query.one()
-                    except sqlalchemy.orm.exc.NoResultFound:
-                        rel_dict['data'] = None
-                    if ritem:
                         included[
                             (rel_view.collection_name, self.id_col(ritem))
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
                         )
-
+                    except sqlalchemy.orm.exc.NoResultFound:
+                        pass
                 else:
                     rel_id = getattr(
                         item,
                         rel.local_remote_pairs[0][0].name
                     )
-                    if rel_id is None:
-                        rel_dict['data'] = None
-                    else:
-                        rel_dict[
-                            'data'
-                        ] = rel_view.serialise_resource_identifier(
+                    if rel_id:
+                        rel_dict['data'] = rel_view.serialise_resource_identifier(
                             rel_id
                         )
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
-        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
-
-        resource_json.id = str(item_id)
-        resource_json.attributes = atts
-        resource_json.links = {'self': item_url}
         resource_json.relationships = rels
 
         for callback in self.callbacks['after_serialise_object']:
