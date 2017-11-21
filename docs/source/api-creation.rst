@@ -22,8 +22,8 @@ Installation
 
     pip install --pre -i pyramid_jsonapi
 
-* pyramid_jsonapi uses ``buildout`` to manage development.  See the
-  :ref:`developing` documentation for details.
+* pyramid_jsonapi uses `Buildout <https://github.com/buildout/buildout>`_
+  to manage development.  See the :ref:`developing` documentation for details.
 
 * Since pyramid_jsonapi is pure python, You can download the latest code from
   `<https://github.com/colinhiggs/pyramid-jsonapi>`_ and add the directory you
