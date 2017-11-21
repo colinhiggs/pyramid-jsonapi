@@ -77,7 +77,7 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     # any types to serialise that the default JSON renderer can't handle, you
     # must alter it. For example:
     #
-    #renderer = JSON()
+    #renderer = JSON(sort_keys=True)
     #renderer.add_adapter(datetime.date, datetime_adapter)
     #config.add_renderer('json', renderer)
 
