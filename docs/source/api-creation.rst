@@ -114,7 +114,7 @@ Start the server:
 
 .. code-block:: bash
 
-  $ pserv your_project/development.ini
+  $ pserve your_project/development.ini
 
 Assuming you have a colleciton named 'people' and using the rather lovely httpie
 `<https://github.com/jkbrzt/httpie/>`_ to test:
