@@ -2190,22 +2190,15 @@ class CollectionViewBase:
 
             # Keep track so we can tell the caller which ones were forbidden.
             forbidden = set()
-            if hasattr(obj, 'attributes'):
-                atts = {}
-                for name, val in obj.attributes.items():
-                    if name in view.allowed_fields:
-                        atts[name] = val
-                    else:
-                        forbidden.add(name)
-                obj.attributes = atts
-            if hasattr(obj, 'relationships'):
-                rels = {}
-                for name, val in obj.relationships.items():
-                    if name in view.allowed_fields:
-                        rels[name] = val
-                    else:
-                        forbidden.add(name)
-                obj.relationships = rels
+            for attr in ('attributes', 'relationships'):
+                if hasattr(obj, attr):
+                    new = {}
+                    for name, val in getattr(obj, attr).items():
+                        if name in view.allowed_fields:
+                            new[name] = val
+                        else:
+                            forbidden.add(name)
+                    setattr(obj, attr, new)
             # Now add all the forbidden fields from the model to the forbidden
             # list. They don't need to be removed from the serialised object
             # because they should not have been added in the first place.
