@@ -2155,14 +2155,19 @@ class CollectionViewBase:
 
                 if is_included:
                     rel_dict['data'] = []
-                    for ritem in q.all():
+                    for ritem in q.all(): 
+                        if type(ritem._jsonapi_id) != list:
+                            ritem_id = ritem._jsonapi_id
+                        else:
+                            ritem_id = tuple([getattr(ritem, x.key) for x in ritem._jsonapi_id])
+
                         rel_dict['data'].append(
                             rel_view.serialise_resource_identifier(
-                                ritem._jsonapi_id
+                                list(ritem_id)
                             )
                         )
                         included[
-                            (rel_view.collection_name, ritem._jsonapi_id)
+                            (rel_view.collection_name, ritem_id)
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
@@ -2176,8 +2181,13 @@ class CollectionViewBase:
                     except sqlalchemy.orm.exc.NoResultFound:
                         rel_dict['data'] = None
                     if ritem:
+                        if type(ritem._jsonapi_id) != list:
+                            ritem_id = ritem._jsonapi_id
+                        else:
+                            ritem_id = tuple([getattr(ritem, x.key) for x in ritem._jsonapi_id])
+             
                         included[
-                            (rel_view.collection_name, ritem._jsonapi_id)
+                            (rel_view.collection_name, ritem_id)
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
