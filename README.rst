@@ -1,6 +1,11 @@
 The pyramid-jsonapi project
 ===========================
 
+.. image:: https://img.shields.io/pypi/v/pyramid_jsonapi.svg
+  :target: https://pypi.python.org/pypi/pyramid_jsonapi
+
+.. image:: https://img.shields.io/pypi/pyversions/pyramid_jsonapi.svg
+
 .. image:: https://travis-ci.org/colinhiggs/pyramid-jsonapi.svg?branch=master
   :target: https://travis-ci.org/colinhiggs/pyramid-jsonapi
 
