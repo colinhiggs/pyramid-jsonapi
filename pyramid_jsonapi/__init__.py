@@ -2159,15 +2159,17 @@ class CollectionViewBase:
                         if type(ritem._jsonapi_id) != list:
                             ritem_id = ritem._jsonapi_id
                         else:
-                            ritem_id = tuple([getattr(ritem, x.key) for x in ritem._jsonapi_id])
+                            ritem_id = [getattr(ritem, x.key) for x in ritem._jsonapi_id]
 
                         rel_dict['data'].append(
                             rel_view.serialise_resource_identifier(
-                                list(ritem_id)
+                                ritem_id
                             )
                         )
                         included[
-                            (rel_view.collection_name, ritem_id)
+                            (rel_view.collection_name, 
+                            tuple(ritem_id) if type(ritem_id) == list else ritem_id)
+
                         ] = rel_view.serialise_db_item(
                             ritem,
                             included, include_path + [key]
