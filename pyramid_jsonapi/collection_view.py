@@ -1556,6 +1556,14 @@ class CollectionViewBase:
             limit_comps.pop()
         return min(limit, self.max_limit)
 
+    @functools.lru_cache()
+    def model_from_table(self, table):
+        """Find the model class mapped to a table."""
+        for model in self.api.view_classes.keys():
+            if model.__table__ is table:
+                return model
+        raise KeyError("No model mapped to %s." % table)
+
     def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.
 
@@ -1597,7 +1605,7 @@ class CollectionViewBase:
             query = query.filter(
                 local_col == self.id_col(rel_class)
             ).filter(
-                self.id_col(self.model) == obj_id
+                self.id_col(self.model_from_table(local_col.table)) == obj_id
             )
         else:
             raise HTTPError('Unknown relationships direction, "{}".'.format(
@@ -1716,47 +1724,39 @@ class CollectionViewBase:
             query = self.related_query(
                 item_id, rel, full_object=is_included
             )
-            if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
+
+            many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
+            if many:
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
-                rel_dict['meta']['results']['available'] = query.count()
                 query = query.limit(limit)
-                rel_dict['data'] = []
-                for ritem in query.all():
-                    rel_dict['data'].append(
-                        rel_view.serialise_resource_identifier(
-                            self.id_col(ritem)
-                        )
+
+            data = []
+            ritems = query.all()
+            if not many and len(ritems) > 1:
+                raise HTTPInternalServerError("Multiple results for TOONE relationship.")
+
+            for ritem in ritems:
+                data.append(
+                    rel_view.serialise_resource_identifier(
+                        self.id_col(ritem)
                     )
-                    if is_included:
-                        included[
-                            (rel_view.collection_name, self.id_col(ritem))
-                        ] = rel_view.serialise_db_item(
-                            ritem,
-                            included, include_path + [key]
-                        )
-                rel_dict['meta']['results']['returned'] = len(rel_dict['data'])
-            else:
+                )
                 if is_included:
-                    try:
-                        ritem = query.one()
-                        included[
-                            (rel_view.collection_name, self.id_col(ritem))
-                        ] = rel_view.serialise_db_item(
-                            ritem,
-                            included, include_path + [key]
-                        )
-                    except sqlalchemy.orm.exc.NoResultFound:
-                        pass
-                else:
-                    rel_id = getattr(
-                        item,
-                        rel.local_remote_pairs[0][0].name
+                    included[
+                        (rel_view.collection_name, self.id_col(ritem))
+                    ] = rel_view.serialise_db_item(
+                        ritem,
+                        included, include_path + [key]
                     )
-                    if rel_id:
-                        rel_dict['data'] = rel_view.serialise_resource_identifier(
-                            rel_id
-                        )
+            if many:
+                rel_dict['meta']['results']['available'] = query.count()
+                rel_dict['meta']['results']['returned'] = len(data)
+                rel_dict['data'] = data
+            else:
+                if data:
+                    rel_dict['data'] = data[0]
+
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
