@@ -1556,6 +1556,14 @@ class CollectionViewBase:
             limit_comps.pop()
         return min(limit, self.max_limit)
 
+    @functools.lru_cache()
+    def model_from_table(self, table):
+        """Find the model class mapped to a table."""
+        for model in self.api.view_classes.keys():
+            if model.__table__ is table:
+                return model
+        raise KeyError("No model mapped to %s." % table)
+
     def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.
 
@@ -1597,7 +1605,7 @@ class CollectionViewBase:
             query = query.filter(
                 local_col == self.id_col(rel_class)
             ).filter(
-                self.id_col(self.model) == obj_id
+                self.id_col(self.model_from_table(local_col.table)) == obj_id
             )
         else:
             raise HTTPError('Unknown relationships direction, "{}".'.format(
