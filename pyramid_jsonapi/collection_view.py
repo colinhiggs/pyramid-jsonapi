@@ -1603,7 +1603,7 @@ class CollectionViewBase:
             )
         elif rel.direction is MANYTOONE:
             query = query.filter(
-                local_col == self.id_col(rel_class)
+                rel.primaryjoin
             ).filter(
                 self.id_col(self.model_from_table(local_col.table)) == obj_id
             )
