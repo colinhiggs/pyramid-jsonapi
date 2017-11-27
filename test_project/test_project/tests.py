@@ -3056,6 +3056,13 @@ class TestFeatures(DBTestBase):
         )
         self.assertIn('debug',test_app.get('/people/1').json['meta'])
 
+    def test_feature_expose_foreign_keys(self):
+        """Should return blog with owner_id."""
+        test_app = self.test_app(
+            options={'pyramid_jsonapi.expose_foreign_keys': 'true'}
+        )
+        self.assertIn('owner_id', test_app.get('/blogs/1').json['data']['attributes'])
+
 class TestBugs(DBTestBase):
 
     def test_19_last_negative_offset(self):
