@@ -226,7 +226,9 @@ class PyramidJSONAPI():
         hybrid_atts = {}
         fields = {}
         for key, col in sqlalchemy.inspect(model).mapper.columns.items():
-            if key == class_attrs['key_column'].name or col.foreign_keys:
+            if key == class_attrs['key_column'].name:
+                continue
+            if col.foreign_keys and not self.settings.expose_foreign_keys:
                 continue
             if expose_fields is None or key in expose_fields:
                 atts[key] = col
