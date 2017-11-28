@@ -7,18 +7,15 @@ under the 'metadata' endpoint."""
 
 import collections
 import importlib
-import os.path
-import pkgutil
 
 
 class MetaData():
     """Adds routes and views for all metadata modules.
 
-    Plugins are added by the module name being added to self.modules
-    This may be overriden in the pyramid inifile config option
-    'pyramid_jsonapi.metadata_modules'
-    Modules specified in this way should be space or newline separated
-    (see pyramid.settings aslist())
+    Metadata modules are added by inclusion in the ``metadata_modules`` option
+    in settings (see :mod:`pyramid_jsonapi.settings` for default values).
+    Modules should be space or newline separated, and must be installed such
+    that they can be imported by python.
 
     All modules MUST have a class with the same name as the package.
     This class MAY contain a 'views' attribute, which contains a list
@@ -31,9 +28,6 @@ class MetaData():
         # aslist expects space-separated strings to convert to lists.
         # iter_modules returns a list of tuples - we only want name ([1])
         self.modules = self.api.settings.metadata_modules.aslist()
-        if not self.modules:
-            self.modules = [x[1] for x in pkgutil.iter_modules([os.path.dirname(__file__)])]
-
         self.make_routes_views()
 
     def make_routes_views(self):
