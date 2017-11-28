@@ -3263,9 +3263,41 @@ class TestMetaData(DBTestBase):
         cls.api.create_jsonapi()
         cls.metadata = pyramid_jsonapi.metadata.MetaData(cls.api)
 
+    def test_no_jsonschema_module(self):
+        """Test how things break if jsonschema is disabled."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.metadata_modules': ''
+            }).post('/people', '{}', status=500)
+
+        self.test_app(
+            options={
+                'pyramid_jsonapi.metadata_modules': ''
+            }).get('/metadata/JSONSchema', '{}', status=404)
+
+    def test_disable_jsonschema_validation(self):
+        """Test disabling jsonschema and validation together works."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.metadata_modules': '',
+                'pyramid_jsonapi.schema_validation': 'false',
+            }).post_json(
+                '/people',
+                {
+                    'data': {
+                        'type': 'people',
+                        'attributes': {
+                            'name': 'test'
+                        }
+                    }
+                },
+                headers={'Content-Type': 'application/vnd.api+json'}
+            )
+
     def test_jsonschema_template(self):
-        """Test that template() returns valid json."""
-        json.dumps(self.metadata.JSONSchema.template())
+        """Test that template() returns valid json, and as a view."""
+        dir_tmpl = json.dumps(self.metadata.JSONSchema.template())
+        view_tmpl = self.test_app().get('/metadata/JSONSchema', '{}').json
 
     def test_jsonschema_load_schema_file(self):
         """Test loading jsonschema from file."""
