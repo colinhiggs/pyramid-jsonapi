@@ -17,14 +17,11 @@ from pyramid.httpexceptions import (
 class RoutePatternConstructor():
     """Construct pyramid_jsonapi route patterns."""
 
-    def __init__(
-            self, sep='/', main_prefix='',
-            api_prefix='api', metadata_prefix='metadata'
-    ):
-        self.sep = sep
-        self.main_prefix = main_prefix
-        self.api_prefix = api_prefix
-        self.metadata_prefix = metadata_prefix
+    def __init__(self, route_info):
+        self.sep = route_info['route_pattern_sep']
+        self.pattern_prefix = route_info['route_pattern_prefix']
+        self.api_prefix = route_info['api_prefix']
+        self.metadata_prefix = route_info['metadata_prefix']
 
     def pattern_from_components(self, *components):
         """Construct a route pattern from components.
@@ -53,7 +50,7 @@ class RoutePatternConstructor():
             *components (str): components to add after collection name.
         """
         pattern = self.pattern_from_components(
-            '', self.main_prefix, self.api_prefix, name, *components
+            '', self.pattern_prefix, self.api_prefix, name, *components
         )
         if rstrip:
             pattern = pattern.rstrip(self.sep)
@@ -67,7 +64,7 @@ class RoutePatternConstructor():
             *components (str): components to add after metadata type.
         """
         return self.pattern_from_components(
-            '', self.main_prefix, self.metadata_prefix,
+            '', self.pattern_prefix, self.metadata_prefix,
             metadata_type, *components
         )
 
@@ -83,20 +80,19 @@ class EndpointData():
     def __init__(self, api):
         self.config = api.config
         settings = api.settings
-        self.route_name_prefix = settings.route_name_prefix
-        self.route_pattern_prefix = settings.route_pattern_prefix
-        self.route_name_sep = settings.route_name_sep
-        self.route_pattern_sep = settings.route_pattern_sep
-        self.api_prefix = ''
+        self.route_info = {
+            'route_name_prefix': settings.route_name_prefix,
+            'route_pattern_prefix': settings.route_pattern_prefix,
+            'route_name_sep': settings.route_name_sep,
+            'route_pattern_sep': settings.route_pattern_sep,
+            'api_prefix': '',
+            'metadata_prefix': settings.route_pattern_metadata_prefix,
+        }
+
         if settings.metadata_endpoints:
-            self.api_prefix = settings.route_pattern_api_prefix
-        self.metadata_prefix = settings.route_pattern_metadata_prefix
-        self.rp_constructor = RoutePatternConstructor(
-            sep=self.route_pattern_sep,
-            main_prefix=self.route_pattern_prefix,
-            api_prefix=self.api_prefix,
-            metadata_prefix=self.metadata_prefix,
-        )
+            self.route_info['api_prefix'] = settings.route_pattern_api_prefix
+
+        self.rp_constructor = RoutePatternConstructor(self.route_info)
 
         # Mapping of endpoints, http_methods and options for constructing routes and views.
         # Update this dictionary prior to calling create_jsonapi()
@@ -263,14 +259,17 @@ class EndpointData():
         Keyword Arguments:
             suffix: An (optional) suffix to append to the route name.
         """
-        return self.route_name_sep.join(
-            (self.route_name_prefix, name, suffix)
-        ).rstrip(self.route_name_sep)
+        return self.route_info['route_name_sep'].join(
+            (self.route_info['route_name_prefix'], name, suffix)
+        ).rstrip(self.route_info['route_name_sep'])
 
     def route_pattern_to_suffix(self, pattern_dict):
         """Convert route_pattern dict to suffix string."""
         if pattern_dict:
-            return pattern_dict['pattern'].format(sep=self.route_pattern_sep, *pattern_dict['fields'])
+            return pattern_dict['pattern'].format(
+                sep=self.route_info['route_pattern_sep'],
+                *pattern_dict['fields']
+            )
         return ''
 
     def add_routes_views(self, view):

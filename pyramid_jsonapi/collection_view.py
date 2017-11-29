@@ -1,4 +1,5 @@
 """Provide base class for collection views and utilities."""
+# pylint: disable=too-many-lines; It's mostly docstrings
 import functools
 import itertools
 import logging
@@ -34,6 +35,8 @@ class CollectionViewBase:
     Arguments:
         request (pyramid.request): passed by framework.
     """
+
+    # pylint:disable=too-many-public-methods
 
     # Define class attributes
     # Callable attributes use lambda to keep pylint happy
@@ -418,15 +421,15 @@ class CollectionViewBase:
 
         rels = data.get('relationships', {})
         for relname, reldict in rels.items():
-            if relname not in self.relationships:
+            try:
+                rel = self.relationships[relname]
+            except KeyError:
                 raise HTTPNotFound(
                     'Collection {} has no relationship {}'.format(
                         self.collection_name, relname
                     )
                 )
-            rel = self.relationships[relname]
-            rel_class = rel.mapper.class_
-            rel_view = self.view_instance(rel_class)
+            rel_view = self.view_instance(rel.mapper.class_)
             try:
                 data = reldict['data']
             except KeyError:
@@ -451,7 +454,7 @@ class CollectionViewBase:
                         'An id is required in a resource identifier.'
                     )
                 rel_item = self.dbsession.query(
-                    rel_class
+                    rel.mapper.class_
                 ).options(
                     load_only(rel_view.key_column.name)
                 ).get(data['id'])
@@ -464,7 +467,7 @@ class CollectionViewBase:
                 rel_items = []
                 for res_ident in data:
                     rel_item = self.dbsession.query(
-                        rel_class
+                        rel.mapper.class_
                     ).options(
                         load_only(rel_view.key_column.name)
                     ).get(res_ident['id'])
@@ -695,7 +698,6 @@ class CollectionViewBase:
         if 'id' in data:
             atts[self.model.__pyramid_jsonapi__['id_col_name']] = data['id']
         item = self.model(**atts)
-        mapper = sqlalchemy.inspect(self.model).mapper
         with self.dbsession.no_autoflush:
             for relname, reldict in data.get('relationships', {}).items():
                 try:
@@ -705,7 +707,7 @@ class CollectionViewBase:
                         'relationships within POST must have data member'
                     )
                 try:
-                    rel = mapper.relationships[relname]
+                    rel = sqlalchemy.inspect(self.model).mapper.relationships[relname]
                 except KeyError:
                     raise HTTPNotFound(
                         'No relationship {} in collection {}'.format(
@@ -713,8 +715,7 @@ class CollectionViewBase:
                             self.collection_name
                         )
                     )
-                rel_class = rel.mapper.class_
-                rel_type = self.api.view_classes[rel_class].collection_name
+                rel_type = self.api.view_classes[rel.mapper.class_].collection_name
                 if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                     # reldata should be a list/array
                     if not isinstance(reldata, Sequence) or isinstance(reldata, str):
@@ -730,25 +731,23 @@ class CollectionViewBase:
                                 )
                             )
                         try:
-                            rid_id = rel_identifier['id']
+                            rel_items.append(self.dbsession.query(rel.mapper.class_).get(rel_identifier['id']))
                         except KeyError:
                             raise HTTPBadRequest(
                                 'Relationship identifier must have an id member'
                             )
-                        rel_items.append(self.dbsession.query(rel_class).get(rid_id))
                     setattr(item, relname, rel_items)
                 else:
                     try:
-                        related_id = reldata['id']
-                    except Exception:
+                        setattr(
+                            item,
+                            relname,
+                            self.dbsession.query(rel.mapper.class_).get(reldata['id'])
+                        )
+                    except KeyError:
                         raise HTTPBadRequest(
                             'No id member in relationship data.'
                         )
-                    setattr(
-                        item,
-                        relname,
-                        self.dbsession.query(rel_class).get(related_id)
-                    )
         try:
             self.dbsession.add(item)
             self.dbsession.flush()
@@ -1422,7 +1421,7 @@ class CollectionViewBase:
             # sort_keys[0] is the name of an attribute or a
             # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
             # is the name of a relationship.
-            if isinstance(order_att.property, RelationshipProperty):
+            if hasattr(order_att, 'property') and isinstance(order_att.property, RelationshipProperty):
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
@@ -1557,6 +1556,14 @@ class CollectionViewBase:
             limit_comps.pop()
         return min(limit, self.max_limit)
 
+    @functools.lru_cache()
+    def model_from_table(self, table):
+        """Find the model class mapped to a table."""
+        for model in self.api.view_classes.keys():
+            if model.__table__ is table:
+                return model
+        raise KeyError("No model mapped to %s." % table)
+
     def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.
 
@@ -1596,9 +1603,9 @@ class CollectionViewBase:
             )
         elif rel.direction is MANYTOONE:
             query = query.filter(
-                local_col == self.id_col(rel_class)
+                rel.primaryjoin
             ).filter(
-                self.id_col(self.model) == obj_id
+                self.id_col(self.model_from_table(local_col.table)) == obj_id
             )
         else:
             raise HTTPError('Unknown relationships direction, "{}".'.format(
@@ -1685,19 +1692,24 @@ class CollectionViewBase:
             **{'id': item_id}
         )
 
-        atts = {
+        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
+        resource_json.id = str(item_id)
+        resource_json.attributes = {
             key: getattr(item, key)
             for key in self.requested_attributes.keys()
             if self.column_info_from_name(key).get('visible', True)
         }
+        resource_json.links = {'self': item_url}
 
         rels = {}
         for key, rel in self.relationships.items():
-            rel_path_str = '.'.join(include_path + [key])
-            if key not in self.requested_relationships and\
-                    rel_path_str not in self.requested_include_names():
+            is_included = False
+            if '.'.join(include_path + [key]) in self.requested_include_names():
+                is_included = True
+            if key not in self.requested_relationships and not is_included:
                 continue
             rel_dict = {
+                'data': None,
                 'links': {
                     'self': '{}/relationships/{}'.format(item_url, key),
                     'related': '{}/{}'.format(item_url, key)
@@ -1707,71 +1719,47 @@ class CollectionViewBase:
                     'results': {}
                 }
             }
-            rel_class = rel.mapper.class_
-            rel_view = self.view_instance(rel_class)
-            is_included = False
-            if rel_path_str in self.requested_include_names():
-                is_included = True
+            rel_view = self.view_instance(rel.mapper.class_)
+
             query = self.related_query(
                 item_id, rel, full_object=is_included
             )
-            if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
+
+            many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
+            if many:
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
-                rel_dict['meta']['results']['available'] = query.count()
                 query = query.limit(limit)
-                rel_dict['data'] = []
-                for ritem in query.all():
-                    rel_dict['data'].append(
-                        rel_view.serialise_resource_identifier(
-                            self.id_col(ritem)
-                        )
-                    )
-                    if is_included:
-                        included[
-                            (rel_view.collection_name, self.id_col(ritem))
-                        ] = rel_view.serialise_db_item(
-                            ritem,
-                            included, include_path + [key]
-                        )
-                rel_dict['meta']['results']['returned'] =\
-                    len(rel_dict['data'])
-            else:
-                if is_included:
-                    ritem = None
-                    try:
-                        ritem = query.one()
-                    except sqlalchemy.orm.exc.NoResultFound:
-                        rel_dict['data'] = None
-                    if ritem:
-                        included[
-                            (rel_view.collection_name, self.id_col(ritem))
-                        ] = rel_view.serialise_db_item(
-                            ritem,
-                            included, include_path + [key]
-                        )
 
-                else:
-                    rel_id = getattr(
-                        item,
-                        rel.local_remote_pairs[0][0].name
+            data = []
+            ritems = query.all()
+            if not many and len(ritems) > 1:
+                raise HTTPInternalServerError("Multiple results for TOONE relationship.")
+
+            for ritem in ritems:
+                data.append(
+                    rel_view.serialise_resource_identifier(
+                        self.id_col(ritem)
                     )
-                    if rel_id is None:
-                        rel_dict['data'] = None
-                    else:
-                        rel_dict[
-                            'data'
-                        ] = rel_view.serialise_resource_identifier(
-                            rel_id
-                        )
+                )
+                if is_included:
+                    included[
+                        (rel_view.collection_name, self.id_col(ritem))
+                    ] = rel_view.serialise_db_item(
+                        ritem,
+                        included, include_path + [key]
+                    )
+            if many:
+                rel_dict['meta']['results']['available'] = query.count()
+                rel_dict['meta']['results']['returned'] = len(data)
+                rel_dict['data'] = data
+            else:
+                if data:
+                    rel_dict['data'] = data[0]
+
             if key in self.requested_relationships:
                 rels[key] = rel_dict
 
-        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
-
-        resource_json.id = str(item_id)
-        resource_json.attributes = atts
-        resource_json.links = {'self': item_url}
         resource_json.relationships = rels
 
         for callback in self.callbacks['after_serialise_object']:
@@ -2190,22 +2178,15 @@ class CollectionViewBase:
 
             # Keep track so we can tell the caller which ones were forbidden.
             forbidden = set()
-            if hasattr(obj, 'attributes'):
-                atts = {}
-                for name, val in obj.attributes.items():
-                    if name in view.allowed_fields:
-                        atts[name] = val
-                    else:
-                        forbidden.add(name)
-                obj.attributes = atts
-            if hasattr(obj, 'relationships'):
-                rels = {}
-                for name, val in obj.relationships.items():
-                    if name in view.allowed_fields:
-                        rels[name] = val
-                    else:
-                        forbidden.add(name)
-                obj.relationships = rels
+            for attr in ('attributes', 'relationships'):
+                if hasattr(obj, attr):
+                    new = {}
+                    for name, val in getattr(obj, attr).items():
+                        if name in view.allowed_fields:
+                            new[name] = val
+                        else:
+                            forbidden.add(name)
+                    setattr(obj, attr, new)
             # Now add all the forbidden fields from the model to the forbidden
             # list. They don't need to be removed from the serialised object
             # because they should not have been added in the first place.

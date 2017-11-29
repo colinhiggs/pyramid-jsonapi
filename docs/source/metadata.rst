@@ -1,15 +1,22 @@
 Metadata Modules
 ================
 
-Metadata modules provide access to metadata about the API. The :class:`pyramid_jsonapi.metadata` class is responsible for loading the modules and setting up routes and views under ``/metadata`` (by default - see :mod:`pyramid_jsonapi.settings`).
+Metadata modules provide access to metadata about the API. The
+:class:`pyramid_jsonapi.metadata` class is responsible for loading the modules
+and setting up routes and views under ``/metadata``
+(by default - see :mod:`pyramid_jsonapi.settings`).
 
 Built-in Modules
 ----------------
 
-By default, all modules in the ``metadata`` directory in the project are loaded.  This can be
-overridden by changing the ``metadata_modules`` configuration option (see :mod:`pyramid_jsonapi.settings`).
+The ``metadata_modules`` configuration option lists modules which are to be loaded
+(see :mod:`pyramid_jsonapi.settings`). If this list is empty, no modules
+will be loaded.
 
-The following modules are included:
+*Note*: Some modules are required for core functionality - for example schema
+validation requires the ``jsonschema`` module.
+
+The default setting for this option includes the following modules:
 
 .. toctree::
    :glob:

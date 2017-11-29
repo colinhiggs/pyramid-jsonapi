@@ -31,8 +31,9 @@ class Settings():
     # Default configuration values
     _defaults = {
         'allow_client_ids': {'val': False, 'desc': 'Allow client to specify resource ids.'},
+        'expose_foreign_keys': {'val': False, 'desc': 'Expose foreign key fields in JSON.'},
         'metadata_endpoints': {'val': True, 'desc': 'Should /metadata endpoint be enabled?'},
-        'metadata_modules': {'val': '', 'desc': 'Modules to load to provide metadata endpoints (defaults to all modules in the metadata package).'},
+        'metadata_modules': {'val': 'JSONSchema OpenAPI', 'desc': 'Modules to load to provide metadata endpoints (defaults are modules provided in the metadata package).'},
         'openapi_file': {'val': '', 'desc': 'File containing OpenAPI data (YAML or JSON)'},
         'paging_default_limit': {'val': 10, 'desc': 'Default pagination limit for collections.'},
         'paging_max_limit': {'val': 100, 'desc': 'Default limit on the number of items returned for collections.'},
