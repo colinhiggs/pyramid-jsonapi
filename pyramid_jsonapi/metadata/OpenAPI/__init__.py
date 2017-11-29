@@ -16,6 +16,12 @@ data provided with the pyramid package that is using ``pyramid_jsonapi``,
 using the ``pkginfo`` module. This requires that the pyramid package can be
 located in the python path (i.e it can be imported).
 
+Documentation is dynamically generated from several sources:
+
+* Endpoint data -> endpoints, parameters, request and response content.
+* Model docstrings -> endpoint descriptions.
+* sqlalchemy columns -> schemas (via JSONSchema module).
+
 """
 
 import functools
