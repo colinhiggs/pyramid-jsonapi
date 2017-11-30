@@ -97,6 +97,8 @@ Auto-Create Assumptions
 
 #. API endpoints will be provided at ``/api/...`` by default.
 
+#. Metadata endpoints will be provided at ``/metadata/...`` by default.
+
 Some of those behaviours can be adjusted, see :ref:`customisation`.
 
 Trying Your API Out
