@@ -72,7 +72,7 @@ constructed:
 
   pj_api = pyramid_jsonapi.PyramidJSONAPI(config, models)
 
-  # Do something here like add an view for OPTIONS requests.
+  # Do something here like add a view for OPTIONS requests.
 
   pj_api.create_jsonapi_using_magic_and_pixie_dust()
 
