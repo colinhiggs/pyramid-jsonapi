@@ -84,7 +84,7 @@ Auto-Create Assumptions
 #. Each model has a single primary_key column. This will be auto-detected and
    stored in ``__pyramid_jsonapi__`` dict attr in the model.
 
-#. use a separate primary key for association objects rather than the
+#. Use a separate primary key for association objects rather than the
    composite key defined by the left and right referenced foreign keys.
 
 #. You are happy to give your collection end-points the same name as the
