@@ -95,7 +95,11 @@ A Collection
 
 Note that we have:
 
-* ``data`` which is an array of comments objects, each with:
+* ``data`` which is an array of posts objects, each with:
+
+  * a ``type``, which is the collection name
+
+  * an ``id``, which is the value of the primary key column (which may or may not be called ``id``)
 
   * ``attributes``, as expected
 
