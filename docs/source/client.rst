@@ -373,3 +373,9 @@ Find all the posts with 'bob' somewhere in the title:
 .. code-block:: bash
 
   http GET http://localhost:6543/api/posts?filter[title:like]=*bob*
+
+Find all the posts where the author has the name 'alice':
+
+.. code-block:: bash
+
+  http GET http://localhost:6543/api/posts?filter[author.name:eq]=alice
