@@ -343,7 +343,7 @@ like the following:
 where:
 
 * ``attribute_spec`` is either a direct attribute name or a dotted path to an
-  attribute via relationhips.
+  attribute via relationhips (only one level of relationships is currently supported).
 
 * ``operator`` is one of the list of supported operators (:ref:`search_filter_operators`).
 
