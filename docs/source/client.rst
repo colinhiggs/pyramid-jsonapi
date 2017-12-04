@@ -95,7 +95,11 @@ A Collection
 
 Note that we have:
 
-* ``data`` which is an array of comments objects, each with:
+* ``data`` which is an array of posts objects, each with:
+
+  * a ``type``, which is the collection name
+
+  * an ``id``, which is the value of the primary key column (which may or may not be called ``id``)
 
   * ``attributes``, as expected
 
@@ -339,7 +343,7 @@ like the following:
 where:
 
 * ``attribute_spec`` is either a direct attribute name or a dotted path to an
-  attribute via relationhips.
+  attribute via relationships (only one level of relationships is currently supported).
 
 * ``operator`` is one of the list of supported operators (:ref:`search_filter_operators`).
 
@@ -369,3 +373,9 @@ Find all the posts with 'bob' somewhere in the title:
 .. code-block:: bash
 
   http GET http://localhost:6543/api/posts?filter[title:like]=*bob*
+
+Find all the posts where the author has the name 'alice':
+
+.. code-block:: bash
+
+  http GET http://localhost:6543/api/posts?filter[author.name:eq]=alice

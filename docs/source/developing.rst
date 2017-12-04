@@ -1,3 +1,5 @@
+.. _developing:
+
 Developing pyramid-jsonapi
 ==========================
 
@@ -35,20 +37,22 @@ all PRs and commits to ensure consistent, high-quality code.
 Tests
 ^^^^^^
 
-``unittest`` tests should be created for all new code. Coverage can be reviewd at:
+``unittest`` tests should be created for all new code. Coverage can be reviewed at:
 `<https://coveralls.io/github/colinhiggs/pyramid-jsonapi>`_
 
 PEP8
 ^^^^
+
 Code should pass PEP8 validation:
 
-  * long lines should be avoided, but not at the expense of readability. (``pep8 --ignore=E501`` is used when testing).
+  * long lines should be avoided, but not at the expense of readability. (``pycodestyle --ignore=E501`` is used when testing).
 
 pylint
 ^^^^^^
 
-Code should pass pylint validation.
-``# pylint: disable=xxx`` is allowed where there is a clear reason for doing so. Please document as necessary.
+Code should pass pylint validation:
+
+  * ``# pylint: disable=xxx`` is allowed where there is a clear reason for doing so. Please document as necessary.
 
 Idiomatic Python
 ^^^^^^^^^^^^^^^^
@@ -60,7 +64,9 @@ Currently pyramid_jsonapi is built and tested against python 3. 3.4 or later is 
 
 Versioning
 ^^^^^^^^^^^
-Semantic versioning should be used, see `<https://semver.org>`_ for details.
+Semantic versioning should be used, see
+`PEP440 - Version Identification and Dependency Specification <https://www.python.org/dev/peps/pep-0440/>`_
+for details.
 
 
 Documentation
@@ -77,4 +83,4 @@ To manually build the documentation:
 
   docs/sphinx.sh
 
-Documentation will be written to `target/doc/build/`
+Documentation will be written to `docs/build/` (in .gitignore).

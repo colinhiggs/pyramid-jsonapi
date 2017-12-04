@@ -22,16 +22,19 @@ Installation
 
     pip install --pre -i pyramid_jsonapi
 
-* Since pyramid_jsonapi is pure python, You can download the development version from
+* pyramid_jsonapi uses `Buildout <https://github.com/buildout/buildout>`_
+  to manage development.  See the :ref:`developing` documentation for details.
+
+* Since pyramid_jsonapi is pure python, You can download the latest code from
   `<https://github.com/colinhiggs/pyramid-jsonapi>`_ and add the directory you
   downloaded/cloned to to your PYTHONPATH.
 
 Generating an API From Your Models
 ----------------------------------
 
-First import the `pyramid_jsonapi` module and any model classes or modules which
+First import the ``pyramid_jsonapi`` module and any model classes or modules which
 you would like to expose as API collection endpoints. In your application's
-`__init__.py`:
+``__init__.py``:
 
 .. code-block:: python
 
@@ -69,7 +72,7 @@ constructed:
 
   pj_api = pyramid_jsonapi.PyramidJSONAPI(config, models)
 
-  # Do something here like add an view for OPTIONS requests.
+  # Do something here like add a view for OPTIONS requests.
 
   pj_api.create_jsonapi_using_magic_and_pixie_dust()
 
@@ -81,7 +84,7 @@ Auto-Create Assumptions
 #. Each model has a single primary_key column. This will be auto-detected and
    stored in ``__pyramid_jsonapi__`` dict attr in the model.
 
-#. use a separate primary key for association objects rather than the
+#. Use a separate primary key for association objects rather than the
    composite key defined by the left and right referenced foreign keys.
 
 #. You are happy to give your collection end-points the same name as the
@@ -91,6 +94,10 @@ Auto-Create Assumptions
    ``sqlalchemy.orm.relationship()`` (or ``backref()``).
 
 #. You are happy to expose any so defined relationship via a relationship URL.
+
+#. API endpoints will be provided at ``/api/...`` by default.
+
+#. Metadata endpoints will be provided at ``/metadata/...`` by default.
 
 Some of those behaviours can be adjusted, see :ref:`customisation`.
 
@@ -111,10 +118,10 @@ Start the server:
 
 .. code-block:: bash
 
-  $ pserv your_project/development.ini
+  $ pserve your_project/development.ini
 
-Assuming you have a colleciton named 'people' and using the rather lovely httpie
-`<https://github.com/jkbrzt/httpie/>`_ to test:
+Assuming you have a collection named 'people' and are using the rather lovely
+`httpie <https://github.com/jkbrzt/httpie/>`_ to test:
 
 .. code-block:: bash
 
@@ -131,10 +138,11 @@ Assuming you have a colleciton named 'people' and using the rather lovely httpie
   {
     "data": [
       {
+        "type": "people",
+        "id": "1",
         "attributes": {
           "name": "alice"
         },
-        "id": "1",
         "links": {
           "self": "http://localhost:6543/api/people/1"
         },
@@ -153,3 +161,54 @@ See ``test_project/test_project/__init__.py`` for a fully working
 ``__init__.py`` file.
 
 You don't need a ``views.py`` unless you have some other routes and views.
+
+There's also some metadata available at ``http://localhost:6543/metadata``.
+pyramid_jsonapi currently includes metadata modules to produce JSONSchema and
+OpenAPI/Swagger. See the :ref:`metadata` section.
+
+The following will fetch the JSONSchema for a successful response to a GET on the
+people endpoint:
+
+.. code-block:: bash
+
+  $ http http://localhost:6543/metadata/JSONSchema/endpoint/people?method=get&direction=response&code=200
+
+.. code-block:: json
+
+  {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+          "meta": {
+              "$ref": "#/definitions/meta"
+          },
+          "included": {
+              "type": "array",
+              "uniqueItems": true,
+              "description": "To reduce the number of HTTP requests, servers **MAY** allow responses that include related resources along with the requested primary resources. Such responses are called \"compound documents\".",
+              "items": {
+                  "$ref": "#/definitions/resource"
+              }
+          },
+          "jsonapi": {
+              "$ref": "#/definitions/jsonapi"
+          },
+          "data": {
+              "$ref": "#/definitions/people_data"
+          },
+          "links": {
+              "allOf": [
+                  {
+                      "$ref": "#/definitions/links"
+                  },
+                  {
+                      "$ref": "#/definitions/pagination"
+                  }
+              ],
+              "description": "Link members related to the primary data."
+          }
+      },
+      "required": [
+          "data"
+      ]
+  }
