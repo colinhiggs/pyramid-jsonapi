@@ -138,10 +138,11 @@ Assuming you have a collection named 'people' and are using the rather lovely
   {
     "data": [
       {
+        "type": "people",
+        "id": "1",
         "attributes": {
           "name": "alice"
         },
-        "id": "1",
         "links": {
           "self": "http://localhost:6543/api/people/1"
         },
