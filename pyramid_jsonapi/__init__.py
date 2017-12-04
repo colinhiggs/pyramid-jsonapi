@@ -2150,7 +2150,6 @@ class CollectionViewBase:
                 qinfo = self.collection_query_info(self.request)
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
-                rel_dict['meta']['results']['available'] = q.count()
                 q = q.limit(limit)
 
                 if is_included:
