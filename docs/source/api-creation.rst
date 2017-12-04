@@ -161,3 +161,54 @@ See ``test_project/test_project/__init__.py`` for a fully working
 ``__init__.py`` file.
 
 You don't need a ``views.py`` unless you have some other routes and views.
+
+There's also some metadata available at ``http://localhost:6543/metadata``.
+pyramid_jsonapi currently includes metadata modules to produce JSONSchema and
+OpenAPI/Swagger. See the :ref:`metadata` section.
+
+The following will fetch the JSONSchema for a succesful response to a GET on the
+people endpoint:
+
+.. code-block:: bash
+
+  $ http http://localhost:6543/metadata/JSONSchema/endpoint/people?method=get&direction=response&code=200
+
+.. code-block:: json
+
+  {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+          "meta": {
+              "$ref": "#/definitions/meta"
+          },
+          "included": {
+              "type": "array",
+              "uniqueItems": true,
+              "description": "To reduce the number of HTTP requests, servers **MAY** allow responses that include related resources along with the requested primary resources. Such responses are called \"compound documents\".",
+              "items": {
+                  "$ref": "#/definitions/resource"
+              }
+          },
+          "jsonapi": {
+              "$ref": "#/definitions/jsonapi"
+          },
+          "data": {
+              "$ref": "#/definitions/people_data"
+          },
+          "links": {
+              "allOf": [
+                  {
+                      "$ref": "#/definitions/links"
+                  },
+                  {
+                      "$ref": "#/definitions/pagination"
+                  }
+              ],
+              "description": "Link members related to the primary data."
+          }
+      },
+      "required": [
+          "data"
+      ]
+  }
