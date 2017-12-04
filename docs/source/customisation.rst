@@ -11,6 +11,61 @@ This provides default values as class attributes.
 
 .. include:: apidoc/settings.inc
 
+Model Class Options
+-------------------
+
+The behaviour of classes (and, by extension, collections) is controlled via a special
+class attribute, ``__pyramid_jsonapi__``. The value of this attribute should be
+a dictionary with each key representing an option name and each value
+representing the option value. For example, the following will create a
+``Person`` class with a table name ``people`` in the database but a collection
+name ``humans`` in the resulting API:
+
+.. code-block:: python
+
+  class Person(Base):
+      __tablename__ = 'people'
+      id = Column(BigInteger, primary_key=True, autoincrement=True)
+      name = Column(Text)
+      __pyramid_jsonapi__ = {
+        'collection_name': 'humans'
+      }
+
+The available options are:
+
+===============   ==========    ================================================
+Option            Value Type    Description
+===============   ==========    ================================================
+collection_name   string        Name of collection in the API.
+id_col_name       string        Used internally to track id column - do not use.
+===============   ==========    ================================================
+
+Model Column Options
+--------------------
+
+Some behaviours can be controlled on a column by column basis. SQLAlchemy uses
+the special column attribute ``info`` to carry information (as a dictionary)
+from third party modules (like pyramid_jsonapi). The pyramid_jsonapi module
+expects column options as a dictionary stored in the ``pyramid_jsonapi`` key of
+the ``info`` dictionary. For example, to make a column called
+``invisible_column`` invisible to the API:
+
+.. code-block:: python
+
+  class Person(Base):
+      __tablename__ = 'people'
+      id = Column(BigInteger, primary_key=True, autoincrement=True)
+      invisible_column = Column(Text)
+      invisible_column.info.update({'pyramid_jsonapi': {'visible': False}})
+
+Available column options:
+
+===============   ==========    ================================================
+Option            Value Type    Description
+===============   ==========    ================================================
+visible           Boolean       Whether or not to display this colum in the API.
+===============   ==========    ================================================
+
 Selectively Passing Models for API Generation
 ---------------------------------------------
 
