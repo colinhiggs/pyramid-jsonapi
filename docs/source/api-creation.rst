@@ -166,7 +166,7 @@ There's also some metadata available at ``http://localhost:6543/metadata``.
 pyramid_jsonapi currently includes metadata modules to produce JSONSchema and
 OpenAPI/Swagger. See the :ref:`metadata` section.
 
-The following will fetch the JSONSchema for a succesful response to a GET on the
+The following will fetch the JSONSchema for a successful response to a GET on the
 people endpoint:
 
 .. code-block:: bash

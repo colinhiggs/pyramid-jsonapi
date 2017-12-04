@@ -73,7 +73,7 @@ additions to the standard pyramid alchemy scaffold's top level ``__init__.py``:
     # The usual stuff from the pyramid alchemy setup.
     config = Configurator(settings=settings)
 
-    # pyramid_jsonapi uses the renderer labeled 'json'. As usual, if you have
+    # pyramid_jsonapi uses the renderer labelled 'json'. As usual, if you have
     # any types to serialise that the default JSON renderer can't handle, you
     # must alter it. For example:
     #

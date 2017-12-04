@@ -37,7 +37,7 @@ all PRs and commits to ensure consistent, high-quality code.
 Tests
 ^^^^^^
 
-``unittest`` tests should be created for all new code. Coverage can be reviewd at:
+``unittest`` tests should be created for all new code. Coverage can be reviewed at:
 `<https://coveralls.io/github/colinhiggs/pyramid-jsonapi>`_
 
 PEP8
