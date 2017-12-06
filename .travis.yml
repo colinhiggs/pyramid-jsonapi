@@ -26,7 +26,7 @@ deploy:
   provider: pypi
   user: "colinhiggs"
   on:
-    branch: master
+    tags: true
   password:
     secure: "YAq6KEOf4LnXgf9MkW0DRHLzxPGob5a6y/b38eQ/wD/KEL6rZjHvS92E1qEuTe+Et6RAoWz6e76j5ntQS9Qf7rJfIuxcqWl19ofXTmACcjHd6Evblqz8llGUlKTBKchkQ7yMm6tbkyYHLrUYgZPyr+0lB8G94wAh+qBd460kAMFEhPPOMCUDdtIA+jeU6dENFO9V/BFOBlOuoIEw6PLT96z
 gQCvUMza3O2Op4hT7zsyI9U/7jXM1RgV6/HF3TcyQTpTFBMoOeSrASTt6tT4LF7Ws3HL1HIe/Gy0smBseDP45csqP90uiqUvfv8P0lv31tgTrn2e5tjbTHhKeeN3th+hxyzwn2ss1XoH8gvcVdiq7+AKg41WXUgceAXsQfWXf53JjpmRzSw/fj5YBJ3x16gnVtUbZmDE9TnGneAyrwN6QTk56q2SUmDIj5
