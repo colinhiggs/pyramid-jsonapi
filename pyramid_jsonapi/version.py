@@ -5,9 +5,10 @@ Based on: https://github.com/Changaco/version.py
 
 """
 
-from os.path import dirname, isdir, join
+from os.path import dirname, isdir, isfile, join
 import re
 from subprocess import CalledProcessError, check_output
+import pkg_resources
 
 
 def get_version():
@@ -23,6 +24,7 @@ def get_version():
         return version.group(1)
 
     project_dir = dirname(__file__)
+    pkg_file = join(project_dir, '../PKG-INFO')
 
     if isdir(join(project_dir, '../.git')):
         # Get the version using "git describe".
@@ -35,13 +37,15 @@ def get_version():
         # PEP 440 compatibility
         if '-' in version:
             version = '.dev'.join(version.split('-')[:2])
+        return version
 
-    else:
+    if isfile(pkg_file):
         # Extract the version from the PKG-INFO file.
-        with open(join(project_dir, '../PKG-INFO')) as info_f:
-            version = version_re.search(info_f.read()).group(1)
+        with open(pkg_file) as info_f:
+            return version_re.search(info_f.read()).group(1)
 
-    return version
+    # Package was installed (os pkg, pip etc) without PKG-INFO
+    return pkg_resources.get_distribution('pyramid-jsonapi').version
 
 
 if __name__ == '__main__':
