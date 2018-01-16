@@ -9,7 +9,7 @@ TARGET=docs/build
 
 sphinx-apidoc -f -T -e -o ${SOURCE}/apidoc pyramid_jsonapi
 # Generate config docs from python method
-python -c 'import pyramid_jsonapi.settings as pjs; s = pjs.Settings({}); print(s.sphinx_doc())' >docs/source/apidoc/settings.inc
+python -c 'import pyramid_jsonapi; import pyramid_settings_wrapper as psw; s = psw.Settings({}, defaults=pyramid_jsonapi.PyramidJSONAPI.config_defaults); print(s.sphinx_doc())' >docs/source/apidoc/settings.inc
 travis-sphinx --outdir=${TARGET} build --source=${SOURCE}
 # Build docs if this is master branch, and HEAD has a tag associated with it
 if [[ $TRAVIS_BRANCH == "master" ]] && git describe --exact-match HEAD; then

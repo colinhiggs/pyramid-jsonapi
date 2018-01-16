@@ -6,7 +6,7 @@ Customising the Generated API
 Configuration Options
 ---------------------
 
-Configuration options are managed by :class:`pyramid_jsonapi.settings.Settings`.
+Configuration options are managed by :mod:`pyramid_settings_wrapper.Settings`.
 This provides default values as class attributes.
 
 .. include:: apidoc/settings.inc
