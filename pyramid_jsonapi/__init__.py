@@ -82,7 +82,6 @@ class PyramidJSONAPI():
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
     }
 
-
     def __init__(self, config, models, get_dbsession=None):
         self.config = config
         self.settings = pyramid_settings_wrapper.Settings(

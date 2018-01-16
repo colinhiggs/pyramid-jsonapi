@@ -1,4 +1,5 @@
 [TYPECHECK]
+ignored-modules=pyramid_settings_wrapper
 ignored-classes=pyramid_jsonapi.settings.Settings,pyramid_jsonapi.metadata.MetaData
 
 [MESSAGES CONTROL]
