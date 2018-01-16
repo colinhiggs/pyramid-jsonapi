@@ -13,7 +13,7 @@ class MetaData():
     """Adds routes and views for all metadata modules.
 
     Metadata modules are added by inclusion in the ``metadata_modules`` option
-    in settings (see :mod:`pyramid_jsonapi.settings` for default values).
+    in settings.
     Modules should be space or newline separated, and must be installed such
     that they can be imported by python.
 
