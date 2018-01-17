@@ -30,6 +30,7 @@ from pyramid.httpexceptions import (
     HTTPFailedDependency,
     status_map,
 )
+import pyramid_settings_wrapper
 import sqlalchemy
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
@@ -40,7 +41,6 @@ import pyramid_jsonapi.endpoints
 import pyramid_jsonapi.filters
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
-import pyramid_jsonapi.settings
 import pyramid_jsonapi.version
 
 __version__ = pyramid_jsonapi.version.get_version()
@@ -60,9 +60,36 @@ class PyramidJSONAPI():
 
     view_classes = {}
 
+    # Default configuration values
+    config_defaults = {
+        'allow_client_ids': {'val': False, 'desc': 'Allow client to specify resource ids.'},
+        'expose_foreign_keys': {'val': False, 'desc': 'Expose foreign key fields in JSON.'},
+        'metadata_endpoints': {'val': True, 'desc': 'Should /metadata endpoint be enabled?'},
+        'metadata_modules': {'val': 'JSONSchema OpenAPI', 'desc': 'Modules to load to provide metadata endpoints (defaults are modules provided in the metadata package).'},
+        'openapi_file': {'val': '', 'desc': 'File containing OpenAPI data (YAML or JSON)'},
+        'paging_default_limit': {'val': 10, 'desc': 'Default pagination limit for collections.'},
+        'paging_max_limit': {'val': 100, 'desc': 'Default limit on the number of items returned for collections.'},
+        'route_name_prefix': {'val': 'pyramid_jsonapi', 'desc': 'Prefix for pyramid route names for view_classes.'},
+        'route_pattern_api_prefix': {'val': 'api', 'desc': 'Prefix for api endpoints (if metadata_endpoints is enabled).'},
+        'route_pattern_metadata_prefix': {'val': 'metadata', 'desc': 'Prefix for metadata endpoints (if metadata_endpoints is enabled).'},
+        'route_pattern_prefix': {'val': '', 'desc': '"Parent" prefix for all endpoints'},
+        'route_name_sep': {'val': ':', 'desc': 'Separator for pyramid route names.'},
+        'route_pattern_sep': {'val': '/', 'desc': 'Separator for pyramid route patterns.'},
+        'schema_file': {'val': '', 'desc': 'File containing jsonschema JSON for validation.'},
+        'schema_validation': {'val': True, 'desc': 'jsonschema schema validation enabled?'},
+        'debug_endpoints': {'val': False, 'desc': 'Whether or not to add debugging endpoints.'},
+        'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
+        'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
+    }
+
     def __init__(self, config, models, get_dbsession=None):
         self.config = config
-        self.settings = pyramid_jsonapi.settings.Settings(config.registry.settings)
+        self.settings = pyramid_settings_wrapper.Settings(
+            config.registry.settings,
+            defaults=self.config_defaults,
+            default_keys_only=True,
+            prefix=['pyramid_jsonapi']
+        )
         self.models = models
         self.get_dbsession = get_dbsession
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)

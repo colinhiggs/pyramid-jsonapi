@@ -12,6 +12,7 @@ requires = [
     'pkginfo',
     'pyramid',
     'pyramid_mako',
+    'pyramid_settings_wrapper',
     'pyyaml',
     'SQLAlchemy',
     ]

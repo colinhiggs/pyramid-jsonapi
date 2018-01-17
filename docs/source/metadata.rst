@@ -6,13 +6,13 @@ Metadata Modules
 Metadata modules provide access to metadata about the API. The
 :class:`pyramid_jsonapi.metadata` class is responsible for loading the modules
 and setting up routes and views under ``/metadata``
-(by default - see :mod:`pyramid_jsonapi.settings`).
+(by default - see `settings`).
 
 Built-in Modules
 ----------------
 
 The ``metadata_modules`` configuration option lists modules which are to be loaded
-(see :mod:`pyramid_jsonapi.settings`). If this list is empty, no modules
+(see `settings`). If this list is empty, no modules
 will be loaded.
 
 *Note*: Some modules are required for core functionality - for example schema
