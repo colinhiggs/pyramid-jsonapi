@@ -42,5 +42,6 @@ setup(
       'Topic :: Software Development :: Libraries :: Application Frameworks',
       'Topic :: Software Development :: Libraries :: Python Modules',
   ],
-  package_data={'': ['schema/*.json']}
+  package_data={'': ['schema/*.json',
+                     'metadata/OpenAPI/swagger-ui/*.mako']}
   )
