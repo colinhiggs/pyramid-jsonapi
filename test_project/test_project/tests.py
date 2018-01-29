@@ -3212,6 +3212,59 @@ class TestJSONAPI(unittest.TestCase):
         self.assertTrue(len(doc.resources) == 2)
         self.assertEqual(doc._jsonapi['links'], links)
 
+
+class TestEndpoints(DBTestBase):
+    """Tests for endpoint configuration."""
+
+    def test_api_prefix(self):
+        """Test setting api prefix."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_api_prefix': 'api'
+            }).get('/api/people')
+
+    def test_metadata_endpoints_disable(self):
+        self.test_app(
+            options={
+                'pyramid_jsonapi.metadata_endpoints': 'false'
+            }).get('/metadata/JSONSchema', status=404)
+
+    def test_api_version(self):
+        """Test setting api version."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.api_version': '10'
+            }).get('/10/people')
+        self.test_app(
+            options={
+                'pyramid_jsonapi.api_version': '10'
+            }).get('/10/metadata/JSONSchema')
+
+    def test_route_pattern_prefix(self):
+        """Test setting route_pattern_prefix."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_prefix': 'SPLAT'
+            }).get('/SPLAT/people')
+        self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_prefix': 'SPLAT'
+            }).get('/SPLAT/metadata/JSONSchema')
+
+    def test_route_pattern_api_prefix(self):
+        """Test setting route_pattern_api_prefix."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_api_prefix': 'API'
+            }).get('/API/people')
+
+    def test_route_pattern_ap_prefix(self):
+        """Test setting route_pattern_metadata_prefix."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
+            }).get('/METADATA/JSONSchema')
+
 class TestMetaData(DBTestBase):
     """Tests for the metadata plugins."""
 
