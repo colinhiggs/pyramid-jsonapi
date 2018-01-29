@@ -63,6 +63,7 @@ class PyramidJSONAPI():
     # Default configuration values
     config_defaults = {
         'allow_client_ids': {'val': False, 'desc': 'Allow client to specify resource ids.'},
+        'api_version': {'val': '', 'desc': 'API version for prefixing endpoints and metadata generation.'},
         'expose_foreign_keys': {'val': False, 'desc': 'Expose foreign key fields in JSON.'},
         'metadata_endpoints': {'val': True, 'desc': 'Should /metadata endpoint be enabled?'},
         'metadata_modules': {'val': 'JSONSchema OpenAPI', 'desc': 'Modules to load to provide metadata endpoints (defaults are modules provided in the metadata package).'},
@@ -111,7 +112,7 @@ class PyramidJSONAPI():
             ]
         }
 
-    def create_jsonapi(self, engine=None, test_data=None):
+    def create_jsonapi(self, engine=None, test_data=None, api_version=None):
         """Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
         Keyword Args:
@@ -121,6 +122,7 @@ class PyramidJSONAPI():
                 the database.
         """
 
+        self.settings.api_version = api_version
         self.config.add_notfound_view(self.error, renderer='json')
         self.config.add_forbidden_view(self.error, renderer='json')
         self.config.add_view(self.error, context=HTTPError, renderer='json')
