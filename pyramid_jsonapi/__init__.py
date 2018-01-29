@@ -176,7 +176,8 @@ class PyramidJSONAPI():
             self.create_resource(model_class)
 
         # Instantiate metadata now that view_class has been populated
-        self.metadata = pyramid_jsonapi.metadata.MetaData(self)
+        if self.settings.metadata_endpoints:
+            self.metadata = pyramid_jsonapi.metadata.MetaData(self)
 
     create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
 
