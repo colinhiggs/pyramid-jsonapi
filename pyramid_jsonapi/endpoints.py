@@ -34,8 +34,11 @@ class RoutePatternConstructor():
         Arguments:
             *components (str): route pattern components.
         """
-        components = [x.strip(self.settings.route_pattern_sep) for x in components if x != '']
-        return self.settings.route_pattern_sep.join(components)
+        components = [x for x in components if x != '']
+        return self.settings.route_pattern_sep.join(components).replace(
+            self.settings.route_pattern_sep * 2,
+            self.settings.route_pattern_sep
+        )
 
     def create_pattern(self, type_prefix, endpoint_name, *components, base='/', rstrip=True):
         """Generate a pattern from a type_prefix, endpoint name and suffix components.
