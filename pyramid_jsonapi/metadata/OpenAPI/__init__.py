@@ -80,7 +80,7 @@ class OpenAPI():
             OpenAPI template document.
         """
 
-        return self.generate_openapi()
+        return self.generate_openapi(request=request)
 
     @functools.lru_cache()
     def generate_pkg_metadata(self):
@@ -201,7 +201,7 @@ class OpenAPI():
         return new_obj
 
     @functools.lru_cache()
-    def generate_openapi(self):
+    def generate_openapi(self, request=None):
         """Generate openapi documentation."""
 
         # OpenAPI 'template'
@@ -228,6 +228,15 @@ class OpenAPI():
         }
 
         ep_data = self.api.endpoint_data
+
+        # Split the route_path using the metadata_pattern.
+        # any prefixes are then prefixed to path_name later
+        # This handles hosting from a sub-directory.
+        base_path = None
+        if request:
+            path_pattern = ep_data.rp_constructor.metadata_pattern('OpenAPI')
+            base_path, _ = request.current_route_path().split(path_pattern, 1)
+
         paths = {}
         # Iterate through all view_classes, getting name (for path)
         for model, view_class in self.api.view_classes.items():
@@ -239,7 +248,8 @@ class OpenAPI():
                     name,
                     ep_data.route_pattern_to_suffix(
                         opts.get('route_pattern', {})
-                    )
+                    ),
+                    base=base_path or '/',
                 )
                 paths[path_name] = {}
                 for method in opts['http_methods']:
