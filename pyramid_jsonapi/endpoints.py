@@ -1,5 +1,6 @@
 """Classes to store and manipulate endpoints and routes."""
 
+from functools import partial
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPCreated,
@@ -23,60 +24,46 @@ class RoutePatternConstructor():
         self.api_prefix = route_info['api_prefix']
         self.api_version = route_info['api_version']
         self.metadata_prefix = route_info['metadata_prefix']
+        # type-specific methods that wrap create_pattern
+        self.api_pattern = partial(self.create_pattern, self.api_prefix)
+        self.metadata_pattern = partial(self.create_pattern, self.metadata_prefix)
 
     def pattern_from_components(self, *components):
         """Construct a route pattern from components.
 
-        Join components together with self.sep. Remove all occurrences of '',
-        except at the beginning, so that there are no double or trailing
-        separators.
+        Join components together with self.sep.
+        Remove all occurrences of '', and strip extra separators.
 
         Arguments:
             *components (str): route pattern components.
         """
-        components = components or []
-        new_comps = []
-        for i, component in enumerate(components):
-            if component == '' and (i != 0):
-                continue
-            new_comps.append(component)
-        return self.sep.join(new_comps)
+        components = [x.strip(self.sep) for x in components if x != '']
+        return self.sep.join(components)
 
-    def api_pattern(self, name, *components, rstrip=True):
-        """Generate a route pattern from a collection name and suffix components.
+    def create_pattern(self, type_prefix, endpoint_name, *components, base='/', rstrip=True):
+        """Generate a pattern from a type_prefix, endpoint name and suffix components.
+
+        This method is not usually called directly.  Instead, the wrapping
+        `api_pattern` and `metadata_pattern` partial methods are used.
 
         Arguments:
-            name (str): A collection name.
+            type_prefix (str): api or metadataprefix (see 'partial' methods).
+            endpoint_name (str): An endpoint name.
+            base (str): Base string to prepend to pattern (defaults to '/').
             rstrip (bool): Strip trailing separator (defaults to True).
             *components (str): components to add after collection name.
         """
         pattern = self.pattern_from_components(
-            '',
+            base,
             self.pattern_prefix,
             self.api_version,
-            self.api_prefix,
-            name,
+            type_prefix,
+            endpoint_name,
             *components
         )
         if rstrip:
             pattern = pattern.rstrip(self.sep)
         return pattern
-
-    def metadata_pattern(self, metadata_type, *components):
-        """Generate a metadata route pattern.
-
-        Arguments:
-            metadata_type (str): Metadata type (e.g. swagger, json-schema).
-            *components (str): components to add after metadata type.
-        """
-        return self.pattern_from_components(
-            '',
-            self.pattern_prefix,
-            self.api_version,
-            self.metadata_prefix,
-            metadata_type,
-            *components
-        )
 
 
 class EndpointData():
