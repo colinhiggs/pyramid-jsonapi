@@ -216,7 +216,7 @@ class OpenAPI():
         openapi['info'] = {
             'title': self.metadata.name or '',
             'description': self.metadata.description or '',
-            'version': self.metadata.version or '',
+            'version': self.api.settings.api_version or self.metadata.version or '',
             'contact': {
                 'name': self.metadata.author or '',
                 'email': self.metadata.author_email or '',
