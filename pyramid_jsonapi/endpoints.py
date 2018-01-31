@@ -21,6 +21,7 @@ class RoutePatternConstructor():
         self.sep = route_info['route_pattern_sep']
         self.pattern_prefix = route_info['route_pattern_prefix']
         self.api_prefix = route_info['api_prefix']
+        self.api_version = route_info['api_version']
         self.metadata_prefix = route_info['metadata_prefix']
 
     def pattern_from_components(self, *components):
@@ -50,7 +51,12 @@ class RoutePatternConstructor():
             *components (str): components to add after collection name.
         """
         pattern = self.pattern_from_components(
-            '', self.pattern_prefix, self.api_prefix, name, *components
+            '',
+            self.pattern_prefix,
+            self.api_version,
+            self.api_prefix,
+            name,
+            *components
         )
         if rstrip:
             pattern = pattern.rstrip(self.sep)
@@ -64,8 +70,12 @@ class RoutePatternConstructor():
             *components (str): components to add after metadata type.
         """
         return self.pattern_from_components(
-            '', self.pattern_prefix, self.metadata_prefix,
-            metadata_type, *components
+            '',
+            self.pattern_prefix,
+            self.api_version,
+            self.metadata_prefix,
+            metadata_type,
+            *components
         )
 
 
@@ -91,6 +101,7 @@ class EndpointData():
 
         if settings.metadata_endpoints:
             self.route_info['api_prefix'] = settings.route_pattern_api_prefix
+        self.route_info['api_version'] = settings.api_version
 
         self.rp_constructor = RoutePatternConstructor(self.route_info)
 
