@@ -18,15 +18,12 @@ from pyramid.httpexceptions import (
 class RoutePatternConstructor():
     """Construct pyramid_jsonapi route patterns."""
 
-    def __init__(self, route_info):
-        self.sep = route_info['route_pattern_sep']
-        self.pattern_prefix = route_info['route_pattern_prefix']
-        self.api_prefix = route_info['api_prefix']
-        self.api_version = route_info['api_version']
-        self.metadata_prefix = route_info['metadata_prefix']
+    def __init__(self, api):
+        self.api = api
+        self.settings = self.api.settings
         # type-specific methods that wrap create_pattern
-        self.api_pattern = partial(self.create_pattern, self.api_prefix)
-        self.metadata_pattern = partial(self.create_pattern, self.metadata_prefix)
+        self.api_pattern = partial(self.create_pattern, self.settings.route_pattern_api_prefix)
+        self.metadata_pattern = partial(self.create_pattern, self.settings.route_pattern_metadata_prefix)
 
     def pattern_from_components(self, *components):
         """Construct a route pattern from components.
@@ -37,8 +34,8 @@ class RoutePatternConstructor():
         Arguments:
             *components (str): route pattern components.
         """
-        components = [x.strip(self.sep) for x in components if x != '']
-        return self.sep.join(components)
+        components = [x.strip(self.settings.route_pattern_sep) for x in components if x != '']
+        return self.settings.route_pattern_sep.join(components)
 
     def create_pattern(self, type_prefix, endpoint_name, *components, base='/', rstrip=True):
         """Generate a pattern from a type_prefix, endpoint name and suffix components.
@@ -55,14 +52,14 @@ class RoutePatternConstructor():
         """
         pattern = self.pattern_from_components(
             base,
-            self.pattern_prefix,
-            self.api_version,
+            self.settings.route_pattern_prefix,
+            self.settings.api_version,
             type_prefix,
             endpoint_name,
             *components
         )
         if rstrip:
-            pattern = pattern.rstrip(self.sep)
+            pattern = pattern.rstrip(self.settings.route_pattern_sep)
         return pattern
 
 
@@ -76,21 +73,8 @@ class EndpointData():
 
     def __init__(self, api):
         self.config = api.config
-        settings = api.settings
-        self.route_info = {
-            'route_name_prefix': settings.route_name_prefix,
-            'route_pattern_prefix': settings.route_pattern_prefix,
-            'route_name_sep': settings.route_name_sep,
-            'route_pattern_sep': settings.route_pattern_sep,
-            'api_prefix': '',
-            'metadata_prefix': settings.route_pattern_metadata_prefix,
-        }
-
-        if settings.metadata_endpoints:
-            self.route_info['api_prefix'] = settings.route_pattern_api_prefix
-        self.route_info['api_version'] = settings.api_version
-
-        self.rp_constructor = RoutePatternConstructor(self.route_info)
+        self.settings = api.settings
+        self.rp_constructor = RoutePatternConstructor(api)
 
         # Mapping of endpoints, http_methods and options for constructing routes and views.
         # Update this dictionary prior to calling create_jsonapi()
@@ -257,15 +241,15 @@ class EndpointData():
         Keyword Arguments:
             suffix: An (optional) suffix to append to the route name.
         """
-        return self.route_info['route_name_sep'].join(
-            (self.route_info['route_name_prefix'], name, suffix)
-        ).rstrip(self.route_info['route_name_sep'])
+        return self.settings.route_name_sep.join(
+            (self.settings.route_name_prefix, name, suffix)
+        ).rstrip(self.settings.route_name_sep)
 
     def route_pattern_to_suffix(self, pattern_dict):
         """Convert route_pattern dict to suffix string."""
         if pattern_dict:
             return pattern_dict['pattern'].format(
-                sep=self.route_info['route_pattern_sep'],
+                sep=self.settings.route_pattern_sep,
                 *pattern_dict['fields']
             )
         return ''
