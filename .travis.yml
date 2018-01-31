@@ -18,7 +18,7 @@ script:
 - pycodestyle --ignore=E501,E731 pyramid_jsonapi
 - pylint -E --rcfile=.pylintrc pyramid_jsonapi
 - nosetest -v --with-coverage --cover-package=pyramid_jsonapi
-- coveralls
+- travis_retry coveralls || true
 install:
 - python bootstrap.py
 - buildout
