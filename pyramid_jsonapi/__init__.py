@@ -112,7 +112,7 @@ class PyramidJSONAPI():
             ]
         }
 
-    def create_jsonapi(self, engine=None, test_data=None, api_version=None):
+    def create_jsonapi(self, engine=None, test_data=None, api_version=''):
         """Auto-create jsonapi from module or iterable of sqlAlchemy models.
 
         Keyword Args:
@@ -120,9 +120,12 @@ class PyramidJSONAPI():
                 debug view.
             test_data: a module with an ``add_to_db()`` method which will populate
                 the database.
+            api_version: An optional version to be used in generating urls, docs etc.
+                defaults to ''. Can also be set globally in settings ini file.
         """
 
-        self.settings.api_version = api_version
+        if api_version:
+            self.settings.api_version = api_version
         self.config.add_notfound_view(self.error, renderer='json')
         self.config.add_forbidden_view(self.error, renderer='json')
         self.config.add_view(self.error, context=HTTPError, renderer='json')
