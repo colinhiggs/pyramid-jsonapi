@@ -48,11 +48,19 @@ For example:
 Will return the schema that matches a valid response (200 OK) to a GET to ``/api/people``
 """
 
-import copy
 import functools
 import json
 import logging
 import pkgutil
+import sys
+
+# Dict and deepcopy performance in python < 3.6 is lacking
+# pickle/unpickle hack gives much better performance.
+if sys.version_info.minor >= 6:
+    from copy import deepcopy
+else:
+    import pickle
+    deepcopy = lambda x: pickle.loads(pickle.dumps(x, -1))  # pylint:disable=invalid-name
 
 import alchemyjsonschema
 import jsonschema
@@ -245,7 +253,7 @@ class JSONSchema():
         if not "{}_attrs".format(endpoint) in self.schema['definitions']:
             raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
 
-        schema = copy.deepcopy(self.schema)
+        schema = deepcopy(self.schema)
 
         if direction == 'response' and code >= 400:
             # Return reference to failure part of schema
@@ -271,7 +279,7 @@ class JSONSchema():
         if method != 'patch':
             schm = self.schema
             if method == 'post':
-                schm = copy.deepcopy(self.schema)
+                schm = deepcopy(self.schema)
                 # POSTs should not have an id
                 schm['definitions']['resource']['required'].remove('id')
             try:
@@ -292,13 +300,13 @@ class JSONSchema():
 
             # Add a resource definition for this endpoint to the 'global' schema
             attr_ref = {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
-            resource = copy.deepcopy(self.schema['definitions']['resource'])
+            resource = deepcopy(self.schema['definitions']['resource'])
             resource['properties']['attributes'] = attrs
             resource['properties']['type']['pattern'] = "^{}$".format(endpoint)
             self.schema['definitions']["{}_attrs".format(endpoint)] = resource
 
             # Add a data definition for this endpoint to the 'global' schema
-            ep_data = copy.deepcopy(self.schema['definitions']['data'])
+            ep_data = deepcopy(self.schema['definitions']['data'])
             # Data can be a single resource...
             ep_data['oneOf'][0] = attr_ref
             # Or an array.
