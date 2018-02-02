@@ -251,10 +251,6 @@ class JSONSchema():
             # Return reference to failure part of schema
             return {'$ref': '#/definitions/failure'}
 
-        # id is optional for POST
-        if method == 'post':
-            schema['definitions']['resource']['required'].remove('id')
-
         if direction == 'request':
             # Replace data with single (ep-specific) resource
             # (POST/PATCH can only be single resource)
