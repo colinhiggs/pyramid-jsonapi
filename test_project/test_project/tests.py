@@ -3376,6 +3376,15 @@ class TestMetaData(DBTestBase):
         """Test that the openapi specification returned is valid."""
         validate_spec(self.test_app().get('/metadata/OpenAPI/specification', status=200).json)
 
+    def test_openapi_file(self):
+        """Test providing openapi spec updates in a file."""
+        path = os.path.dirname(os.path.realpath(__file__))
+        res = self.test_app(
+            options={
+                'pyramid_jsonapi.openapi_file': os.path.join(path, 'test-openapi.json'),
+            }).get('/metadata/OpenAPI/specification', status=200).json
+        # Check that openapi file merge has overridden version string
+        self.assertEqual("999", res['openapi'])
 
 
 if __name__ == "__main__":
