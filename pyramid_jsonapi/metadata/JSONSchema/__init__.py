@@ -114,6 +114,7 @@ class JSONSchema():
         self.api = api
         self.column_to_schema = alchemyjsonschema.default_column_to_schema
         self.schema = {}
+        self.schema_post = {}
         self.load_schema()
         self.build_definitions()
 
@@ -144,6 +145,13 @@ class JSONSchema():
                 'schema/jsonapi-schema.json'
             ).decode('utf-8')
         self.schema = json.loads(schema)
+        # POSTs can omit the id
+        self.schema_post = json.loads(schema)
+        try:
+            # Custom schemas may not have this structure
+            self.schema_post['definitions']['resource']['required'].remove('id')
+        except (IndexError, KeyError):
+            pass
 
     def resource_attributes_view(self, request):
         """Call resource() via a pyramid view.
@@ -253,7 +261,7 @@ class JSONSchema():
         if not "{}_attrs".format(endpoint) in self.schema['definitions']:
             raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
 
-        schema = deepcopy(self.schema)
+        success = deepcopy(self.schema['definitions']['success'])
 
         if direction == 'response' and code >= 400:
             # Return reference to failure part of schema
@@ -262,14 +270,14 @@ class JSONSchema():
         if direction == 'request':
             # Replace data with single (ep-specific) resource
             # (POST/PATCH can only be single resource)
-            schema['definitions']['success']['properties'] = {
+            success['properties'] = {
                 'data': {'$ref': '#/definitions/{}_attrs'.format(endpoint)}
             }
         else:  # direction == response
             # Replace data with ep-specific data ref
-            schema['definitions']['success']['properties']['data'] = {'$ref': '#/definitions/{}_data'.format(endpoint)}
+            success['properties']['data'] = {'$ref': '#/definitions/{}_data'.format(endpoint)}
 
-        return schema['definitions']['success']
+        return success
 
     def validate(self, json_body, method='get'):
         """Validate schema against jsonschema."""
@@ -279,9 +287,7 @@ class JSONSchema():
         if method != 'patch':
             schm = self.schema
             if method == 'post':
-                schm = deepcopy(self.schema)
-                # POSTs should not have an id
-                schm['definitions']['resource']['required'].remove('id')
+                schm = self.schema_post
             try:
                 jsonschema.validate(json_body, schm)
             except (jsonschema.exceptions.ValidationError) as exc:
