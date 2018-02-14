@@ -270,7 +270,7 @@ class OpenAPI():
         openapi.update({'x-definitions': self.api.metadata.JSONSchema.template()['definitions']})
 
         # Update openapi dict from external yaml/json file, if provided in config.
-        openapi_file = self.api.settings.openapi_file
+        openapi_file = str(self.api.settings.openapi_file)
         if openapi_file:
             with open(openapi_file) as oa_f:
                 openapi.update(yaml.safe_load(oa_f.read()))

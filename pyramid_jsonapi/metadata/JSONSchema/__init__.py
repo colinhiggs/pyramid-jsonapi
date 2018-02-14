@@ -183,10 +183,7 @@ class JSONSchema():
             Dictionary containing jsonschema attributes for the endpoint.
         """
         # Hack relevant view_class out of endpoint name
-        try:
-            view_class = [x for x in self.api.view_classes.values() if x.collection_name == endpoint][0]
-        except IndexError:
-            raise HTTPNotFound("Invalid endpoint specified: {}.".format(endpoint))
+        view_class = [x for x in self.api.view_classes.values() if x.collection_name == endpoint][0]
         classifier = alchemyjsonschema.Classifier(mapping=self.column_to_schema)
         factory = alchemyjsonschema.SchemaFactory(alchemyjsonschema.NoForeignKeyWalker,
                                                   classifier=classifier)
