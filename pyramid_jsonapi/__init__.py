@@ -187,10 +187,12 @@ class PyramidJSONAPI():
             prefnames.append('metadata')
         for prefname in prefnames:
             setting_name = 'route_pattern_{}_prefix'.format(prefname)
-            path_info = "/"
+            sep = self.settings.route_pattern_sep
             setting = getattr(self.settings, setting_name)
             if setting != '' and setting is not None:
-                path_info = path_info + setting + "/"
+                path_info = '{}{}{}'.format(sep, setting, sep)
+            else:
+                path_info = sep
             self.config.add_notfound_view(
                 self.error, renderer='json', path_info=path_info
             )
