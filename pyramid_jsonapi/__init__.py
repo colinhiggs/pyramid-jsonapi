@@ -188,8 +188,8 @@ class PyramidJSONAPI():
         for prefname in prefnames:
             setting_name = 'route_pattern_{}_prefix'.format(prefname)
             sep = self.settings.route_pattern_sep
-            setting = getattr(self.settings, setting_name)
-            if setting != '' and setting is not None:
+            setting = str(getattr(self.settings, setting_name))
+            if setting != '':
                 path_info = '{}{}{}'.format(sep, setting, sep)
             else:
                 path_info = sep
