@@ -126,9 +126,6 @@ class PyramidJSONAPI():
 
         if api_version:
             self.settings.api_version = api_version
-        self.config.add_notfound_view(self.error, renderer='json')
-        self.config.add_forbidden_view(self.error, renderer='json')
-        self.config.add_view(self.error, context=HTTPError, renderer='json')
 
         # Build a list of declarative models to add as collections.
         if isinstance(self.models, types.ModuleType):
@@ -183,6 +180,29 @@ class PyramidJSONAPI():
         # Instantiate metadata now that view_class has been populated
         if self.settings.metadata_endpoints:
             self.metadata = pyramid_jsonapi.metadata.MetaData(self)
+
+        # Add error views
+        prefnames = ['api']
+        if self.settings.metadata_endpoints:
+            prefnames.append('metadata')
+        for prefname in prefnames:
+            setting_name = 'route_pattern_{}_prefix'.format(prefname)
+            sep = self.settings.route_pattern_sep
+            setting = str(getattr(self.settings, setting_name))
+            if setting != '':
+                path_info = '{}{}{}'.format(sep, setting, sep)
+            else:
+                path_info = sep
+            self.config.add_notfound_view(
+                self.error, renderer='json', path_info=path_info
+            )
+            self.config.add_forbidden_view(
+                self.error, renderer='json', path_info=path_info
+            )
+            self.config.add_view(
+                self.error, context=HTTPError, renderer='json',
+                path_info=path_info
+            )
 
     create_jsonapi_using_magic_and_pixie_dust = create_jsonapi  # pylint:disable=invalid-name
 

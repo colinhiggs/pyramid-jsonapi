@@ -2820,6 +2820,20 @@ class TestErrors(DBTestBase):
         self.assertIn('title', err)
         self.assertIn('detail', err)
 
+    def test_errors_only_controlled_paths(self):
+        '''Error handlers only for controlled paths ('api' and 'metadata')'''
+        app = self.test_app(
+            options={'pyramid_jsonapi.route_pattern_api_prefix': 'api'}
+        )
+        # Both /api/ and /metadata/ should have json structured errors
+        for path in ('/api/', '/metadata/'):
+            json = app.get(path, status=404).json
+        # Other paths should not have json errors
+        for path in ('/', '/splat/', '/api_extra/'):
+            r = app.get(path, status=404)
+            self.assertRaises(AttributeError, getattr, r, 'json')
+
+
     def test_errors_composite_key(self):
         '''Should raise exception if a model has a composite key.'''
         self.assertRaisesRegex(
