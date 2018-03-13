@@ -6,6 +6,7 @@ from pyramid.httpexceptions import (
 
 from . import callback, hook
 
+
 @hook
 def before_append(view_class):
     """Tasks to perform before callback set is appended."""
@@ -18,7 +19,6 @@ def before_append(view_class):
         forbidden = {'reason': []}
         eps['item']['http_methods']['GET']['responses'][HTTPForbidden] = forbidden
     forbidden['reason'].append('Access controls forbid this operation.')
-
 
 
 @callback
@@ -70,6 +70,7 @@ def after_serialise_object(view, obj):  # pylint:disable=no-self-argument
             ]
         }
     return obj
+
 
 @callback
 def after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, no-self-use
