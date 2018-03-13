@@ -2176,3 +2176,6 @@ class CollectionViewBase:
 
         for cb_name, callback in callback_set.callbacks.items():
             cls.callbacks[cb_name].append(callback)
+
+        if 'after_append' in hooks:
+            hooks['after_append'](cls)
