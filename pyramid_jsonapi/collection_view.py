@@ -2,7 +2,6 @@
 # pylint: disable=too-many-lines; It's mostly docstrings
 import functools
 import importlib
-import inspect
 import itertools
 import logging
 import re
@@ -2160,7 +2159,7 @@ class CollectionViewBase:
         Args:
             callback_set (module or str): module with callbacks (or its name).
         """
-        if not inspect.ismodule(callback_set):
+        if isinstance(callback_set, str):
             callback_set = importlib.import_module('pyramid_jsonapi.callback_set.{}'.format(callback_set))
         try:
             hooks = callback_set.hooks
