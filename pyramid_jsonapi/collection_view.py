@@ -1,6 +1,8 @@
 """Provide base class for collection views and utilities."""
 # pylint: disable=too-many-lines; It's mostly docstrings
 import functools
+import importlib
+import inspect
 import itertools
 import logging
 import re
@@ -2152,90 +2154,25 @@ class CollectionViewBase:
         return self.api.view_classes[model](self.request)
 
     @classmethod
-    def append_callback_set(cls, set_name):
-        """Append a named set of callbacks from ``callback_sets``.
+    def append_callback_set(cls, callback_set):
+        """Append a set of callbacks from a module (or the name of a module).
 
         Args:
-            set_name (str): key in ``callback_sets``.
+            callback_set (module or str): module with callbacks (or its name).
         """
-        for cb_name, callback in cls.callback_sets[set_name].items():
-            cls.callbacks[cb_name].append(callback)
-
-    def acso_after_serialise_object(view, obj):  # pylint:disable=no-self-argument
-        """Standard callback altering object to take account of permissions.
-
-        Args:
-            obj (dict): the object immediately after serialisation.
-
-        Returns:
-            dict: the object, possibly with some fields removed, or meta
-            information indicating permission was denied to the whole object.
-        """
-        if view.allowed_object(obj):
-            # Remove any forbidden fields that have been added by other
-            # callbacks. Those from the model won't have been added in the first
-            # place.
-
-            # Keep track so we can tell the caller which ones were forbidden.
-            forbidden = set()
-            for attr in ('attributes', 'relationships'):
-                if hasattr(obj, attr):
-                    new = {}
-                    for name, val in getattr(obj, attr).items():
-                        if name in view.allowed_fields:
-                            new[name] = val
-                        else:
-                            forbidden.add(name)
-                    setattr(obj, attr, new)
-            # Now add all the forbidden fields from the model to the forbidden
-            # list. They don't need to be removed from the serialised object
-            # because they should not have been added in the first place.
-            for field in view.requested_field_names:
-                if field not in view.allowed_fields:
-                    forbidden.add(field)
-            if not hasattr(obj, 'meta'):
-                obj.meta = {}
-            obj.meta['forbidden_fields'] = list(forbidden)
-        else:
-            obj.meta = {
-                'errors': [
-                    {
-                        'code': 403,
-                        'title': 'Forbidden',
-                        'detail': 'No permission to view {}/{}.'.format(
-                            obj.type, obj.id
-                        )
-                    }
-                ]
-            }
-        return obj
-
-    def acso_after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, no-self-use
-        """Standard callback throwing 403 (Forbidden) based on information in meta.
-
-        Args:
-            ret (jsonapi.Document): object which would have been returned from get().
-
-        Returns:
-            jsonapi.Document: the same object if an error has not been raised.
-
-        Raises:
-            HTTPForbidden
-        """
-        obj = ret
-        errors = []
+        if not inspect.ismodule(callback_set):
+            callback_set = importlib.import_module('pyramid_jsonapi.callback_set.{}'.format(callback_set))
         try:
-            errors = obj.meta['errors']
-        except KeyError:
-            return ret
-        for error in errors:
-            if error['code'] == 403:
-                raise HTTPForbidden(error['detail'])
-        return ret
+            hooks = callback_set.hooks
+        except AttributeError:
+            hooks = {}
+        try:
+            callbacks = callback_set.callbacks
+        except AttributeError:
+            callbacks = {}
 
-    callback_sets = {
-        'access_control_serialised_objects': {
-            'after_serialise_object': acso_after_serialise_object,
-            'after_get': acso_after_get
-        }
-    }
+        if 'before_append' in hooks:
+            hooks['before_append'](cls)
+
+        for cb_name, callback in callback_set.callbacks.items():
+            cls.callbacks[cb_name].append(callback)
