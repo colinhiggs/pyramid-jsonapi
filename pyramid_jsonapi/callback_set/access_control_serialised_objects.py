@@ -85,9 +85,6 @@ def after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, n
         HTTPForbidden
     """
     obj = ret
-    print('*****************************************************')
-    print(obj.data['data']['meta'])
-    print('*****************************************************')
     errors = []
     try:
         errors = obj.data['data']['meta']['errors']
