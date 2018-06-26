@@ -1864,7 +1864,12 @@ class CollectionViewBase:
             #
             # Find all the filters.
             if match.group(1) == 'filter':
-                colspec, operator = match.group(2).split(':')
+                colspec = match.group(2)
+                operator = 'eq'
+                try:
+                    colspec, operator = colspec.split(':')
+                except ValueError:
+                    pass
                 colspec = colspec.split('.')
                 info['_filters'][param] = {
                     'colspec': colspec,
