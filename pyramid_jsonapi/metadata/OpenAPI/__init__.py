@@ -25,8 +25,9 @@ Documentation is dynamically generated from several sources:
 """
 
 import functools
-import pkginfo
+import os.path
 import yaml
+import pkginfo
 from pyramid.renderers import JSON
 
 from pyramid_jsonapi.metadata import VIEWS
@@ -232,10 +233,19 @@ class OpenAPI():
         # Split the route_path using the metadata_pattern.
         # any prefixes are then prefixed to path_name later
         # This handles hosting from a sub-directory.
-        base_path = None
+        base_path = ''
         if request:
-            path_pattern = ep_data.rp_constructor.metadata_pattern('OpenAPI')
-            base_path, _ = request.current_route_path().split(path_pattern, 1)
+            base_path, _ = request.current_route_path().split(
+                ep_data.rp_constructor.metadata_pattern('OpenAPI'),
+                1
+            )
+
+        # Set server url to be relative url of base and api/version path
+        openapi['servers'] = [
+            {
+                'url': "/{}".format(ep_data.rp_constructor.api_pattern('', base=base_path))
+            }
+        ]
 
         paths = {}
         # Iterate through all view_classes, getting name (for path)
@@ -243,14 +253,13 @@ class OpenAPI():
             name = view_class.collection_name
             # Iterate through endpoints, adding paths and methods
             for ep_type, opts in ep_data.endpoints['endpoints'].items():
-                # Add appropriate suffix to path endpoint
-                path_name = ep_data.rp_constructor.api_pattern(
-                    name,
-                    ep_data.route_pattern_to_suffix(
-                        opts.get('route_pattern', {})
-                    ),
-                    base=base_path or '/',
+                # Add appropriate suffix to path endpoint, if present (e.g. {id})
+                suffix = ep_data.route_pattern_to_suffix(
+                    opts.get('route_pattern', {})
                 )
+                # Create full path, stripping trailing slash if suffix was empty
+                path_name = os.path.normpath("/{}/{}".format(name, suffix))
+
                 paths[path_name] = {}
                 for method in opts['http_methods']:
                     paths[path_name][method.lower()] = {}
