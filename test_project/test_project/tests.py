@@ -2874,6 +2874,17 @@ class TestMalformed(DBTestBase):
             status=400
         )
 
+    def test_no_filter_operator_defaults_to_eq(self):
+        '''Missing filter operator should behave as 'eq'.'''
+
+        r = self.test_app().get('/people?filter[name:eq]=alice')
+        op = r.json['data'][0]
+        r = self.test_app().get('/people?filter[name]=alice')
+        noop = r.json['data'][0]
+
+        self.assertEqual(op, noop)
+
+
     def test_malformed_filter_unregistered_operator(self):
         '''Unkown filter operator should raise 400 BadRequest.'''
         self.test_app().get(
