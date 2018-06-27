@@ -220,7 +220,7 @@ class OpenAPI():
             'contact': {
                 'name': self.metadata.author or '',
                 'email': self.metadata.author_email or '',
-                'url': self.metadata.home_page or ''
+                'url': self.metadata.home_page or request.host_url or ''
             },
             'license': {
                 'name': self.metadata.license or ''
