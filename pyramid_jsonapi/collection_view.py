@@ -1708,7 +1708,7 @@ class CollectionViewBase:
                 is_included = True
             if key not in self.requested_relationships and not is_included:
                 continue
-            if self.mapped_info_from_name(key).get('visible', True) == False:
+            if not self.mapped_info_from_name(key).get('visible', True):
                 continue
             rel_dict = {
                 'data': None,
