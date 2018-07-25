@@ -3006,6 +3006,13 @@ class TestFeatures(DBTestBase):
         self.assertNotIn('invisible', atts)
         self.assertNotIn('invisible_hybrid', atts)
 
+    def test_feature_invisible_relationship(self):
+        '''people object should not have relationship "invisible_comments".'''
+        rels = self.test_app().get(
+            '/people/1'
+        ).json['data']['relationships']
+        self.assertNotIn('invisible_comments', rels)
+
     def test_feature_rename_collection(self):
         '''Should be able to fetch from whatsits even though table is things.'''
         # There should be whatsits...

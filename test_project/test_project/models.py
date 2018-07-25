@@ -51,6 +51,7 @@ class Person(Base):
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
     comments = relationship('Comment', backref='author')
+    invisible_comments = relationship('Comment')
     articles_by_assoc = relationship(
         "ArticleByAssoc",
         secondary=authors_articles_assoc,
