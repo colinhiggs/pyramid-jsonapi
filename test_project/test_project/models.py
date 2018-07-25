@@ -51,6 +51,7 @@ class Person(Base):
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
     comments = relationship('Comment', backref='author')
+    invisible_comments = relationship('Comment')
     articles_by_assoc = relationship(
         "ArticleByAssoc",
         secondary=authors_articles_assoc,
@@ -67,6 +68,7 @@ class Person(Base):
     # make invisible columns invisible to API
     invisible.info.update({'pyramid_jsonapi': {'visible': False}})
     invisible_hybrid.info.update({'pyramid_jsonapi': {'visible': False}})
+    invisible_comments.info.update({'pyramid_jsonapi': {'visible': False}})
 
 class Blog(Base):
     __tablename__ = 'blogs'

@@ -66,6 +66,29 @@ Option            Value Type    Description
 visible           Boolean       Whether or not to display this colum in the API.
 ===============   ==========    ================================================
 
+Model Relationship Options
+--------------------------
+
+The same ``info`` attribute used to specify column options above can be used to
+specify relationship options. For example, to make a relationship called
+``invisible_comments`` invisible to the API:
+
+.. code-block:: python
+
+  class Person(Base):
+    __tablename__ = 'people'
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    invisible_comments = relationship('Comment')
+    invisible_comments.info.update({'pyramid_jsonapi': {'visible': False}})
+
+Available relationship options:
+
+===============   ==========    ================================================
+Option            Value Type    Description
+===============   ==========    ================================================
+visible           Boolean       Whether to display this relationship in the API.
+===============   ==========    ================================================
+
 Selectively Passing Models for API Generation
 ---------------------------------------------
 
