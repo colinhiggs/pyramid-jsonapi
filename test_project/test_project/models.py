@@ -68,6 +68,7 @@ class Person(Base):
     # make invisible columns invisible to API
     invisible.info.update({'pyramid_jsonapi': {'visible': False}})
     invisible_hybrid.info.update({'pyramid_jsonapi': {'visible': False}})
+    invisible_comments.info.update({'pyramid_jsonapi': {'visible': False}})
 
 class Blog(Base):
     __tablename__ = 'blogs'
