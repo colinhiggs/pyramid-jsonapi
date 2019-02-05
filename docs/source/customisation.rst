@@ -101,7 +101,7 @@ Your database may have some tables which you do not wish to expose as collection
 Modifying Endpoints
 -------------------
 
-Endpoints are created automatically from a dictionary: :data:`pyramid_jsonapi.EndpointsData.endpoints`.
+Endpoints are created automatically from a dictionary: :data:`api_object.endpoint_data.endpoints`.
 
 This takes the following format:
 
