@@ -1775,9 +1775,9 @@ class CollectionViewBase:
                     ).key_column.name
                 order_att = getattr(rel.mapper.entity, sub_key)
             if key_info['ascending']:
-                q = q.order_by(order_att)
+                q = q.order_by(str(order_att))
             else:
-                q = q.order_by(order_att.desc())
+                q = q.order_by(str(order_att.desc()))
 
         return q
 
