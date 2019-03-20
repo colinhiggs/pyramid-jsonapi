@@ -78,7 +78,7 @@ The test data is defined in `test_project/test_project/test_data.json`
 
 ### Ask for something via the API
 ```bash
-http --verbose GET http://localhost:6543/people/1
+http --verbose GET http://localhost:6543/api/people/1
 ```
 
 which results in some http conversation:
