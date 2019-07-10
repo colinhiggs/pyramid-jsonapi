@@ -20,6 +20,7 @@ from pyramid.httpexceptions import (
 )
 import pyramid_jsonapi.jsonapi
 import sqlalchemy
+from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.orm.exc import NoResultFound
@@ -1564,6 +1565,41 @@ class CollectionViewBase:
                 return model
         raise KeyError("No model mapped to %s." % table)
 
+    def association_proxy_query(self, obj_id, proxy, full_object=True):
+        """Construct query for related objects across an association proxy.
+
+        Parameters:
+            obj_id (str): id of an item in this view's collection.
+
+            proxy (sqlalchemy.ext.associationproxy.ObjectAssociationProxyInstance):
+                the relationships to get related objects from.
+
+            full_object (bool): if full_object is ``True``, query for all
+                requested columns (probably to build resource objects). If
+                full_object is False, only query for the key column (probably
+                to build resource identifiers).
+
+        Returns:
+            sqlalchemy.orm.query.Query: query which will fetch related
+            object(s).
+        """
+        rel_class = getattr(proxy.target_class, proxy.value_attr).mapper.class_
+        rel_view = self.view_instance(rel_class)
+        query = self. dbsession.query(
+            rel_class
+        ).join(proxy.remote_attr).filter(
+            # I thought the simpler
+            # proxy.local_attr.contains() should work but it doesn't
+            proxy.local_attr.property.local_remote_pairs[0][1] == obj_id
+        )
+        if full_object:
+            query = query.options(
+                load_only(*rel_view.allowed_requested_query_columns.keys())
+            )
+        else:
+            query = query.options(load_only(rel_view.key_column.name))
+        return query
+
     def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.
 
@@ -1710,6 +1746,17 @@ class CollectionViewBase:
                 continue
             if not self.mapped_info_from_name(key).get('visible', True):
                 continue
+            if isinstance(rel, AssociationProxy):
+                proxy_state = rel.for_class(item.__class__)
+                if proxy_state.scalar:
+                    direction = MANYTOONE
+                else:
+                    direction = MANYTOMANY
+                rel_class = getattr(proxy_state.target_class, proxy_state.value_attr).mapper.class_
+            else:
+                direction = rel.direction
+                rel_class = rel.mapper.class_
+
             rel_dict = {
                 'data': None,
                 'links': {
@@ -1717,17 +1764,22 @@ class CollectionViewBase:
                     'related': '{}/{}'.format(item_url, key)
                 },
                 'meta': {
-                    'direction': rel.direction.name,
+                    'direction': direction.name,
                     'results': {}
                 }
             }
-            rel_view = self.view_instance(rel.mapper.class_)
+            rel_view = self.view_instance(rel_class)
 
-            query = self.related_query(
-                item_id, rel, full_object=is_included
-            )
+            if isinstance(rel, AssociationProxy):
+                query = self.association_proxy_query(
+                    item_id, rel.for_class(item), full_object=is_included
+                )
+            else:
+                query = self.related_query(
+                    item_id, rel, full_object=is_included
+                )
 
-            many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
+            many = direction is ONETOMANY or direction is MANYTOMANY
             if many:
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
@@ -1760,6 +1812,8 @@ class CollectionViewBase:
                     rel_dict['data'] = data[0]
 
             if key in self.requested_relationships:
+#                print("key: " + key)
+#                print("data: {}".format(rel_dict))
                 rels[key] = rel_dict
 
         resource_json.relationships = rels
@@ -2066,12 +2120,12 @@ class CollectionViewBase:
         Returns:
             dict: local columns indexed by column name.
         """
-        return {
-            pair[0].name: pair[0]
-            for k, rel in self.requested_relationships.items()
-            for pair in rel.local_remote_pairs
-            if rel.direction is MANYTOONE and k in self.allowed_fields
-        }
+        rels = {}
+        for k, rel in self.requested_relationships.items():
+            if isinstance(rel, RelationshipProperty) and rel.direction is MANYTOONE and k in self.allowed_fields:
+                for pair in rel.local_remote_pairs:
+                    rels[pair[0].name] = pair[0]
+        return rels
 
     @property
     def allowed_requested_query_columns(self):

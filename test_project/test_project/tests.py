@@ -3152,6 +3152,12 @@ class TestBugs(DBTestBase):
         ).json['data']
         self.assertEqual(data['id'],'1000')
 
+    def test_association_proxy(self):
+        '''Should treat association proxy as a relationship.'''
+        data = self.test_app().get('/people/1').json['data']
+        self.assertIn('articles_by_proxy', data['relationships'])
+        print(data['relationships']['articles_by_proxy'])
+
 
 class TestJSONAPI(unittest.TestCase):
 

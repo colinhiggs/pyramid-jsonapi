@@ -12,6 +12,7 @@ from sqlalchemy import (
     )
 from sqlalchemy.dialects.postgresql import JSONB
 
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
@@ -52,6 +53,7 @@ class Person(Base):
     posts = relationship('Post', backref='author')
     comments = relationship('Comment', backref='author')
     invisible_comments = relationship('Comment')
+
     articles_by_assoc = relationship(
         "ArticleByAssoc",
         secondary=authors_articles_assoc,
@@ -61,6 +63,8 @@ class Person(Base):
         'ArticleAuthorAssociation',
         backref='author'
     )
+
+    articles_by_proxy = association_proxy('article_associations', 'article')
 
     @hybrid_property
     def invisible_hybrid(self):
@@ -158,6 +162,19 @@ class ArticleByAssoc(Base):
     content = Column(Text)
     published_at = Column(DateTime)
 
+
+class ArticleByObj(Base):
+    __tablename__ = 'articles_by_obj'
+    articles_by_obj_id = IdColumn()
+    title = Column(Text, nullable=False)
+    content = Column(Text)
+    published_at = Column(DateTime)
+    author_associations = relationship(
+        'ArticleAuthorAssociation',
+        backref='article'
+    )
+
+
 class ArticleAuthorAssociation(Base):
     __tablename__ = 'article_author_associations'
     article_author_associations_id = IdColumn()
@@ -170,19 +187,9 @@ class ArticleAuthorAssociation(Base):
         nullable=False
     )
     date_joined = Column(DateTime)
+
     __table_args__ = (
         UniqueConstraint('article_id', 'author_id'),
-    )
-
-class ArticleByObj(Base):
-    __tablename__ = 'articles_by_obj'
-    articles_by_obj_id = IdColumn()
-    title = Column(Text, nullable=False)
-    content = Column(Text)
-    published_at = Column(DateTime)
-    author_associations = relationship(
-        'ArticleAuthorAssociation',
-        backref='article'
     )
 
 

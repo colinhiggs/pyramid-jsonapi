@@ -33,6 +33,7 @@ from pyramid.httpexceptions import (
 import pyramid_settings_wrapper
 import sqlalchemy
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -287,13 +288,15 @@ class PyramidJSONAPI():
                 atts[key] = col
                 fields[key] = col
         class_attrs['attributes'] = atts
-        for item in sqlalchemy.inspect(model).all_orm_descriptors:
+        rels = {}
+        for key, item in sqlalchemy.inspect(model).all_orm_descriptors.items():
             if isinstance(item, hybrid_property):
                 if expose_fields is None or item.__name__ in expose_fields:
                     hybrid_atts[item.__name__] = item
                     fields[item.__name__] = item
+            if item.extension_type is ASSOCIATION_PROXY:
+                rels[key] = item
         class_attrs['hybrid_attributes'] = hybrid_atts
-        rels = {}
         for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
             if expose_fields is None or key in expose_fields:
                 rels[key] = rel
@@ -371,3 +374,16 @@ class DebugView:
         self.drop()
         self.populate()
         return "reset"
+
+def get_class_by_tablename(tablename, registry):
+  """Return class reference mapped to table.
+
+  Args:
+    tablename: String with name of table.
+    registry: metadata registry
+
+  return: Class reference or None.
+  """
+  for c in registry._decl_class_registry.values():
+    if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+      return c
