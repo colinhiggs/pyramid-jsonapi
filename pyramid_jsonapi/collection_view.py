@@ -1812,8 +1812,6 @@ class CollectionViewBase:
                     rel_dict['data'] = data[0]
 
             if key in self.requested_relationships:
-#                print("key: " + key)
-#                print("data: {}".format(rel_dict))
                 rels[key] = rel_dict
 
         resource_json.relationships = rels

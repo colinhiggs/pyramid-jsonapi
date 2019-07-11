@@ -375,15 +375,16 @@ class DebugView:
         self.populate()
         return "reset"
 
+
 def get_class_by_tablename(tablename, registry):
-  """Return class reference mapped to table.
+    """Return class reference mapped to table.
 
-  Args:
-    tablename: String with name of table.
-    registry: metadata registry
+        Args:
+            tablename: String with name of table.
+            registry: metadata registry
 
-  return: Class reference or None.
-  """
-  for c in registry._decl_class_registry.values():
-    if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
-      return c
+        return: Class reference or None.
+    """
+    for c in registry._decl_class_registry.values():
+        if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+            return c
