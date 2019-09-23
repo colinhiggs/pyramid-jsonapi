@@ -17,6 +17,22 @@
         {
           "id": "4",
           "name": "secret_squirrel"
+        },
+        {
+          "id": "10",
+          "name": "no things"
+        },
+        {
+          "id": "11",
+          "name": "one thing"
+        },
+        {
+          "id": "12",
+          "name": "two things"
+        },
+        {
+          "id": "13",
+          "name": "many to many"
         }
       ],
       {"id_seq": "*"}
@@ -47,6 +63,26 @@
           "id": "5",
           "title": "secret squirrel's blog",
           "owner_id": "4"
+        },
+        {
+          "id": "10",
+          "title": "no owner",
+          "owner_id": null
+        },
+        {
+          "id": "11",
+          "title": "owned by 11",
+          "owner_id": "11"
+        },
+        {
+          "id": "12",
+          "title": "12 owned by 12",
+          "owner_id": "12"
+        },
+        {
+          "id": "13",
+          "title": "13 owned by 12",
+          "owner_id": "12"
         }
       ],
       {"id_seq": "*"}
@@ -154,6 +190,30 @@
           "title": "Collaborative two.",
           "content": "something important.",
           "published_at": "2016-01-02"
+        },
+        {
+          "articles_by_assoc_id": "10",
+          "title": "Collaborative 10.",
+          "content": "something important.",
+          "published_at": "2016-01-10"
+        },
+        {
+          "articles_by_assoc_id": "11",
+          "title": "Collaborative 11.",
+          "content": "something important.",
+          "published_at": "2016-01-11"
+        },
+        {
+          "articles_by_assoc_id": "12",
+          "title": "Collaborative 12.",
+          "content": "something important.",
+          "published_at": "2016-01-12"
+        },
+        {
+          "articles_by_assoc_id": "13",
+          "title": "Collaborative 13.",
+          "content": "something important.",
+          "published_at": "2016-01-13"
         }
       ],
       {"id_seq": "*"}
@@ -171,6 +231,30 @@
           "title": "Collaborative by obj two.",
           "content": "something important.",
           "published_at": "2016-02-02"
+        },
+        {
+          "articles_by_obj_id": "10",
+          "title": "Collaborative by obj 10.",
+          "content": "something important.",
+          "published_at": "2016-02-10"
+        },
+        {
+          "articles_by_obj_id": "11",
+          "title": "Collaborative by obj 11.",
+          "content": "something important.",
+          "published_at": "2016-02-11"
+        },
+        {
+          "articles_by_obj_id": "12",
+          "title": "Collaborative by obj 12.",
+          "content": "something important.",
+          "published_at": "2016-02-12"
+        },
+        {
+          "articles_by_obj_id": "13",
+          "title": "Collaborative by obj 13.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
         }
       ],
       {"id_seq": "*"}
@@ -200,6 +284,30 @@
           "article_id": "2",
           "author_id": "2",
           "date_joined": "2016-01-01"
+        },
+        {
+          "article_author_associations_id": "5",
+          "article_id": "11",
+          "author_id": "11",
+          "date_joined": "2016-01-11"
+        },
+        {
+          "article_author_associations_id": "6",
+          "article_id": "12",
+          "author_id": "12",
+          "date_joined": "2016-01-12"
+        },
+        {
+          "article_author_associations_id": "7",
+          "article_id": "12",
+          "author_id": "13",
+          "date_joined": "2016-01-13"
+        },
+        {
+          "article_author_associations_id": "8",
+          "article_id": "13",
+          "author_id": "12",
+          "date_joined": "2016-01-13"
         }
       ],
       {"id_seq": "*"}
@@ -210,7 +318,11 @@
       [
         { "author_id": "1", "article_id": "1" },
         { "author_id": "2", "article_id": "1" },
-        { "author_id": "2", "article_id": "2" }
+        { "author_id": "2", "article_id": "2" },
+        { "author_id": "11", "article_id": "11" },
+        { "author_id": "12", "article_id": "12" },
+        { "author_id": "12", "article_id": "13" },
+        { "author_id": "13", "article_id": "12" }
       ]
     ]
   ]

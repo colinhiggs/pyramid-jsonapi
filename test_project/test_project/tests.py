@@ -1,3 +1,4 @@
+from collections import namedtuple
 import configparser
 from functools import lru_cache
 import unittest
@@ -16,9 +17,12 @@ import os
 import urllib
 import warnings
 import json
+from parameterized import parameterized
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
+
+from pprint import pprint
 
 from test_project.models import (
     DBSession,
@@ -33,7 +37,6 @@ cur_dir = os.path.dirname(
     )
 )
 parent_dir = os.path.dirname(cur_dir)
-
 
 def setUpModule():
     '''Create a test DB and import data.'''
@@ -50,6 +53,10 @@ def tearDownModule():
     global postgresql
     DBSession.close()
     postgresql.stop()
+
+def rels_doc_func(func, i, param):
+    src, tgt, comment = param[0]
+    return '{}:{}/{} ({})'.format(func.__name__, src.collection, src.rel, comment)
 
 
 class DBTestBase(unittest.TestCase):
@@ -98,6 +105,182 @@ class DBTestBase(unittest.TestCase):
         if options:
             os.remove(config_path)
         return test_app
+
+
+class TestRelationships(DBTestBase):
+    '''Test functioning of relationsips.
+    '''
+    # Test data convention:
+    #
+    # src:10 -> undef or []
+    # src:11 -> tgt:11 or [tgt:11]
+    # src:12 -> [tgt:12, tgt:13]
+
+    RelHalf = namedtuple('RelSide', 'collection rel many')
+    RelInfo = namedtuple('RelInfo', 'src tgt comment')
+    rel_infos = (
+        RelInfo(
+            RelHalf('people', 'blogs', False),
+            RelHalf('blogs', 'owner', True),
+            'One to many'
+        ),
+        RelInfo(
+            RelHalf('blogs', 'owner', True),
+            RelHalf('people', 'blogs', False),
+            'Many to one'
+        ),
+        RelInfo(
+            RelHalf('people', 'articles_by_assoc', True),
+            RelHalf('articles_by_assoc', 'authors', True),
+            'Many to many by association table'
+        ),
+        RelInfo(
+            RelHalf('people', 'articles_by_proxy', True),
+            RelHalf('articles_by_obj', None, True),
+            'Many to many by association proxy'
+        ),
+    )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_spec_relationships_object(self, src, tgt, comment):
+        '''Relationships key should be object with a defined structure.
+
+        The value of the relationships key MUST be an object (a “relationships
+        object”). Members of the relationships object (“relationships”)
+        represent references from the resource object in which it’s defined to
+        other resource objects.
+
+        Relationships links object should have 'self' and 'related' links.
+        '''
+        # Fetch item 1 from the collection
+        r = self.test_app().get('/{}/1'.format(src.collection))
+        item = r.json['data']
+        # Should have relationships key
+        self.assertIn('relationships', item)
+        rels = item['relationships']
+        # The named relationship should exist.
+        self.assertIn(src.rel, rels)
+
+        # Check the structure of the relationship object.
+        obj = rels[src.rel]
+        self.assertIn('links', obj)
+        self.assertIn('self', obj['links'])
+        self.assertTrue(obj['links']['self'].endswith(
+            '{}/1/relationships/{}'.format(src.collection, src.rel)
+        ))
+        self.assertIn('related', obj['links'])
+        self.assertTrue(obj['links']['related'].endswith(
+            '{}/1/{}'.format(src.collection, src.rel)
+        ))
+        self.assertIn('data', obj)
+        if tgt.many:
+            self.assertIsInstance(obj['data'], list)
+            self.assertIn('type', obj['data'][0])
+            self.assertIn('id', obj['data'][0])
+        else:
+            self.assertIsInstance(obj['data'], dict)
+            self.assertIn('type', obj['data'])
+            self.assertIn('id', obj['data'])
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_spec_related_get(self, src, tgt, comment):
+        ''''related' link should fetch related resource(s).
+
+        If present, a related resource link MUST reference a valid URL, even if
+        the relationship isn’t currently associated with any target resources.
+        '''
+        # Fetch item 1 from the collection
+        r = self.test_app().get('/{}/1'.format(src.collection))
+        item = r.json['data']
+
+        # Fetch the related url.
+        url = item['relationships'][src.rel]['links']['related']
+        data = self.test_app().get(url).json['data']
+
+        # Check that the returned data is of the expected type.
+        if tgt.many:
+            self.assertIsInstance(data, list)
+            for related_item in data:
+                self.assertEqual(related_item['type'], tgt.collection)
+        else:
+            self.assertIsInstance(data, dict)
+            self.assertEqual(data['type'], tgt.collection)
+
+    def test_spec_related_get_no_relationship(self):
+        """Should fail to get an invalid relationship."""
+        self.test_app().get('/blogs/1/no_such_relationship',
+                            status=400,
+                           )
+
+    def test_spec_related_get_no_object(self):
+        """Should fail if 'parent' doesn't exist."""
+        self.test_app().get('/blogs/99999/owner',
+                            status=400,
+                           )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_spec_resource_linkage(self, src, tgt, comment):
+        '''Appropriate related resource identifiers in relationship.
+
+        Resource linkage in a compound document allows a client to link together
+        all of the included resource objects without having to GET any URLs via
+        links.
+
+        Resource linkage MUST be represented as one of the following:
+
+            * null for empty to-one relationships.
+            * an empty array ([]) for empty to-many relationships.
+            * a single resource identifier object for non-empty to-one
+             relationships.
+            * an array of resource identifier objects for non-empty to-many
+             relationships.
+        '''
+        # Test data convention:
+        #
+        # src:10 -> None or []
+        # src:11 -> tgt:11 or [tgt:11]
+        # src:12 -> [tgt:12, tgt:13]
+
+        # We always need items 10 and 11 from the source collection.
+        reldata_with_none = self.test_app().get(
+            '/{}/10'.format(src.collection)
+        ).json['data']['relationships'][src.rel]['data']
+        reldata_with_one = self.test_app().get(
+            '/{}/11'.format(src.collection)
+        ).json['data']['relationships'][src.rel]['data']
+
+        if tgt.many:
+            # Empty to_many relationship should hold [].
+            self.assertEqual(reldata_with_none, [])
+
+            # Should be an array with one item.
+            self.assertEqual(
+                reldata_with_one[0],
+                {'type': tgt.collection, 'id': '11'}
+            )
+
+            # We need item 12 for a to_many relationship.
+            # Note that we sort the list of related items so that they are in a
+            # known order for later testing.
+            reldata_with_two = sorted(
+                self.test_app().get(
+                    '/{}/12'.format(src.collection)
+                ).json['data']['relationships'][src.rel]['data'],
+                key=lambda item: item['id']
+            )
+            # Should be an array with two items.
+            self.assertEqual(
+                reldata_with_two[0], {'type': tgt.collection, 'id': '12'}
+            )
+            self.assertEqual(
+                reldata_with_two[1], {'type': tgt.collection, 'id': '13'}
+            )
+        else:
+            # Empty to_one relationship should hold None.
+            self.assertIsNone(reldata_with_none)
+            # Otherwise a single item {type: tgt_type, id: 11}.
+            self.assertEqual(reldata_with_one, {'type': tgt.collection, 'id': '11'})
+
 
 
 class TestSpec(DBTestBase):
@@ -369,139 +552,6 @@ class TestSpec(DBTestBase):
         # Check for forreign keys.
         self.assertNotIn('author_id', item['attributes'])
         self.assertNotIn('blog_id', item['attributes'])
-
-    def test_spec_relationships_object(self):
-        '''Relationships key should be object.
-
-        The value of the relationships key MUST be an object (a “relationships
-        object”). Members of the relationships object (“relationships”)
-        represent references from the resource object in which it’s defined to
-        other resource objects.
-        '''
-        # Fetch a single blog (has to-one and to-many realtionships)
-        r = self.test_app().get('/blogs?page[limit]=1')
-        item = r.json['data'][0]
-        # Should have relationships key
-        self.assertIn('relationships', item)
-        rels = item['relationships']
-
-        # owner: to-one
-        self.assertIn('owner', rels)
-        owner = rels['owner']
-        self.assertIn('links', owner)
-        self.assertIn('data', owner)
-        self.assertIsInstance(owner['data'], dict)
-        self.assertIn('type', owner['data'])
-        self.assertIn('id', owner['data'])
-
-        # posts: to-many
-        self.assertIn('posts', rels)
-        posts = rels['posts']
-        self.assertIn('links', posts)
-        self.assertIn('data', posts)
-        self.assertIsInstance(posts['data'], list)
-        self.assertIn('type', posts['data'][0])
-        self.assertIn('id', posts['data'][0])
-
-    def test_spec_relationships_links(self):
-        '''Relationships links object should have 'self' and 'related' links.
-        '''
-        # Fetch a single blog (has to-one and to-many relationships)
-        r = self.test_app().get('/blogs?page[limit]=1')
-        item = r.json['data'][0]
-        # Should have relationships key
-        links = item['relationships']['owner']['links']
-        self.assertIn('self', links)
-        self.assertTrue(
-            links['self'].endswith(
-                '/blogs/{}/relationships/owner'.format(item['id'])
-            )
-        )
-        self.assertIn('related', links)
-        self.assertTrue(
-            links['related'].endswith(
-                '/blogs/{}/owner'.format(item['id'])
-            )
-        )
-
-    def test_spec_related_get(self):
-        ''''related' link should fetch related resource(s).
-
-        If present, a related resource link MUST reference a valid URL, even if
-        the relationship isn’t currently associated with any target resources.
-        '''
-        # Fetch a single blog (has to-one and to-many relationships)
-        r = self.test_app().get('/blogs/1')
-        item = r.json['data']
-        owner_url = item['relationships']['owner']['links']['related']
-        posts_url = item['relationships']['posts']['links']['related']
-
-        owner_data = self.test_app().get(owner_url).json['data']
-        # owner should be a single object.
-        self.assertIsInstance(owner_data, dict)
-        # owner should be of type 'people'
-        self.assertEqual(owner_data['type'], 'people')
-
-        posts_data = self.test_app().get(posts_url).json['data']
-        # posts should be a collection.
-        self.assertIsInstance(posts_data, list)
-        # each post should be of type 'posts'
-        for post in posts_data:
-            self.assertEqual(post['type'], 'posts')
-
-    def test_spec_related_get_no_relationship(self):
-        """Should fail to get an invalid relationship."""
-        self.test_app().get('/blogs/1/no_such_relationship',
-                            status=400,
-                           )
-
-    def test_spec_related_get_no_object(self):
-        """Should fail if 'parent' doesn't exist."""
-        self.test_app().get('/blogs/99999/owner',
-                            status=400,
-                           )
-
-    def test_spec_resource_linkage(self):
-        '''Appropriate related resource identifiers in relationship.
-
-        Resource linkage in a compound document allows a client to link together
-        all of the included resource objects without having to GET any URLs via
-        links.
-
-        Resource linkage MUST be represented as one of the following:
-
-            * null for empty to-one relationships.
-            * an empty array ([]) for empty to-many relationships.
-            * a single resource identifier object for non-empty to-one
-             relationships.
-            * an array of resource identifier objects for non-empty to-many
-             relationships.
-        '''
-        # An anonymous comment.
-        # 'null for empty to-one relationships.'
-        comment = self.test_app().get('/comments/5').json['data']
-        self.assertIsNone(comment['relationships']['author']['data'])
-
-        # A comment with an author.
-        # 'a single resource identifier object for non-empty to-one
-        # relationships.'
-        comment = self.test_app().get('/comments/1').json['data']
-        author = comment['relationships']['author']['data']
-        self.assertEqual(author['type'], 'people')
-
-        # A post with no comments.
-        # 'an empty array ([]) for empty to-many relationships.'
-        post = self.test_app().get('/posts/1').json['data']
-        comments = post['relationships']['comments']['data']
-        self.assertEqual(len(comments), 0)
-
-        # A post with comments.
-        # 'an array of resource identifier objects for non-empty to-many
-        # relationships.'
-        post = self.test_app().get('/posts/4').json['data']
-        comments = post['relationships']['comments']['data']
-        self.assertGreater(len(comments), 0)
-        self.assertEqual(comments[0]['type'], 'comments')
 
     def test_spec_links_self(self):
         ''''self' link should fetch same object.
