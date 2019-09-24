@@ -827,7 +827,16 @@ class CollectionViewBase:
         # Set up the query
         query = self.related_query(self.obj_id, self.rel)
 
-        if self.rel.direction is ONETOMANY or self.rel.direction is MANYTOMANY:
+        if isinstance(self.rel, AssociationProxy):
+            ps = self.rel.for_class(self.model)
+            if ps.scalar:
+                direction = MANYTOONE
+            else:
+                direction = MANYTOMANY
+        else:
+            direction = self.rel.direction
+
+        if direction is ONETOMANY or direction is MANYTOMANY:
             query = self.rel_view.query_add_sorting(query)
             query = self.rel_view.query_add_filtering(query)
             qinfo = self.rel_view.collection_query_info(self.request)
