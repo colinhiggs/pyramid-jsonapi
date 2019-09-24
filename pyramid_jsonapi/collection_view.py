@@ -224,13 +224,17 @@ class CollectionViewBase:
                 # Gather relationship info
                 mapper = sqlalchemy.inspect(self.model).mapper
                 try:
-                    self.rel = mapper.relationships[self.relname]
+                    self.rel = self.relationships[self.relname]
                 except KeyError:
                     raise HTTPNotFound('No relationship {} in collection {}'.format(
                         self.relname,
                         self.collection_name
                     ))
-                self.rel_class = self.rel.mapper.class_
+                if isinstance(self.rel, AssociationProxy):
+                    proxy_state = self.rel.for_class(self.model)
+                    self.rel_class = getattr(proxy_state.target_class, proxy_state.value_attr).mapper.class_
+                else:
+                    self.rel_class = self.rel.mapper.class_
                 self.rel_view = self.view_instance(self.rel_class)
 
             # Update the dictionary with the reults of the wrapped method.
