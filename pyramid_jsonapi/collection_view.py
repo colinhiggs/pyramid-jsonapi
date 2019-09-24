@@ -1604,8 +1604,8 @@ class CollectionViewBase:
             query = query.options(load_only(rel_view.key_column.name))
         return query
 
-    def related_query(self, obj_id, relationship, full_object=True):
-        """Construct query for related objects.
+    def standard_relationship_query(self, obj_id, relationship, full_object=True):
+        """Construct query for related objects via a normal relationship.
 
         Parameters:
             obj_id (str): id of an item in this view's collection.
@@ -1652,6 +1652,39 @@ class CollectionViewBase:
                 rel.direction.name
             ))
 
+        return query
+
+    def related_query(self, obj_id, relationship, related_to=None, full_object=True):
+        """Construct query for related objects.
+
+        Parameters:
+            obj_id (str): id of an item in this view's collection.
+
+            relationship: the relationship object to get related objects from.
+                This can be a RelationshipProperty or AssociationProxy object.
+
+            related_to (model class or None): the class the relationship is
+                coming from. AssociationProxy relationships use this. It
+                defaults to ``None``, which is interpreted as self.model.
+
+            full_object (bool): if full_object is ``True``, query for all
+                requested columns (probably to build resource objects). If
+                full_object is False, only query for the key column (probably
+                to build resource identifiers).
+
+        Returns:
+            sqlalchemy.orm.query.Query: query which will fetch related
+            object(s).
+        """
+        if isinstance(relationship, AssociationProxy):
+            related_to = related_to or self.model
+            query = self.association_proxy_query(
+                obj_id, relationship.for_class(related_to), full_object=full_object
+            )
+        else:
+            query = self.standard_relationship_query(
+                obj_id, relationship, full_object=full_object
+            )
         return query
 
     def object_exists(self, obj_id):
@@ -1774,14 +1807,7 @@ class CollectionViewBase:
             }
             rel_view = self.view_instance(rel_class)
 
-            if isinstance(rel, AssociationProxy):
-                query = self.association_proxy_query(
-                    item_id, rel.for_class(item), full_object=is_included
-                )
-            else:
-                query = self.related_query(
-                    item_id, rel, full_object=is_included
-                )
+            query = self.related_query(item_id, rel, related_to=item, full_object=is_included)
 
             many = direction is ONETOMANY or direction is MANYTOMANY
             if many:
