@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy import func
 import transaction
 from test_project import models
 from test_project.models import (
@@ -9,9 +10,12 @@ import inspect
 import sys
 import json
 from pathlib import Path
+import re
 
-def add_to_db():
+def add_to_db(engine):
     '''Add some basic test data.'''
+    meta = sqlalchemy.MetaData()
+    meta.reflect(engine)
     # Some initial data in a handy form.
     module_file = Path(inspect.getfile(sys.modules[__name__]))
     with open(str(module_file.parent / 'test_data.json')) as f:
@@ -24,6 +28,17 @@ def add_to_db():
                 opts = dataset[2]
             for item in dataset[1]:
                 set_item(model, item_transform(item), opts)
+            # Set the current value of the associated sequence to the maximum
+            # id we added.
+            try:
+                id_col_name = model.__pyramid_jsonapi__['id_col_name']
+            except AttributeError:
+                id_col_name = sqlalchemy.inspect(model).primary_key[0].name
+            seq_text = meta.tables[model.__tablename__].columns[id_col_name].server_default.arg.text
+            seq_name = re.match(r"^nextval\('(\w+)'::", seq_text).group(1)
+            max_id = DBSession.query(func.max(getattr(model, id_col_name))).one()[0]
+            DBSession.execute("select setval('{}', {})".format(seq_name, max_id))
+
         for assoc_data in data.get('associations',[]):
             table = getattr(models, assoc_data[0])
             for assoc in assoc_data[1]:

@@ -70,7 +70,7 @@ class DBTestBase(unittest.TestCase):
     def setUp(self):
         Base.metadata.create_all(engine)
         # Add some basic test data.
-        test_data.add_to_db()
+        test_data.add_to_db(engine)
         transaction.begin()
 
     def tearDown(self):
