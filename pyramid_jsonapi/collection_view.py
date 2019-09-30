@@ -230,14 +230,10 @@ class CollectionViewBase:
                         self.relname,
                         self.collection_name
                     ))
-                if isinstance(self.rel, AssociationProxy):
-                    proxy_state = self.rel.for_class(self.model)
-                    self.rel_class = getattr(proxy_state.target_class, proxy_state.value_attr).mapper.class_
-                else:
-                    self.rel_class = self.rel.mapper.class_
+                self.rel_class = self.rel.tgt_class
                 self.rel_view = self.view_instance(self.rel_class)
 
-            # Update the dictionary with the reults of the wrapped method.
+            # Update the dictionary with the results of the wrapped method.
             ret = func(self)  # pylint:disable=not-callable
             if ret:
                 # Include a self link unless the method is PATCH.
@@ -302,6 +298,9 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people/1
         """
+        # We already fetched any item referenced by id while checking
+        # for existence in the wrapper. We put it into self.item in
+        # case it was needed.
         for callback in self.callbacks['after_get']:
             self.item = callback(self, self.item)
         return self.item
@@ -434,7 +433,7 @@ class CollectionViewBase:
                         self.collection_name, relname
                     )
                 )
-            rel_view = self.view_instance(rel.mapper.class_)
+            rel_view = self.view_instance(rel.tgt_class)
             try:
                 data = reldict['data']
             except KeyError:
@@ -459,7 +458,7 @@ class CollectionViewBase:
                         'An id is required in a resource identifier.'
                     )
                 rel_item = self.dbsession.query(
-                    rel.mapper.class_
+                    rel.tgt_class
                 ).options(
                     load_only(rel_view.key_column.name)
                 ).get(data['id'])
@@ -472,7 +471,7 @@ class CollectionViewBase:
                 rel_items = []
                 for res_ident in data:
                     rel_item = self.dbsession.query(
-                        rel.mapper.class_
+                        rel.tgt_class
                     ).options(
                         load_only(rel_view.key_column.name)
                     ).get(res_ident['id'])
@@ -712,7 +711,7 @@ class CollectionViewBase:
                         'relationships within POST must have data member'
                     )
                 try:
-                    rel = sqlalchemy.inspect(self.model).mapper.relationships[relname]
+                    rel = self.relationships[relname]
                 except KeyError:
                     raise HTTPNotFound(
                         'No relationship {} in collection {}'.format(
@@ -720,7 +719,7 @@ class CollectionViewBase:
                             self.collection_name
                         )
                     )
-                rel_type = self.api.view_classes[rel.mapper.class_].collection_name
+                rel_type = self.api.view_classes[rel.tgt_class].collection_name
                 if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
                     # reldata should be a list/array
                     if not isinstance(reldata, Sequence) or isinstance(reldata, str):
@@ -736,7 +735,7 @@ class CollectionViewBase:
                                 )
                             )
                         try:
-                            rel_items.append(self.dbsession.query(rel.mapper.class_).get(rel_identifier['id']))
+                            rel_items.append(self.dbsession.query(rel.tgt_class).get(rel_identifier['id']))
                         except KeyError:
                             raise HTTPBadRequest(
                                 'Relationship identifier must have an id member'
@@ -747,7 +746,7 @@ class CollectionViewBase:
                         setattr(
                             item,
                             relname,
-                            self.dbsession.query(rel.mapper.class_).get(reldata['id'])
+                            self.dbsession.query(rel.tgt_class).get(reldata['id'])
                         )
                     except KeyError:
                         raise HTTPBadRequest(
@@ -827,16 +826,7 @@ class CollectionViewBase:
         # Set up the query
         query = self.related_query(self.obj_id, self.rel)
 
-        if isinstance(self.rel, AssociationProxy):
-            ps = self.rel.for_class(self.model)
-            if ps.scalar:
-                direction = MANYTOONE
-            else:
-                direction = MANYTOMANY
-        else:
-            direction = self.rel.direction
-
-        if direction is ONETOMANY or direction is MANYTOMANY:
+        if self.rel.direction is ONETOMANY or self.rel.direction is MANYTOMANY:
             query = self.rel_view.query_add_sorting(query)
             query = self.rel_view.query_add_filtering(query)
             qinfo = self.rel_view.collection_query_info(self.request)
@@ -1100,7 +1090,7 @@ class CollectionViewBase:
 
         obj = self.dbsession.query(self.model).get(self.obj_id)
         if self.rel.direction is MANYTOONE:
-            local_col, _ = self.rel.local_remote_pairs[0]
+            local_col, _ = self.rel.obj.local_remote_pairs[0]
             resid = data
             if resid is None:
                 setattr(obj, self.relname, None)
@@ -1446,9 +1436,9 @@ class CollectionViewBase:
                 except IndexError:
                     # Use the relationship
                     sub_key = self.view_instance(
-                        rel.mapper.class_
+                        rel.tgt_class
                     ).key_column.name
-                order_att = getattr(rel.mapper.entity, sub_key)
+                order_att = getattr(rel.obj.mapper.entity, sub_key)
             if key_info['ascending']:
                 query = query.order_by(order_att)
             else:
@@ -1560,7 +1550,7 @@ class CollectionViewBase:
         Returns:
             int: paging limit for related resources.
         """
-        limit_comps = ['limit', 'relationships', relationship.key]
+        limit_comps = ['limit', 'relationships', relationship.obj.key]
         limit = self.default_limit
         qinfo = self.collection_query_info(self.request)
         while limit_comps:
@@ -1578,7 +1568,7 @@ class CollectionViewBase:
                 return model
         raise KeyError("No model mapped to %s." % table)
 
-    def association_proxy_query(self, obj_id, proxy, full_object=True):
+    def association_proxy_query(self, obj_id, rel, full_object=True):
         """Construct query for related objects across an association proxy.
 
         Parameters:
@@ -1596,10 +1586,11 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        rel_class = getattr(proxy.target_class, proxy.value_attr).mapper.class_
-        rel_view = self.view_instance(rel_class)
+        #rel_class = getattr(proxy.target_class, proxy.value_attr).mapper.class_
+        rel_view = self.view_instance(rel.tgt_class)
+        proxy = rel.obj.for_class(rel.src_class)
         query = self. dbsession.query(
-            rel_class
+            rel.tgt_class
         ).join(proxy.remote_attr).filter(
             # I thought the simpler
             # proxy.local_attr.contains() should work but it doesn't
@@ -1631,7 +1622,7 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        rel = relationship
+        rel = relationship.obj
         rel_class = rel.mapper.class_
         rel_view = self.view_instance(rel_class)
         local_col, rem_col = rel.local_remote_pairs[0]
@@ -1663,7 +1654,7 @@ class CollectionViewBase:
 
         return query
 
-    def related_query(self, obj_id, relationship, related_to=None, full_object=True):
+    def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.
 
         Parameters:
@@ -1685,10 +1676,10 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        if isinstance(relationship, AssociationProxy):
-            related_to = related_to or self.model
+        if isinstance(relationship.obj, AssociationProxy):
+            #related_to = related_to or self.model
             query = self.association_proxy_query(
-                obj_id, relationship.for_class(related_to), full_object=full_object
+                obj_id, relationship, full_object=full_object
             )
         else:
             query = self.standard_relationship_query(
@@ -1792,16 +1783,6 @@ class CollectionViewBase:
                 continue
             if not self.mapped_info_from_name(key).get('visible', True):
                 continue
-            if isinstance(rel, AssociationProxy):
-                proxy_state = rel.for_class(item.__class__)
-                if proxy_state.scalar:
-                    direction = MANYTOONE
-                else:
-                    direction = MANYTOMANY
-                rel_class = getattr(proxy_state.target_class, proxy_state.value_attr).mapper.class_
-            else:
-                direction = rel.direction
-                rel_class = rel.mapper.class_
 
             rel_dict = {
                 'data': None,
@@ -1810,15 +1791,15 @@ class CollectionViewBase:
                     'related': '{}/{}'.format(item_url, key)
                 },
                 'meta': {
-                    'direction': direction.name,
+                    'direction': rel.direction.name,
                     'results': {}
                 }
             }
-            rel_view = self.view_instance(rel_class)
+            rel_view = self.view_instance(rel.tgt_class)
 
-            query = self.related_query(item_id, rel, related_to=item, full_object=is_included)
+            query = self.related_query(item_id, rel, full_object=is_included)
 
-            many = direction is ONETOMANY or direction is MANYTOMANY
+            many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
             if many:
                 limit = self.related_limit(rel)
                 rel_dict['meta']['results']['limit'] = limit
@@ -2159,8 +2140,8 @@ class CollectionViewBase:
         """
         rels = {}
         for k, rel in self.requested_relationships.items():
-            if isinstance(rel, RelationshipProperty) and rel.direction is MANYTOONE and k in self.allowed_fields:
-                for pair in rel.local_remote_pairs:
+            if isinstance(rel.obj, RelationshipProperty) and rel.direction is MANYTOONE and k in self.allowed_fields:
+                for pair in rel.obj.local_remote_pairs:
                     rels[pair[0].name] = pair[0]
         return rels
 
@@ -2230,7 +2211,7 @@ class CollectionViewBase:
                     else:
                         if name in curview.relationships.keys():
                             curview = curview.view_instance(
-                                curview.relationships[name].mapper.class_
+                                curview.relationships[name].tgt_class
                             )
                         else:
                             tainted = True
