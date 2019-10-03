@@ -19,6 +19,7 @@ requires = [
     'waitress',
     'webtest',
     'zope.sqlalchemy',
+    'parameterized'
     ]
 
 setup(name='test_project',
