@@ -435,7 +435,7 @@ class CollectionViewBase:
                 )
             rel_view = self.view_instance(rel.tgt_class)
             try:
-                data = reldict['data']
+                reldata = reldict['data']
             except KeyError:
                 raise HTTPBadRequest(
                     "Relationship '{}' has no 'data' member.".format(relname)
@@ -444,16 +444,16 @@ class CollectionViewBase:
                 raise HTTPBadRequest(
                     "Relationship '{}' is not a dictionary with a data member.".format(relname)
                 )
-            if data is None:
+            if reldata is None:
                 setattr(item, relname, None)
-            elif isinstance(data, dict):
-                if data.get('type') != rel_view.collection_name:
+            elif isinstance(reldata, dict):
+                if reldata.get('type') != rel_view.collection_name:
                     raise HTTPConflict(
                         'Type {} does not match relationship type {}'.format(
-                            data.get('type', None), rel_view.collection_name
+                            reldata.get('type', None), rel_view.collection_name
                         )
                     )
-                if data.get('id') is None:
+                if reldata.get('id') is None:
                     raise HTTPBadRequest(
                         'An id is required in a resource identifier.'
                     )
@@ -461,15 +461,15 @@ class CollectionViewBase:
                     rel.tgt_class
                 ).options(
                     load_only(rel_view.key_column.name)
-                ).get(data['id'])
+                ).get(reldata['id'])
                 if not rel_item:
                     raise HTTPNotFound('{}/{} not found'.format(
-                        rel_view.collection_name, data['id']
+                        rel_view.collection_name, reldata['id']
                     ))
                 setattr(item, relname, rel_item)
-            elif isinstance(data, list):
+            elif isinstance(reldata, list):
                 rel_items = []
-                for res_ident in data:
+                for res_ident in reldata:
                     rel_item = self.dbsession.query(
                         rel.tgt_class
                     ).options(
@@ -742,6 +742,16 @@ class CollectionViewBase:
                             )
                     setattr(item, relname, rel_items)
                 else:
+                    if (not isinstance(reldata, dict)) and (reldata is not None):
+                        raise HTTPBadRequest(
+                            'Relationship data should be a resource identifier object or null.'
+                        )
+                    if reldata.get('type') != rel_type:
+                        raise HTTPConflict(
+                            'Relationship identifier has type {} and should be {}'.format(
+                                reldata.get('type'), rel_type
+                            )
+                        )
                     try:
                         setattr(
                             item,
@@ -1003,14 +1013,23 @@ class CollectionViewBase:
                     )
                 )
             try:
-                items.append(self.dbsession.query(self.rel_class).get(resid['id']))
+                newitem = self.dbsession.query(self.rel_class).get(resid['id'])
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
+            if newitem is None:
+                raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
+            items.append(newitem)
         getattr(obj, self.relname).extend(items)
         try:
             self.dbsession.flush()
         except sqlalchemy.exc.IntegrityError as exc:
-            raise HTTPFailedDependency(str(exc))
+            if 'duplicate key value violates unique constraint' in str(exc):
+                # This happens when using an association proxy if we attempt to
+                # add an object to the relationship that's already there. We
+                # want this to be a no-op.
+                pass
+            else:
+                raise HTTPFailedDependency(str(exc))
         except sqlalchemy.orm.exc.FlushError as exc:
             if str(exc).startswith("Can't flush None value"):
                 raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
@@ -1126,9 +1145,12 @@ class CollectionViewBase:
                     )
                 )
             try:
-                items.append(self.dbsession.query(self.rel_class).get(resid['id']))
+                newitem = self.dbsession.query(self.rel_class).get(resid['id'])
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
+            if newitem is None:
+                raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
+            items.append(newitem)
         setattr(obj, self.relname, items)
         try:
             self.dbsession.flush()
@@ -1221,7 +1243,7 @@ class CollectionViewBase:
             try:
                 getattr(obj, self.relname).remove(item)
             except ValueError as exc:
-                if exc.args[0].endswith(': x not in list'):
+                if exc.args[0].endswith('not in list'):
                     # The item we were asked to remove is not there.
                     pass
                 else:
