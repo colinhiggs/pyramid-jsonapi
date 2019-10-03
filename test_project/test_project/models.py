@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     CheckConstraint,
+    func
     )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -61,6 +62,7 @@ class Person(Base):
     )
     article_associations = relationship(
         'ArticleAuthorAssociation',
+        cascade='all, delete-orphan',
         backref='author'
     )
 
@@ -171,6 +173,7 @@ class ArticleByObj(Base):
     published_at = Column(DateTime)
     author_associations = relationship(
         'ArticleAuthorAssociation',
+        cascade='all, delete-orphan',
         backref='article'
     )
 
@@ -180,17 +183,37 @@ class ArticleAuthorAssociation(Base):
     article_author_associations_id = IdColumn()
     article_id = IdRefColumn(
         'articles_by_obj.articles_by_obj_id',
-        nullable=False
+        # nullable=False
     )
     author_id = IdRefColumn(
         'people.id',
-        nullable=False
+        # nullable=False
     )
-    date_joined = Column(DateTime)
+    date_joined = Column(DateTime, server_default=func.now())
 
-    __table_args__ = (
-        UniqueConstraint('article_id', 'author_id'),
-    )
+    # __table_args__ = (
+    #     UniqueConstraint('article_id', 'author_id'),
+    # )
+
+    def __init__(
+        self, article=None, author=None, date_joined=None,
+        article_author_associations_id=None,
+        article_id=None,
+        author_id=None
+        ):
+        if article is not None:
+            self.article = article
+        if author is not None:
+            self.author = author
+        self.date_joined = date_joined
+        if self.date_joined is None:
+            self.date_joined = func.now()
+        if article_author_associations_id is not None:
+            self.article_author_associations_id = article_author_associations_id
+        if article_id is not None:
+            self.article_id = article_id
+        if author_id is not None:
+            self.author_id = author_id
 
 
 class RenamedThings(Base):

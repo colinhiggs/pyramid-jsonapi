@@ -38,6 +38,32 @@ cur_dir = os.path.dirname(
 )
 parent_dir = os.path.dirname(cur_dir)
 
+RelHalf = namedtuple('RelSide', 'collection rel many')
+RelInfo = namedtuple('RelInfo', 'src tgt comment')
+rel_infos = (
+    RelInfo(
+        RelHalf('people', 'blogs', False),
+        RelHalf('blogs', 'owner', True),
+        'One to many'
+    ),
+    RelInfo(
+        RelHalf('blogs', 'owner', True),
+        RelHalf('people', 'blogs', False),
+        'Many to one'
+    ),
+    RelInfo(
+        RelHalf('people', 'articles_by_assoc', True),
+        RelHalf('articles_by_assoc', 'authors', True),
+        'Many to many by association table'
+    ),
+    RelInfo(
+        RelHalf('people', 'articles_by_proxy', True),
+        RelHalf('articles_by_obj', None, True),
+        'Many to many by association proxy'
+    ),
+)
+
+
 def setUpModule():
     '''Create a test DB and import data.'''
     # Create a new database somewhere in /tmp
@@ -116,33 +142,12 @@ class TestRelationships(DBTestBase):
     # src:11 -> tgt:11 or [tgt:11]
     # src:12 -> [tgt:12, tgt:13]
 
-    RelHalf = namedtuple('RelSide', 'collection rel many')
-    RelInfo = namedtuple('RelInfo', 'src tgt comment')
-    rel_infos = (
-        RelInfo(
-            RelHalf('people', 'blogs', False),
-            RelHalf('blogs', 'owner', True),
-            'One to many'
-        ),
-        RelInfo(
-            RelHalf('blogs', 'owner', True),
-            RelHalf('people', 'blogs', False),
-            'Many to one'
-        ),
-        RelInfo(
-            RelHalf('people', 'articles_by_assoc', True),
-            RelHalf('articles_by_assoc', 'authors', True),
-            'Many to many by association table'
-        ),
-        RelInfo(
-            RelHalf('people', 'articles_by_proxy', True),
-            RelHalf('articles_by_obj', None, True),
-            'Many to many by association proxy'
-        ),
-    )
+    ###############################################
+    # Relationship GET tests.
+    ###############################################
 
     @parameterized.expand(rel_infos, doc_func=rels_doc_func)
-    def test_spec_relationships_object(self, src, tgt, comment):
+    def test_rels_object(self, src, tgt, comment):
         '''Relationships key should be object with a defined structure.
 
         The value of the relationships key MUST be an object (a “relationships
@@ -183,7 +188,7 @@ class TestRelationships(DBTestBase):
             self.assertIn('id', obj['data'])
 
     @parameterized.expand(rel_infos, doc_func=rels_doc_func)
-    def test_spec_related_get(self, src, tgt, comment):
+    def test_rels_related_get(self, src, tgt, comment):
         ''''related' link should fetch related resource(s).
 
         If present, a related resource link MUST reference a valid URL, even if
@@ -206,20 +211,20 @@ class TestRelationships(DBTestBase):
             self.assertIsInstance(data, dict)
             self.assertEqual(data['type'], tgt.collection)
 
-    def test_spec_related_get_no_relationship(self):
+    def test_rels_related_get_no_relationship(self):
         """Should fail to get an invalid relationship."""
         self.test_app().get('/blogs/1/no_such_relationship',
                             status=400,
                            )
 
-    def test_spec_related_get_no_object(self):
+    def test_rels_related_get_no_object(self):
         """Should fail if 'parent' doesn't exist."""
         self.test_app().get('/blogs/99999/owner',
                             status=400,
                            )
 
     @parameterized.expand(rel_infos, doc_func=rels_doc_func)
-    def test_spec_resource_linkage(self, src, tgt, comment):
+    def test_rels_resource_linkage(self, src, tgt, comment):
         '''Appropriate related resource identifiers in relationship.
 
         Resource linkage in a compound document allows a client to link together
@@ -281,6 +286,773 @@ class TestRelationships(DBTestBase):
             # Otherwise a single item {type: tgt_type, id: 11}.
             self.assertEqual(reldata_with_one, {'type': tgt.collection, 'id': '11'})
 
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_fetch_relationship_link(self, src, tgt, comment):
+        '''relationships links should return linkage information.
+
+        A server MUST support fetching relationship data for every relationship
+        URL provided as a self link as part of a relationship’s links object
+
+        The primary data in the response document MUST match the appropriate
+        value for resource linkage, as described above for relationship objects.
+
+        If [a to-one] relationship is empty, then a GET request to the
+        [relationship] URL would return:
+
+            "data": null
+
+        If [a to-many] relationship is empty, then a GET request to the
+        [relationship] URL would return:
+
+            "data": []
+        '''
+        for item_id in ['10', '11', '12']:
+            url = self.test_app().get(
+                '/{}/{}'.format(src.collection, item_id)
+            ).json['data']['relationships'][src.rel]['links']['self']
+            reldata = self.test_app().get(url).json['data']
+            if tgt.many:
+                if item_id == '10':
+                    self.assertEqual(reldata, [])
+                elif item_id == '11':
+                    self.assertEqual(reldata[0]['type'], tgt.collection)
+                    self.assertEqual(reldata[0]['id'], '11')
+                else:
+                    reldata.sort(key=lambda item: item['id'])
+                    self.assertEqual(reldata[0]['type'], tgt.collection)
+                    self.assertEqual(reldata[0]['id'], '12')
+                    self.assertEqual(reldata[1]['type'], tgt.collection)
+                    self.assertEqual(reldata[1]['id'], '13')
+            else:
+                if item_id == '10':
+                    self.assertIsNone(reldata)
+                elif item_id == '11':
+                    self.assertEqual(reldata['type'], tgt.collection)
+                    self.assertEqual(reldata['id'], '11')
+                else:
+                    continue
+
+    def test_rels_fetch_not_found_relationship(self):
+        '''Should 404 when fetching a relationship that does not exist.
+
+        A server MUST return 404 Not Found when processing a request to fetch a
+        relationship link URL that does not exist.
+        '''
+        # Try to get the author of a non existent post.
+        r = self.test_app().get('/posts/1000/relationships/author', status=404)
+        # Try to get data about a non existing relationships
+        self.test_app().get('/posts/1/relationships/no_such_relationship',
+            status=404)
+
+    ###############################################
+    # Relationship POST tests.
+    ###############################################
+
+    def test_rels_post_no_such_relationship(self):
+        """Should fail to create an invalid relationship."""
+
+        created_id = self.test_app().post_json(
+            '/blogs',
+            {
+                'data': {
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'no_such_relationship': {
+                            'data': {'type': 'people', 'id': '1'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    def test_rels_post_relationship_no_data(self):
+        "Relationships mentioned in POSTs must have data."
+        created_id = self.test_app(
+            options = {
+                'pyramid_jsonapi.schema_validation': 'false'
+            }
+        ).post_json(
+        '/blogs',
+        {
+            'data': {
+                'type': 'blogs',
+                'attributes': {
+                    'title': 'test'
+                },
+                'relationships': {
+                    'owner': {}
+                }
+            }
+        },
+        headers={'Content-Type': 'application/vnd.api+json'},
+        status=400
+    )
+
+    def test_rels_post_relationship_no_id(self):
+        "Relationship linkage in POST requests must have id."
+        created_id = self.test_app(
+            options = {
+                'pyramid_jsonapi.schema_validation': 'false'
+            }
+        ).post_json(
+        '/blogs',
+        {
+            'data': {
+                'type': 'blogs',
+                'attributes': {
+                    'title': 'test'
+                },
+                'relationships': {
+                    'owner': {
+                        'data': {'type': 'people'}
+                    }
+                }
+            }
+        },
+        headers={'Content-Type': 'application/vnd.api+json'},
+        status=400
+    )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_post_to_relationships(self, src, tgt, comment):
+        '''Should add items to a TOMANY relationship; 403 Error for TOONE.
+
+        If a client makes a POST request to a URL from a relationship link, the
+        server MUST add the specified members to the relationship unless they
+        are already present. If a given type and id is already in the
+        relationship, the server MUST NOT add it again.
+        '''
+        if not tgt.many:
+            # Cannot POST to TOONE relationship. 403 Error.
+            self.test_app(
+                options = {
+                    'pyramid_jsonapi.schema_validation': 'false'
+                    }
+                ).post_json(
+                    '/{}/10/relationships/{}'.format(src.collection, src.rel),
+                    {'type': tgt.collection, 'id': '11'},
+                    headers={'Content-Type': 'application/vnd.api+json'},
+                    status=403
+                )
+            return
+
+        # Add related items 12 and 13 to item 10 (has no related items).
+        self.test_app().post_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    { 'type': tgt.collection, 'id': '12'},
+                    { 'type': tgt.collection, 'id': '13'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Make sure they are there.
+        rel_ids = {
+            rel_item['id'] for rel_item in
+                self.test_app().get(
+                    '/{}/10/relationships/{}'.format(src.collection, src.rel)
+                ).json['data']
+        }
+        self.assertEqual(rel_ids, {'12', '13'})
+        # Make sure adding relitem:12 again doesn't result in two relitem:12s
+        self.test_app().post_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    { 'type': tgt.collection, 'id': '12'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        rel_ids = [
+            rel_item['id'] for rel_item in
+                self.test_app().get(
+                    '/{}/10/relationships/{}'.format(src.collection, src.rel)
+                ).json['data']
+        ]
+        self.assertEqual(sorted(rel_ids), ['12', '13'])
+        # Make sure adding relitem:11 adds to the list, rather than replacing
+        # it.
+        self.test_app().post_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    { 'type': tgt.collection, 'id': '11'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        rel_ids = [
+            rel_item['id'] for rel_item in
+                self.test_app().get(
+                    '/{}/10/relationships/{}'.format(src.collection, src.rel)
+                ).json['data']
+        ]
+        self.assertEqual(sorted(rel_ids), ['11', '12', '13'])
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_post_item_with_related(self, src, tgt, comment):
+        '''Should add a new item with linkage to related resources.
+
+        If a relationship is provided in the relationships member of the
+        resource object, its value MUST be a relationship object with a data
+        member. The value of this key represents the linkage the new resource is
+        to have.
+        '''
+        # Add a new item related to relitem:12 and possibly relitem:13
+        reldata = {'type': tgt.collection, 'id': '12'}
+        if tgt.many:
+            reldata = [ reldata, {'type': tgt.collection, 'id': '13'} ]
+        item_id = self.test_app().post_json(
+            '/{}'.format(src.collection),
+            {
+                'data': {
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'data': reldata
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'}
+        ).json['data']['id']
+
+        # GET it back and check that relationship linkage is correct.
+        item = self.test_app().get(
+            '/{}/{}'.format(src.collection, item_id)
+        ).json['data']
+        if tgt.many:
+            specified_related_ids = {'12', '13'}
+            found_related_ids = {
+                thing['id'] for thing in item['relationships'][src.rel]['data']
+            }
+            self.assertEqual(specified_related_ids, found_related_ids)
+        else:
+            self.assertEqual(item['relationships'][src.rel]['data']['id'], '12')
+
+        # Now attempt to add another item with malformed requests.
+        incorrect_type_data = { 'type': 'frogs', 'id': '12' }
+        no_id_data = { 'type': tgt.collection, 'id_typo': '12'}
+        # No data element in rel.
+        self.test_app().post_json(
+            '/{}'.format(src.collection),
+            {
+                'data': {
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'meta': 'should fail'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        if tgt.many:
+            incorrect_type_data = [ incorrect_type_data ]
+            no_id_data = [ no_id_data ]
+            # Not an array.
+            self.test_app().post_json(
+                '/{}'.format(src.collection),
+                {
+                    'data': {
+                        'type': src.collection,
+                        'relationships': {
+                            src.rel: {
+                                'data': { 'type': tgt.collection, 'id': '12'}
+                            }
+                        }
+                    }
+                },
+                headers={'Content-Type': 'application/vnd.api+json'},
+                status=400
+            )
+        else:
+            # Data is an array of identifiers when it should be just one.
+            self.test_app().post_json(
+                '/{}'.format(src.collection),
+                {
+                    'data': {
+                        'type': src.collection,
+                        'relationships': {
+                            src.rel: {
+                                'data': [
+                                    { 'type': tgt.collection, 'id': '12'}
+                                ]
+                            }
+                        }
+                    }
+                },
+                headers={'Content-Type': 'application/vnd.api+json'},
+                status=400
+            )
+
+        # Data malformed (not a resource identifier or array of them).
+        self.test_app().post_json(
+            '/{}'.format(src.collection),
+            {
+                'data': {
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'data': 'splat'
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+        # Item with incorrect type.
+        self.test_app().post_json(
+            '/{}'.format(src.collection),
+            {
+                'data': {
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'data': incorrect_type_data
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
+        # Item with no id.
+        self.test_app().post_json(
+            '/{}'.format(src.collection),
+            {
+                'data': {
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'data': no_id_data
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    def test_rels_post_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Try to add people/1 to no_such_relationship.
+        self.test_app().post_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_post_relationships_nonexistent_item(self, src, tgt, comment):
+        '''Should return HTTPFailedDependency (424).
+        '''
+        # Try to add tgt/99999 (doesn't exist) to src.rel
+        reldata = { 'type': tgt.collection, 'id': '99999'}
+        status = 403
+        if tgt.many:
+            reldata = [ reldata ]
+            status = 424
+        self.test_app().post_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': reldata
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=status
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_spec_post_relationships_invalid_id(self, src, tgt, comments):
+        '''Should return HTTPBadRequest.
+        '''
+        if not tgt.many:
+            return
+        # Try to add item/splat to rel..
+        self.test_app().post_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    { 'type': tgt.collection, 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    def test_rels_post_relationships_integrity_error(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add blog/1 to people/3 (db constraint precludes this)
+        self.test_app().post_json(
+            '/people/3/relationships/blogs',
+            {
+                'data': [
+                    { 'type': 'blogs', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    ###############################################
+    # Relationship PATCH tests.
+    ###############################################
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_patch_resources_relationships(self, src, tgt, comment):
+        '''Should replace src.rel with new contents.
+
+        Any or all of a resource’s relationships MAY be included in the resource
+        object included in a PATCH request.
+
+        If a request does not include all of the relationships for a resource,
+        the server MUST interpret the missing relationships as if they were
+        included with their current values. It MUST NOT interpret them as null
+        or empty values.
+
+        If a relationship is provided in the relationships member of a resource
+        object in a PATCH request, its value MUST be a relationship object with
+        a data member. The relationship’s value will be replaced with the value
+        specified in this member.
+        '''
+        reldata = {'type': tgt.collection, 'id': '12'}
+        if tgt.many:
+            reldata = [ reldata, {'type': tgt.collection, 'id': '13'} ]
+
+        # PATCH src/10/rels/rel to be reldata
+        self.test_app().patch_json(
+            '/{}/10'.format(src.collection),
+            {
+                'data': {
+                    'id': '10',
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'data': reldata
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+        # Check that src.rel has the correct linkage.
+        src_item = self.test_app().get('/{}/10'.format(src.collection)).json['data']
+        if tgt.many:
+            for related_item in src_item['relationships'][src.rel]['data']:
+                self.assertEqual(related_item['type'], tgt.collection)
+                self.assertIn(related_item['id'], {'12', '13'})
+        else:
+            self.assertEqual(src_item['relationships'][src.rel]['data'], reldata)
+
+        # Now try PATCHing the relationship back to empty
+        if tgt.many:
+            reldata = []
+        else:
+            reldata = None
+        self.test_app().patch_json(
+            '/{}/10'.format(src.collection),
+            {
+                'data': {
+                    'id': '10',
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: {
+                            'data': reldata
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        src_item = self.test_app().get('/{}/10'.format(src.collection)).json['data']
+        self.assertEqual(src_item['relationships'][src.rel]['data'], reldata)
+
+        # MUST be a relationship object with a data member
+        # Try without a data member...
+        self.test_app().patch_json(
+            '/{}/10'.format(src.collection),
+            {
+                'data': {
+                    'id': '10',
+                    'type': src.collection,
+                    'relationships': {
+                        src.rel: reldata
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_patch_relationships(self, src, tgt, comment):
+        '''Should update a relationship.
+
+        A server MUST respond to PATCH requests to a URL from a to-one
+        relationship link as described below.
+
+        The PATCH request MUST include a top-level member named data containing
+        one of:
+
+            * a resource identifier object corresponding to the new related
+              resource.
+            * null, to remove the relationship.
+
+        If a client makes a PATCH request to a URL from a to-many relationship
+        link, the server MUST either completely replace every member of the
+        relationship, return an appropriate error response if some resources can
+        not be found or accessed, or return a 403 Forbidden response if complete
+        replacement is not allowed by the server.
+        '''
+        if tgt.many:
+            new_reldata = [
+                { 'type': tgt.collection, 'id': '12'},
+                { 'type': tgt.collection, 'id': '13'}
+            ]
+            new_empty = []
+        else:
+            new_reldata = { 'type': tgt.collection, 'id': '12'}
+            new_empty = None
+        # src:11 should be related to tgt:11. Update the relationship.
+        self.test_app().patch_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': new_reldata
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Check that the change went through
+        fetched_reldata = self.test_app().get(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel)
+        ).json['data']
+        if tgt.many:
+            expected_length = 2
+            expected_ids = {'12', '13'}
+        else:
+            # Wrap to_one results in an array to make the following code DRY.
+            fetched_reldata = [ fetched_reldata ]
+            expected_length = 1
+            expected_ids = {'12'}
+        fetched_reldata.sort(key=lambda item: item['id'])
+        self.assertEqual(len(fetched_reldata), expected_length)
+        for relitem in fetched_reldata:
+            self.assertEqual(relitem['type'], tgt.collection)
+            self.assertIn(relitem['id'], expected_ids)
+
+        # Update the relationship to be empty.
+        self.test_app().patch_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': new_empty
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Check that it's empty.
+        self.assertEqual(
+            self.test_app().get(
+                '/{}/10/relationships/{}'.format(src.collection, src.rel)
+            ).json['data'],
+            new_empty
+        )
+
+    def test_rels_patch_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Try set people/1 on no_such_relationship.
+        self.test_app().patch_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_patch_relationships_nonexistent_item(self, src, tgt, comment):
+        '''Should return HTTPFailedDependency.
+        '''
+        reldata = { 'type': tgt.collection, 'id': '99999' }
+        if tgt.many:
+            reldata = [ reldata ]
+        self.test_app().patch_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': reldata
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_patch_relationships_invalid_id(self, src, tgt, comment):
+        '''Should return HTTPBadRequest.
+        '''
+        reldata = { 'type': tgt.collection, 'id': 'splat' }
+        if tgt.many:
+            reldata = [ reldata ]
+        self.test_app().patch_json(
+            '/{}/10/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': reldata
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
+
+    def test_rels_patch_relationships_integrity_error(self):
+        '''Should return HTTPFailedDependency.
+        '''
+        # Try to add blog/1 to people/3 (db constraint precludes this)
+        self.test_app().patch_json(
+            '/people/3/relationships/blogs',
+            {
+                'data': [
+                    { 'type': 'blogs', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+        # and the other way round
+        self.test_app().patch_json(
+            '/blogs/1/relationships/owner',
+            {
+                'data': { 'type': 'people', 'id': '3'}
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    ###############################################
+    # Relationship DELETE tests.
+    ###############################################
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_delete_relationships(self, src, tgt, comment):
+        '''Should remove items from relationship.
+
+        If the client makes a DELETE request to a URL from a relationship link
+        the server MUST delete the specified members from the relationship or
+        return a 403 Forbidden response. If all of the specified resources are
+        able to be removed from, or are already missing from, the relationship
+        then the server MUST return a successful response
+        '''
+        if not tgt.many:
+            # DELETEing from a to_one relationship is not allowed.
+            self.test_app().delete(
+                '/{}/11/relationships/{}'.format(src.collection, src.rel),
+                status=403
+            )
+            return
+
+        # Attempt to delete tgt:13 from src:12
+        self.test_app().delete_json(
+            '/{}/12/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    {'type': tgt.collection, 'id': '13'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        # Test that tgt:13 is no longer in the relationship.
+        self.assertEqual(
+            {'12'},
+            {
+                item['id'] for item in
+                self.test_app().get(
+                    '/{}/12/relationships/{}'.format(src.collection, src.rel)
+                ).json['data']
+            }
+        )
+        # Try to DELETE tgt:13 from relationship again. Should return success.
+        self.test_app().delete_json(
+            '/{}/12/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    {'type': tgt.collection, 'id': '13'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertEqual(
+            {'12'},
+            {
+                item['id'] for item in
+                self.test_app().get(
+                    '/{}/12/relationships/{}'.format(src.collection, src.rel)
+                ).json['data']
+            }
+        )
+
+    def test_rels_delete_relationships_nonexistent_relationship(self):
+        '''Should return 404 error (relationship not found).
+        '''
+        # Delete people/1 from no_such_relationship.
+        self.test_app().delete_json(
+            '/articles_by_assoc/2/relationships/no_such_relationship',
+            {
+                'data': [
+                    { 'type': 'people', 'id': '1'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=404
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_delete_relationships_nonexistent_item(self, src, tgt, comment):
+        '''Should return HTTPFailedDependency.
+        '''
+        if not tgt.many:
+            return
+        self.test_app().delete_json(
+            '/{}/11/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [ { 'type': tgt.collection, 'id': '99999' } ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=424
+        )
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_delete_relationships_invalid_id(self, src, tgt, comment):
+        '''Should return HTTPBadRequest.
+        '''
+        if not tgt.many:
+            return
+        # Try to delete tgt:splat from src:11.
+        self.test_app().delete_json(
+            '/{}/11/relationships/{}'.format(src.collection, src.rel),
+            {
+                'data': [
+                    { 'type': tgt.collection, 'id': 'splat'}
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=400
+        )
 
 
 class TestSpec(DBTestBase):
@@ -450,13 +1222,6 @@ class TestSpec(DBTestBase):
         r = self.test_app().get('/people/' + alice_id)
         alice = r.json['data']
         self.assertEqual(alice['attributes']['name'], 'alice')
-
-    def test_spec_get_no_such_relationship(self):
-        """Should fail if no such relationship."""
-        self.test_app().get(
-            '/blogs/1/no_such_relationship',
-            status=400
-        )
 
     def test_spec_resource_object_must(self):
         '''Resource object should have at least id and type.
@@ -736,86 +1501,6 @@ class TestSpec(DBTestBase):
         '''
         data = self.test_app().get('/comments/5/author').json['data']
         self.assertIsNone(data)
-
-    def test_spec_fetch_relationship_link(self):
-        '''relationships links should return linkage information.
-
-        A server MUST support fetching relationship data for every relationship
-        URL provided as a self link as part of a relationship’s links object
-
-        The primary data in the response document MUST match the appropriate
-        value for resource linkage, as described above for relationship objects.
-        '''
-        # Blogs have both many to one and one to many relationships.
-        blog1 = self.test_app().get('/blogs/1').json['data']
-
-        # to one
-        owner_url = blog1['relationships']['owner']['links']['self']
-        # A server MUST support fetching relationship data...
-        owner_data = self.test_app().get(owner_url).json['data']
-        # the response document MUST match the appropriate value for resource
-        # linkage...
-        #
-        # In this case a resource identifier with type = 'people' and an id.
-        self.assertEqual('people', owner_data['type'])
-        self.assertIn('id', owner_data)
-
-        # to one, empty relationship
-
-        # to many
-        posts_url = blog1['relationships']['posts']['links']['self']
-        # A server MUST support fetching relationship data...
-        posts_data = self.test_app().get(posts_url).json['data']
-        # the response document MUST match the appropriate value for resource
-        # linkage...
-        #
-        # In this case an array of 'posts' resource identifiers.
-        self.assertIsInstance(posts_data, list)
-        for post in posts_data:
-            self.assertEqual('posts', post['type'])
-            self.assertIn('id', post)
-
-    def test_spec_fetch_relationship_to_one_empty(self):
-        '''Fetching empty relationships link should give null data.
-
-        If [a to-one] relationship is empty, then a GET request to the
-        [relationship] URL would return:
-
-            "data": null
-        '''
-        # comment 5 has no author
-        comment5 = self.test_app().get('/comments/5').json['data']
-        author = self.test_app().get(
-            comment5['relationships']['author']['links']['self']
-        ).json['data']
-        self.assertIsNone(author)
-
-    def test_spec_fetch_relationship_to_many_empty(self):
-        '''Fetching empty relationships link should give empty array.
-
-        If [a to-many] relationship is empty, then a GET request to the
-        [relationship] URL would return:
-
-            "data": []
-        '''
-        # post 1 has no comments
-        post1 = self.test_app().get('/posts/1').json['data']
-        comments = self.test_app().get(
-            post1['relationships']['comments']['links']['self']
-        ).json['data']
-        self.assertEqual(len(comments), 0)
-
-    def test_spec_fetch_not_found_relationship(self):
-        '''Should 404 when fetching a relationship that does not exist.
-
-        A server MUST return 404 Not Found when processing a request to fetch a
-        relationship link URL that does not exist.
-        '''
-        # Try to get the author of a non existent post.
-        r = self.test_app().get('/posts/1000/relationships/author', status=404)
-        # Try to get data about a non existing relationships
-        self.test_app().get('/posts/1/relationships/no_such_relationship',
-            status=404)
 
     def test_spec_sparse_fields(self):
         '''Should return only requested fields.
@@ -1214,491 +1899,6 @@ class TestSpec(DBTestBase):
             status=400
         )
 
-    def test_spec_post_no_such_relationship(self):
-        """Should fail to create an invalid relationship."""
-
-        created_id = self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test'
-                    },
-                    'relationships': {
-                        'no_such_relationship': {
-                            'data': {'type': 'people', 'id': '1'}
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=404
-        )
-
-    def test_spec_post_relationship_no_data(self):
-        "Relationships in posts must have data."
-        created_id = self.test_app(
-            options = {
-                'pyramid_jsonapi.schema_validation': 'false'
-            }
-        ).post_json(
-        '/blogs',
-        {
-            'data': {
-                'type': 'blogs',
-                'attributes': {
-                    'title': 'test'
-                },
-                'relationships': {
-                    'owner': {}
-                }
-            }
-        },
-        headers={'Content-Type': 'application/vnd.api+json'},
-        status=400
-    )
-
-    def test_spec_post_relationship_no_id(self):
-        "Relationships in posts must have id."
-        created_id = self.test_app(
-            options = {
-                'pyramid_jsonapi.schema_validation': 'false'
-            }
-        ).post_json(
-        '/blogs',
-        {
-            'data': {
-                'type': 'blogs',
-                'attributes': {
-                    'title': 'test'
-                },
-                'relationships': {
-                    'owner': {
-                        'data': {'type': 'author'}
-                    }
-                }
-            }
-        },
-        headers={'Content-Type': 'application/vnd.api+json'},
-        status=400
-    )
-
-    def test_spec_relationship_post_toone(self):
-        "Cannot post to TOONE relationship."
-        self.test_app(
-            options = {
-                'pyramid_jsonapi.schema_validation': 'false'
-            }
-        ).post_json(
-            '/blogs/1/relationships/owner',
-            {
-                'type': 'owner', 'id': '1'
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=403
-        )
-
-    def test_spec_relationship_delete_toone(self):
-        "Cannot delete from TOONE relationship."
-        self.test_app().delete(
-            '/blogs/1/relationships/owner',
-            status=403
-        )
-
-
-    def test_spec_post_with_relationships_manytoone(self):
-        '''Should create a blog belonging to alice.
-
-        If a relationship is provided in the relationships member of the
-        resource object, its value MUST be a relationship object with a data
-        member. The value of this key represents the linkage the new resource is
-        to have.
-        '''
-        # Add a test blog with owner alice.
-        created_id = self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test'
-                    },
-                    'relationships': {
-                        'owner': {
-                            'data': {'type': 'people', 'id': '1'}
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-
-        # Make sure they are there.
-        data = self.test_app().get(
-            '/blogs/{}'.format(created_id)
-        ).json['data']
-        self.assertEqual(data['id'], created_id)
-
-        # Test where there is a relationship with nullable=False
-        # Add a test post with author alice.
-        created_id = self.test_app().post_json(
-            '/posts',
-            {
-                'data': {
-                    'type': 'posts',
-                    'attributes': {
-                        'title': 'test',
-                        'published_at': '2017-01-01'
-                    },
-                    'relationships': {
-                        'author': {
-                            'data': {'type': 'people', 'id': '1'}
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-
-        # Make sure we get an error if there is no data member:
-        #
-        # its value MUST be a relationship object with a data
-        # member.
-        self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test'
-                    },
-                    'relationships': {
-                        'owner': {
-                            'meta': 'this should fail because there is no data'
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-        # Malformed data member
-        self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test'
-                    },
-                    'relationships': {
-                        'owner': {
-                            'data': 'mince'
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-        # No id in relationship
-        self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test'
-                    },
-                    'relationships': {
-                        'owner': {
-                            'data': {'type': 'people'}
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-
-
-    def test_spec_post_with_relationships_onetomany(self):
-        '''Should create a two new blogs and a user who owns them.
-
-        If a relationship is provided in the relationships member of the
-        resource object, its value MUST be a relationship object with a data
-        member. The value of this key represents the linkage the new resource is
-        to have.
-        '''
-        # Add two test blogs first.
-        blog1_id = self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test1'
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-        blog2_id = self.test_app().post_json(
-            '/blogs',
-            {
-                'data': {
-                    'type': 'blogs',
-                    'attributes': {
-                        'title': 'test2'
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-
-        # Add a test user who owns both blogs.
-        person_id = self.test_app().post_json(
-            '/people',
-            {
-                'data': {
-                    'type': 'people',
-                    'attributes': {
-                        'name': 'test'
-                    },
-                    'relationships': {
-                        'blogs': {
-                            'data': [
-                                {'type': 'blogs', 'id': str(blog1_id)},
-                                {'type': 'blogs', 'id': str(blog2_id)}
-                            ]
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-
-        # Make sure the person exists and does own the blogs.
-        data = self.test_app().get(
-            '/people/{}'.format(person_id)
-        ).json['data']
-        self.assertEqual(data['id'], person_id)
-        created_blog_ids = {blog1_id, blog2_id}
-        found_blog_ids = set()
-        for blog in data['relationships']['blogs']['data']:
-            found_blog_ids.add(blog['id'])
-        self.assertEqual(created_blog_ids, found_blog_ids)
-
-        # Now attempt to add another person with malformed requests.
-        # No data element in blogs.
-        self.test_app().post_json(
-            '/people',
-            {
-                'data': {
-                    'type': 'people',
-                    'attributes': {
-                        'name': 'test2'
-                    },
-                    'relationships': {
-                        'blogs': {
-                            'meta': 'should fail'
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-        # Not an array
-        self.test_app().post_json(
-            '/people',
-            {
-                'data': {
-                    'type': 'people',
-                    'attributes': {
-                        'name': 'test2'
-                    },
-                    'relationships': {
-                        'blogs': {
-                            'data': { 'type': 'blogs', 'id': str(blog1_id)}
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-        # Not an array
-        self.test_app().post_json(
-            '/people',
-            {
-                'data': {
-                    'type': 'people',
-                    'attributes': {
-                        'name': 'test2'
-                    },
-                    'relationships': {
-                        'blogs': {
-                            'data': 'splat'
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-        # Item with incorrect type
-        self.test_app().post_json(
-            '/people',
-            {
-                'data': {
-                    'type': 'people',
-                    'attributes': {
-                        'name': 'test2'
-                    },
-                    'relationships': {
-                        'blogs': {
-                            'data': [
-                                { 'type': 'splats', 'id': str(blog1_id)}
-                            ]
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=409
-        )
-        # Item with no id
-        self.test_app().post_json(
-            '/people',
-            {
-                'data': {
-                    'type': 'people',
-                    'attributes': {
-                        'name': 'test2'
-                    },
-                    'relationships': {
-                        'blogs': {
-                            'data': [
-                                { 'type': 'blogs', 'id_typo': str(blog1_id)}
-                            ]
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-
-    def test_spec_post_with_relationships_manytomany_table(self):
-        '''Should create an article_by_assoc with two authors.
-        '''
-        # Create article_by_assoc with authors alice and bob.
-        article_id = self.test_app().post_json(
-            '/articles_by_assoc',
-            {
-                'data': {
-                    "type": "articles_by_assoc",
-                    "attributes": {
-                        "title": "test1"
-                    },
-                    "relationships": {
-                        "authors": {
-                            "data": [
-                                {"type": "people", "id": "1"},
-                                {"type": "people", "id": "2"}
-                            ]
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-
-        # GET it back and check that authors is correct.
-        data = self.test_app().get(
-            '/articles_by_assoc/{}'.format(article_id)
-        ).json['data']
-        created_people_ids = {"1", "2"}
-        found_people_ids = {
-            person['id'] for person in data['relationships']['authors']['data']
-        }
-        self.assertEqual(created_people_ids, found_people_ids)
-
-    def test_spec_post_with_relationships_manytomany_object(self):
-        '''Should create an article_by_obj with two authors.
-        '''
-        # Create the article_by_obj.
-        article_id = self.test_app().post_json(
-            '/articles_by_obj',
-            {
-                'data': {
-                    "type": "articles_by_obj",
-                    "attributes": {
-                        "title": "test1"
-                    },
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'}
-        ).json['data']['id']
-
-        # Create the relationships to the two authors.
-        rel1_id = self.test_app().post_json(
-            '/article_author_associations',
-            {
-                'data': {
-                    "type": "article_author_associations",
-                    "attributes": {
-                        "date_joined": "2016-01-03"
-                    },
-                    "relationships": {
-                        "author": {
-                            "data": {"type": "people", "id": "3"}
-                        },
-                        "article": {
-                            "data": {"type": "articles", "id": article_id}
-                        }
-                    }
-                }
-            }
-        ).json['data']['id']
-        rel2_id = self.test_app().post_json(
-            '/article_author_associations',
-            {
-                'data': {
-                    "type": "article_author_associations",
-                    "attributes": {
-                        "date_joined": "2016-01-02"
-                    },
-                    "relationships": {
-                        "author": {
-                            "data": {"type": "people", "id": "2"}
-                        },
-                        "article": {
-                            "data": {"type": "articles", "id": article_id}
-                        }
-                    }
-                }
-            }
-        ).json['data']['id']
-
-        # Check that the article has authors 1 and 3
-        data = self.test_app().get(
-            '/articles_by_obj/{}'.format(article_id)
-        ).json['data']
-        assoc_ids = {
-            ass['id'] for ass in
-                data['relationships']['author_associations']['data']
-        }
-        author_ids = set()
-        for assoc_id in assoc_ids:
-            data = self.test_app().get(
-                '/article_author_associations/{}'.format(assoc_id)
-            ).json['data']
-            author_ids.add(data['relationships']['author']['data']['id'])
-        self.assertEqual(author_ids, {'3', '2'})
-
     def test_spec_post_with_id(self):
         '''Should create a person object with id 1000.
 
@@ -1819,199 +2019,6 @@ class TestSpec(DBTestBase):
             },
             headers={'Content-Type': 'application/vnd.api+json'},
             status=409 # Test the status code.
-        )
-
-    def test_spec_post_relationships_onetomany(self):
-        '''Should add two comments to a blog.
-
-        If a client makes a POST request to a URL from a relationship link, the
-        server MUST add the specified members to the relationship unless they
-        are already present. If a given type and id is already in the
-        relationship, the server MUST NOT add it again.
-        '''
-        # Make sure that comments/4,5 are not attached to posts/1.
-        comment_ids = {
-            comment['id'] for comment in
-                self.test_app().get(
-                    '/posts/1/relationships/comments'
-                ).json['data']
-        }
-        self.assertNotIn('4', comment_ids)
-        self.assertNotIn('5', comment_ids)
-
-        # Add comments 4 and 5.
-        self.test_app().post_json(
-            '/posts/1/relationships/comments',
-            {
-                'data': [
-                    { 'type': 'comments', 'id': '4'},
-                    { 'type': 'comments', 'id': '5'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Make sure they are there.
-        comment_ids = {
-            comment['id'] for comment in
-                self.test_app().get(
-                    '/posts/1/relationships/comments'
-                ).json['data']
-        }
-        self.assertEqual(comment_ids, {'4', '5'})
-
-        # Make sure adding comments/4 again doesn't result in two comments/4.
-        self.test_app().post_json(
-            '/posts/1/relationships/comments',
-            {
-                'data': [
-                    { 'type': 'comments', 'id': '4'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-        comment_ids = [
-            comment['id'] for comment in
-                self.test_app().get(
-                    '/posts/1/relationships/comments'
-                ).json['data']
-        ]
-        self.assertEqual(comment_ids, ['4', '5'])
-
-        # Make sure adding comments/1 adds to the comments list, rather than
-        # replacing it.
-        self.test_app().post_json(
-            '/posts/1/relationships/comments',
-            {
-                'data': [
-                    { 'type': 'comments', 'id': '1'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-        comment_ids = [
-            comment['id'] for comment in
-                self.test_app().get(
-                    '/posts/1/relationships/comments'
-                ).json['data']
-        ]
-        self.assertEqual(comment_ids, ['1', '4', '5'])
-
-
-    def test_spec_post_relationships_manytomany_assoc(self):
-        '''Should add an author to an article_by_assoc.
-
-        If a client makes a POST request to a URL from a relationship link, the
-        server MUST add the specified members to the relationship unless they
-        are already present. If a given type and id is already in the
-        relationship, the server MUST NOT add it again.
-        '''
-        # Make sure that people/1,3 are not attached to articles_by_assoc/2.
-        author_ids = {
-            author['id'] for author in
-                self.test_app().get(
-                    '/articles_by_assoc/2/relationships/authors'
-                ).json['data']
-        }
-        self.assertNotIn('1', author_ids)
-        self.assertNotIn('3', author_ids)
-
-        # Add people/1.
-        self.test_app().post_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Make sure people/2 has been added.
-        author_ids = {
-            author['id'] for author in
-                self.test_app().get(
-                    '/articles_by_assoc/2/relationships/authors'
-                ).json['data']
-        }
-        self.assertEqual(author_ids, {'1', '2'})
-
-        # Make sure adding people/1 again doesn't result in multiple entries.
-        self.test_app().post_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-        author_ids = [
-            author['id'] for author in
-                self.test_app().get(
-                    '/articles_by_assoc/2/relationships/authors'
-                ).json['data']
-        ]
-        self.assertEqual(author_ids, ['1', '2'])
-
-    def test_spec_post_relationships_nonexistent_relationship(self):
-        '''Should return 404 error (relationship not found).
-        '''
-        # Try to add people/1 to no_such_relationship.
-        self.test_app().post_json(
-            '/articles_by_assoc/2/relationships/no_such_relationship',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=404
-        )
-
-    def test_spec_post_relationships_nonexistent_item(self):
-        '''Should return HTTPFailedDependency.
-        '''
-        # Try to add people/200 as author..
-        self.test_app().post_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '200'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
-        )
-
-    def test_spec_post_relationships_invalid_id(self):
-        '''Should return HTTPBadRequest.
-        '''
-        # Try to add people/splat as author..
-        self.test_app().post_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': 'splat'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-
-    def test_spec_post_relationships_integrity_error(self):
-        '''Should return HTTPFailedDependency.
-        '''
-        # Try to add blog/1 to people/3 (db constraint precludes this)
-        self.test_app().post_json(
-            '/people/3/relationships/blogs',
-            {
-                'data': [
-                    { 'type': 'blogs', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
         )
 
     ###############################################
@@ -2181,415 +2188,6 @@ class TestSpec(DBTestBase):
         self.assertIn('has no relationship',detail)
 
 
-    def test_spec_patch_resources_relationships_manytoone(self):
-        '''Should replace a post's author and no other relationship.
-
-        Any or all of a resource’s relationships MAY be included in the resource
-        object included in a PATCH request.
-
-        If a request does not include all of the relationships for a resource,
-        the server MUST interpret the missing relationships as if they were
-        included with their current values. It MUST NOT interpret them as null
-        or empty values.
-
-        If a relationship is provided in the relationships member of a resource
-        object in a PATCH request, its value MUST be a relationship object with
-        a data member. The relationship’s value will be replaced with the value
-        specified in this member.
-        '''
-        # Check that posts/1 does not have people/2 as an author.
-        data = self.test_app().get('/posts/1').json['data']
-        author_data = data['relationships']['author']['data']
-        if author_data:
-            self.assertNotEqual(author_data['id'], '2')
-
-        # Store the blog and comments values so we can make sure that they
-        # didn't change later.
-        orig_blog = data['relationships']['blog']['data']
-        orig_comments = data['relationships']['comments']['data']
-
-        # PATCH posts/1 to have author people/2.
-        r = self.test_app().patch_json(
-            '/posts/1',
-            {
-                'data': {
-                    'id': '1',
-                    'type': 'posts',
-                    'relationships': {
-                        'author': {
-                            'data': {'type': 'people', 'id': '2'}
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that posts/1 now has people/2 as an author.
-        data = self.test_app().get('/posts/1').json['data']
-        author_data = data['relationships']['author']['data']
-        self.assertEqual(author_data['id'], '2')
-
-        # Check that it has the same blog and comments.
-        new_blog = data['relationships']['blog']['data']
-        self.assertEqual(orig_blog['id'], new_blog['id'])
-        new_comments = data['relationships']['comments']['data']
-        self.assertEqual(
-            {item['id'] for item in orig_comments},
-            {item['id'] for item in new_comments}
-        )
-
-        # Make sure that comments/1 has an author.
-        c1_author = self.test_app().get(
-            '/comments/1'
-        ).json['data']['relationships']['author']['data']
-        self.assertIn('id', c1_author)
-        # Set author of comments/1 to None.
-        self.test_app().patch_json(
-            '/comments/1',
-            {
-                'data': {
-                    'id': '1',
-                    'type': 'comments',
-                    'relationships': {
-                        'author': {
-                            'data': None
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-        # Check that there is now no author.
-        c1_author = self.test_app().get(
-            '/comments/1'
-        ).json['data']['relationships']['author']['data']
-        self.assertIs(c1_author, None)
-
-        # MUST be a relationship object with a data member
-        # Try without a data member...
-        r = self.test_app().patch_json(
-            '/posts/1',
-            {
-                'data': {
-                    'id': '1',
-                    'type': 'posts',
-                    'relationships': {
-                        'author': {'type': 'people', 'id': '1'}
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-
-    def test_spec_patch_resources_relationships_onetomany(self):
-        '''Should replace a post's comments.
-        '''
-        # Check that posts/1 does not have comments/4 or comments/5.
-        data = self.test_app().get('/posts/1').json['data']
-        comments = data['relationships']['comments']['data']
-        comment_ids = {'4', '5'}
-        for comment in comments:
-            self.assertNotIn(comment['id'], comment_ids)
-
-        # PATCH posts/1 to have comments/4 and 5.
-        self.test_app().patch_json(
-            '/posts/1',
-            {
-                'data': {
-                    'id': '1',
-                    'type': 'posts',
-                    'relationships': {
-                        'comments': {
-                            'data': [
-                                {'type': 'comments', 'id': '4'},
-                                {'type': 'comments', 'id': '5'}
-                            ]
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that posts/1 now has comments/4 and comments/5.
-        data = self.test_app().get('/posts/1').json['data']
-        comments = data['relationships']['comments']['data']
-        found_ids = {comment['id'] for comment in comments}
-        self.assertEqual(comment_ids, found_ids)
-
-    def test_spec_patch_resources_relationships_manytomany_assoc(self):
-        '''Change the authors of articles_by_assoc/2.
-        '''
-        author_ids = {'1', '3'}
-        # Check that articles_by_assoc/2 does not have author ids 1 and 3
-        data = self.test_app().get('/articles_by_assoc/2').json['data']
-        authors = data['relationships']['authors']['data']
-        found_ids = {author['id'] for author in authors}
-        self.assertNotEqual(author_ids, found_ids)
-
-        # PATCH articles_by_assoc/2 to have authors 1 and 3
-        self.test_app().patch_json(
-            '/articles_by_assoc/2',
-            {
-                'data': {
-                    'id': '2',
-                    'type': 'articles_by_assoc',
-                    'relationships': {
-                        'authors': {
-                            'data': [
-                                {'type': 'people', 'id': '1'},
-                                {'type': 'people', 'id': '3'}
-                            ]
-                        }
-                    }
-                }
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that articles_by_assoc/2 now has authors 1 and 3
-        data = self.test_app().get('/articles_by_assoc/2').json['data']
-        authors = data['relationships']['authors']['data']
-        found_ids = {author['id'] for author in authors}
-        self.assertEqual(author_ids, found_ids)
-
-    def test_spec_patch_relationships_toone(self):
-        '''Should update the author of a post.
-
-        The PATCH request MUST include a top-level member named data containing
-        one of:
-
-            * a resource identifier object corresponding to the new related
-              resource.
-
-            ...
-        '''
-        # Make sure the current author of post/1 is not people/3
-        author_id = self.test_app().get(
-            '/posts/1/relationships/author'
-        ).json['data']['id']
-        self.assertNotEqual(author_id, '3')
-
-        # Set the author to be people/3
-        self.test_app().patch_json(
-            '/posts/1/relationships/author',
-            {
-                'data': {'type': 'people', 'id': '3'}
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Now the author should be people/3
-        author_id = self.test_app().get(
-            '/posts/1/relationships/author'
-        ).json['data']['id']
-        self.assertEqual(author_id, '3')
-
-    def test_spec_patch_relationships_toone_null(self):
-        '''Should set the post of a comment to null.
-
-        The PATCH request MUST include a top-level member named data containing
-        one of:
-
-            ...
-
-            * null, to remove the relationship.
-
-        '''
-        # Make sure the current post of comment/1 is not null.
-        comment_id = self.test_app().get(
-            '/comments/1/relationships/post'
-        ).json['data']['id']
-        self.assertNotEqual(comment_id, None)
-
-        # Set the post to None.
-        self.test_app().patch_json(
-            '/comments/1/relationships/post',
-            {
-                'data': None
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Now the post should be None.
-        comment = self.test_app().get(
-            '/comments/1/relationships/post'
-        ).json['data']
-        self.assertEqual(comment, None)
-
-    def test_spec_patch_relationships_onetomany(self):
-        '''Should replace the comments for a post.
-
-        If a client makes a PATCH request to a URL from a to-many relationship
-        link, the server MUST either completely replace every member of the
-        relationship, return an appropriate error response if some resources can
-        not be found or accessed, or return a 403 Forbidden response if complete
-        replacement is not allowed by the server.
-        '''
-        # Check that posts/1 does not have comments/4 or comments/5.
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/1/relationships/comments').json['data']
-        }
-        for cid in comment_ids:
-            self.assertNotIn(cid, {'4', '5'})
-
-        # PATCH posts/1 to have comments/4 and 5.
-        self.test_app().patch_json(
-            '/posts/1/relationships/comments',
-            {
-                'data': [
-                    {'type': 'comments', 'id': '4'},
-                    {'type': 'comments', 'id': '5'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Test that posts/1 has comments/4 and 5 (and only those).
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/1/relationships/comments').json['data']
-        }
-        self.assertEqual(comment_ids, {'4', '5'})
-
-    def test_spec_patch_relationships_manytomany_assoc(self):
-        '''Should replace the authors for an article_by_assoc.
-
-        If a client makes a PATCH request to a URL from a to-many relationship
-        link, the server MUST either completely replace every member of the
-        relationship, return an appropriate error response if some resources can
-        not be found or accessed, or return a 403 Forbidden response if complete
-        replacement is not allowed by the server.
-        '''
-        author_ids = {'1', '3'}
-        # Check that articles_by_assoc/2 does not have author ids 1 and 3
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/2/relationships/authors'
-            ).json['data']
-        }
-        self.assertNotEqual(author_ids, found_ids)
-
-        # PATCH articles_by_assoc/2 to have authors 1 and 3
-        self.test_app().patch_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    {'type': 'people', 'id': '1'},
-                    {'type': 'people', 'id': '3'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that articles_by_assoc/2 now has authors 1 and 3
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/2/relationships/authors'
-            ).json['data']
-        }
-        self.assertEqual(author_ids, found_ids)
-
-    def test_spec_patch_relationships_nonexistent_relationship(self):
-        '''Should return 404 error (relationship not found).
-        '''
-        # Try set people/1 on no_such_relationship.
-        self.test_app().patch_json(
-            '/articles_by_assoc/2/relationships/no_such_relationship',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=404
-        )
-
-    def test_spec_patch_relationships_nonexistent_item(self):
-        '''Should return HTTPFailedDependency.
-        '''
-        # TOMANY
-        # Try to add people/200 as author..
-        self.test_app().patch_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '200'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
-        )
-
-        # TOONE
-        # Try to set people/200 as owner of blogs/2
-        self.test_app().patch_json(
-            '/blogs/2/relationships/owner',
-            {
-                'data': { 'type': 'people', 'id': '200'}
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
-        )
-
-    def test_spec_patch_relationships_invalid_id(self):
-        '''Should return HTTPBadRequest.
-        '''
-        # TOMANY
-        # Try to set people/splat as author..
-        self.test_app().patch_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': 'splat'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-
-        #TOONE
-        #
-        # Try to set people/splat as owner of blogs/2
-        self.test_app().patch_json(
-            '/blogs/2/relationships/owner',
-            {
-                'data': { 'type': 'people', 'id': 'splat'}
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
-
-    def test_spec_patch_relationships_integrity_error(self):
-        '''Should return HTTPFailedDependency.
-        '''
-        # Try to add blog/1 to people/3 (db constraint precludes this)
-        self.test_app().patch_json(
-            '/people/3/relationships/blogs',
-            {
-                'data': [
-                    { 'type': 'blogs', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
-        )
-        # and the other way round
-        self.test_app().patch_json(
-            '/blogs/1/relationships/owner',
-            {
-                'data': { 'type': 'people', 'id': '3'}
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
-        )
-
-
     ###############################################
     # DELETE tests.
     ###############################################
@@ -2630,224 +2228,6 @@ class TestSpec(DBTestBase):
         # Delete comments/invalid
         self.test_app().delete('/comments/invalid', status=404)
 
-    def test_spec_delete_relationships_onetomany(self):
-        '''Should remove a comment from a post.
-
-        If the client makes a DELETE request to a URL from a relationship link
-        the server MUST delete the specified members from the relationship or
-        return a 403 Forbidden response. If all of the specified resources are
-        able to be removed from, or are already missing from, the relationship
-        then the server MUST return a successful response
-        '''
-        # Get the current set of comments for posts/4.
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/4/relationships/comments').json['data']
-        }
-        self.assertEqual(comment_ids, {'1', '2', '5'})
-
-        # DELETE comments/1 and 2
-        self.test_app().delete_json(
-            '/posts/4/relationships/comments',
-            {
-                'data': [
-                    {'type': 'comments', 'id': '1'},
-                    {'type': 'comments', 'id': '2'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Test that posts/4 now only has comments/5
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/4/relationships/comments').json['data']
-        }
-        self.assertEqual(comment_ids, {'5'})
-
-    def test_spec_delete_relationships_onetomany_double_delete(self):
-        '''Should remove a comment from a post twice.
-
-        If all of the specified resources are... already missing from, the
-        relationship then the server MUST return a successful response
-        '''
-        # Get the current set of comments for posts/4.
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/4/relationships/comments').json['data']
-        }
-        self.assertEqual(comment_ids, {'1', '2', '5'})
-
-        # DELETE comments/1.
-        self.test_app().delete_json(
-            '/posts/4/relationships/comments',
-            {
-                'data': [
-                    {'type': 'comments', 'id': '1'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Test that comments/1 has been deleted.
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/4/relationships/comments').json['data']
-        }
-        self.assertEqual(comment_ids, {'2', '5'})
-
-        # DELETE comments/1 again.
-        self.test_app().delete_json(
-            '/posts/4/relationships/comments',
-            {
-                'data': [
-                    {'type': 'comments', 'id': '1'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-        # Test that we still have the same list of comments.
-        comment_ids = {
-            comment['id'] for comment in
-            self.test_app().get('/posts/4/relationships/comments').json['data']
-        }
-        self.assertEqual(comment_ids, {'2', '5'})
-
-    def test_spec_delete_relationships_manytomany_assoc(self):
-        '''Should remove an author from an artile_by_assoc.
-
-        If the client makes a DELETE request to a URL from a relationship link
-        the server MUST delete the specified members from the relationship or
-        return a 403 Forbidden response. If all of the specified resources are
-        able to be removed from, or are already missing from, the relationship
-        then the server MUST return a successful response
-        '''
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/1/relationships/authors'
-            ).json['data']
-        }
-        self.assertEqual(found_ids, {'1', '2'})
-
-        # DELETE people/1 from rel.
-        self.test_app().delete_json(
-            '/articles_by_assoc/1/relationships/authors',
-            {
-                'data': [
-                    {'type': 'people', 'id': '1'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that articles_by_assoc/2 now has authors 2
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/1/relationships/authors'
-            ).json['data']
-        }
-        self.assertEqual(found_ids, {'2'})
-
-    def test_spec_delete_relationships_manytomany_assoc_double_delete(self):
-        '''Should double-remove an author from an artile_by_assoc.
-
-        If all of the specified resources are... already missing from, the
-        relationship then the server MUST return a successful response
-        '''
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/1/relationships/authors'
-            ).json['data']
-        }
-        self.assertEqual(found_ids, {'1', '2'})
-
-        # DELETE people/1 from rel.
-        self.test_app().delete_json(
-            '/articles_by_assoc/1/relationships/authors',
-            {
-                'data': [
-                    {'type': 'people', 'id': '1'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that articles_by_assoc/2 now has authors 2
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/1/relationships/authors'
-            ).json['data']
-        }
-        self.assertEqual(found_ids, {'2'})
-
-        # Try to DELETE people/1 again.
-        self.test_app().delete_json(
-            '/articles_by_assoc/1/relationships/authors',
-            {
-                'data': [
-                    {'type': 'people', 'id': '1'},
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-        )
-
-        # Check that articles_by_assoc/2 still has authors 2
-        found_ids = {
-            author['id'] for author in
-            self.test_app().get(
-                '/articles_by_assoc/1/relationships/authors'
-            ).json['data']
-        }
-        self.assertEqual(found_ids, {'2'})
-
-    def test_spec_delete_relationships_nonexistent_relationship(self):
-        '''Should return 404 error (relationship not found).
-        '''
-        # Delete people/1 from no_such_relationship.
-        self.test_app().delete_json(
-            '/articles_by_assoc/2/relationships/no_such_relationship',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '1'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=404
-        )
-
-    def test_spec_delete_relationships_nonexistent_item(self):
-        '''Should return HTTPFailedDependency.
-        '''
-        # Try to delete people/200 from authors..
-        self.test_app().delete_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': '200'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=424
-        )
-
-    def test_spec_delete_relationships_invalid_id(self):
-        '''Should return HTTPBadRequest.
-        '''
-        # Try to delete people/splat from authors.
-        self.test_app().delete_json(
-            '/articles_by_assoc/2/relationships/authors',
-            {
-                'data': [
-                    { 'type': 'people', 'id': 'splat'}
-                ]
-            },
-            headers={'Content-Type': 'application/vnd.api+json'},
-            status=400
-        )
 
 class TestErrors(DBTestBase):
     '''Test that errors are thrown properly.'''
