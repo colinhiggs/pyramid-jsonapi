@@ -1608,7 +1608,6 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        #rel_class = getattr(proxy.target_class, proxy.value_attr).mapper.class_
         rel_view = self.view_instance(rel.tgt_class)
         proxy = rel.obj.for_class(rel.src_class)
         query = self. dbsession.query(
@@ -1699,7 +1698,6 @@ class CollectionViewBase:
             object(s).
         """
         if isinstance(relationship.obj, AssociationProxy):
-            #related_to = related_to or self.model
             query = self.association_proxy_query(
                 obj_id, relationship, full_object=full_object
             )

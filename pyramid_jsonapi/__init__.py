@@ -301,7 +301,8 @@ class PyramidJSONAPI():
         for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
             if expose_fields is None or key in expose_fields:
                 rels[key] = rel
-        class_attrs['relationships'] = {}
+        view_rels = {}
+        class_attrs['relationships'] = view_rels
         fields.update(rels)
         class_attrs['fields'] = fields
 
@@ -331,7 +332,7 @@ class PyramidJSONAPI():
         # Relationships have to be added after view_class has been constructed
         # because they need a reference to it.
         for key, rel in rels.items():
-            view_class.relationships[key] = StdRelationship(key, rel, view_class)
+            view_rels[key] = StdRelationship(key, rel, view_class)
 
         return view_class
 
@@ -343,6 +344,7 @@ class PyramidJSONAPI():
         """
         for view_class in self.view_classes.values():
             view_class.append_callback_set(set_name)
+
 
 class StdRelationship:
     """Standardise access to relationship informationself.
@@ -383,6 +385,7 @@ class StdRelationship:
     def proxy_tgt_class(self):
         ps = self.obj.for_class(self.src_class)
         return getattr(ps.target_class, ps.value_attr).mapper.class_
+
 
 class DebugView:
     """Pyramid view class defining a debug API.
