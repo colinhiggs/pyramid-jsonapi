@@ -414,7 +414,7 @@ class DebugView:
         # Create or update tables and schema. Safe if tables already exist.
         self.metadata.create_all(self.engine)
         # Add test data. Safe if test data already exists.
-        self.test_data.add_to_db()
+        self.test_data.add_to_db(self.engine)
         return 'populated'
 
     def reset(self):
