@@ -16,7 +16,6 @@ requires = [
     'pyyaml>=5.1', # openapi-spec-validator requires >= 5.1
     'SQLAlchemy',
     'six>=1.12',
-    'typing',
     ]
 
 setup(
