@@ -33,8 +33,10 @@ from pyramid.httpexceptions import (
 import pyramid_settings_wrapper
 import sqlalchemy
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm.relationships import RelationshipProperty
 
 import pyramid_jsonapi.collection_view
 import pyramid_jsonapi.endpoints
@@ -287,17 +289,20 @@ class PyramidJSONAPI():
                 atts[key] = col
                 fields[key] = col
         class_attrs['attributes'] = atts
-        for item in sqlalchemy.inspect(model).all_orm_descriptors:
+        rels = {}
+        for key, item in sqlalchemy.inspect(model).all_orm_descriptors.items():
             if isinstance(item, hybrid_property):
                 if expose_fields is None or item.__name__ in expose_fields:
                     hybrid_atts[item.__name__] = item
                     fields[item.__name__] = item
+            if item.extension_type is ASSOCIATION_PROXY:
+                rels[key] = item
         class_attrs['hybrid_attributes'] = hybrid_atts
-        rels = {}
         for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
             if expose_fields is None or key in expose_fields:
                 rels[key] = rel
-        class_attrs['relationships'] = rels
+        view_rels = {}
+        class_attrs['relationships'] = view_rels
         fields.update(rels)
         class_attrs['fields'] = fields
 
@@ -319,11 +324,17 @@ class PyramidJSONAPI():
                 deque(),                            # args: parent_item(sqlalchemy)
         }
 
-        return type(
+        view_class = type(
             'CollectionView<{}>'.format(collection_name),
             (pyramid_jsonapi.collection_view.CollectionViewBase, ),
             class_attrs
         )
+        # Relationships have to be added after view_class has been constructed
+        # because they need a reference to it.
+        for key, rel in rels.items():
+            view_rels[key] = StdRelationship(key, rel, view_class)
+
+        return view_class
 
     def append_callback_set_to_all_views(self, set_name):  # pylint:disable=invalid-name
         """Append a named set of callbacks to all view classes.
@@ -333,6 +344,47 @@ class PyramidJSONAPI():
         """
         for view_class in self.view_classes.values():
             view_class.append_callback_set(set_name)
+
+
+class StdRelationship:
+    """Standardise access to relationship informationself.
+
+    Attributes:
+        obj: the actual object representing the relationship.
+    """
+
+    def __init__(self, name, obj, view_class):
+        self.name = name
+        self.obj = obj
+        self.view_class = view_class
+        self.src_class = self.view_class.model
+        if isinstance(obj, RelationshipProperty):
+            self.direction = self.rel_direction
+            self.tgt_class = self.rel_tgt_class
+        elif obj.extension_type is ASSOCIATION_PROXY:
+            self.direction = self.proxy_direction
+            self.tgt_class = self.proxy_tgt_class
+
+    @property
+    def rel_direction(self):
+        return self.obj.direction
+
+    @property
+    def proxy_direction(self):
+        ps = self.obj.for_class(self.src_class)
+        if ps.scalar:
+            return sqlalchemy.orm.interfaces.MANYTOONE
+        else:
+            return sqlalchemy.orm.interfaces.MANYTOMANY
+
+    @property
+    def rel_tgt_class(self):
+        return self.obj.mapper.class_
+
+    @property
+    def proxy_tgt_class(self):
+        ps = self.obj.for_class(self.src_class)
+        return getattr(ps.target_class, ps.value_attr).mapper.class_
 
 
 class DebugView:
@@ -362,7 +414,7 @@ class DebugView:
         # Create or update tables and schema. Safe if tables already exist.
         self.metadata.create_all(self.engine)
         # Add test data. Safe if test data already exists.
-        self.test_data.add_to_db()
+        self.test_data.add_to_db(self.engine)
         return 'populated'
 
     def reset(self):
@@ -371,3 +423,17 @@ class DebugView:
         self.drop()
         self.populate()
         return "reset"
+
+
+def get_class_by_tablename(tablename, registry):
+    """Return class reference mapped to table.
+
+        Args:
+            tablename: String with name of table.
+            registry: metadata registry
+
+        return: Class reference or None.
+    """
+    for c in registry._decl_class_registry.values():
+        if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+            return c
