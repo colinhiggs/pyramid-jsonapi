@@ -1,15 +1,14 @@
 language: python
 sudo: required
-dist: trusty
-addons:
-  postgresql: '9.6'
+#addons:
+#  postgresql: '9.6'
+services:
+- postgresql
 cache:
 - apt
 - directories:
   - "$HOME/.cache/pip"
   - "$HOME/.pyenv"
-python:
-- 3.4
 env:
  PATH=bin/:$PATH
 virtualenv:
