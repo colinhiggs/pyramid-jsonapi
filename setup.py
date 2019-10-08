@@ -15,6 +15,7 @@ requires = [
     'pyramid_settings_wrapper',
     'pyyaml',
     'SQLAlchemy',
+    'six>=1.12',
     ]
 
 setup(
