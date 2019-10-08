@@ -20,7 +20,6 @@ requires = [
     'webtest',
     'zope.sqlalchemy',
     'parameterized',
-    'six>=1.12',
     ]
 
 setup(name='test_project',
