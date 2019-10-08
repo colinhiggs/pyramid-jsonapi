@@ -16,6 +16,7 @@ requires = [
     'pyyaml',
     'SQLAlchemy',
     'six>=1.12',
+    'typing',
     ]
 
 setup(
