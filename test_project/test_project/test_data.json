@@ -33,6 +33,34 @@
         {
           "id": "13",
           "name": "many to many"
+        },
+        {
+          "id": "13",
+          "name": "many to many"
+        },
+        {
+          "id": "20",
+          "name": "person 20"
+        },
+        {
+          "id": "21",
+          "name": "person 21"
+        },
+        {
+          "id": "22",
+          "name": "person 22"
+        },
+        {
+          "id": "23",
+          "name": "person 23"
+        },
+        {
+          "id": "24",
+          "name": "person 24"
+        },
+        {
+          "id": "25",
+          "name": "person 25"
         }
       ],
       {"id_seq": "*"}
@@ -83,6 +111,36 @@
           "id": "13",
           "title": "13 owned by 12",
           "owner_id": "12"
+        },
+        {
+          "id": "20",
+          "title": "blog 20",
+          "owner_id": "20"
+        },
+        {
+          "id": "21",
+          "title": "blog 21",
+          "owner_id": "20"
+        },
+        {
+          "id": "22",
+          "title": "blog 22",
+          "owner_id": "20"
+        },
+        {
+          "id": "23",
+          "title": "blog 23",
+          "owner_id": "20"
+        },
+        {
+          "id": "24",
+          "title": "blog 24",
+          "owner_id": "20"
+        },
+        {
+          "id": "25",
+          "title": "blog 25",
+          "owner_id": "20"
         }
       ],
       {"id_seq": "*"}
@@ -138,6 +196,62 @@
           "published_at": "2015-01-06",
           "author_id": "2",
           "blog_id": "4"
+        },
+        {
+          "id": "11",
+          "title": "post11",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "11",
+          "blog_id": "11"
+        },
+        {
+          "id": "20",
+          "title": "post20",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "20",
+          "blog_id": "20"
+        },
+        {
+          "id": "21",
+          "title": "post21",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "20",
+          "blog_id": "20"
+        },
+        {
+          "id": "22",
+          "title": "post22",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "20",
+          "blog_id": "20"
+        },
+        {
+          "id": "23",
+          "title": "post23",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "20",
+          "blog_id": "20"
+        },
+        {
+          "id": "24",
+          "title": "post24",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "20",
+          "blog_id": "20"
+        },
+        {
+          "id": "25",
+          "title": "post25",
+          "content": "the truth",
+          "published_at": "2015-01-06",
+          "author_id": "20",
+          "blog_id": "20"
         }
       ],
       {"id_seq": "*"}
@@ -255,6 +369,42 @@
           "title": "Collaborative by obj 13.",
           "content": "something important.",
           "published_at": "2016-02-13"
+        },
+        {
+          "articles_by_obj_id": "20",
+          "title": "Collaborative by obj 20.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
+        },
+        {
+          "articles_by_obj_id": "21",
+          "title": "Collaborative by obj 21.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
+        },
+        {
+          "articles_by_obj_id": "22",
+          "title": "Collaborative by obj 22.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
+        },
+        {
+          "articles_by_obj_id": "23",
+          "title": "Collaborative by obj 23.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
+        },
+        {
+          "articles_by_obj_id": "24",
+          "title": "Collaborative by obj 24.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
+        },
+        {
+          "articles_by_obj_id": "25",
+          "title": "Collaborative by obj 25.",
+          "content": "something important.",
+          "published_at": "2016-02-13"
         }
       ],
       {"id_seq": "*"}
@@ -307,6 +457,18 @@
           "article_author_associations_id": "8",
           "article_id": "13",
           "author_id": "12",
+          "date_joined": "2016-01-13"
+        },
+        {
+          "article_author_associations_id": "9",
+          "article_id": "20",
+          "author_id": "20",
+          "date_joined": "2016-01-13"
+        },
+        {
+          "article_author_associations_id": "10",
+          "article_id": "21",
+          "author_id": "20",
           "date_joined": "2016-01-13"
         }
       ],
