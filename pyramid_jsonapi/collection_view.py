@@ -1525,19 +1525,28 @@ class CollectionViewBase:
         for finfo in qinfo['_filters'].values():
             val = finfo['value']
             colspec = finfo['colspec']
+            prop_name = colspec[0]
             operator = finfo['op']
             try:
-                prop = getattr(self.model, colspec[0])
+                prop = getattr(self.model, prop_name)
             except AttributeError:
                 raise HTTPBadRequest(
                     "Collection '{}' has no attribute '{}'".format(
                         self.collection_name, '.'.join(colspec)
                     )
                 )
-            if isinstance(prop.property, RelationshipProperty):
+            if prop_name in self.relationships:
                 # The property indicated is on the other side of a relationship
-                query = query.join(prop)
-                prop = getattr(prop.property.mapper.class_, colspec[1])
+                rel = self.relationships[prop_name]
+                if isinstance(rel.obj, AssociationProxy):
+                    # We need to join across association proxies differently.
+                    proxy = rel.obj.for_class(rel.src_class)
+                    query = query.join(proxy.remote_attr).filter(
+                        proxy.local_attr.property.local_remote_pairs[0][1] == self.id_col(self.model)
+                    )
+                else:
+                    query = query.join(prop)
+                prop = getattr(rel.tgt_class, colspec[1])
             try:
                 filtr = self.api.filter_registry.get_filter(type(prop.type), operator)
             except KeyError:
