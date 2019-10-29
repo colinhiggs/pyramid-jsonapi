@@ -38,27 +38,48 @@ cur_dir = os.path.dirname(
 )
 parent_dir = os.path.dirname(cur_dir)
 
-RelHalf = namedtuple('RelSide', 'collection rel many')
+RelHalf = namedtuple('RelSide', 'collection rel many filters')
+FilterInfo = namedtuple('FilterInfo', 'att op value')
 RelInfo = namedtuple('RelInfo', 'src tgt comment')
 rel_infos = (
     RelInfo(
-        RelHalf('people', 'blogs', False),
-        RelHalf('blogs', 'owner', True),
-        'One to many'
+        RelHalf('people', 'blogs', False, []),
+        RelHalf(
+            'blogs', 'owner', True,
+            [
+                FilterInfo('title', 'eq', 'owned by 11'),
+            ],
+        ),
+        'One to many',
     ),
     RelInfo(
-        RelHalf('blogs', 'owner', True),
-        RelHalf('people', 'blogs', False),
+        RelHalf('blogs', 'owner', True, []),
+        RelHalf(
+            'people', 'blogs', False,
+            [
+                FilterInfo('name', 'eq', 'one thing'),
+            ]
+        ),
         'Many to one'
     ),
     RelInfo(
-        RelHalf('people', 'articles_by_assoc', True),
-        RelHalf('articles_by_assoc', 'authors', True),
+        RelHalf('people', 'articles_by_assoc', True, []),
+        RelHalf(
+            'articles_by_assoc', 'authors', True,
+            [
+                FilterInfo('title', 'eq', 'Collaborative one.')
+            ]
+        ),
         'Many to many by association table'
     ),
     RelInfo(
-        RelHalf('people', 'articles_by_proxy', True),
-        RelHalf('articles_by_obj', None, True),
+        RelHalf('people', 'articles_by_proxy', True, []),
+        RelHalf(
+            'articles_by_obj', None, True,
+            [
+                FilterInfo('title', 'eq', 'Collaborative by obj one.')
+            ]
+        ),
         'Many to many by association proxy'
     ),
 )
@@ -132,6 +153,14 @@ class DBTestBase(unittest.TestCase):
             os.remove(config_path)
         return test_app
 
+    def evaluate_filter(self, att_val, op, test_val):
+        if op == 'eq':
+            return att_val == test_val
+        else:
+            raise Exception('Unkown filter op: {}'.format(op))
+
+class TestTmp(DBTestBase):
+    '''To isolate tests so they can be run individually during development.'''
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
@@ -343,6 +372,49 @@ class TestRelationships(DBTestBase):
         # Try to get data about a non existing relationships
         self.test_app().get('/posts/1/relationships/no_such_relationship',
             status=404)
+
+    @parameterized.expand(rel_infos, doc_func=rels_doc_func)
+    def test_rels_filter(self, src, tgt, comment):
+        '''
+        '''
+        for filter in tgt.filters:
+            json = self.test_app().get(
+                '/{}?filter[{}.{}:{}]={}&include={}'.format(
+                    src.collection,
+                    src.rel,
+                    filter.att,
+                    filter.op,
+                    filter.value,
+                    src.rel,
+                )
+            ).json
+            #included = json['included']
+            included = {
+                (inc['type'], inc['id']): inc for inc in json['included']
+            }
+            # There should be at least one match.
+            self.assertGreater(len(included), 0)
+            items = json['data']
+            # For each returned item, there should be at least one related
+            # item which matches the filter.
+            print([item['attributes'][filter.att] for item in included.values()])
+            for item in items:
+                res_ids = item['relationships'][src.rel]['data']
+                self.assertIsNotNone(res_ids)
+                if not tgt.many:
+                    res_ids = [res_ids]
+                found_match = False
+                for res_id in res_ids:
+                    relitem = included[(res_id['type'], res_id['id'])]
+                    found_match = self.evaluate_filter(
+                        relitem['attributes'][filter.att],
+                        filter.op,
+                        filter.value
+                    )
+                    if found_match:
+                        break
+                self.assertTrue(found_match)
+
 
     ###############################################
     # Relationship POST tests.
