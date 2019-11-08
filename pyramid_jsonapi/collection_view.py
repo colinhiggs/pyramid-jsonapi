@@ -19,6 +19,7 @@ from pyramid.httpexceptions import (
     status_map,
 )
 import pyramid_jsonapi.jsonapi
+from pyramid_jsonapi import pjview
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only
@@ -263,8 +264,73 @@ class CollectionViewBase:
                 return {}
         return view_wrapper
 
+    @pjview.view_attr
+    def get(self, stages):
+        self.request = pjview.execute_stage(self, stages['request'], self.request)
+        objects = self.load_objects(stages)
+        related_queries_needed = set(
+            self.requested_relationships.keys(),
+        )
+        related_queries = pjview.execute_stage(
+            self,
+            stages['related_queries'],
+            self.related_queries([result])
+        )
+        doc = pyramid_jsonapi.jsonapi.Document()
+        doc.data = self.serialise_item(result)
+        doc = pjview.execute_stage(self, stages['document'], doc)
+        return doc
+
+    def load_objects(self, stages):
+        data = []
+        related = {}
+        q = self.single_item_query()
+        data.append(
+            self.single_result(
+                q,
+                'Object {} not found in collection {}'.format(
+                    self.obj_id,
+                    self.collection_name,
+                )
+            )
+        )
+
+        return {'data': data, 'other': other}
+
+    def single_result(self, query, not_found_message=None):
+        try:
+            item = query.one()
+        except NoResultFound:
+            if not_found_message:
+                raise HTTPNotFound(not_found_message)
+            else:
+                return None
+        return item
+
+    def serialise_item(self, item):
+        # Item's id and type are required at the top level of json-api
+        # objects.
+        # The item's id.
+        item_id = self.id_col(item)
+        # JSON API type.
+        item_url = self.request.route_url(
+            self.api.endpoint_data.make_route_name(self.collection_name, suffix='item'),
+            **{'id': item_id}
+        )
+
+        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
+        resource_json.id = str(item_id)
+        resource_json.attributes = {
+            key: getattr(item, key)
+            for key in self.requested_attributes.keys()
+            if self.mapped_info_from_name(key).get('visible', True)
+        }
+        resource_json.links = {'self': item_url}
+        return resource_json.as_dict()
+
+
     @jsonapi_view
-    def get(self):
+    def get_old(self):
         """Handle GET request for a single item.
 
         Get a single item from the collection, referenced by id.
