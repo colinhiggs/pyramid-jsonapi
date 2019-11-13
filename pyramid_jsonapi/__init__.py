@@ -361,6 +361,7 @@ class StdRelationship:
         if isinstance(obj, RelationshipProperty):
             self.direction = self.rel_direction
             self.tgt_class = self.rel_tgt_class
+            self.src_column = self.rel_src_column
         elif obj.extension_type is ASSOCIATION_PROXY:
             self.direction = self.proxy_direction
             self.tgt_class = self.proxy_tgt_class
@@ -385,6 +386,10 @@ class StdRelationship:
     def proxy_tgt_class(self):
         ps = self.obj.for_class(self.src_class)
         return getattr(ps.target_class, ps.value_attr).mapper.class_
+
+    @property
+    def rel_src_column(self):
+        return self.obj.local_remote_pairs[0][0]
 
 
 class DebugView:
