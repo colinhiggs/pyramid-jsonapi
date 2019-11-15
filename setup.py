@@ -21,6 +21,9 @@ setup(
   name = 'pyramid_jsonapi',
   packages = find_packages(),
   install_requires=requires,
+  extras_require={
+    'test_data_generator': ['Mixer',],
+  }
   version=get_version(),
   description = 'Auto-build JSON API from sqlalchemy models using the pyramid framework',
   author = 'Colin Higgs',
