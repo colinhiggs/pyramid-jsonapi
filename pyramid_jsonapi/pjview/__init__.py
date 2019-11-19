@@ -22,9 +22,10 @@ from pyramid.httpexceptions import (
 from pyramid_jsonapi.pjview import all
 import pyramid_jsonapi
 
-def view_attr(func):
+def view_attr(func, settings):
     stage_module = importlib.import_module('pyramid_jsonapi.pjview.{}'.format(func.__name__))
     stages = {}
+    print(dir(func))
     for module in (all, stage_module,):
         for stage_name in module.stages:
             # Make sure there is a deque for this stage.

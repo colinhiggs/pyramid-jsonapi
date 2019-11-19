@@ -264,30 +264,30 @@ class CollectionViewBase:
                 return {}
         return view_wrapper
 
-    @pjview.view_attr
+    #@pjview.view_attr
     def get(self, stages):
         self.request = pjview.execute_stage(self, stages['request'], self.request)
-        objects = self.load_objects(stages)
-        related_queries_needed = set(
-            self.requested_relationships.keys(),
-        )
-        related_queries = pjview.execute_stage(
-            self,
-            stages['related_queries'],
-            self.related_queries([result])
-        )
+        q = self.single_item_query()
+        objects = self.load_objects(self.single_item_query())
+        # related_queries_needed = set(
+        #     self.requested_relationships.keys(),
+        # )
+        # related_queries = pjview.execute_stage(
+        #     self,
+        #     stages['related_queries'],
+        #     self.related_queries([result])
+        # )
         doc = pyramid_jsonapi.jsonapi.Document()
-        doc.data = self.serialise_item(result)
+        doc.data = self.serialise_item(objects['data'][0])
         doc = pjview.execute_stage(self, stages['document'], doc)
         return doc
 
-    def load_objects(self, stages):
+    def load_objects(self, query):
         data = []
-        related = {}
-        q = self.single_item_query()
+        other = {}
         data.append(
             self.single_result(
-                q,
+                query,
                 'Object {} not found in collection {}'.format(
                     self.obj_id,
                     self.collection_name,

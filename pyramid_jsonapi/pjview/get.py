@@ -3,6 +3,8 @@ from .. import pjview
 
 stages = (
     'request',
+    'object_query',
+    
     'objects',
     'document',
     'data'

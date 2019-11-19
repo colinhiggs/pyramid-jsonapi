@@ -255,6 +255,8 @@ class PyramidJSONAPI():
         view.default_limit = int(self.settings.paging_default_limit)
         view.max_limit = int(self.settings.paging_max_limit)
 
+        view.get = pjview.view_attr(view.get, self.settings)
+
         self.endpoint_data.add_routes_views(view)
 
     def collection_view_factory(self, model, collection_name=None, expose_fields=None):
