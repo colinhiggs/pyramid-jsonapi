@@ -58,3 +58,6 @@ docs/source/pylint-badge.svg
 
 # PyBuilder
 target/
+
+# Random play files
+splat*
