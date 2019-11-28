@@ -271,10 +271,8 @@ class Results:
 
     def included_dict(self):
         if self.is_top:
-            print('top for collection ', self.view.collection_name)
             included_dict = {}
         else:
-            print('adding included for collection ', self.view.collection_name)
             included_dict = {
                 (self.view.collection_name, o.obj_id):o for o in self.objects
             }

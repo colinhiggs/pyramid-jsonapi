@@ -45,7 +45,6 @@ def workflow(view, stages, data):
 
 def fill_related(obj, include_path=None):
     view = obj.view
-    obj_id = view.id_col(obj.object)
     if include_path is None:
         include_path = []
     for rel_name, rel in view.relationships.items():
@@ -57,10 +56,8 @@ def fill_related(obj, include_path=None):
         if not view.mapped_info_from_name(rel_name).get('visible', True):
             continue
 
-        print('{} included: {}'.format(rel_name, is_included))
-
         rel_view = view.view_instance(rel.tgt_class)
-        query = view.related_query(obj_id, rel, full_object=is_included)
+        query = view.related_query(obj.obj_id, rel, full_object=is_included)
         many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
         if many:
             limit = view.related_limit(rel)
