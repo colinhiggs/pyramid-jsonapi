@@ -265,7 +265,7 @@ class CollectionViewBase:
         return view_wrapper
 
     #@pjview.view_attr
-    def get(self, stages):
+    def get_new(self, stages):
         self.request = pjview.execute_stage(self, stages['request'], self.request)
         q = self.single_item_query()
         objects = self.load_objects(self.single_item_query())
@@ -282,22 +282,10 @@ class CollectionViewBase:
         doc = pjview.execute_stage(self, stages['document'], doc)
         return doc
 
-    def load_objects(self, query):
-        data = []
-        other = {}
-        data.append(
-            self.single_result(
-                query,
-                'Object {} not found in collection {}'.format(
-                    self.obj_id,
-                    self.collection_name,
-                )
-            )
-        )
+    def get_objects(self, query):
+        return query.all()
 
-        return {'data': data, 'other': other}
-
-    def single_result(self, query, not_found_message=None):
+    def get_one(self, query, not_found_message=None):
         try:
             item = query.one()
         except NoResultFound:
@@ -330,7 +318,7 @@ class CollectionViewBase:
 
 
     @jsonapi_view
-    def get_old(self):
+    def old_get(self):
         """Handle GET request for a single item.
 
         Get a single item from the collection, referenced by id.
@@ -808,6 +796,7 @@ class CollectionViewBase:
                             )
                     setattr(item, relname, rel_items)
                 else:
+                    print('Adding to_one related.')
                     if (not isinstance(reldata, dict)) and (reldata is not None):
                         raise HTTPBadRequest(
                             'Relationship data should be a resource identifier object or null.'
@@ -1320,17 +1309,21 @@ class CollectionViewBase:
             raise HTTPFailedDependency(str(exc))
         return {}
 
-    def single_item_query(self, loadonly=None):
-        """A query representing the single item referenced by the request.
+    def single_item_query(self, obj_id=None, loadonly=None):
+        """A query representing the single item referenced by id.
 
-        **URL (matchdict) Parameters**
-
-            **id** (*str*): resource id
+        Keyword Args:
+            obj_id: id of object to be fetched. If None then use the id from
+                the URL.
+            loadonly: which attributes to load. If None then all requested
+                attributes from the URL.
 
         Returns:
             sqlalchemy.orm.query.Query: query which will fetch item with id
             'id'.
         """
+        if obj_id is None:
+            obj_id = self.obj_id
         if not loadonly:
             loadonly = self.allowed_requested_query_columns.keys()
         return self.dbsession.query(
@@ -1338,8 +1331,21 @@ class CollectionViewBase:
         ).options(
             load_only(*loadonly)
         ).filter(
-            self.id_col(self.model) == self.obj_id
+            self.id_col(self.model) == obj_id
         )
+
+    # def single_item_query(self, loadonly=None):
+    #     """A query representing the single item referenced by the request.
+    #
+    #     **URL (matchdict) Parameters**
+    #
+    #         **id** (*str*): resource id
+    #
+    #     Returns:
+    #         sqlalchemy.orm.query.Query: query which will fetch item with id
+    #         'id'.
+    #     """
+    #     self.single_item_by_id_query(loadonly=loadonly)
 
     def single_return(self, query, not_found_message=None, identifier=False):
         """Populate return dictionary for a single item.
@@ -1749,6 +1755,32 @@ class CollectionViewBase:
             ))
 
         return query
+        # rel = relationship.obj
+        # rel_class = rel.mapper.class_
+        # rel_view = self.view_instance(rel_class)
+        # local_col, rem_col = rel.local_remote_pairs[0]
+        # query = self.dbsession.query(rel_class)
+        # if full_object:
+        #     query = query.options(
+        #         load_only(*rel_view.allowed_requested_query_columns.keys())
+        #     )
+        # else:
+        #     query = query.options(load_only(rel_view.key_column.name))
+        # if rel.direction is MANYTOMANY:
+        #     query = query.filter(
+        #         rel.secondaryjoin
+        #     )
+        # elif rel.direction is MANYTOONE or rel.direction is ONETOMANY:
+        #     query = query.join(
+        #         relationship.instrumented
+        #     )
+        # else:
+        #     raise HTTPError('Unknown relationships direction, "{}".'.format(
+        #         rel.direction.name
+        #     ))
+        # query = query.filter(obj_id == rel.primaryjoin.right)
+        #
+        # return query
 
     def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.

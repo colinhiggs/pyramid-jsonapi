@@ -83,6 +83,7 @@ class PyramidJSONAPI():
         'debug_endpoints': {'val': False, 'desc': 'Whether or not to add debugging endpoints.'},
         'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
+        'workflow_get': {'val': 'pyramid_jsonapi.workflow.get_loop'},
     }
 
     def __init__(self, config, models, get_dbsession=None):
@@ -255,7 +256,7 @@ class PyramidJSONAPI():
         view.default_limit = int(self.settings.paging_default_limit)
         view.max_limit = int(self.settings.paging_max_limit)
 
-        view.get = pjview.view_attr(view.get, self.settings)
+        view.get = pjview.make_method('get', self.settings)
 
         self.endpoint_data.add_routes_views(view)
 
@@ -363,6 +364,7 @@ class StdRelationship:
         if isinstance(obj, RelationshipProperty):
             self.direction = self.rel_direction
             self.tgt_class = self.rel_tgt_class
+            self.instrumented = getattr(self.src_class, self.name)
         elif obj.extension_type is ASSOCIATION_PROXY:
             self.direction = self.proxy_direction
             self.tgt_class = self.proxy_tgt_class
