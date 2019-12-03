@@ -37,13 +37,13 @@ def workflow(view, stages, data):
         many=False,
         is_top=True
     )
-    fill_related(res_obj, follow=view.requested_relationships)
+    fill_related(res_obj)
     doc = pyramid_jsonapi.jsonapi.Document()
     doc.data = results.data()
     doc.included = results.included()
     return doc
 
-def fill_related(obj, include_path=None, follow={}):
+def fill_related(obj, include_path=None):
     view = obj.view
     if include_path is None:
         include_path = []
