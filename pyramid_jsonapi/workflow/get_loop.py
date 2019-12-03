@@ -67,6 +67,9 @@ def fill_related(stages, obj, include_path=None):
             query = query.limit(limit)
 
         rel_results = [wf.ResultObject(rel_view, o) for o in query.all()]
+        rel_results = wf.execute_stage(
+            view, stages, 'alter_related_objects', rel_results
+        )
         if is_included:
             for rel_obj in rel_results:
                 fill_related(stages, rel_obj, include_path=rel_include_path)
