@@ -1,5 +1,5 @@
 import pyramid_jsonapi.jsonapi
-import pyramid_jsonapi.pjview as pjview
+import pyramid_jsonapi.workflow as wf
 
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
@@ -21,40 +21,45 @@ stages = (
 #     return view.load_objects(data['alter_query'])[0]
 
 def workflow(view, stages, data):
-    query = pjview.execute_stage(
+    query = wf.execute_stage(
         view, stages, 'alter_query', view.single_item_query()
     )
     obj = view.get_one(
         query,
         'No item {} in {}'.format(view.obj_id, view.collection_name)
     )
-    obj = pjview.execute_stage(view, stages, 'alter_object', obj)
-    res_obj = pjview.ResultObject(view, obj)
+    obj = wf.execute_stage(view, stages, 'alter_object', obj)
+    res_obj = wf.ResultObject(view, obj)
     fill_related(res_obj)
-    results = pjview.Results(
+    results = wf.Results(
         view,
         objects=[res_obj],
         many=False,
         is_top=True
     )
-    fill_related(res_obj)
+    fill_related(res_obj, follow=view.requested_relationships)
     doc = pyramid_jsonapi.jsonapi.Document()
     doc.data = results.data()
     doc.included = results.included()
     return doc
 
-def fill_related(obj, include_path=None):
+def fill_related(obj, include_path=None, follow={}):
     view = obj.view
     if include_path is None:
         include_path = []
     for rel_name, rel in view.relationships.items():
+        rel_include_path = include_path + [rel_name]
         is_included = False
-        if '.'.join(include_path + [rel_name]) in view.requested_include_names():
-            is_included = True
-        if rel_name not in view.requested_relationships and not is_included:
+        if rel_name not in view.requested_relationships:
             continue
         if not view.mapped_info_from_name(rel_name).get('visible', True):
             continue
+        if '.'.join(rel_include_path) in view.requested_include_names():
+            is_included = True
+        # if rel_name not in follow and not is_included:
+        #     continue
+        # if not view.mapped_info_from_name(rel_name).get('visible', True):
+        #     continue
 
         rel_view = view.view_instance(rel.tgt_class)
         query = view.related_query(obj.obj_id, rel, full_object=is_included)
@@ -63,9 +68,13 @@ def fill_related(obj, include_path=None):
             limit = view.related_limit(rel)
             query = query.limit(limit)
 
-        obj.related[rel_name] = pjview.Results(
+        rel_results = [wf.ResultObject(rel_view, o) for o in query.all()]
+        if is_included:
+            for rel_obj in rel_results:
+                fill_related(rel_obj, include_path=rel_include_path)
+        obj.related[rel_name] = wf.Results(
             rel_view,
-            objects=[pjview.ResultObject(rel_view, o) for o in query.all()],
+            objects=rel_results,
             many=many,
             count=query.count(),
             is_included=is_included
