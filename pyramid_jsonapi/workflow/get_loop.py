@@ -56,10 +56,6 @@ def fill_related(obj, include_path=None, follow={}):
             continue
         if '.'.join(rel_include_path) in view.requested_include_names():
             is_included = True
-        # if rel_name not in follow and not is_included:
-        #     continue
-        # if not view.mapped_info_from_name(rel_name).get('visible', True):
-        #     continue
 
         rel_view = view.view_instance(rel.tgt_class)
         query = view.related_query(obj.obj_id, rel, full_object=is_included)
