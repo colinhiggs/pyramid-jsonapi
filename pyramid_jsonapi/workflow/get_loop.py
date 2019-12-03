@@ -30,20 +30,19 @@ def workflow(view, stages, data):
     )
     obj = wf.execute_stage(view, stages, 'alter_object', obj)
     res_obj = wf.ResultObject(view, obj)
-    fill_related(res_obj)
+    fill_related(stages, res_obj)
     results = wf.Results(
         view,
         objects=[res_obj],
         many=False,
-        is_top=True
+        is_top=True,
     )
-    fill_related(res_obj)
     doc = pyramid_jsonapi.jsonapi.Document()
     doc.data = results.data()
     doc.included = results.included()
     return doc
 
-def fill_related(obj, include_path=None):
+def fill_related(stages, obj, include_path=None):
     view = obj.view
     if include_path is None:
         include_path = []
@@ -59,6 +58,9 @@ def fill_related(obj, include_path=None):
 
         rel_view = view.view_instance(rel.tgt_class)
         query = view.related_query(obj.obj_id, rel, full_object=is_included)
+        query = wf.execute_stage(
+            view, stages, 'alter_related_query', query
+        )
         many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
         if many:
             limit = view.related_limit(rel)
@@ -67,7 +69,7 @@ def fill_related(obj, include_path=None):
         rel_results = [wf.ResultObject(rel_view, o) for o in query.all()]
         if is_included:
             for rel_obj in rel_results:
-                fill_related(rel_obj, include_path=rel_include_path)
+                fill_related(stages, rel_obj, include_path=rel_include_path)
         obj.related[rel_name] = wf.Results(
             rel_view,
             objects=rel_results,
