@@ -19,7 +19,7 @@ from pyramid.httpexceptions import (
     status_map,
 )
 import pyramid_jsonapi.jsonapi
-from pyramid_jsonapi import pjview
+#from pyramid_jsonapi import pjview
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only

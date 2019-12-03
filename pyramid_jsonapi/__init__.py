@@ -44,6 +44,7 @@ import pyramid_jsonapi.filters
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 import pyramid_jsonapi.version
+import pyramid_jsonapi.workflow as wf
 
 __version__ = pyramid_jsonapi.version.get_version()
 
@@ -256,7 +257,7 @@ class PyramidJSONAPI():
         view.default_limit = int(self.settings.paging_default_limit)
         view.max_limit = int(self.settings.paging_max_limit)
 
-        view.get = pjview.make_method('get', self.settings)
+        view.get = wf.make_method('get', self)
 
         self.endpoint_data.add_routes_views(view)
 

@@ -19,7 +19,8 @@ from pyramid.httpexceptions import (
 
 import pyramid_jsonapi
 
-def make_method(name, settings):
+def make_method(name, api):
+    settings = api.settings
     wf_module = importlib.import_module(
         getattr(settings, 'workflow_{}'.format(name))
     )
@@ -56,19 +57,59 @@ def make_method(name, settings):
             for handler in item:
                 stage_deque.append(handler)
 
+    # Build a set of expected responses.
+    ep_dict = api.endpoint_data.endpoints
+    parts = name.split('_')
+    if len(parts) == 1:
+        endpoint = 'item'
+        http_method = parts[0].upper()
+    else:
+        endpoint, http_method = parts
+        http_method = http_method.upper()
+    responses = set(
+        ep_dict['responses'].keys() |
+        ep_dict['endpoints'][endpoint]['responses'].keys() |
+        ep_dict['endpoints'][endpoint]['http_methods'][http_method]['responses'].keys()
+    )
+
     def method(view):
         data = {}
-        request = execute_stage(
-            view, stages, 'validate_request', view.request
-        )
-        request = execute_stage(
-            view, stages, 'alter_request', request
-        )
-        view.request = request
-        document = wf_module.workflow(view, stages, data)
-        ret = execute_stage(
-            view, stages, 'validate_response', document.as_dict(), data
-        )
+        try:
+            request = execute_stage(
+                view, stages, 'validate_request', view.request
+            )
+            request = execute_stage(
+                view, stages, 'alter_request', request
+            )
+            view.request = request
+            document = wf_module.workflow(view, stages, data)
+            ret = execute_stage(
+                view, stages, 'validate_response', document.as_dict(), data
+            )
+        except Exception as exc:
+            if exc.__class__ not in responses:
+                logging.exception(
+                    "Invalid exception raised: %s for route_name: %s path: %s",
+                    exc.__class__,
+                    view.request.matched_route.name,
+                    view.request.current_route_path()
+                )
+                if hasattr(exc, 'code'):
+                    if 400 <= int(exc.code) < 500:  # pylint:disable=no-member
+                        raise HTTPBadRequest("Unexpected client error: {}".format(exc))
+                else:
+                    raise HTTPInternalServerError("Unexpected server error.")
+            raise
+
+        # Log any responses that were not expected.
+        response_class = status_map[view.request.response.status_code]
+        if response_class not in responses:
+            logging.error(
+                "Invalid response: %s for route_name: %s path: %s",
+                response_class,
+                view.request.matched_route.name,
+                view.request.current_route_path()
+            )
         return ret
 
     return method

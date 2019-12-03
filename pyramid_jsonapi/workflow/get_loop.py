@@ -58,13 +58,13 @@ def fill_related(stages, obj, include_path=None):
 
         rel_view = view.view_instance(rel.tgt_class)
         query = view.related_query(obj.obj_id, rel, full_object=is_included)
-        query = wf.execute_stage(
-            view, stages, 'alter_related_query', query
-        )
         many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
         if many:
             limit = view.related_limit(rel)
             query = query.limit(limit)
+        query = wf.execute_stage(
+            view, stages, 'alter_related_query', query
+        )
 
         rel_results = [wf.ResultObject(rel_view, o) for o in query.all()]
         rel_results = wf.execute_stage(
