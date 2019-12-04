@@ -268,7 +268,12 @@ class ResultObject:
         }
         resource.links = {'self': obj_url}
         resource.relationships = {
-            rel_name: res.identifiers() for rel_name, res in self.related.items()
+            rel_name: res.rel_dict(
+                rel=self.view.relationships[rel_name],
+                rel_name=rel_name,
+                parent_url=obj_url
+            )
+            for rel_name, res in self.related.items()
         }
 
         return resource.as_dict()
@@ -289,27 +294,48 @@ class ResultObject:
 
 
 class Results:
-    def __init__(self, view, objects=None, many=True, count=None, is_included=False, is_top=False):
+    def __init__(self, view, objects=None, many=True, count=None, limit=None, is_included=False, is_top=False):
         self.view = view
         self.objects = objects or []
         self.many = many
         self.count = count
+        self.limit = limit
         self.is_included = is_included
         self.is_top = is_top
 
-    def data(self):
-        data = [o.serialise() for o in self.objects]
+    def serialise_with(self, method_name):
+        data = [getattr(o, method_name)() for o in self.objects]
         if self.many:
             return data
         else:
-            return data or None
+            try:
+                return data[0]
+            except IndexError:
+                return None
+
+    def data(self):
+        return self.serialise_with('serialise')
 
     def identifiers(self):
-        data = [o.identifier() for o in self.objects]
+        return self.serialise_with('identifier')
+
+    def rel_dict(self, rel, rel_name, parent_url):
+        rd = {
+            'data': self.identifiers(),
+            'links': {
+                'self': '{}/relationships/{}'.format(parent_url, rel_name),
+                'related': '{}/{}'.format(parent_url, rel_name)
+            },
+            'meta': {
+                'direction': rel.direction.name,
+            }
+        }
         if self.many:
-            return data
-        else:
-            return data or None
+            rd['meta']['results'] = {}
+            rd['meta']['results']['available'] = self.count
+            rd['meta']['results']['limit'] = self.limit
+            rd['meta']['results']['returned'] = len(rd['data'])
+        return rd
 
     def included(self):
         return [o.serialise() for o in self.included_dict().values()]

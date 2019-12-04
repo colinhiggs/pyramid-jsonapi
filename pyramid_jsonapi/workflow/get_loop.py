@@ -60,6 +60,7 @@ def fill_related(stages, obj, include_path=None):
         query = view.related_query(obj.obj_id, rel, full_object=is_included)
         many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
         if many:
+            count = query.count()
             limit = view.related_limit(rel)
             query = query.limit(limit)
         query = wf.execute_stage(
@@ -77,6 +78,8 @@ def fill_related(stages, obj, include_path=None):
             rel_view,
             objects=rel_results,
             many=many,
-            count=query.count(),
             is_included=is_included
         )
+        if many:
+            obj.related[rel_name].count = count
+            obj.related[rel_name].limit = limit
