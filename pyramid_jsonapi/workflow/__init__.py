@@ -1,5 +1,8 @@
+import functools
 import importlib
 import logging
+import re
+
 from collections import (
     deque,
 )
@@ -29,18 +32,22 @@ def make_method(name, api):
     stages = {
         'validate_request': deque(),
         'alter_request': deque(),
-        'serialise': deque(),
+        'alter_document': deque(),
         'validate_response': deque()
     }
     stage_order = ['validate_request', 'alter_request']
     for stage_name in wf_module.stages:
         stages[stage_name] = deque()
         stage_order.append(stage_name)
-    stage_order.append('serialise')
+    stage_order.append('alter_document')
     stage_order.append('validate_response')
-    stages['validate_request'].append(request_valid_json)
-    stages['validate_request'].append(not_item_3)
+    stages['validate_request'].append(validate_request_headers)
+    stages['validate_request'].append(validate_request_valid_json)
+    stages['validate_request'].append(validate_request_common_validity)
     stages['alter_request'].append(alter_request_add_info)
+    stages['alter_document'].append(alter_document_self_link)
+    if api.settings.debug_meta:
+        stages['alter_document'].append(alter_document_debug_info)
 
     # Stack the deques.
     for stage_name, stage_deque in stages.items():
@@ -83,6 +90,9 @@ def make_method(name, api):
             )
             view.request = request
             document = wf_module.workflow(view, stages, data)
+            document = execute_stage(
+                view, stages, 'alter_document', document
+            )
             ret = execute_stage(
                 view, stages, 'validate_response', document.as_dict(), data
             )
@@ -121,7 +131,48 @@ def execute_stage(view, stages, stage_name, arg, previous_data=None):
         previous_data[stage_name] = arg
     return arg
 
-def request_valid_json(view, request, data):
+@functools.lru_cache()
+def get_jsonapi_accepts(request):
+    """Return a set of all 'application/vnd.api' parts of the accept
+    header.
+    """
+    accepts = re.split(
+        r',\s*',
+        request.headers.get('accept', '')
+    )
+    return {
+        a for a in accepts
+        if a.startswith('application/vnd.api')
+    }
+
+def validate_request_headers(view, request, data):
+    """Check that request headers comply with spec.
+
+    Raises:
+        HTTPUnsupportedMediaType
+        HTTPNotAcceptable
+    """
+    # Spec says to reject (with 415) any request with media type
+    # params.
+    if len(request.headers.get('content-type', '').split(';')) > 1:
+        raise HTTPUnsupportedMediaType(
+            'Media Type parameters not allowed by JSONAPI ' +
+            'spec (http://jsonapi.org/format).'
+        )
+    # Spec says throw 406 Not Acceptable if Accept header has no
+    # application/vnd.api+json entry without parameters.
+    jsonapi_accepts = get_jsonapi_accepts(request)
+    if jsonapi_accepts and\
+            'application/vnd.api+json' not in jsonapi_accepts:
+        raise HTTPNotAcceptable(
+            'application/vnd.api+json must appear with no ' +
+            'parameters in Accepts header ' +
+            '(http://jsonapi.org/format).'
+        )
+
+    return request
+
+def validate_request_valid_json(view, request, data):
     """Check that the body of any request is valid JSON.
 
     Raises:
@@ -135,10 +186,52 @@ def request_valid_json(view, request, data):
 
     return request
 
-def not_item_3(view, request, data):
-    if request.matchdict.get('id', None) == '3':
-        raise HTTPForbidden('Item 3 is off limits.')
+def validate_request_common_validity(view, request, data):
+    """Perform common request validity checks."""
+
+    if request.content_length and view.api.settings.schema_validation:
+        # Validate request JSON against the JSONAPI jsonschema
+        view.api.metadata.JSONSchema.validate(request.json_body, request.method)
+
+    # Spec says throw BadRequest if any include paths reference non
+    # existent attributes or relationships.
+    if view.bad_include_paths:
+        raise HTTPBadRequest(
+            "Bad include paths {}".format(
+                view.bad_include_paths
+            )
+        )
+
+    # Spec says set Content-Type to application/vnd.api+json.
+    request.response.content_type = 'application/vnd.api+json'
+
     return request
+
+def alter_document_self_link(view, doc, data):
+    """Include a self link unless the method is PATCH."""
+    if view.request.method != 'PATCH':
+        selfie = {'self': view.request.url}
+        if hasattr(doc, 'links'):
+            doc.links.update(selfie)
+        else:
+            doc.links = selfie
+    return doc
+
+def alter_document_debug_info(view, doc, data):
+    """Potentially add some debug information."""
+    debug = {
+        'accept_header': {
+            a: None for a in get_jsonapi_accepts(view.request)
+        },
+        'qinfo_page':
+            view.collection_query_info(view.request)['_page'],
+        'atts': {k: None for k in view.attributes.keys()},
+        'includes': {
+            k: None for k in view.requested_include_names()
+        }
+    }
+    doc.meta.update({'debug': debug})
+    return doc
 
 def alter_request_add_info(view, request, data):
     """Add information commonly used in view operations."""
