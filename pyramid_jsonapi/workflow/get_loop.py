@@ -49,12 +49,12 @@ def fill_related(stages, obj, include_path=None):
     for rel_name, rel in view.relationships.items():
         rel_include_path = include_path + [rel_name]
         is_included = False
-        if rel_name not in view.requested_relationships:
+        if '.'.join(rel_include_path) in view.requested_include_names():
+            is_included = True
+        if rel_name not in view.requested_relationships and not is_included:
             continue
         if not view.mapped_info_from_name(rel_name).get('visible', True):
             continue
-        if '.'.join(rel_include_path) in view.requested_include_names():
-            is_included = True
 
         rel_view = view.view_instance(rel.tgt_class)
         query = view.related_query(obj.obj_id, rel, full_object=is_included)
