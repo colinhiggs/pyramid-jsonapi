@@ -281,7 +281,7 @@ class ResultObject:
     def identifier(self):
         return {
             'type': self.view.collection_name,
-            'id': self.obj_id
+            'id': str(self.obj_id)
         }
 
     def included_dict(self):
