@@ -14,12 +14,6 @@ stages = (
     'alter_related_objects',
 )
 
-# def stage_alter_query(view, query, data):
-#     return view.single_item_by_id_query()
-#
-# def stage_get_object(view, object, data):
-#     return view.load_objects(data['alter_query'])[0]
-
 def workflow(view, stages, data):
     query = wf.execute_stage(
         view, stages, 'alter_query', view.single_item_query()
