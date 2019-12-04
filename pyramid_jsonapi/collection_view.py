@@ -118,7 +118,7 @@ class CollectionViewBase:
                             self.request.matched_route.name,
                             self.request.current_route_path()
                         )
-                        if hasattr(exc, 'code'):
+                        if isinstance(exc, HTTPError):
                             if 400 <= exc.code < 500:  # pylint:disable=no-member
                                 raise HTTPBadRequest("Unexpected client error: {}".format(exc))
                         else:
@@ -288,7 +288,11 @@ class CollectionViewBase:
     def get_one(self, query, not_found_message=None):
         try:
             item = query.one()
-        except NoResultFound:
+        except (NoResultFound, sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
+            # NoResultFound is sqlalchemy's native exception if there is no
+            #  such id in the collection.
+            # DataError is caused by e.g. id (int) = cat
+            # StatementError is caused by e.g. id (uuid) = 1
             if not_found_message:
                 raise HTTPNotFound(not_found_message)
             else:
