@@ -597,7 +597,7 @@ class CollectionViewBase:
         return doc
 
     @jsonapi_view
-    def collection_get(self):
+    def collection_get_old(self):
         """Handle GET requests for the collection.
 
         Get a set of items from the collection, possibly matching search/filter
@@ -1313,6 +1313,15 @@ class CollectionViewBase:
             raise HTTPFailedDependency(str(exc))
         return {}
 
+    def base_collection_query(self, loadonly=None):
+        if not loadonly:
+            loadonly = self.allowed_requested_query_columns.keys()
+        return self.dbsession.query(
+            self.model
+        ).options(
+            load_only(*loadonly)
+        )
+
     def single_item_query(self, obj_id=None, loadonly=None):
         """A query representing the single item referenced by id.
 
@@ -1328,13 +1337,7 @@ class CollectionViewBase:
         """
         if obj_id is None:
             obj_id = self.obj_id
-        if not loadonly:
-            loadonly = self.allowed_requested_query_columns.keys()
-        return self.dbsession.query(
-            self.model
-        ).options(
-            load_only(*loadonly)
-        ).filter(
+        return self.base_collection_query(loadonly=loadonly).filter(
             self.id_col(self.model) == obj_id
         )
 

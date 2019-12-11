@@ -7,6 +7,12 @@ from collections import (
     deque,
 )
 
+from sqlalchemy.orm.interfaces import (
+    ONETOMANY,
+    MANYTOMANY,
+    MANYTOONE
+)
+
 from pyramid.httpexceptions import (
     HTTPNotFound,
     HTTPForbidden,
@@ -241,6 +247,49 @@ def alter_request_add_info(view, request, data):
     view.relname = view.request.matchdict.get('relationship', None)
     return request
 
+def fill_related(stages, obj, include_path=None):
+    view = obj.view
+    if include_path is None:
+        include_path = []
+    for rel_name, rel in view.relationships.items():
+        rel_include_path = include_path + [rel_name]
+        is_included = False
+        if '.'.join(rel_include_path) in view.requested_include_names():
+            is_included = True
+        if rel_name not in view.requested_relationships and not is_included:
+            continue
+        if not view.mapped_info_from_name(rel_name).get('visible', True):
+            continue
+
+        rel_view = view.view_instance(rel.tgt_class)
+        query = view.related_query(obj.obj_id, rel, full_object=is_included)
+        many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
+        if many:
+            count = query.count()
+            limit = view.related_limit(rel)
+            query = query.limit(limit)
+        query = execute_stage(
+            view, stages, 'alter_related_query', query
+        )
+
+        rel_results = [ResultObject(rel_view, o) for o in query.all()]
+        rel_results = execute_stage(
+            view, stages, 'alter_related_results', rel_results
+        )
+        if is_included:
+            for rel_obj in rel_results:
+                fill_related(stages, rel_obj, include_path=rel_include_path)
+        obj.related[rel_name] = Results(
+            rel_view,
+            objects=rel_results,
+            many=many,
+            is_included=is_included
+        )
+        if many:
+            obj.related[rel_name].count = count
+            obj.related[rel_name].limit = limit
+
+
 
 class ResultObject:
     def __init__(self, view, object, related=None):
@@ -303,7 +352,17 @@ class Results:
         self.is_included = is_included
         self.is_top = is_top
 
-    def serialise_with(self, method_name):
+    def serialise(self):
+        doc = pyramid_jsonapi.jsonapi.Document()
+        if self.many:
+            doc.collection = True
+        doc.data = self.data()
+        doc.meta = self.meta()
+        doc.included = self.included()
+        doc.links = self.view.pagination_links(count=self.count)
+        return doc
+
+    def serialise_object_with(self, method_name):
         data = [getattr(o, method_name)() for o in self.objects]
         if self.many:
             return data
@@ -313,11 +372,23 @@ class Results:
             except IndexError:
                 return None
 
+    def meta(self):
+        meta = {}
+        if self.many:
+            meta.update(
+                {
+                    'available': self.count,
+                    'limit': self.limit,
+                    'returned': len(self.objects)
+                }
+            )
+        return meta
+
     def data(self):
-        return self.serialise_with('serialise')
+        return self.serialise_object_with('serialise')
 
     def identifiers(self):
-        return self.serialise_with('identifier')
+        return self.serialise_object_with('identifier')
 
     def rel_dict(self, rel, rel_name, parent_url):
         rd = {

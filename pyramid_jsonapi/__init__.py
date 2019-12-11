@@ -85,6 +85,7 @@ class PyramidJSONAPI():
         'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
         'workflow_get': {'val': 'pyramid_jsonapi.workflow.get_loop'},
+        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.collection_get_loop'},
     }
 
     def __init__(self, config, models, get_dbsession=None):
@@ -258,6 +259,7 @@ class PyramidJSONAPI():
         view.max_limit = int(self.settings.paging_max_limit)
 
         view.get = wf.make_method('get', self)
+        view.collection_get = wf.make_method('collection_get', self)
 
         self.endpoint_data.add_routes_views(view)
 
