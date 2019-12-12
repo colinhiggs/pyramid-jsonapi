@@ -313,10 +313,10 @@ class Results:
         doc = pyramid_jsonapi.jsonapi.Document()
         if self.many:
             doc.collection = True
+            doc.links = self.view.pagination_links(count=self.count)
         doc.data = self.data()
         doc.meta = self.meta()
         doc.included = self.included()
-        doc.links = self.view.pagination_links(count=self.count)
         return doc
 
     def serialise_object_with(self, method_name):
