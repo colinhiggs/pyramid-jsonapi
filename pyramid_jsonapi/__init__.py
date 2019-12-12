@@ -84,8 +84,8 @@ class PyramidJSONAPI():
         'debug_endpoints': {'val': False, 'desc': 'Whether or not to add debugging endpoints.'},
         'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
-        'workflow_get': {'val': 'pyramid_jsonapi.workflow.get_loop'},
-        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.collection_get_loop'},
+        'workflow_get': {'val': 'pyramid_jsonapi.workflow.loop.get'},
+        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get'},
     }
 
     def __init__(self, config, models, get_dbsession=None):
