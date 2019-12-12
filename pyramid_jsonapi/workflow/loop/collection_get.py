@@ -44,5 +44,5 @@ def workflow(view, stages, data):
     )
     results = wf.execute_stage(view, stages, 'alter_results', results)
     for res in results.objects:
-        wf.fill_related(stages, res)
+        wf.loop.fill_related(stages, res)
     return results.serialise()

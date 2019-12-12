@@ -18,7 +18,7 @@ def workflow(view, stages, data):
     )
     res_obj = wf.ResultObject(view, obj)
     obj = wf.execute_stage(view, stages, 'alter_result', res_obj)
-    wf.fill_related(stages, res_obj)
+    wf.loop.fill_related(stages, res_obj)
     results = wf.Results(
         view,
         objects=[res_obj],
