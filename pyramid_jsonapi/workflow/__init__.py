@@ -377,9 +377,11 @@ class Results:
         if self.many:
             meta.update(
                 {
-                    'available': self.count,
-                    'limit': self.limit,
-                    'returned': len(self.objects)
+                    'results': {
+                        'available': self.count,
+                        'limit': self.limit,
+                        'returned': len(self.objects)
+                    }
                 }
             )
         return meta
