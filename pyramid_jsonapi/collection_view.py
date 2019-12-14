@@ -364,7 +364,7 @@ class CollectionViewBase:
         return self.item
 
     @jsonapi_view
-    def patch(self):
+    def patch_old(self):
         """Handle PATCH request for a single item.
 
         Update an existing item from a partially defined representation.
