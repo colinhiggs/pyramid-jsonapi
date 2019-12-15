@@ -86,6 +86,7 @@ class PyramidJSONAPI():
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
         'workflow_get': {'val': 'pyramid_jsonapi.workflow.loop.get'},
         'workflow_patch': {'val': 'pyramid_jsonapi.workflow.loop.patch'},
+        'workflow_delete': {'val': 'pyramid_jsonapi.workflow.loop.delete'},
         'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get'},
     }
 
@@ -261,6 +262,7 @@ class PyramidJSONAPI():
 
         view.get = wf.make_method('get', self)
         view.patch = wf.make_method('patch', self)
+        view.delete = wf.make_method('delete', self)
         view.collection_get = wf.make_method('collection_get', self)
 
         self.endpoint_data.add_routes_views(view)
