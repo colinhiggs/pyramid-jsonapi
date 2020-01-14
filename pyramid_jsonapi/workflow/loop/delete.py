@@ -1,12 +1,18 @@
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
+import sqlalchemy
 
 stages = (
     'before_delete',
 )
 
 def workflow(view, stages, prev_data):
-    item = view.single_item_query(loadonly=[view.key_column.name]).one()
+    item = view.get_one(
+        view.single_item_query(loadonly=[view.key_column.name]),
+        not_found_message='No item {} in collection {}'.format(
+            view.obj_id, view.collection_name
+        )
+    )
     item = wf.execute_stage(
         view, stages, 'before_delete', item
     )
