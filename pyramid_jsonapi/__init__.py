@@ -88,6 +88,7 @@ class PyramidJSONAPI():
         'workflow_patch': {'val': 'pyramid_jsonapi.workflow.loop.patch'},
         'workflow_delete': {'val': 'pyramid_jsonapi.workflow.loop.delete'},
         'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get'},
+        'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post'},
     }
 
     def __init__(self, config, models, get_dbsession=None):
@@ -264,6 +265,7 @@ class PyramidJSONAPI():
         view.patch = wf.make_method('patch', self)
         view.delete = wf.make_method('delete', self)
         view.collection_get = wf.make_method('collection_get', self)
+        view.collection_post = wf.make_method('collection_post', self)
 
         self.endpoint_data.add_routes_views(view)
 
