@@ -22,7 +22,7 @@ setup(
   packages = find_packages(),
   install_requires=requires,
   extras_require={
-    'test_data_generator': ['Mixer',],
+    'test_data_generator': ['Mixer', 'networkx'],
   },
   version=get_version(),
   description = 'Auto-build JSON API from sqlalchemy models using the pyramid framework',
