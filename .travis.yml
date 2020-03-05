@@ -3,27 +3,18 @@ language: python
 python:
 - 3.7
 sudo: required
-#addons:
-#  postgresql: '9.6'
 services:
 - postgresql
 cache:
-- apt
-- directories:
-  - "$HOME/.cache/pip"
-  - "$HOME/.pyenv"
-env:
- PATH=bin/:$PATH
-#virtualenv:
-#  system_site_packages: true
-script:
-- pycodestyle --ignore=E402,E501,W503,W504,E731 pyramid_jsonapi
-- pylint -E --rcfile=.pylintrc pyramid_jsonapi
-- nosetest -v --with-coverage --cover-package=pyramid_jsonapi
-- travis_retry coveralls || true
+  pip: true
 install:
-- python bootstrap.py
-- buildout
+- pip install tox
+script:
+# Call the pip installed tox, not the system one
+- $VIRTUAL_ENV/bin/tox
+after_success:
+# Push coverage results to coveralls.io
+- travis_retry coveralls || true
 deploy:
   provider: pypi
   user: "colinhiggs"

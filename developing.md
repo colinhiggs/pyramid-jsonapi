@@ -6,44 +6,38 @@ Although you've quite possibly already done that if you're here...
 git clone https://github.com/colinhiggs/pyramid-jsonapi.git
 ```
 
-## Make a Virtual Env
+## Install `tox`
+
+You need to install tox - either system-wide, or in it's own virtualenv:
 
 ```bash
-./create-venv.sh
+python3 -mvenv toxenv
+toxenv/bin/pip install tox
 ```
 
-Which does the equivalent of the following...
+*Note*: This virtualenv only exists to deliver `tox`, *NOT* for development.
 
-Create a venv:
-```bash
-python3 -m venv env
-```
 
-*or*
 
-On my Ubuntu 14.04 box venv is a bit broken. I have to do this first:
-```bash
-python3 -m venv --without-pip env
-source env/bin/activate
-curl https://bootstrap.pypa.io/get-pip.py | python3
-deactivate
-source env/bin/activate
-```
+## Run `tox`
 
-Install requirements:
-```bash
-pip install -r requirements.txt
-```
-
-## Install Deps for Test Project
+`tox` creates it's own virtualenvs for testing in `.tox/` which can be used for code testing and development.
+These contain all of the dependencies for both the project and testing, as well as the local `pyramid-jsonapi`
 
 ```bash
-source env/bin/activate # if not already in virtualenv
-cd test_project
-python setup.py develop
+toxenv/bin/tox
 ```
+
+Hopefully the tests all passed!
+
 
 ## Try it Out
+
+Begin by sourcing the tox virtualenv:
+
+```bash
+source .tox/py3/bin/activate`
+```
 
 ### Create a test database
 
@@ -59,7 +53,7 @@ which assumes there is a database called test owned by a user called test with p
 
 ### Start a server running
 ```bash
-PYTHONPATH=. pserve test_project/development.ini
+pserve test_project/development.ini
 ```
 
 ### Populate with test data
