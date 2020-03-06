@@ -6,23 +6,31 @@ Developing pyramid-jsonapi
 Development
 -----------
 
-This project is set up to use `buildout` to create a suitable testing environment.
-Buildout works by installing all python dependencies as eggs to `eggs/` and setting up
-scripts in `bin/` which include those eggs in the python path.
-You can set up the buildout environment as follows:
+This project is set up to use `tox` to create a suitable testing environment.
+You must first install `tox` - either system-wide, or in it's own virtualenv:
+
+Set up the `tox` environment as follows:
+
 
 .. code-block:: bash
 
-  # Creates the buildout setup script.
-  python3 bootstrap.py
-  # Installs dependencies, builds documentation etc.
-  bin/buildout
+  # To install tox
+  python3 -mvenv toxenv
+  toxenv/bin/pip install tox
 
-  # To run python with all dependencies satisfied:
-  bin/python
+  # To run tox and test the project:
+  toxenv/bin/tox
 
-  # To test the project:
-  bin/nosetest
+*Note*: The `toxenv` virtualenv only exists to deliver `tox`, *NOT* for development.
+
+`tox` creates it's own virtualenvs for testing in `.tox/` which can be used for code testing and development.
+These contain all of the dependencies for both the project and testing, as well as the local `pyramid-jsonapi`
+
+You can use these in the usual way for your own testing and development, e.g.:
+
+.. code-block:: bash
+  
+  source .tox/py3/bin/activate
 
 
 Contribution
@@ -75,7 +83,7 @@ Documentation
 Documentation is built using sphinx. This is done automatically using Travis for
 certain builds (e.g. tagged releases) and pushed to the *gh-pages* branch.
 
-Note that the documentation uses the ``sphinx-rtd-theme`` which is installed by buildout.
+Note that the documentation uses the ``sphinx-rtd-theme``
 
 To manually build the documentation:
 

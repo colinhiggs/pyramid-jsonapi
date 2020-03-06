@@ -194,13 +194,12 @@ class PyramidJSONAPI():
         if self.settings.metadata_endpoints:
             prefnames.append('metadata')
         for prefname in prefnames:
-            setting_name = 'route_pattern_{}_prefix'.format(prefname)
-            sep = self.settings.route_pattern_sep
-            setting = str(getattr(self.settings, setting_name))
-            if setting != '':
-                path_info = '{}{}{}'.format(sep, setting, sep)
-            else:
-                path_info = sep
+            path_info = self.endpoint_data.rp_constructor.pattern_from_components(
+                str(getattr(self.settings, 'route_pattern_prefix')),
+                str(getattr(self.settings, 'route_pattern_{}_prefix'.format(prefname))),
+                start_sep=True,
+                end_sep=True
+            )
             self.config.add_notfound_view(
                 self.error, renderer='json', path_info=path_info
             )
