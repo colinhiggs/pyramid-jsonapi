@@ -22,8 +22,6 @@ import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
 
-from pprint import pprint
-
 from test_project.models import (
     DBSession,
     Base
@@ -397,7 +395,6 @@ class TestRelationships(DBTestBase):
             items = json['data']
             # For each returned item, there should be at least one related
             # item which matches the filter.
-            print([item['attributes'][filter.att] for item in included.values()])
             for item in items:
                 res_ids = item['relationships'][src.rel]['data']
                 self.assertIsNotNone(res_ids)
@@ -2658,7 +2655,6 @@ class TestBugs(DBTestBase):
         '''Should treat association proxy as a relationship.'''
         data = self.test_app().get('/people/1').json['data']
         self.assertIn('articles_by_proxy', data['relationships'])
-        print(data['relationships']['articles_by_proxy'])
 
 
 class TestJSONAPI(unittest.TestCase):
