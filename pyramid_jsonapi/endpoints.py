@@ -25,7 +25,7 @@ class RoutePatternConstructor():
         self.api_pattern = partial(self.create_pattern, self.settings.route_pattern_api_prefix)
         self.metadata_pattern = partial(self.create_pattern, self.settings.route_pattern_metadata_prefix)
 
-    def pattern_from_components(self, *components):
+    def pattern_from_components(self, *components, start_sep=False, end_sep=False):
         """Construct a route pattern from components.
 
         Join components together with self.sep.
@@ -33,12 +33,17 @@ class RoutePatternConstructor():
 
         Arguments:
             *components (str): route pattern components.
+            start_sep (bool): Add a leading separator
+            end_sep (bool): Add a trailing separator
         """
+        psep = self.settings.route_pattern_sep
         components = [x for x in components if x != '']
-        return self.settings.route_pattern_sep.join(components).replace(
-            self.settings.route_pattern_sep * 2,
-            self.settings.route_pattern_sep
-        )
+        pattern = psep.join(components).replace(psep * 2, psep)
+        if start_sep and not pattern.startswith(psep):
+            pattern = '{}{}'.format(psep, pattern)
+        if end_sep and not pattern.endswith(psep):
+            pattern = '{}{}'.format(pattern, psep)
+        return pattern
 
     def create_pattern(self, type_prefix, endpoint_name, *components, base='/', rstrip=True):
         """Generate a pattern from a type_prefix, endpoint name and suffix components.
