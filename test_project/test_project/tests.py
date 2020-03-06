@@ -22,8 +22,6 @@ import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
 
-from pprint import pprint
-
 from test_project.models import (
     DBSession,
     Base
@@ -397,7 +395,6 @@ class TestRelationships(DBTestBase):
             items = json['data']
             # For each returned item, there should be at least one related
             # item which matches the filter.
-            print([item['attributes'][filter.att] for item in included.values()])
             for item in items:
                 res_ids = item['relationships'][src.rel]['data']
                 self.assertIsNotNone(res_ids)
@@ -2658,7 +2655,6 @@ class TestBugs(DBTestBase):
         '''Should treat association proxy as a relationship.'''
         data = self.test_app().get('/people/1').json['data']
         self.assertIn('articles_by_proxy', data['relationships'])
-        print(data['relationships']['articles_by_proxy'])
 
 
 class TestJSONAPI(unittest.TestCase):
@@ -2791,6 +2787,15 @@ class TestEndpoints(DBTestBase):
                 'pyramid_jsonapi.route_pattern_prefix': 'SPLAT'
             }).get('/SPLAT/metadata/JSONSchema')
 
+    def test_route_pattern_prefix_error(self):
+        """Test setting route_pattern_prefix error handling."""
+        resp = self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_prefix': 'SPLAT'
+            }).get('/SPLAT/invalid',
+            status=404)
+        self.assertTrue(resp.content_type == 'application/vnd.api+json')
+
     def test_route_pattern_api_prefix(self):
         """Test setting route_pattern_api_prefix."""
         self.test_app(
@@ -2798,12 +2803,59 @@ class TestEndpoints(DBTestBase):
                 'pyramid_jsonapi.route_pattern_api_prefix': 'API'
             }).get('/API/people')
 
-    def test_route_pattern_ap_prefix(self):
+    def test_route_pattern_api_prefix_error(self):
+        """Test setting route_pattern_prefix error handling."""
+        resp = self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_api_prefix': 'API'
+            }).get('/API/invalid',
+            status=404)
+        self.assertTrue(resp.content_type == 'application/vnd.api+json')
+
+    def test_route_pattern_metadata_prefix(self):
         """Test setting route_pattern_metadata_prefix."""
         self.test_app(
             options={
                 'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
             }).get('/METADATA/JSONSchema')
+
+    def test_route_pattern_metadata_prefix_error(self):
+        """Test setting route_pattern_prefix error handling."""
+        resp = self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
+            }).get('/METADATA/invalid',
+            status=404)
+        self.assertTrue(resp.content_type == 'application/vnd.api+json')
+
+    def test_route_pattern_all_prefixes(self):
+        """Test setting all pattern prefixes."""
+        api = self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_prefix': 'SPLAT',
+                'pyramid_jsonapi.route_pattern_api_prefix': 'API',
+                'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
+            })
+        api.get('/SPLAT/API/people')
+        api.get('/SPLAT/METADATA/JSONSchema')
+
+    def test_route_pattern_all_prefixes_error(self):
+        """Test setting all pattern prefixes error handling."""
+        api = self.test_app(
+            options={
+                'pyramid_jsonapi.route_pattern_prefix': 'SPLAT',
+                'pyramid_jsonapi.route_pattern_api_prefix': 'API',
+                'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
+            })
+        self.assertEqual(
+            api.get('/SPLAT/API/invalid', status=404).content_type,
+            'application/vnd.api+json'
+        )
+        self.assertEqual(
+            api.get('/SPLAT/METADATA/invalid', status=404).content_type,
+            'application/vnd.api+json'
+        )
+
 
 class TestMetaData(DBTestBase):
     """Tests for the metadata plugins."""
