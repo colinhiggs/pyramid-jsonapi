@@ -12,9 +12,6 @@ install:
 script:
 # Call the pip installed tox, not the system one
 - $VIRTUAL_ENV/bin/tox
-after_success:
-# Push coverage results to coveralls.io
-- travis_retry coveralls || true
 deploy:
   provider: pypi
   user: "colinhiggs"
