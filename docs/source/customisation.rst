@@ -98,6 +98,23 @@ Your database may have some tables which you do not wish to expose as collection
 * passing an iterable of only the model classes you wish to expose to
   :func:`pyramid_jsonapi.PyramidJSONAPI`.
 
+URL Paths
+---------
+
+There are a number of `prefix` configuration options that can be used to customise the URL path used in the generated API.
+These are useful for mixing the API with other pages, adding API versioning etc.
+
+The path is constructed as follows - omitting any variables which are unset.
+The separator between fields is `route_pattern_sep` - shown here as the default '/'.
+`type` is one of either `api` or `metadata`.
+
+```
+/route_pattern_prefix/api_version/route_pattern_<type>_prefix/endpoint
+```
+
+These options and their defaults are documented above in `Configuration Options`.
+
+
 Modifying Endpoints
 -------------------
 
