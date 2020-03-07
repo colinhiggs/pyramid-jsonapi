@@ -196,6 +196,7 @@ class PyramidJSONAPI():
         for prefname in prefnames:
             path_info = self.endpoint_data.rp_constructor.pattern_from_components(
                 str(getattr(self.settings, 'route_pattern_prefix')),
+                str(getattr(self.settings, 'api_version')),
                 str(getattr(self.settings, 'route_pattern_{}_prefix'.format(prefname))),
                 start_sep=True,
                 end_sep=True

@@ -2820,6 +2820,22 @@ class TestEndpoints(DBTestBase):
             status=404)
         self.assertTrue(resp.content_type == 'application/vnd.api+json')
 
+    def test_api_version(self):
+        """Test setting api_version."""
+        self.test_app(
+            options={
+                'pyramid_jsonapi.api_version': 'v1',
+            }).get('/v1/people')
+
+    def test_api_version_error(self):
+        """Test setting api_version error handling."""
+        resp = self.test_app(
+            options={
+                'pyramid_jsonapi.api_version': 'v1',
+            }).get('/v1/invalid',
+            status=404)
+        self.assertTrue(resp.content_type == 'application/vnd.api+json')
+
     def test_route_pattern_api_prefix(self):
         """Test setting route_pattern_api_prefix."""
         self.test_app(
@@ -2857,26 +2873,28 @@ class TestEndpoints(DBTestBase):
         api = self.test_app(
             options={
                 'pyramid_jsonapi.route_pattern_prefix': 'SPLAT',
+                'pyramid_jsonapi.api_version': 'v1',
                 'pyramid_jsonapi.route_pattern_api_prefix': 'API',
                 'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
             })
-        api.get('/SPLAT/API/people')
-        api.get('/SPLAT/METADATA/JSONSchema')
+        api.get('/SPLAT/v1/API/people')
+        api.get('/SPLAT/v1/METADATA/JSONSchema')
 
     def test_route_pattern_all_prefixes_error(self):
         """Test setting all pattern prefixes error handling."""
         api = self.test_app(
             options={
                 'pyramid_jsonapi.route_pattern_prefix': 'SPLAT',
+                'pyramid_jsonapi.api_version': 'v1',
                 'pyramid_jsonapi.route_pattern_api_prefix': 'API',
                 'pyramid_jsonapi.route_pattern_metadata_prefix': 'METADATA'
             })
         self.assertEqual(
-            api.get('/SPLAT/API/invalid', status=404).content_type,
+            api.get('/SPLAT/v1/API/invalid', status=404).content_type,
             'application/vnd.api+json'
         )
         self.assertEqual(
-            api.get('/SPLAT/METADATA/invalid', status=404).content_type,
+            api.get('/SPLAT/v1/METADATA/invalid', status=404).content_type,
             'application/vnd.api+json'
         )
 
