@@ -19,7 +19,7 @@ from pyramid.httpexceptions import (
     status_map,
 )
 import pyramid_jsonapi.jsonapi
-#from pyramid_jsonapi import pjview
+# from pyramid_jsonapi import pjview
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only
@@ -264,23 +264,23 @@ class CollectionViewBase:
                 return {}
         return view_wrapper
 
-    #@pjview.view_attr
-    def get_new(self, stages):
-        self.request = pjview.execute_stage(self, stages['request'], self.request)
-        q = self.single_item_query()
-        objects = self.load_objects(self.single_item_query())
-        # related_queries_needed = set(
-        #     self.requested_relationships.keys(),
-        # )
-        # related_queries = pjview.execute_stage(
-        #     self,
-        #     stages['related_queries'],
-        #     self.related_queries([result])
-        # )
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.data = self.serialise_item(objects['data'][0])
-        doc = pjview.execute_stage(self, stages['document'], doc)
-        return doc
+    # @pjview.view_attr
+    # def get_new(self, stages):
+    #     self.request = pjview.execute_stage(self, stages['request'], self.request)
+    #     q = self.single_item_query()
+    #     objects = self.load_objects(self.single_item_query())
+    #     # related_queries_needed = set(
+    #     #     self.requested_relationships.keys(),
+    #     # )
+    #     # related_queries = pjview.execute_stage(
+    #     #     self,
+    #     #     stages['related_queries'],
+    #     #     self.related_queries([result])
+    #     # )
+    #     doc = pyramid_jsonapi.jsonapi.Document()
+    #     doc.data = self.serialise_item(objects['data'][0])
+    #     doc = pjview.execute_stage(self, stages['document'], doc)
+    #     return doc
 
     def get_objects(self, query):
         return query.all()
@@ -319,7 +319,6 @@ class CollectionViewBase:
         }
         resource_json.links = {'self': item_url}
         return resource_json.as_dict()
-
 
     @jsonapi_view
     def old_get(self):
@@ -675,7 +674,7 @@ class CollectionViewBase:
         return ret
 
     @jsonapi_view
-    def collection_post(self):
+    def collection_post_old(self):
         """Handle POST requests for the collection.
 
         Create a new object in collection.
@@ -836,7 +835,7 @@ class CollectionViewBase:
         return doc
 
     @jsonapi_view
-    def related_get(self):
+    def related_get_old(self):
         """Handle GET requests for related URLs.
 
         Get object(s) related to a specified object.

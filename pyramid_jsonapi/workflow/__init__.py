@@ -2,6 +2,7 @@ import functools
 import importlib
 import logging
 import re
+import sqlalchemy
 
 from collections import (
     deque,
@@ -27,6 +28,7 @@ from pyramid.httpexceptions import (
 )
 
 import pyramid_jsonapi
+
 
 def make_method(name, api):
     settings = api.settings
@@ -111,7 +113,7 @@ def make_method(name, api):
                     view.request.current_route_path()
                 )
                 if isinstance(exc, HTTPError):
-                    if 400 <= exc.code < 500:  # pylint:disable=no-member
+                    if 400 <= int(exc.code) < 500:  # pylint:disable=no-member
                         raise HTTPBadRequest("Unexpected client error: {}".format(exc))
                 else:
                     raise HTTPInternalServerError("Unexpected server error.")
@@ -130,12 +132,14 @@ def make_method(name, api):
 
     return method
 
+
 def execute_stage(view, stages, stage_name, arg, previous_data=None):
     for handler in stages[stage_name]:
         arg = handler(view, arg, previous_data)
     if previous_data is not None:
         previous_data[stage_name] = arg
     return arg
+
 
 @functools.lru_cache()
 def get_jsonapi_accepts(request):
@@ -150,6 +154,7 @@ def get_jsonapi_accepts(request):
         a for a in accepts
         if a.startswith('application/vnd.api')
     }
+
 
 def validate_request_headers(view, request, data):
     """Check that request headers comply with spec.
@@ -178,6 +183,7 @@ def validate_request_headers(view, request, data):
 
     return request
 
+
 def validate_request_valid_json(view, request, data):
     """Check that the body of any request is valid JSON.
 
@@ -191,6 +197,7 @@ def validate_request_valid_json(view, request, data):
             raise HTTPBadRequest("Body is not valid JSON.")
 
     return request
+
 
 def validate_request_common_validity(view, request, data):
     """Perform common request validity checks."""
@@ -213,6 +220,7 @@ def validate_request_common_validity(view, request, data):
 
     return request
 
+
 def alter_document_self_link(view, doc, data):
     """Include a self link unless the method is PATCH."""
     if view.request.method != 'PATCH':
@@ -222,6 +230,7 @@ def alter_document_self_link(view, doc, data):
         else:
             doc.links = selfie
     return doc
+
 
 def alter_document_debug_info(view, doc, data):
     """Potentially add some debug information."""
@@ -239,12 +248,25 @@ def alter_document_debug_info(view, doc, data):
     doc.meta.update({'debug': debug})
     return doc
 
+
 def alter_request_add_info(view, request, data):
     """Add information commonly used in view operations."""
 
     # Extract id and relationship from route, if provided
     view.obj_id = view.request.matchdict.get('id', None)
     view.relname = view.request.matchdict.get('relationship', None)
+    if view.relname:
+        # Gather relationship info
+        mapper = sqlalchemy.inspect(view.model).mapper
+        try:
+            view.rel = view.relationships[view.relname]
+        except KeyError:
+            raise HTTPNotFound('No relationship {} in collection {}'.format(
+                view.relname,
+                view.collection_name
+            ))
+        view.rel_class = view.rel.tgt_class
+        view.rel_view = view.view_instance(view.rel_class)
     return request
 
 
@@ -375,7 +397,7 @@ class Results:
             included_dict = {}
         else:
             included_dict = {
-                (self.view.collection_name, o.obj_id):o for o in self.objects
+                (self.view.collection_name, o.obj_id): o for o in self.objects
             }
         for o in self.objects:
             included_dict.update(o.included_dict())

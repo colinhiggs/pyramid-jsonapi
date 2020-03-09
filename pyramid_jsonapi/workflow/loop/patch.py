@@ -18,6 +18,7 @@ stages = (
     'alter_json_data',
 )
 
+
 def workflow(view, stages, prev_data):
     request = wf.execute_stage(
         view, stages, 'validate_patch_request',
@@ -126,6 +127,7 @@ def workflow(view, stages, prev_data):
     # responds only with top-level meta data
     doc.filter_keys = {'meta': {}}
     return doc
+
 
 def stage_validate_patch_request(view, request, prev_data):
     try:

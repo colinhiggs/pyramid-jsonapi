@@ -8,6 +8,7 @@ stages = (
     'alter_related_results',
 )
 
+
 def workflow(view, stages, data):
     query = wf.execute_stage(
         view, stages, 'alter_query', view.single_item_query()

@@ -2,9 +2,14 @@ import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
+from pyramid.httpexceptions import (
+    HTTPFailedDependency,
+)
+
 stages = (
     'before_delete',
 )
+
 
 def workflow(view, stages, prev_data):
     item = view.get_one(

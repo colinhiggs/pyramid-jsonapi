@@ -4,6 +4,7 @@ import sqlalchemy
 
 from pyramid.httpexceptions import (
     HTTPBadRequest,
+    HTTPInternalServerError,
 )
 
 stages = (
@@ -12,6 +13,7 @@ stages = (
     'alter_related_query',
     'alter_related_results',
 )
+
 
 def workflow(view, stages, data):
     query = view.base_collection_query()

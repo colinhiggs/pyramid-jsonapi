@@ -21,9 +21,10 @@ from pyramid.httpexceptions import (
     status_map,
 )
 
-#from pyramid_jsonapi.results import Results
+# from pyramid_jsonapi.results import Results
 from pyramid_jsonapi.pjview import all
 import pyramid_jsonapi
+
 
 def make_method(name, settings):
     wf_module = importlib.import_module(
@@ -78,6 +79,7 @@ def make_method(name, settings):
         return ret
 
     return method
+
 
 def view_attr(func, settings):
     stage_module = importlib.import_module('pyramid_jsonapi.pjview.{}'.format(func.__name__))
@@ -144,12 +146,13 @@ def view_attr(func, settings):
                 view.request.current_route_path()
             )
         return document.as_dict()
-        #return document
+        # return document
 
     # Add stage deques/funcs as attribute of new_func.
     for stage_name, stage in stages.items():
         setattr(new_func, stage_name, stage)
     return new_func
+
 
 def execute_stage(view, stages, stage_name, arg, previous_data=None):
     for handler in stages[stage_name]:
@@ -158,16 +161,20 @@ def execute_stage(view, stages, stage_name, arg, previous_data=None):
         previous_data[stage_name] = arg
     return arg
 
+
 def initial_related_queries(view, results):
     rq = {}
     return rq
 
+
 def add_related_results(view, results, related_queries):
     pass
+
 
 def serialise_results(view, results):
     doc = pyramid_jsonapi.jsonapi.Document()
     return doc
+
 
 def request_valid_json(view, request, data):
     """Check that the body of any request is valid JSON.
@@ -183,10 +190,12 @@ def request_valid_json(view, request, data):
 
     return request
 
+
 def not_item_3(view, request, data):
     if request.matchdict.get('id', None) == '3':
         raise HTTPForbidden('Item 3 is off limits.')
     return request
+
 
 def alter_request_add_info(view, request, data):
     """Add information commonly used in view operations."""
@@ -274,7 +283,7 @@ class Results:
             included_dict = {}
         else:
             included_dict = {
-                (self.view.collection_name, o.obj_id):o for o in self.objects
+                (self.view.collection_name, o.obj_id): o for o in self.objects
             }
         for o in self.objects:
             included_dict.update(o.included_dict())

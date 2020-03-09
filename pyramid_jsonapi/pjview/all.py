@@ -1,7 +1,14 @@
-stages=(
+from pyramid.httpexceptions import (
+    HTTPUnsupportedMediaType,
+    HTTPNotAcceptable,
+    HTTPBadRequest,
+)
+
+stages = (
     'request',
     'document'
 )
+
 
 def request_headers(view, request):
     """Check that request headers comply with spec.
@@ -30,6 +37,7 @@ def request_headers(view, request):
 
     return request
 
+
 def request_valid_json(view, request):
     """Check that the body of any request is valid JSON.
 
@@ -43,6 +51,7 @@ def request_valid_json(view, request):
             raise HTTPBadRequest("Body is not valid JSON.")
 
     return request
+
 
 def request_validity(view, request):
     """Perform common request validity checks."""
@@ -65,6 +74,7 @@ def request_validity(view, request):
 
     return request
 
+
 def request_add_info(view, request):
     """Add information commonly used in view operations."""
 
@@ -83,6 +93,7 @@ def request_add_info(view, request):
 
 stage_request = (request_add_info,)
 
+
 def document_self_link(view, doc):
     """Include a self link unless the method is PATCH."""
     if view.request.method != 'PATCH':
@@ -92,6 +103,7 @@ def document_self_link(view, doc):
         else:
             doc.links = selfie
     return doc
+
 
 def document_debug_info(view, doc):
     """Potentially add some debug information."""
@@ -109,5 +121,6 @@ def document_debug_info(view, doc):
         }
         doc.meta.update({'debug': debug})
     return doc
+
 
 stage_document = (document_self_link, document_debug_info)

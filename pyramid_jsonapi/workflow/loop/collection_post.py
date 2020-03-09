@@ -24,6 +24,7 @@ stages = (
     'alter_related_results',
 )
 
+
 def workflow(view, stages, prev_data):
     try:
         data = view.request.json_body['data']
