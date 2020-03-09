@@ -5,8 +5,11 @@
 import copy
 import importlib
 import re
+import traceback
 import types
 from collections import deque
+
+from pyramid.settings import asbool
 
 from pyramid.view import (
     view_config,
@@ -83,6 +86,7 @@ class PyramidJSONAPI():
         'schema_validation': {'val': True, 'desc': 'jsonschema schema validation enabled?'},
         'debug_endpoints': {'val': False, 'desc': 'Whether or not to add debugging endpoints.'},
         'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
+        'debug_traceback': {'val': False, 'desc': 'Whether or not to add a stack traceback to errors.'},
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
         'workflow_get': {'val': 'pyramid_jsonapi.workflow.loop.get'},
         'workflow_patch': {'val': 'pyramid_jsonapi.workflow.loop.patch'},
@@ -111,7 +115,7 @@ class PyramidJSONAPI():
         """Error method to return jsonapi compliant errors."""
         request.response.content_type = 'application/vnd.api+json'
         request.response.status_code = exc.code
-        return {
+        errors = {
             'errors': [
                 {
                     'code': str(exc.code),
@@ -120,6 +124,9 @@ class PyramidJSONAPI():
                 }
             ]
         }
+        if asbool(request.registry.settings.get('pyramid_jsonapi.debug_traceback', False)):
+            errors['traceback'] = traceback.format_exc()
+        return errors
 
     def create_jsonapi(self, engine=None, test_data=None, api_version=''):
         """Auto-create jsonapi from module or iterable of sqlAlchemy models.
