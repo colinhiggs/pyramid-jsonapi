@@ -43,7 +43,7 @@ def make_method(name, api):
         'alter_document': deque(),
         'validate_response': deque()
     }
-    stage_order = ['validate_request', 'alter_request']
+    stage_order = ['alter_request', 'validate_request']
     for stage_name in wf_module.stages:
         stages[stage_name] = deque()
         stage_order.append(stage_name)
@@ -52,6 +52,7 @@ def make_method(name, api):
     stages['validate_request'].append(validate_request_headers)
     stages['validate_request'].append(validate_request_valid_json)
     stages['validate_request'].append(validate_request_common_validity)
+    stages['validate_request'].append(validate_request_object_exists)
     stages['alter_request'].append(alter_request_add_info)
     stages['alter_document'].append(alter_document_self_link)
     if api.settings.debug_meta:
@@ -91,10 +92,10 @@ def make_method(name, api):
         data = {}
         try:
             request = execute_stage(
-                view, stages, 'validate_request', view.request
+                view, stages, 'alter_request', view.request
             )
             request = execute_stage(
-                view, stages, 'alter_request', request
+                view, stages, 'validate_request', request
             )
             view.request = request
             document = wf_module.workflow(view, stages, data)
@@ -218,6 +219,14 @@ def validate_request_common_validity(view, request, data):
     # Spec says set Content-Type to application/vnd.api+json.
     request.response.content_type = 'application/vnd.api+json'
 
+    return request
+
+
+def validate_request_object_exists(view, request, data):
+    """Make sure that id exists in collection for all urls specifying an id."""
+    if view.obj_id is not None:
+        if not view.object_exists(view.obj_id):
+            raise HTTPNotFound('No item {} in {}'.format(view.obj_id, view.collection_name))
     return request
 
 
