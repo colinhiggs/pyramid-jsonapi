@@ -275,9 +275,15 @@ class ResultObject:
         self.view = view
         self.object = object
         self.related = related or {}
-        self.obj_id = self.view.id_col(self.object)
+        if object is None:
+            self.obj_id = None
+        else:
+            self.obj_id = self.view.id_col(self.object)
 
     def serialise(self):
+        # An object of 'None' is a special case.
+        if self.object is None:
+            return None
         # Object's id and type are required at the top level of json-api
         # objects.
         obj_url = self.view.request.route_url(
