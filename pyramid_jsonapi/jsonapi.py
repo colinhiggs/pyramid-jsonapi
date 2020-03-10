@@ -104,7 +104,10 @@ class Document(Base):
         """
         data = []
         for resource in self.resources:
-            data.append(resource.as_dict())
+            if resource is None:
+                data.append(None)
+            else:
+                data.append(resource.as_dict())
 
         if data and self.collection:
             return {'data': data}
@@ -128,9 +131,12 @@ class Document(Base):
         else:
             reslist.append(data)
         for item in reslist:
-            res = Resource()
-            res.update(item)
-            self.resources.append(res)
+            if item is None:
+                self.resources.append(None)
+            else:
+                res = Resource()
+                res.update(item)
+                self.resources.append(res)
 
 
 class Resource(Base):
