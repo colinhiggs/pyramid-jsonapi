@@ -473,6 +473,37 @@
         }
       ],
       {"id_seq": "*"}
+    ],
+    [
+      "TreeNode",
+      [
+        {
+          "id": "1",
+          "name": "top",
+          "parent_id": null
+        },
+        {
+          "id": "2",
+          "name": "top.1",
+          "parent_id": "1"
+        },
+        {
+          "id": "3",
+          "name": "top.2",
+          "parent_id": "1"
+        },
+        {
+          "id": "4",
+          "name": "top.1.1",
+          "parent_id": "2"
+        },
+        {
+          "id": "5",
+          "name": "top.1.2",
+          "parent_id": "2"
+        }
+      ],
+      {"id_seq": "*"}
     ]
   ],
   "associations": [

@@ -224,3 +224,13 @@ class RenamedThings(Base):
     __pyramid_jsonapi__ = {
         'collection_name': 'whatsits'
     }
+
+
+class TreeNode(Base):
+    __tablename__ = 'treenodes'
+    id = IdColumn()
+    name = Column(Text)
+    parent_id = IdRefColumn('treenodes.id')
+    children = relationship("TreeNode",
+        backref=backref('parent', remote_side=[id])
+    )
