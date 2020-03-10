@@ -16,6 +16,8 @@ import pyramid_jsonapi.workflow as wf
 stages = (
     'alter_query',
     'alter_results',
+    'alter_related_query',
+    'alter_related_results',
 )
 
 
@@ -48,7 +50,7 @@ def workflow(view, stages, data):
             raise HTTPBadRequest(str(exc.orig))
     else:
         many = False
-        res_objs = [view.get_one(query)]
+        res_objs = [wf.ResultObject(view.rel_view, view.rel_view.get_one(query))]
         count = len(res_objs)
 
     results = wf.Results(
