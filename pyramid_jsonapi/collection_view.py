@@ -21,7 +21,7 @@ from pyramid.httpexceptions import (
 import pyramid_jsonapi.jsonapi
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, aliased
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -118,6 +118,12 @@ class CollectionViewBase:
                             self.request.current_route_path()
                         )
                         if hasattr(exc, 'code'):
+                            try:
+                                # We have a code but it's probably a string. We need an integer.
+                                int_code = int(exc.code)
+                            except:
+                                # If we can't turn it into an integer then we're really stuck.
+                                raise HTTPInternalServerError("Unexpected server error.")
                             if 400 <= int(exc.code) < 500:  # pylint:disable=no-member
                                 raise HTTPBadRequest("Unexpected client error: {}".format(exc))
                         else:
@@ -1672,11 +1678,34 @@ class CollectionViewBase:
                 self.id_col(rel_class) == rel.secondaryjoin.right
             )
         elif rel.direction is MANYTOONE:
-            query = query.filter(
-                rel.primaryjoin
-            ).filter(
-                self.id_col(self.model_from_table(local_col.table)) == obj_id
-            )
+            if rel.primaryjoin.left.table == rel.primaryjoin.right.table:
+                # This is a self-joined table with a child->parent rel. AKA
+                # adjacancy list. We need aliasing.
+                rel_class_alias = aliased(rel_class)
+
+                # Assume a 'Node' model with 'id' and 'parent_id' attributes and
+                # a relationship 'parent' such that parent_id stores the id of
+                # this Node's parent.
+                #
+                # The parent_id column from the aliased class.
+                right_alias = getattr(rel_class_alias, rel.primaryjoin.right.key)
+                # The id column from the aliased class.
+                left_alias = getattr(rel_class_alias, rel.primaryjoin.left.key)
+
+                query = query.join(
+                    rel_class_alias,
+                    # Node.id == Aliased.parent_id
+                    rel.primaryjoin.left == right_alias
+                ).filter(
+                    # Aliased.id == obj_id
+                    left_alias == obj_id
+                )
+            else:
+                query = query.filter(
+                    rel.primaryjoin
+                ).filter(
+                    self.id_col(self.model_from_table(local_col.table)) == obj_id
+                )
         else:
             raise HTTPError('Unknown relationships direction, "{}".'.format(
                 rel.direction.name

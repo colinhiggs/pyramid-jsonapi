@@ -484,22 +484,22 @@
         },
         {
           "id": "2",
-          "name": "top.1",
+          "name": "top_1",
           "parent_id": "1"
         },
         {
           "id": "3",
-          "name": "top.2",
+          "name": "top_2",
           "parent_id": "1"
         },
         {
           "id": "4",
-          "name": "top.1.1",
+          "name": "top_1_1",
           "parent_id": "2"
         },
         {
           "id": "5",
-          "name": "top.1.2",
+          "name": "top_1_2",
           "parent_id": "2"
         }
       ],

@@ -162,9 +162,6 @@ class TestTmp(DBTestBase):
     def test_adjacancy_list(self):
         top = self.test_app().get('/treenodes/1').json
         top_1 = self.test_app().get('/treenodes/2').json
-        # import pprint
-        # pprint.pprint(top['data']['relationships'])
-        # pprint.pprint(top_1['data']['relationships'])
         # top should have no parent.
         self.assertIsNone(top['data']['relationships']['parent']['data'])
         # top should have multiple children.
@@ -172,7 +169,7 @@ class TestTmp(DBTestBase):
         # top_1 should have top as a parent.
         self.assertEqual(
             top_1['data']['relationships']['parent']['data'],
-            {'type': 'treenodes', 'id': '4'}
+            {'type': 'treenodes', 'id': '1'}
         )
         # top_1 should have 2 children.
         self.assertIsInstance(top_1['data']['relationships']['children']['data'], list)
