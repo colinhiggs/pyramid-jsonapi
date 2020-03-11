@@ -120,11 +120,12 @@ class CollectionViewBase:
                         if hasattr(exc, 'code'):
                             try:
                                 # We have a code but it's probably a string. We need an integer.
-                                int_code = int(exc.code)
-                            except:
+                                int_code = int(exc.code)  # pylint: disable=no-member
+                            except Exception as ex2:
                                 # If we can't turn it into an integer then we're really stuck.
-                                raise HTTPInternalServerError("Unexpected server error.")
-                            if 400 <= int(exc.code) < 500:  # pylint:disable=no-member
+                                # raise HTTPInternalServerError("Unexpected server error.")
+                                int_code = 500
+                            if 400 <= int_code < 500:  # pylint:disable=no-member
                                 raise HTTPBadRequest("Unexpected client error: {}".format(exc))
                         else:
                             raise HTTPInternalServerError("Unexpected server error.")
