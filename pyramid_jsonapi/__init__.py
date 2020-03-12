@@ -88,12 +88,12 @@ class PyramidJSONAPI():
         'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
         'debug_traceback': {'val': False, 'desc': 'Whether or not to add a stack traceback to errors.'},
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
-        'workflow_get': {'val': 'pyramid_jsonapi.workflow.loop.get'},
-        'workflow_patch': {'val': 'pyramid_jsonapi.workflow.loop.patch'},
-        'workflow_delete': {'val': 'pyramid_jsonapi.workflow.loop.delete'},
-        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get'},
-        'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post'},
-        'workflow_related_get': {'val': 'pyramid_jsonapi.workflow.loop.related_get'},
+        'workflow_get': {'val': 'pyramid_jsonapi.workflow.loop.get', 'desc': 'Module implementing the get workflow.'},
+        'workflow_patch': {'val': 'pyramid_jsonapi.workflow.loop.patch', 'desc': 'Module implementing the patch workflow.'},
+        'workflow_delete': {'val': 'pyramid_jsonapi.workflow.loop.delete', 'desc': 'Module implementing the delete workflow.'},
+        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
+        'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post', 'desc': 'Module implementing the collection_post workflow.'},
+        'workflow_related_get': {'val': 'pyramid_jsonapi.workflow.loop.related_get', 'desc': 'Module implementing the related_get workflow.'},
     }
 
     def __init__(self, config, models, get_dbsession=None):
