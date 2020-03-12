@@ -184,6 +184,7 @@ class TestTmp(DBTestBase):
             self.assertEqual(data['type'], tgt.collection)
 
 
+
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
     '''
@@ -1146,6 +1147,24 @@ class TestRelationships(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
             status=400
         )
+
+    def test_adjacancy_list(self):
+        '''Should correctly identify parent and children for TreeNode.
+        '''
+        top = self.test_app().get('/treenodes/1').json
+        top_1 = self.test_app().get('/treenodes/2').json
+        # top should have no parent.
+        self.assertIsNone(top['data']['relationships']['parent']['data'])
+        # top should have multiple children.
+        self.assertIsInstance(top['data']['relationships']['children']['data'], list)
+        # top_1 should have top as a parent.
+        self.assertEqual(
+            top_1['data']['relationships']['parent']['data'],
+            {'type': 'treenodes', 'id': '1'}
+        )
+        # top_1 should have 2 children.
+        self.assertIsInstance(top_1['data']['relationships']['children']['data'], list)
+        self.assertEqual(len(top_1['data']['relationships']['children']['data']), 2)
 
 
 class TestSpec(DBTestBase):
