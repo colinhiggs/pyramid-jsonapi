@@ -2456,7 +2456,7 @@ class TestHybrid(DBTestBase):
     def test_hybrid_writeable_patch(self):
         '''Should be able to update author_name of Post object.'''
         # Patch post 1 and change author_name to 'alice2'
-        self.test_app().patch_json(
+        r = self.test_app().patch_json(
             '/posts/1',
             {
                 'data': {
@@ -2469,6 +2469,8 @@ class TestHybrid(DBTestBase):
             },
             headers={'Content-Type': 'application/vnd.api+json'},
         )
+        # author_name should be in the list of updated attributes.
+        self.assertIn('author_name', r.json['meta']['updated']['attributes'])
         # Fetch alice back...
         data = self.test_app().get('/people/1').json['data']
         # ...should now be called alice2.
