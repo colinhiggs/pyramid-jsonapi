@@ -1,5 +1,6 @@
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
+import sqlalchemy
 
 from json.decoder import (
     JSONDecodeError,
@@ -112,7 +113,10 @@ def workflow(view, stages, prev_data):
                 rel_items.append(rel_item)
             setattr(item, relname, rel_items)
 
-    view.dbsession.flush()
+    try:
+        view.dbsession.flush()
+    except sqlalchemy.exc.IntegrityError as exc:
+        raise HTTPConflict(str(exc))
     doc = pyramid_jsonapi.jsonapi.Document()
     doc.meta = {
         'updated': {
