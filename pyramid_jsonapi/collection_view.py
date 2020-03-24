@@ -488,8 +488,10 @@ class CollectionViewBase:
                         ))
                     rel_items.append(rel_item)
                 setattr(item, relname, rel_items)
-
-        self.dbsession.flush()
+        try:
+            self.dbsession.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPConflict(str(exc))
         doc = pyramid_jsonapi.jsonapi.Document()
         doc.meta = {
             'updated': {

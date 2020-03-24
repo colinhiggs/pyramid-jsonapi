@@ -2193,6 +2193,29 @@ class TestSpec(DBTestBase):
             status=409
         )
 
+    def test_spec_patch_integrity_error(self):
+        '''Should 409 if PATCH violates a server side constraint.
+
+        A server MAY return 409 Conflict when processing a PATCH request to
+        update a resource if that update would violate other server-enforced
+        constraints (such as a uniqueness constraint on a property other than
+        id).
+        '''
+        self.test_app().patch_json(
+            '/blogs/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'forbidden title'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
+
     def test_spec_patch_empty_success(self):
         '''Should return only meta, not data or links.
 
