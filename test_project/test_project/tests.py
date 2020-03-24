@@ -2217,6 +2217,29 @@ class TestSpec(DBTestBase):
             status=409
         )
 
+    def test_spec_patch_integrity_error(self):
+        '''Should 409 if PATCH violates a server side constraint.
+
+        A server MAY return 409 Conflict when processing a PATCH request to
+        update a resource if that update would violate other server-enforced
+        constraints (such as a uniqueness constraint on a property other than
+        id).
+        '''
+        self.test_app().patch_json(
+            '/blogs/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'blogs',
+                    'attributes': {
+                        'title': 'forbidden title'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409
+        )
+
     def test_spec_patch_empty_success(self):
         '''Should return only meta, not data or links.
 
@@ -2480,7 +2503,7 @@ class TestHybrid(DBTestBase):
     def test_hybrid_writeable_patch(self):
         '''Should be able to update author_name of Post object.'''
         # Patch post 1 and change author_name to 'alice2'
-        self.test_app().patch_json(
+        r = self.test_app().patch_json(
             '/posts/1',
             {
                 'data': {
@@ -2493,6 +2516,8 @@ class TestHybrid(DBTestBase):
             },
             headers={'Content-Type': 'application/vnd.api+json'},
         )
+        # author_name should be in the list of updated attributes.
+        self.assertIn('author_name', r.json['meta']['updated']['attributes'])
         # Fetch alice back...
         data = self.test_app().get('/people/1').json['data']
         # ...should now be called alice2.

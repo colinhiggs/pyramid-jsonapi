@@ -545,13 +545,15 @@ class CollectionViewBase:
                         ))
                     rel_items.append(rel_item)
                 setattr(item, relname, rel_items)
-
-        self.dbsession.flush()
+        try:
+            self.dbsession.flush()
+        except sqlalchemy.exc.IntegrityError as exc:
+            raise HTTPConflict(str(exc))
         doc = pyramid_jsonapi.jsonapi.Document()
         doc.meta = {
             'updated': {
                 'attributes': [
-                    att for att in atts
+                    att for att in itertools.chain(atts, hybrid_atts)
                     if att != self.key_column.name
                 ],
                 'relationships': [r for r in rels]

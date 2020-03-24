@@ -81,6 +81,7 @@ class Blog(Base):
     __tablename__ = 'blogs'
     __table_args__ = (
         CheckConstraint('owner_id != 3'),
+        CheckConstraint("title != 'forbidden title'")
     )
     id = IdColumn()
     title = Column(Text)
