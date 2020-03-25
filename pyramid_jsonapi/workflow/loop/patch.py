@@ -1,3 +1,4 @@
+import itertools
 import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
@@ -121,7 +122,7 @@ def workflow(view, stages, prev_data):
     doc.meta = {
         'updated': {
             'attributes': [
-                att for att in atts
+                att for att in itertools.chain(atts, hybrid_atts)
                 if att != view.key_column.name
             ],
             'relationships': [r for r in rels]
