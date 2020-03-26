@@ -1,5 +1,4 @@
 import itertools
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
@@ -118,8 +117,8 @@ def workflow(view, stages, prev_data):
         view.dbsession.flush()
     except sqlalchemy.exc.IntegrityError as exc:
         raise HTTPConflict(str(exc))
-    doc = pyramid_jsonapi.jsonapi.Document()
-    doc.meta = {
+    doc = wf.Doc()
+    doc['meta'] = {
         'updated': {
             'attributes': [
                 att for att in itertools.chain(atts, hybrid_atts)
@@ -130,7 +129,6 @@ def workflow(view, stages, prev_data):
     }
     # if an update is successful ... the server
     # responds only with top-level meta data
-    doc.filter_keys = {'meta': {}}
     return doc
 
 

@@ -103,7 +103,7 @@ def make_method(name, api):
                 view, stages, 'alter_document', document
             )
             ret = execute_stage(
-                view, stages, 'validate_response', document.as_dict(), data
+                view, stages, 'validate_response', document, data
             )
         except Exception as exc:
             if exc.__class__ not in responses:
@@ -233,11 +233,7 @@ def validate_request_object_exists(view, request, data):
 def alter_document_self_link(view, doc, data):
     """Include a self link unless the method is PATCH."""
     if view.request.method != 'PATCH':
-        selfie = {'self': view.request.url}
-        if hasattr(doc, 'links'):
-            doc.links.update(selfie)
-        else:
-            doc.links = selfie
+        doc.update_child('links', {'self': view.request.url})
     return doc
 
 
@@ -254,7 +250,7 @@ def alter_document_debug_info(view, doc, data):
             k: None for k in view.requested_include_names()
         }
     }
-    doc.meta.update({'debug': debug})
+    doc.update_child('meta', {'debug': debug})
     return doc
 
 
@@ -301,16 +297,12 @@ class ResultObject:
             ),
             **{'id': self.obj_id}
         )
-
-        resource = pyramid_jsonapi.jsonapi.Resource(self.view)
-        resource.id = str(self.obj_id)
-        resource.attributes = {
+        atts = {
             key: getattr(self.object, key)
             for key in self.view.requested_attributes.keys()
             if self.view.mapped_info_from_name(key).get('visible', True)
         }
-        resource.links = {'self': obj_url}
-        resource.relationships = {
+        rels = {
             rel_name: res.rel_dict(
                 rel=self.view.relationships[rel_name],
                 rel_name=rel_name,
@@ -318,8 +310,13 @@ class ResultObject:
             )
             for rel_name, res in self.related.items()
         }
-
-        return resource.as_dict()
+        return {
+            'type': self.view.collection_name,
+            'id': str(self.obj_id),
+            'attributes': atts,
+            'links': {'self': obj_url},
+            'relationships': rels,
+        }
 
     def identifier(self):
         return {
@@ -347,13 +344,13 @@ class Results:
         self.is_top = is_top
 
     def serialise(self):
-        doc = pyramid_jsonapi.jsonapi.Document()
+        doc = Doc()
         if self.many:
-            doc.collection = True
-            doc.links = self.view.pagination_links(count=self.count)
-        doc.data = self.data()
-        doc.meta = self.meta()
-        doc.included = self.included()
+            # doc.collection = True
+            doc['links'] = self.view.pagination_links(count=self.count)
+        doc['data'] = self.data()
+        doc['meta'] = self.meta()
+        doc['included'] = self.included()
         return doc
 
     def serialise_object_with(self, method_name):
@@ -417,3 +414,12 @@ class Results:
         for o in self.objects:
             included_dict.update(o.included_dict())
         return included_dict
+
+
+class Doc(dict):
+
+    def update_child(self, key, value):
+        try:
+            self[key].update(value)
+        except KeyError:
+            self[key] = value

@@ -1,4 +1,3 @@
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
@@ -26,9 +25,6 @@ def workflow(view, stages, prev_data):
         view.dbsession.flush()
     except sqlalchemy.exc.IntegrityError as exc:
         raise HTTPFailedDependency(str(exc))
-    doc = pyramid_jsonapi.jsonapi.Document()
-    doc.update({
-        'data': view.serialise_resource_identifier(
-            view.obj_id
-        )})
+    doc = wf.Doc()
+    doc['data'] = wf.ResultObject(view, item).identifier()
     return doc

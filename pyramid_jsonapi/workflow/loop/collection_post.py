@@ -1,4 +1,3 @@
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
@@ -119,6 +118,8 @@ def workflow(view, stages, prev_data):
         view.api.endpoint_data.make_route_name(view.collection_name, suffix='item'),
         **{'id': view.id_col(item)}
     )
-    doc = pyramid_jsonapi.jsonapi.Document()
-    doc.update({'data': view.serialise_db_item(item, {})})
+    doc = wf.Doc()
+    ro = wf.ResultObject(view, item)
+    wf.loop.fill_related(stages, ro)
+    doc['data'] = ro.serialise()
     return doc

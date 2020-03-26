@@ -1,4 +1,3 @@
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
