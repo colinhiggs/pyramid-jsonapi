@@ -319,6 +319,9 @@ class ResultObject:
         }
 
     def identifier(self):
+        # An object of 'None' is a special case.
+        if self.object is None:
+            return None
         return {
             'type': self.view.collection_name,
             'id': str(self.obj_id)
@@ -343,14 +346,18 @@ class Results:
         self.is_included = is_included
         self.is_top = is_top
 
-    def serialise(self):
+    def serialise(self, identifiers=False):
         doc = Doc()
         if self.many:
             # doc.collection = True
             doc['links'] = self.view.pagination_links(count=self.count)
-        doc['data'] = self.data()
+        if identifiers:
+            doc['data'] = self.identifiers()
+        else:
+            doc['data'] = self.data()
         doc['meta'] = self.meta()
-        doc['included'] = self.included()
+        if not identifiers:
+            doc['included'] = self.included()
         return doc
 
     def serialise_object_with(self, method_name):

@@ -925,7 +925,7 @@ class CollectionViewBase:
         return ret
 
     @jsonapi_view
-    def relationships_get(self):
+    def relationships_get_old(self):
         """Handle GET requests for relationships URLs.
 
         Get object identifiers for items referred to by a relationship.
