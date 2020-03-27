@@ -94,7 +94,8 @@ class PyramidJSONAPI():
         'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
         'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post', 'desc': 'Module implementing the collection_post workflow.'},
         'workflow_related_get': {'val': 'pyramid_jsonapi.workflow.loop.related_get', 'desc': 'Module implementing the related_get workflow.'},
-        'workflow_relationships_get': {'val': 'pyramid_jsonapi.workflow.loop.relationships_get', 'desc': 'Module implementing the relationships_get workflow.'}
+        'workflow_relationships_get': {'val': 'pyramid_jsonapi.workflow.loop.relationships_get', 'desc': 'Module implementing the relationships_get workflow.'},
+        'workflow_relationships_post': {'val': 'pyramid_jsonapi.workflow.loop.relationships_post', 'desc': 'Module implementing the relationships_post workflow.'},
     }
 
     def __init__(self, config, models, get_dbsession=None):
@@ -277,6 +278,7 @@ class PyramidJSONAPI():
         view.collection_post = wf.make_method('collection_post', self)
         view.related_get = wf.make_method('related_get', self)
         view.relationships_get = wf.make_method('relationships_get', self)
+        view.relationships_post = wf.make_method('relationships_post', self)
 
         self.endpoint_data.add_routes_views(view)
 

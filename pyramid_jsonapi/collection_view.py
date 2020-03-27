@@ -1008,7 +1008,7 @@ class CollectionViewBase:
         return ret
 
     @jsonapi_view
-    def relationships_post(self):
+    def relationships_post_old(self):
         """Handle POST requests for TOMANY relationships.
 
         Add the specified member to the relationship.
