@@ -1232,7 +1232,7 @@ class CollectionViewBase:
         return {}
 
     @jsonapi_view
-    def relationships_delete(self):
+    def relationships_delete_old(self):
         """Handle DELETE requests for TOMANY relationships.
 
         Delete the specified member from the relationship.
