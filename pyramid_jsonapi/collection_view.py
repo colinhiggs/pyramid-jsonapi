@@ -1106,7 +1106,7 @@ class CollectionViewBase:
         return {}
 
     @jsonapi_view
-    def relationships_patch(self):
+    def relationships_patch_old(self):
         """Handle PATCH requests for relationships (TOMANY or TOONE).
 
         Completely replace the relationship membership.
