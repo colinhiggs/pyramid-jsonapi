@@ -51,7 +51,7 @@ def workflow(view, stages, data):
                 )
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-        return {}
+        return wf.Doc()
     items = []
     for resid in view.request.json_body['data']:
         if resid['type'] != view.rel_view.collection_name:
