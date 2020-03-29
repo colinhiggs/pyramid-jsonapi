@@ -1389,20 +1389,20 @@ class TestSpec(DBTestBase):
         self.assertIn('published_at', atts)
 
     def test_spec_no_foreign_keys(self):
-        '''No forreign keys in attributes.
+        '''No foreign keys in attributes.
 
         Although has-one foreign keys (e.g. author_id) are often stored
         internally alongside other information to be represented in a resource
         object, these keys SHOULD NOT appear as attributes.
         '''
-        # posts have author_id and blog_id as has-one forreign keys. Check that
+        # posts have author_id and blog_id as has-one foreign keys. Check that
         # they don't make it into the JSON representation (they should be in
         # relationships instead).
 
         # Fetch a single post.
         r = self.test_app().get('/posts?page[limit]=1')
         item = r.json['data'][0]
-        # Check for forreign keys.
+        # Check for foreign keys.
         self.assertNotIn('author_id', item['attributes'])
         self.assertNotIn('blog_id', item['attributes'])
 
