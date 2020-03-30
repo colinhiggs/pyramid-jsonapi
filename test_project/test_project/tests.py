@@ -18,7 +18,6 @@ import urllib
 import warnings
 import json
 from parameterized import parameterized
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
 
@@ -2723,98 +2722,6 @@ class TestBugs(DBTestBase):
         '''Should treat association proxy as a relationship.'''
         data = self.test_app().get('/people/1').json['data']
         self.assertIn('articles_by_proxy', data['relationships'])
-
-
-class TestJSONAPI(unittest.TestCase):
-
-    def test_asdict(self):
-        """Test asdict method."""
-        expected_dict = {'links': {}, 'data': None, 'meta': {}, 'included': []}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        self.assertEqual(doc.as_dict(), expected_dict)
-
-    def test_filter_keys(self):
-        """Test filter_keys to modify dict output."""
-        doc = pyramid_jsonapi.jsonapi.Document()
-        # Filter out links from result
-        del(doc.filter_keys['links'])
-        self.assertTrue('links' not in doc.as_dict())
-
-    def test_set_jsonapi_attribute(self):
-        """Test setting jsonapi values via class attributes."""
-        new_links = {"self": "http://example.com"}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.links = new_links
-        self.assertEqual(doc._jsonapi['links'], new_links)
-
-    def test_set_invalid_jsonapi_attribute(self):
-        """Test setting non-jsonapi class attributes."""
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.not_jsonapi = "cat"
-        # doesn't end up in _jsonapi
-        self.assertTrue('not_jsonapi' not in doc._jsonapi)
-        # Is actually a real class attribute
-        self.assertTrue(hasattr(doc, 'not_jsonapi'))
-
-    def test_data_from_resources_item(self):
-        """Test creating 'data' json from a resources object as an item."""
-        rsc_links = {"self": "http://example.com"}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        # Empty rscs - data is None
-        self.assertIsNone(doc.data_from_resources()['data'])
-        rsc = pyramid_jsonapi.jsonapi.Resource()
-        rsc.links = rsc_links
-        # 1 item - data is a dict
-        doc.resources.append(rsc)
-        self.assertIsInstance(doc.data_from_resources()['data'], dict)
-        self.assertEqual(doc.data_from_resources()['data']['links'], rsc_links)
-
-    def test_data_from_resources_collection(self):
-        """Test creating 'data' json from a resources object as a collection."""
-        rsc_links = {"self": "http://example.com"}
-        doc = pyramid_jsonapi.jsonapi.Document(collection=True)
-        # data is a list, even if empty.
-        self.assertIsInstance(doc.data_from_resources()['data'], list)
-        rsc = pyramid_jsonapi.jsonapi.Resource()
-        rsc.links = rsc_links
-        doc.resources.append(rsc)
-        self.assertEqual(doc.data_from_resources()['data'][0]['links'], rsc_links)
-
-    def test_data_to_resources_item(self):
-        """Test adding a single data resource to a document."""
-        data = {'id':1, 'type': 'person', 'attributes':{}}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.data_to_resources(data)
-        #Should have appended a Resource to doc.resources
-        rsc = doc.resources[0]
-        self.assertIsInstance(rsc, pyramid_jsonapi.jsonapi.Resource)
-        self.assertEqual(rsc.id, 1)
-
-    def test_data_to_resources_list(self):
-        """Test adding a list of data resources to a document."""
-        data = [{'id':1, 'type': 'person', 'attributes':{}},
-                {'id':2, 'type': 'person', 'attributes':{}}]
-        doc = pyramid_jsonapi.jsonapi.Document()
-        # Should have appended each data item to doc.resources
-        doc.data_to_resources(data)
-        rsc = doc.resources[1]
-        self.assertTrue(len(doc.resources) == 2)
-        self.assertEqual(rsc.id, 2)
-
-    def test_update(self):
-        """Test update method creates resources and updates _jsonapi."""
-        links = {'self': 'http://example.com'}
-        doc_dict = {
-            'data': [{'id':1, 'type': 'person', 'attributes':{}},
-                     {'id':2, 'type': 'person', 'attributes':{}}],
-            'links': links,
-            'meta': {}
-        }
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.update(doc_dict)
-        # Appends data to doc.resources, and updates _jsonapi for other attibutes
-        self.assertTrue(len(doc.resources) == 2)
-        self.assertEqual(doc._jsonapi['links'], links)
 
 
 class TestEndpoints(DBTestBase):

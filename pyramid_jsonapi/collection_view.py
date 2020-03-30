@@ -18,7 +18,6 @@ from pyramid.httpexceptions import (
     HTTPInternalServerError,
     status_map,
 )
-import pyramid_jsonapi.jsonapi
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only, aliased

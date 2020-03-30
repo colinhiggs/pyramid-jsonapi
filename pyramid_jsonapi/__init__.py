@@ -44,7 +44,6 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 import pyramid_jsonapi.collection_view
 import pyramid_jsonapi.endpoints
 import pyramid_jsonapi.filters
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 import pyramid_jsonapi.version
 import pyramid_jsonapi.workflow as wf

@@ -10,7 +10,6 @@ from sqlalchemy.orm.interfaces import (
     MANYTOONE,
 )
 
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.workflow as wf
 
 stages = (
