@@ -91,27 +91,6 @@ class CollectionViewBase:
                 return None
         return item
 
-    def serialise_item(self, item):
-        # Item's id and type are required at the top level of json-api
-        # objects.
-        # The item's id.
-        item_id = self.id_col(item)
-        # JSON API type.
-        item_url = self.request.route_url(
-            self.api.endpoint_data.make_route_name(self.collection_name, suffix='item'),
-            **{'id': item_id}
-        )
-
-        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
-        resource_json.id = str(item_id)
-        resource_json.attributes = {
-            key: getattr(item, key)
-            for key in self.requested_attributes.keys()
-            if self.mapped_info_from_name(key).get('visible', True)
-        }
-        resource_json.links = {'self': item_url}
-        return resource_json.as_dict()
-
     def get_old(self):
         """Handle GET request for a single item.
 
