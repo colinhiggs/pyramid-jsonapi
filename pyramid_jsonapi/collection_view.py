@@ -661,19 +661,6 @@ class CollectionViewBase:
             self.id_col(self.model) == obj_id
         )
 
-    # def single_item_query(self, loadonly=None):
-    #     """A query representing the single item referenced by the request.
-    #
-    #     **URL (matchdict) Parameters**
-    #
-    #         **id** (*str*): resource id
-    #
-    #     Returns:
-    #         sqlalchemy.orm.query.Query: query which will fetch item with id
-    #         'id'.
-    #     """
-    #     self.single_item_by_id_query(loadonly=loadonly)
-
     def single_return(self, query, not_found_message=None, identifier=False):
         """Populate return dictionary for a single item.
 
