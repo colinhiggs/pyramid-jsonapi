@@ -955,32 +955,6 @@ class CollectionViewBase:
             ))
 
         return query
-        # rel = relationship.obj
-        # rel_class = rel.mapper.class_
-        # rel_view = self.view_instance(rel_class)
-        # local_col, rem_col = rel.local_remote_pairs[0]
-        # query = self.dbsession.query(rel_class)
-        # if full_object:
-        #     query = query.options(
-        #         load_only(*rel_view.allowed_requested_query_columns.keys())
-        #     )
-        # else:
-        #     query = query.options(load_only(rel_view.key_column.name))
-        # if rel.direction is MANYTOMANY:
-        #     query = query.filter(
-        #         rel.secondaryjoin
-        #     )
-        # elif rel.direction is MANYTOONE or rel.direction is ONETOMANY:
-        #     query = query.join(
-        #         relationship.instrumented
-        #     )
-        # else:
-        #     raise HTTPError('Unknown relationships direction, "{}".'.format(
-        #         rel.direction.name
-        #     ))
-        # query = query.filter(obj_id == rel.primaryjoin.right)
-        #
-        # return query
 
     def related_query(self, obj_id, relationship, full_object=True):
         """Construct query for related objects.
