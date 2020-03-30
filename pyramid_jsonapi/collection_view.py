@@ -661,59 +661,6 @@ class CollectionViewBase:
             self.id_col(self.model) == obj_id
         )
 
-    def single_return(self, query, not_found_message=None, identifier=False):
-        """Populate return dictionary for a single item.
-
-        Arguments:
-            query (sqlalchemy.orm.query.Query): query designed to return one item.
-
-        Keyword Arguments:
-            not_found_message (str or None): if an item is not found either:
-
-                * raise 404 with ``not_found_message`` if it is a str;
-
-                * or return ``{"data": None}`` if ``not_found_message`` is None.
-
-            identifier: return identifier if True, object if false.
-
-        Returns:
-            jsonapi.Document: in the form:
-
-            .. parsed-literal::
-
-                {
-                    "data": { resource object }
-
-                    optionally...
-                    "included": [ included objects ]
-                }
-
-            or
-
-            .. parsed-literal::
-
-                { resource identifier }
-
-        Raises:
-            HTTPNotFound: if the item is not found.
-        """
-        included = {}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        try:
-            item = query.one()
-        except NoResultFound:
-            if not_found_message:
-                raise HTTPNotFound(not_found_message)
-            else:
-                return doc
-        if identifier:
-            doc.data = self.serialise_resource_identifier(self.id_col(item))
-        else:
-            doc.data = self.serialise_db_item(item, included)
-            if self.requested_include_names():
-                doc.included = [obj for obj in included.values()]
-        return doc
-
     def collection_return(self, query, count=None, identifiers=False):
         """Populate return document for collections.
 
