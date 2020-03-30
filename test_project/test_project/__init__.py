@@ -28,42 +28,6 @@ def datetime_adapter(obj, request):
     return obj.isoformat()
 
 
-def person_callback_add_information(view, ret):
-    param = view.request.params.get(
-        'fields[{}]'.format(view.collection_name)
-    )
-    if param is None:
-        requested_fields = {'name_copy', 'age'}
-    else:
-        requested_fields = view.requested_field_names
-    if 'name_copy' in requested_fields:
-        ret.attributes['name_copy'] = ret.attributes['name']
-    if 'age' in requested_fields:
-        ret.attributes['age'] = 42
-    return ret
-
-
-def person_allowed_fields(self):
-    if self.request.method == 'GET':
-        return set(self.fields) | {'name_copy'}
-    else:
-        return set(self.fields)
-
-
-def person_allowed_object(self, obj):
-    if self.request.method == 'GET':
-        try:
-            name = obj.attributes['name']
-        except KeyError:
-            return True
-        if name == 'secret_squirrel':
-            return False
-        else:
-            return True
-    else:
-        return True
-
-
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -99,14 +63,6 @@ def main(global_config, **settings):
     person_view = pj.view_classes[
         models.Person
     ]
-    person_view.callbacks['after_serialise_object'].appendleft(
-        person_callback_add_information
-    )
-    person_view.allowed_fields = property(person_allowed_fields)
-    person_view.allowed_object = person_allowed_object
-    pj.append_callback_set_to_all_views(
-        'access_control_serialised_objects'
-    )
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

@@ -334,24 +334,6 @@ class PyramidJSONAPI():
         fields.update(rels)
         class_attrs['fields'] = fields
 
-        # All callbacks have the current view as the first argument. The comments
-        # below detail subsequent args.
-        class_attrs['callbacks'] = {
-            'after_serialise_identifier': deque(),  # args: identifier(dict)
-            'after_serialise_object': deque(),      # args: object(dict)
-            'after_get': deque(),                   # args: document(dict)
-            'before_patch': deque(),                # args: partial_object(dict)
-            'before_delete': deque(),               # args: item(sqlalchemy)
-            'after_collection_get': deque(),        # args: document(dict)
-            'before_collection_post': deque(),      # args: object(dict)
-            'after_related_get': deque(),           # args: document(dict)
-            'after_relationships_get': deque(),     # args: document(dict)
-            'before_relationships_post': deque(),   # args: object(dict)
-            'before_relationships_patch': deque(),  # args: partial_object(dict)
-            'before_relationships_delete':
-                deque(),                            # args: parent_item(sqlalchemy)
-        }
-
         view_class = type(
             'CollectionView<{}>'.format(collection_name),
             (pyramid_jsonapi.collection_view.CollectionViewBase, ),
@@ -363,15 +345,6 @@ class PyramidJSONAPI():
             view_rels[key] = StdRelationship(key, rel, view_class)
 
         return view_class
-
-    def append_callback_set_to_all_views(self, set_name):  # pylint:disable=invalid-name
-        """Append a named set of callbacks to all view classes.
-
-        Args:
-            set_name (str): key in ``callback_sets``.
-        """
-        for view_class in self.view_classes.values():
-            view_class.append_callback_set(set_name)
 
 
 class StdRelationship:

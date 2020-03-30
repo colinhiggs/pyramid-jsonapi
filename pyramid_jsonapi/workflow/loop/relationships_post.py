@@ -29,8 +29,6 @@ def workflow(view, stages, data):
 
     # Alter data with any callbacks
     data = view.request.json_body['data']
-    for callback in view.callbacks['before_relationships_post']:
-        data = callback(view, data)
 
     obj = view.dbsession.query(view.model).get(view.obj_id)
     items = []
