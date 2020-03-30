@@ -77,9 +77,6 @@ class CollectionViewBase:
         """Return the column holding an item's id."""
         return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
-    def get_objects(self, query):
-        return query.all()
-
     def get_one(self, query, not_found_message=None):
         try:
             item = query.one()
