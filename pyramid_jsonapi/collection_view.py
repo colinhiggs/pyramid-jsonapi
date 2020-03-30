@@ -19,7 +19,6 @@ from pyramid.httpexceptions import (
     status_map,
 )
 import pyramid_jsonapi.jsonapi
-# from pyramid_jsonapi import pjview
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only, aliased
@@ -270,24 +269,6 @@ class CollectionViewBase:
             else:
                 return {}
         return view_wrapper
-
-    # @pjview.view_attr
-    # def get_new(self, stages):
-    #     self.request = pjview.execute_stage(self, stages['request'], self.request)
-    #     q = self.single_item_query()
-    #     objects = self.load_objects(self.single_item_query())
-    #     # related_queries_needed = set(
-    #     #     self.requested_relationships.keys(),
-    #     # )
-    #     # related_queries = pjview.execute_stage(
-    #     #     self,
-    #     #     stages['related_queries'],
-    #     #     self.related_queries([result])
-    #     # )
-    #     doc = pyramid_jsonapi.jsonapi.Document()
-    #     doc.data = self.serialise_item(objects['data'][0])
-    #     doc = pjview.execute_stage(self, stages['document'], doc)
-    #     return doc
 
     def get_objects(self, query):
         return query.all()
