@@ -2723,6 +2723,10 @@ class TestBugs(DBTestBase):
         data = self.test_app().get('/people/1').json['data']
         self.assertIn('articles_by_proxy', data['relationships'])
 
+    def test_175_unsupported_method(self):
+        '''Should produce 405 Method Not Allowed on unsupported method.'''
+        self.test_app().head('/people/1', status=405)
+
 
 class TestEndpoints(DBTestBase):
     """Tests for endpoint configuration."""
