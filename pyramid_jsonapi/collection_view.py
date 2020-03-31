@@ -16,6 +16,7 @@ from pyramid.httpexceptions import (
     HTTPError,
     HTTPFailedDependency,
     HTTPInternalServerError,
+    HTTPMethodNotAllowed,
     status_map,
 )
 import pyramid_jsonapi.jsonapi
@@ -93,11 +94,16 @@ class CollectionViewBase:
                 # Get route_name from route
                 _, _, endpoint = self.request.matched_route.name.split(':')
                 method = self.request.method
-                responses = set(
-                    ep_dict['responses'].keys() |
-                    ep_dict['endpoints'][endpoint]['responses'].keys() |
-                    ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
-                )
+                try:
+                    responses = set(
+                        ep_dict['responses'].keys() |
+                        ep_dict['endpoints'][endpoint]['responses'].keys() |
+                        ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
+                    )
+                except KeyError:
+                    raise HTTPMethodNotAllowed(
+                        'Unsupported method "{}" for endpoint "{}"'.format(method, endpoint)
+                    )
                 try:
                     result = func(self)  # pylint: disable=not-callable
                     response_class = status_map[self.request.response.status_code]
