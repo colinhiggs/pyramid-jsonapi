@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.filters module &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pyramid_jsonapi.jsonapi module" href="pyramid_jsonapi.jsonapi.html" />
+    <link rel="prev" title="pyramid_jsonapi.endpoints module" href="pyramid_jsonapi.endpoints.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pyramid_jsonapi.html">pyramid_jsonapi package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pyramid_jsonapi.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.callbacks_doc.html">pyramid_jsonapi.callbacks_doc module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.collection_view.html">pyramid_jsonapi.collection_view module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.endpoints.html">pyramid_jsonapi.endpoints module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.filters module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.jsonapi.html">pyramid_jsonapi.jsonapi module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.version.html">pyramid_jsonapi.version module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#module-pyramid_jsonapi">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="pyramid_jsonapi.html">pyramid_jsonapi package</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.filters module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/pyramid_jsonapi.filters.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyramid_jsonapi.filters">
+<span id="pyramid-jsonapi-filters-module"></span><h1>pyramid_jsonapi.filters module<a class="headerlink" href="#module-pyramid_jsonapi.filters" title="Permalink to this headline">¶</a></h1>
+<p>Classes and methods for handling filter operators.</p>
+<dl class="class">
+<dt id="pyramid_jsonapi.filters.FilterRegistry">
+<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.filters.</code><code class="sig-name descname">FilterRegistry</code><a class="reference internal" href="../_modules/pyramid_jsonapi/filters.html#FilterRegistry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.filters.FilterRegistry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Registry of allowed filter operators.</p>
+<dl class="attribute">
+<dt id="pyramid_jsonapi.filters.FilterRegistry.data">
+<code class="sig-name descname">data</code><a class="headerlink" href="#pyramid_jsonapi.filters.FilterRegistry.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>data store for filter op information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.filters.FilterRegistry.get_filter">
+<code class="sig-name descname">get_filter</code><span class="sig-paren">(</span><em class="sig-param">column_type</em>, <em class="sig-param">filter_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/filters.html#FilterRegistry.get_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.filters.FilterRegistry.get_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get dictionary of filter information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>column_type</strong> (<em>class</em>) – type (class object, not name) of a Column.</p></li>
+<li><p><strong>filter_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – name of filter param in URL.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>information dictionary for filter. Type specific entry if it</dt><dd><p>exists, entry from ‘__ALL__’ if it does not.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.8)"><strong>KeyError</strong></a> – if filter_name is not in the type specific or ALL sections.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.filters.FilterRegistry.register">
+<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param">comparator_name</em>, <em class="sig-param">filter_name=None</em>, <em class="sig-param">value_transform=&lt;function FilterRegistry.&lt;lambda&gt;&gt;</em>, <em class="sig-param">column_type='__ALL__'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/filters.html#FilterRegistry.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.filters.FilterRegistry.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a new filter operator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comparator_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – name of sqlalchemy comparator method.</p></li>
+<li><p><strong>filter_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – name of filter param in URL. Defaults to
+comparator_name with any occurrences of ‘__’ removed (so ‘__eq__’
+defaults to ‘eq’, for example).</p></li>
+<li><p><strong>value_transform</strong> (<em>func</em>) – function taking the filter value as the only
+argument and returning a transformed value. Defaults to a
+function returning an unmodified value.</p></li>
+<li><p><strong>column_type</strong> (<em>class</em>) – type (class object, not name) for which this
+operator is to be registered. Defaults to ‘__ALL__’ (the string)
+which makes the operator valid for all column types.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.filters.FilterRegistry.register_standard_filters">
+<code class="sig-name descname">register_standard_filters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/filters.html#FilterRegistry.register_standard_filters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.filters.FilterRegistry.register_standard_filters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register standard supported filter operators.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.filters.FilterRegistry.valid_filter_names">
+<code class="sig-name descname">valid_filter_names</code><span class="sig-paren">(</span><em class="sig-param">column_types=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/filters.html#FilterRegistry.valid_filter_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.filters.FilterRegistry.valid_filter_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return set of supported filter operator names.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pyramid_jsonapi.jsonapi.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.jsonapi module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pyramid_jsonapi.endpoints.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.endpoints module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

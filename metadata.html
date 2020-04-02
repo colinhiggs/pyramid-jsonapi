@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Metadata Modules &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyramid_jsonapi.metadata.JSONSchema package" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html" />
+    <link rel="prev" title="Customising the Generated API" href="customisation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Metadata Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#built-in-modules">Built-in Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html">pyramid_jsonapi.metadata.JSONSchema package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html">pyramid_jsonapi.metadata.OpenAPI package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-modules">Custom Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Metadata Modules</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/metadata.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="metadata-modules">
+<span id="metadata"></span><h1>Metadata Modules<a class="headerlink" href="#metadata-modules" title="Permalink to this headline">¶</a></h1>
+<p>Metadata modules provide access to metadata about the API. The
+<a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.html#module-pyramid_jsonapi.metadata" title="pyramid_jsonapi.metadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.metadata</span></code></a> class is responsible for loading the modules
+and setting up routes and views under <code class="docutils literal notranslate"><span class="pre">/metadata</span></code>
+(by default - see <cite>settings</cite>).</p>
+<div class="section" id="built-in-modules">
+<h2>Built-in Modules<a class="headerlink" href="#built-in-modules" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> configuration option lists modules which are to be loaded
+(see <cite>settings</cite>). If this list is empty, no modules
+will be loaded.</p>
+<p><em>Note</em>: Some modules are required for core functionality - for example schema
+validation requires the <code class="docutils literal notranslate"><span class="pre">jsonschema</span></code> module.</p>
+<p>The default setting for this option includes the following modules:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html">pyramid_jsonapi.metadata.JSONSchema package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html#module-pyramid_jsonapi.metadata.JSONSchema">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html#configuration">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html#endpoint-view">Endpoint View</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html">pyramid_jsonapi.metadata.OpenAPI package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html#module-pyramid_jsonapi.metadata.OpenAPI">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html#configuration">Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="custom-modules">
+<h2>Custom Modules<a class="headerlink" href="#custom-modules" title="Permalink to this headline">¶</a></h2>
+<p>As well as the built-in modules it is possible to write new metadata modules and add them to
+the <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> list (space or newline separated).</p>
+<p><strong>Note</strong> - if modifying the <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> list, you will need to explicitly
+include any of the ones provided with the project you wish to keep active.</p>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>Any modules must follow these rules in order to work properly:</p>
+<ul class="simple">
+<li><p>The module MUST contain a class with the same name as the package.</p></li>
+<li><p>The class MUST expect to be passed a reference to the <code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.JSONAPI</span></code> instance as the first argument.</p></li>
+<li><p>The class MAY contain a <code class="docutils literal notranslate"><span class="pre">views</span></code> attribute, which contains a list of <a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.html#pyramid_jsonapi.metadata.VIEWS" title="pyramid_jsonapi.metadata.VIEWS"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.metadata.VIEWS</span></code></a> namedtuple instances.  These are mapped onto a
+<code class="xref py py-func docutils literal notranslate"><span class="pre">pyramid.config.add_view()</span></code> call.
+(Views are optional - methods may exist in modules to be called ‘internally by other methods/modules, rather than being web-facing).</p></li>
+</ul>
+<p>For example, to add a custom metadata module called <code class="docutils literal notranslate"><span class="pre">Foo</span></code>, you need to do the following:</p>
+<ol class="arabic simple">
+<li><p>Create a <code class="docutils literal notranslate"><span class="pre">Foo</span></code> package, and ensure it is available to be imported in the python environment.</p></li>
+<li><p>In <code class="docutils literal notranslate"><span class="pre">Foo/__init__.py</span></code> add the following:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">views</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">VIEWS</span><span class="p">(</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;generate_dict&#39;</span><span class="p">,</span> <span class="c1"># The method to associate with the view</span>
+                <span class="n">route_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="c1"># The relative route name to attach this method to (defaults to /metadata/Foo)</span>
+                <span class="n">request_method</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="c1"># The http request method (defaults to GET)</span>
+                <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;&#39;</span>  <span class="c1"># The pyramid renderer (defaults to json)</span>
+            <span class="p">),</span>
+            <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">VIEWS</span><span class="p">(</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;generate_string&#39;</span><span class="p">,</span>
+                <span class="n">route_name</span><span class="o">=</span><span class="s1">&#39;resource/</span><span class="si">{endpoint}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="n">request_method</span><span class="o">=</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span>
+                <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;string&#39;</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">generate_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="s1">&#39;bar&#39;</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">generate_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+       <span class="k">return</span> <span class="s2">&quot;foo: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">matchdict</span><span class="p">[</span><span class="s1">&#39;endpoint&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Note the use of the <a class="reference external" href="https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/urldispatch.html#route-pattern-syntax">Route pattern syntax</a>
+in the second example would result in <code class="docutils literal notranslate"><span class="pre">generate_string()</span></code> being called for route <code class="docutils literal notranslate"><span class="pre">/metadata/Foo/resource/baz</span></code> with endpoint set to <code class="docutils literal notranslate"><span class="pre">baz</span></code>.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.metadata.JSONSchema package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="customisation.html" class="btn btn-neutral float-left" title="Customising the Generated API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

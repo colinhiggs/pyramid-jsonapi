@@ -1,0 +1,339 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.metadata.OpenAPI package &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Developing pyramid-jsonapi" href="../developing.html" />
+    <link rel="prev" title="pyramid_jsonapi.metadata.JSONSchema package" href="pyramid_jsonapi.metadata.JSONSchema.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../metadata.html">Metadata Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../metadata.html#built-in-modules">Built-in Modules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.metadata.JSONSchema.html">pyramid_jsonapi.metadata.JSONSchema package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.metadata.OpenAPI package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-pyramid_jsonapi.metadata.OpenAPI">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../metadata.html#custom-modules">Custom Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../metadata.html">Metadata Modules</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.metadata.OpenAPI package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/pyramid_jsonapi.metadata.OpenAPI.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pyramid-jsonapi-metadata-openapi-package">
+<h1>pyramid_jsonapi.metadata.OpenAPI package<a class="headerlink" href="#pyramid-jsonapi-metadata-openapi-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-pyramid_jsonapi.metadata.OpenAPI">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyramid_jsonapi.metadata.OpenAPI" title="Permalink to this headline">¶</a></h2>
+<p>Generate OpenAPI documentation from Models, Schema and Endpoint info.</p>
+<p>This module provides 2 <code class="docutils literal notranslate"><span class="pre">metadata</span></code> views:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">OpenAPI</span></code> - the Swagger UI.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">OpenAPI/specification</span></code> - the project OpenAPI specification (JSON).</p></li>
+</ul>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The config option <code class="docutils literal notranslate"><span class="pre">openapi_file</span></code> can be used to provide a JSON or YAML
+file which will be used to update the dynamically generated documentation.</p>
+<p>Metadata for the OpenAPI documentation will be extracted from the <code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code>
+data provided with the pyramid package that is using <code class="docutils literal notranslate"><span class="pre">pyramid_jsonapi</span></code>,
+using the <code class="docutils literal notranslate"><span class="pre">pkginfo</span></code> module. This requires that the pyramid package can be
+located in the python path (i.e it can be imported).</p>
+<p>Documentation is dynamically generated from several sources:</p>
+<ul class="simple">
+<li><p>Endpoint data -&gt; endpoints, parameters, request and response content.</p></li>
+<li><p>Model docstrings -&gt; endpoint descriptions.</p></li>
+<li><p>sqlalchemy columns -&gt; schemas (via JSONSchema module).</p></li>
+</ul>
+<dl class="class">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI">
+<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.metadata.OpenAPI.</code><code class="sig-name descname">OpenAPI</code><span class="sig-paren">(</span><em class="sig-param">api</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Auto-generate OpenAPI documentation.</p>
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_content">
+<em class="property">static </em><code class="sig-name descname">build_content</code><span class="sig-paren">(</span><em class="sig-param">schema</em>, <em class="sig-param">description=''</em>, <em class="sig-param">mediatype='application/vnd.api+json'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.build_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_content" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a content dictionary for a given schema.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_parameters">
+<code class="sig-name descname">build_parameters</code><span class="sig-paren">(</span><em class="sig-param">opts</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.build_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build paramaters schema.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_request">
+<code class="sig-name descname">build_request</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">method</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.build_request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build requestBody part of schema.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_responses">
+<code class="sig-name descname">build_responses</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">ep_type</em>, <em class="sig-param">method</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.build_responses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.build_responses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build responses part of schema.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.generate_openapi">
+<code class="sig-name descname">generate_openapi</code><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.generate_openapi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.generate_openapi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate openapi documentation.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.generate_pkg_metadata">
+<code class="sig-name descname">generate_pkg_metadata</code><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.generate_pkg_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.generate_pkg_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get metadatsa for ‘parent’ pyramid package.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.openapi_spec">
+<code class="sig-name descname">openapi_spec</code><span class="sig-paren">(</span><em class="sig-param">request=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.openapi_spec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.openapi_spec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the OpenAPI specification dict (as a pyramid view).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>request</strong> (<em>optional</em>) – Pyramid Request object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>OpenAPI template document.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.recurse_remove_keys">
+<code class="sig-name descname">recurse_remove_keys</code><span class="sig-paren">(</span><em class="sig-param">dictionary</em>, <em class="sig-param">name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.recurse_remove_keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.recurse_remove_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively build a new version of dictionary with named keys removed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.recurse_replace_in_value">
+<code class="sig-name descname">recurse_replace_in_value</code><span class="sig-paren">(</span><em class="sig-param">obj</em>, <em class="sig-param">old</em>, <em class="sig-param">new</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.recurse_replace_in_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.recurse_replace_in_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively replace() strings in values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.replace_in_value_inner">
+<code class="sig-name descname">replace_in_value_inner</code><span class="sig-paren">(</span><em class="sig-param">val</em>, <em class="sig-param">old</em>, <em class="sig-param">new</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.replace_in_value_inner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.replace_in_value_inner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inner part of recurse_replace_in_value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.OpenAPI.OpenAPI.swagger_ui">
+<em class="property">static </em><code class="sig-name descname">swagger_ui</code><span class="sig-paren">(</span><em class="sig-param">request</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/OpenAPI.html#OpenAPI.swagger_ui"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.OpenAPI.OpenAPI.swagger_ui" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dynamically generate the swagger-ui index.html</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>request</strong> (<em>optional</em>) – Pyramid Request object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict containing variables for template substitution.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../developing.html" class="btn btn-neutral float-right" title="Developing pyramid-jsonapi" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pyramid_jsonapi.metadata.JSONSchema.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.metadata.JSONSchema package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

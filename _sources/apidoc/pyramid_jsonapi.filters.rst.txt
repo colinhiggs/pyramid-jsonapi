@@ -1,0 +1,7 @@
+pyramid\_jsonapi.filters module
+===============================
+
+.. automodule:: pyramid_jsonapi.filters
+   :members:
+   :undoc-members:
+   :show-inheritance:

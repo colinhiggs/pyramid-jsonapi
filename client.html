@@ -1,0 +1,566 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Consuming the API from the Client End &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Customising the Generated API" href="customisation.html" />
+    <link rel="prev" title="Getting Started" href="api-creation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-creation.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Consuming the API from the Client End</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#get-ing-resources">GET-ing Resources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#a-collection">A Collection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#a-single-resource">A Single Resource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sparse-fieldsets">Sparse Fieldsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sorting">Sorting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pagination">Pagination</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#filtering">Filtering</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#filter-examples">Filter Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Consuming the API from the Client End</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/client.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="consuming-the-api-from-the-client-end">
+<span id="client"></span><h1>Consuming the API from the Client End<a class="headerlink" href="#consuming-the-api-from-the-client-end" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="get-ing-resources">
+<h2>GET-ing Resources<a class="headerlink" href="#get-ing-resources" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="a-collection">
+<h3>A Collection<a class="headerlink" href="#a-collection" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts
+</pre></div>
+</div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;something insightful&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;published_at&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-01T00:00:00&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;post1: alice.main&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;relationships&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;author&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;people&quot;</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/author&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/relationships/author&quot;</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;MANYTOONE&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{}</span>
+          <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;blog&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;blogs&quot;</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/blog&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/relationships/blog&quot;</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;MANYTOONE&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{}</span>
+          <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;comments&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">[],</span>
+          <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/comments&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/relationships/comments&quot;</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;ONETOMANY&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="nt">&quot;available&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+              <span class="nt">&quot;limit&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+              <span class="nt">&quot;returned&quot;</span><span class="p">:</span> <span class="mi">0</span>
+            <span class="p">}</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;... 5 more results ...&quot;</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;first&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?sort=id&amp;page%5Boffset%5D=0&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;last&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?sort=id&amp;page%5Boffset%5D=0&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;available&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+      <span class="nt">&quot;limit&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="nt">&quot;offset&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="nt">&quot;returned&quot;</span><span class="p">:</span> <span class="mi">6</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Note that we have:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code> which is an array of posts objects, each with:</p>
+<ul>
+<li><p>a <code class="docutils literal notranslate"><span class="pre">type</span></code>, which is the collection name</p></li>
+<li><p>an <code class="docutils literal notranslate"><span class="pre">id</span></code>, which is the value of the primary key column (which may or may not be called <code class="docutils literal notranslate"><span class="pre">id</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attributes</span></code>, as expected</p>
+<ul>
+<li><p>a <code class="docutils literal notranslate"><span class="pre">links</span></code> object with:</p></li>
+<li><p>a <code class="docutils literal notranslate"><span class="pre">self</span></code> link</p></li>
+</ul>
+</li>
+<li><p>relationship objects for each relationship with:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code> with resource identifiers for related objects</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self</span></code> and <code class="docutils literal notranslate"><span class="pre">related</span></code> links</p></li>
+<li><p>some other information about the relationship in <code class="docutils literal notranslate"><span class="pre">meta</span></code></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">links</span></code> with:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">self</span></code> and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pagination</span></code> links</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">meta</span></code> with:</p>
+<ul>
+<li><p>some extra information about the number of results returned.</p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="a-single-resource">
+<h3>A Single Resource<a class="headerlink" href="#a-single-resource" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts/1
+</pre></div>
+</div>
+<p>Returns a single resource object in <code class="docutils literal notranslate"><span class="pre">data</span></code> and no pagination links.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;something insightful&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;published_at&quot;</span><span class="p">:</span> <span class="s2">&quot;2015-01-01T00:00:00&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;post1: alice.main&quot;</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1&quot;</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;relationships&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;author&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;people&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/author&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/relationships/author&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;MANYTOONE&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;blog&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;blogs&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/blog&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/relationships/blog&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;MANYTOONE&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;comments&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/comments&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1/relationships/comments&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;ONETOMANY&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;available&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="nt">&quot;limit&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="nt">&quot;returned&quot;</span><span class="p">:</span> <span class="mi">0</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/1&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sparse-fieldsets">
+<h3>Sparse Fieldsets<a class="headerlink" href="#sparse-fieldsets" title="Permalink to this headline">¶</a></h3>
+<p>We can ask only for certain fields (attributes and relationships are
+collectively known as fields).</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">fields</span></code> parameter, parameterized by collection name
+(fields[collection]), with the value set as a comma separated list of field
+names.</p>
+<p>So, to return only the title attribute and author relationship of each post:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts?fields<span class="o">[</span>posts<span class="o">]=</span>title,author
+</pre></div>
+</div>
+<p>The resulting json has a <code class="docutils literal notranslate"><span class="pre">data</span></code> element with a list of objects something like
+this:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;post1: bob.second&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;6&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/6&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;relationships&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;author&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;people&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;related&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/6/author&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/6/relationships/author&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;MANYTOONE&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sorting">
+<h3>Sorting<a class="headerlink" href="#sorting" title="Permalink to this headline">¶</a></h3>
+<p>You can specify a sorting attribute and order with the sort query parameter.</p>
+<p>Sort posts by title:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts?sort<span class="o">=</span>title
+</pre></div>
+</div>
+<p>and in reverse:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts?sort<span class="o">=</span>-title
+</pre></div>
+</div>
+<p>Sorting by multiple attributes (e.g. <code class="docutils literal notranslate"><span class="pre">sort=title,content</span></code>) and sorting by attributes of related objects (<cite>sort=author.name</cite>) are supported.</p>
+<p>A sort on id is assumed unless the sort parameter is specified.</p>
+</div>
+<div class="section" id="pagination">
+<h3>Pagination<a class="headerlink" href="#pagination" title="Permalink to this headline">¶</a></h3>
+<p>You can specify the pagination limit and offset:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts?fields<span class="o">[</span>posts<span class="o">]=</span>title<span class="se">\&amp;</span>page<span class="o">[</span>limit<span class="o">]=</span><span class="m">2</span><span class="se">\&amp;</span>page<span class="o">[</span>offset<span class="o">]=</span><span class="m">2</span>
+</pre></div>
+</div>
+<p>We asked for only the <code class="docutils literal notranslate"><span class="pre">title</span></code> field above so that the results would be more
+compact…</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;post1: alice.second&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/3&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;relationships&quot;</span><span class="p">:</span> <span class="p">{},</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;post1: bob.main&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;4&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts/4&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;relationships&quot;</span><span class="p">:</span> <span class="p">{},</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;first&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?page%5Blimit%5D=2&amp;sort=id&amp;page%5Boffset%5D=0&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;last&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?page%5Blimit%5D=2&amp;sort=id&amp;page%5Boffset%5D=4&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;next&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?page%5Blimit%5D=2&amp;sort=id&amp;page%5Boffset%5D=4&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;prev&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?page%5Blimit%5D=2&amp;sort=id&amp;page%5Boffset%5D=0&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/posts?fields[posts]=title&amp;page[limit]=2&amp;page[offset]=2&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;available&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+      <span class="nt">&quot;limit&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="nt">&quot;offset&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="nt">&quot;returned&quot;</span><span class="p">:</span> <span class="mi">2</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>There’s a default page limit which is used if the limit is not specified and a
+maximum limit that the server will allow. Both of these can be set in the ini
+file.</p>
+</div>
+<div class="section" id="filtering">
+<h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h3>
+<p>The JSON API spec doesn’t say much about filtering syntax, other than that it
+should use the parameter key <code class="docutils literal notranslate"><span class="pre">filter</span></code>. In this implementation, we use syntax
+like the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">filter</span><span class="p">[</span><span class="o">&lt;</span><span class="n">attribute_spec</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">operator</span><span class="o">&gt;</span><span class="p">]</span><span class="o">=&lt;</span><span class="n">value</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">attribute_spec</span></code> is either a direct attribute name or a dotted path to an
+attribute via relationships (only one level of relationships is currently supported).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">operator</span></code> is one of the list of supported operators (<a class="reference internal" href="customisation.html#search-filter-operators"><span class="std std-ref">Search (Filter) Operators</span></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">value</span></code> is the value to match on.</p></li>
+</ul>
+<p>This is simple and reasonably effective. It’s a little awkward on readability though. If you feel that you have a syntax that is more readable, more powerful, easier to parse or has some other advantage, let me know - I’d be interested in any thoughts.</p>
+<p>Search operators in sqlalchemy (called column comparators) must be registered before they are treated as valid for use in json-api filters. The procedure for registering them, and the list of those registered by default can be found in <a class="reference internal" href="customisation.html#search-filter-operators"><span class="std std-ref">Search (Filter) Operators</span></a>.</p>
+<div class="section" id="filter-examples">
+<h4>Filter Examples<a class="headerlink" href="#filter-examples" title="Permalink to this headline">¶</a></h4>
+<p>Find all the people with name ‘alice’:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http GET http://localhost:6543/api/people?filter<span class="o">[</span>name:eq<span class="o">]=</span>alice
+</pre></div>
+</div>
+<p>Find all the posts published after 2015-01-03:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http GET http://localhost:6543/api/posts?filter<span class="o">[</span>published_at:gt<span class="o">]=</span><span class="m">2015</span>-01-03
+</pre></div>
+</div>
+<p>Find all the posts with ‘bob’ somewhere in the title:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http GET http://localhost:6543/api/posts?filter<span class="o">[</span>title:like<span class="o">]=</span>*bob*
+</pre></div>
+</div>
+<p>Find all the posts where the author has the name ‘alice’:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http GET http://localhost:6543/api/posts?filter<span class="o">[</span>author.name:eq<span class="o">]=</span>alice
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="customisation.html" class="btn btn-neutral float-right" title="Customising the Generated API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="api-creation.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

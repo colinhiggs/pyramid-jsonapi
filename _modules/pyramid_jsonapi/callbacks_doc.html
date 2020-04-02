@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.callbacks_doc &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.callbacks_doc</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.callbacks_doc</h1><div class="highlight"><pre>
+<span></span><span class="c1"># pylint: skip-file</span>
+
+
+<div class="viewcode-block" id="after_serialise_object"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_serialise_object">[docs]</a><span class="k">def</span> <span class="nf">after_serialise_object</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called after a resource object is serialised, before it is returned.</span>
+
+<span class="sd">    Use this callback to alter objects as they are serialised: perhaps merging</span>
+<span class="sd">    information from other data sources, perhaps removing restricted information</span>
+<span class="sd">    or denying access (raise an appropriate exception).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        obj (dict): serialised object.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: serialised resource object.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="after_serialise_identifier"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_serialise_identifier">[docs]</a><span class="k">def</span> <span class="nf">after_serialise_identifier</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">identifier</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called after a resource identifier is serialised, before it is returned.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        identifier (dict): serialised identifier.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: serialised resource identifier.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="after_get"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_get">[docs]</a><span class="k">def</span> <span class="nf">after_get</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">document</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called just before view_instance.get() returns.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        document (dict): JSON-API top level document.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: altered JSON-API top level document.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="before_patch"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.before_patch">[docs]</a><span class="k">def</span> <span class="nf">before_patch</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">partial_object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before a patch is applied.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        partial_object (dict): JSON-API patch object.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: altered patch object.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="before_delete"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.before_delete">[docs]</a><span class="k">def</span> <span class="nf">before_delete</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">db_item</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before an object is deleted.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        db_item: item returned by sqlalchemy query.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="after_collection_get"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_collection_get">[docs]</a><span class="k">def</span> <span class="nf">after_collection_get</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">document</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called just before view_instance.collection_get() returns.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        document (dict): JSON-API top level document.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: altered JSON-API top level document.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="before_collection_post"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.before_collection_post">[docs]</a><span class="k">def</span> <span class="nf">before_collection_post</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before enacting view_instance.collection_post().</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        obj (dict): JSON-API object to be created.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="after_related_get"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_related_get">[docs]</a><span class="k">def</span> <span class="nf">after_related_get</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">document</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before view_instance.related_get() returns.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        document (dict): JSON-API top level document.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: altered JSON-API top level document.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="after_relationships_get"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_relationships_get">[docs]</a><span class="k">def</span> <span class="nf">after_relationships_get</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">document</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before view_instance.relationships_get() returns.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        document (dict): JSON-API top level document.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: altered JSON-API top level document.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="before_relationships_post"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.before_relationships_post">[docs]</a><span class="k">def</span> <span class="nf">before_relationships_post</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before enacting view_instance.relationships_post().</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        data (dict or list): resource identifier or a list of them.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="before_relationships_patch"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.before_relationships_patch">[docs]</a><span class="k">def</span> <span class="nf">before_relationships_patch</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Called before enacting view_instance.relationships_patch().</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        view_instance (pyramid_jsonapi.CollectionViewBase): the current view</span>
+<span class="sd">            instance.</span>
+
+<span class="sd">        data (dict or list): resource identifier or a list of them.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="before_relationships_delete"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.before_relationships_delete">[docs]</a><span class="k">def</span> <span class="nf">before_relationships_delete</span><span class="p">(</span><span class="n">view_instance</span><span class="p">,</span> <span class="n">parent_db_item</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

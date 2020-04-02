@@ -1,0 +1,267 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.metadata &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.metadata</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.metadata</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This package contains metadata &#39;plugin&#39; modules</span>
+<span class="sd">that provide extra information related to the API being generated,</span>
+<span class="sd">such as documentation, schemas etc.</span>
+
+<span class="sd">Such plugins can optionally be offered as pyramid routes and views</span>
+<span class="sd">under the &#39;metadata&#39; endpoint.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+
+
+<div class="viewcode-block" id="MetaData"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.metadata.html#pyramid_jsonapi.metadata.MetaData">[docs]</a><span class="k">class</span> <span class="nc">MetaData</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Adds routes and views for all metadata modules.</span>
+
+<span class="sd">    Metadata modules are added by inclusion in the ``metadata_modules`` option</span>
+<span class="sd">    in settings.</span>
+<span class="sd">    Modules should be space or newline separated, and must be installed such</span>
+<span class="sd">    that they can be imported by python.</span>
+
+<span class="sd">    All modules MUST have a class with the same name as the package.</span>
+<span class="sd">    This class MAY contain a &#39;views&#39; attribute, which contains a list</span>
+<span class="sd">    of &#39;VIEWS&#39; namedtuple instances, which will be converted into pyramid</span>
+<span class="sd">    routes and views.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">api</span>
+        <span class="c1"># aslist expects space-separated strings to convert to lists.</span>
+        <span class="c1"># iter_modules returns a list of tuples - we only want name ([1])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">metadata_modules</span><span class="o">.</span><span class="n">aslist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_routes_views</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MetaData.make_routes_views"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.metadata.html#pyramid_jsonapi.metadata.MetaData.make_routes_views">[docs]</a>    <span class="k">def</span> <span class="nf">make_routes_views</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate routes and views for plugin modules.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">mod_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+            <span class="c1"># Import the module from the name provided</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">mod_name</span><span class="p">))</span>
+            <span class="c1"># Each module should have a class with the same name</span>
+            <span class="n">class_name</span> <span class="o">=</span> <span class="n">mod_name</span>
+            <span class="n">mclass</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">class_name</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="p">)</span>
+            <span class="c1"># Attach the instance as an attribute named after the class</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mod_name</span><span class="p">,</span> <span class="n">mclass</span><span class="p">)</span>
+            <span class="n">views</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mclass</span><span class="p">,</span> <span class="s1">&#39;views&#39;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">for</span> <span class="n">view</span> <span class="ow">in</span> <span class="n">views</span><span class="p">:</span>
+                <span class="n">rp_constructor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">rp_constructor</span>
+                <span class="n">route_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">make_route_name</span><span class="p">(</span>
+                    <span class="n">class_name</span><span class="p">,</span>
+                    <span class="n">suffix</span><span class="o">=</span><span class="n">view</span><span class="o">.</span><span class="n">route_name</span>
+                <span class="p">)</span>
+                <span class="n">route_pattern</span> <span class="o">=</span> <span class="n">rp_constructor</span><span class="o">.</span><span class="n">metadata_pattern</span><span class="p">(</span>
+                    <span class="n">class_name</span><span class="p">,</span>
+                    <span class="n">view</span><span class="o">.</span><span class="n">route_name</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">add_route</span><span class="p">(</span>
+                    <span class="n">route_name</span><span class="p">,</span>
+                    <span class="n">route_pattern</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">add_view</span><span class="p">(</span>
+                    <span class="n">mclass</span><span class="p">,</span>
+                    <span class="n">attr</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">attr</span><span class="p">),</span>
+                    <span class="n">route_name</span><span class="o">=</span><span class="n">route_name</span><span class="p">,</span>
+                    <span class="n">request_method</span><span class="o">=</span><span class="n">view</span><span class="o">.</span><span class="n">request_method</span> <span class="ow">or</span> <span class="s1">&#39;GET&#39;</span><span class="p">,</span>
+                    <span class="n">renderer</span><span class="o">=</span><span class="n">view</span><span class="o">.</span><span class="n">renderer</span> <span class="ow">or</span> <span class="s1">&#39;json&#39;</span><span class="p">,</span>
+                <span class="p">)</span></div></div>
+
+
+<span class="n">VIEWS</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;Views&#39;</span><span class="p">,</span> <span class="s1">&#39;attr request_method route_name renderer&#39;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

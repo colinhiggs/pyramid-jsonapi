@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.jsonapi &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.jsonapi</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.jsonapi</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;A series of classes which store jsonapi in an internal dictionary,</span>
+<span class="sd">and provide access through class attributes and helper methods.&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="Base"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Base">[docs]</a><span class="k">class</span> <span class="nc">Base</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Common class for magic attr &lt;-&gt; dict classes.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create initial &#39;real&#39; attributes.</span>
+
+<span class="sd">        Attributes:</span>
+<span class="sd">            _jsonapi (dict): JSONAPI document object.</span>
+<span class="sd">            resources (list): List of associated Resource objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># We override __setattr__ so must use the &#39;original&#39; to create new attrs</span>
+        <span class="c1"># Value modification is allowed (update, pop etc) but not replacement</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="s1">&#39;_jsonapi&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="s1">&#39;resources&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">def</span> <span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;If attr is a key in _jsonapi, set it&#39;s value.</span>
+<span class="sd">        Otherwise, set a class attribute as usual.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_to_resources</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return dict key as if an attribute.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_from_resources</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+        <span class="c1"># Convert KeyError to AttributeError for consistency</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;object has no attribute &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Base.as_dict"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Base.as_dict">[docs]</a>    <span class="k">def</span> <span class="nf">as_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate a dictionary representing the entire JSONAPI object.</span>
+<span class="sd">        Update &#39;data&#39; to contain a single resource item, or list of items.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: JSONAPI object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">jsonapi_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;data_from_resources&#39;</span><span class="p">):</span>
+            <span class="n">resources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_from_resources</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
+                <span class="n">jsonapi_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
+
+        <span class="c1"># Only return keys which are in filter_keys</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">jsonapi_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_keys</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Base.update"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Base.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update class from JSONAPI document.</span>
+<span class="sd">        &#39;data&#39; keys will be converted to Resource objects and added to</span>
+<span class="sd">        &#39;resources&#39; attribute.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            doc (dict): JSONAPI object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">doc</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="c1"># data contains a single resources, or list of resources</span>
+                <span class="c1"># Convert to Resource objects, then add to self.resources</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data_to_resources</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span></div></div>
+
+
+<div class="viewcode-block" id="Document"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Document">[docs]</a><span class="k">class</span> <span class="nc">Document</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;JSONAPI &#39;root&#39; document object.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extend _jsonapi to contain top-level keys.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            collection (bool): Is this document a collection, or a single item?</span>
+<span class="sd">            filter_keys (dict): Keys to be returned when as_dict() is called.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collection</span> <span class="o">=</span> <span class="n">collection</span>
+        <span class="c1"># filter_keys controls which keys are included in as_dict() output</span>
+        <span class="c1"># It&#39;s also used to build the internal dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_keys</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;included&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;meta&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_keys</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Document.data_from_resources"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Document.data_from_resources">[docs]</a>    <span class="k">def</span> <span class="nf">data_from_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate &#39;data&#39; part of jsonapi document from resources list.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict, list or None: JSONAPI &#39;data&#39; resource element.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">resources</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">collection</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">collection</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="Document.data_to_resources"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Document.data_to_resources">[docs]</a>    <span class="k">def</span> <span class="nf">data_to_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert &#39;data&#39; part of jsonapi document to resource(s).</span>
+<span class="sd">        Add resources to the resources list.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (dict): JSONAPI &#39;data&#39; resource element.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reslist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">reslist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">reslist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">reslist</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">()</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Resource"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.jsonapi.html#pyramid_jsonapi.jsonapi.Resource">[docs]</a><span class="k">class</span> <span class="nc">Resource</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;JSONAPI Resource object.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view_class</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extend _jsonapi to contain resource keys.</span>
+<span class="sd">        If view_class provided, update attributes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            view_class (jsonapi.view_class): Resource data extracted from the view_class</span>
+
+<span class="sd">        Attributes:</span>
+<span class="sd">            filter_keys (dict): Keys to be returned when as_dict() is called.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_keys</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;related&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;meta&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jsonapi</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_keys</span><span class="p">)</span>
+
+        <span class="c1"># Update class attributes with sourced data</span>
+        <span class="k">if</span> <span class="n">view_class</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">view_class</span><span class="o">.</span><span class="n">collection_name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">view_class</span><span class="o">.</span><span class="n">attributes</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

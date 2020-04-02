@@ -1,0 +1,29 @@
+pyramid\_jsonapi package
+========================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   pyramid_jsonapi.metadata
+
+Submodules
+----------
+
+.. toctree::
+
+   pyramid_jsonapi.callbacks_doc
+   pyramid_jsonapi.collection_view
+   pyramid_jsonapi.endpoints
+   pyramid_jsonapi.filters
+   pyramid_jsonapi.jsonapi
+   pyramid_jsonapi.version
+
+Module contents
+---------------
+
+.. automodule:: pyramid_jsonapi
+   :members:
+   :undoc-members:
+   :show-inheritance:

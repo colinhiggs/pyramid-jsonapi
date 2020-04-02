@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.callbacks_doc module &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pyramid_jsonapi.collection_view module" href="pyramid_jsonapi.collection_view.html" />
+    <link rel="prev" title="pyramid_jsonapi.metadata package" href="pyramid_jsonapi.metadata.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pyramid_jsonapi.html">pyramid_jsonapi package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pyramid_jsonapi.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.callbacks_doc module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.collection_view.html">pyramid_jsonapi.collection_view module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.endpoints.html">pyramid_jsonapi.endpoints module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.filters.html">pyramid_jsonapi.filters module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.jsonapi.html">pyramid_jsonapi.jsonapi module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.version.html">pyramid_jsonapi.version module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#module-pyramid_jsonapi">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="pyramid_jsonapi.html">pyramid_jsonapi package</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.callbacks_doc module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/pyramid_jsonapi.callbacks_doc.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyramid_jsonapi.callbacks_doc">
+<span id="pyramid-jsonapi-callbacks-doc-module"></span><h1>pyramid_jsonapi.callbacks_doc module<a class="headerlink" href="#module-pyramid_jsonapi.callbacks_doc" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.after_collection_get">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">after_collection_get</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">document</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#after_collection_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.after_collection_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called just before view_instance.collection_get() returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>document</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – JSON-API top level document.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>altered JSON-API top level document.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.after_get">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">after_get</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">document</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#after_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.after_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called just before view_instance.get() returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>document</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – JSON-API top level document.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>altered JSON-API top level document.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.after_related_get">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">after_related_get</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">document</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#after_related_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.after_related_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before view_instance.related_get() returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>document</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – JSON-API top level document.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>altered JSON-API top level document.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.after_relationships_get">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">after_relationships_get</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">document</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#after_relationships_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.after_relationships_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before view_instance.relationships_get() returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>document</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – JSON-API top level document.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>altered JSON-API top level document.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.after_serialise_identifier">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">after_serialise_identifier</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">identifier</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#after_serialise_identifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.after_serialise_identifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called after a resource identifier is serialised, before it is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>identifier</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – serialised identifier.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>serialised resource identifier.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.after_serialise_object">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">after_serialise_object</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#after_serialise_object"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.after_serialise_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called after a resource object is serialised, before it is returned.</p>
+<p>Use this callback to alter objects as they are serialised: perhaps merging
+information from other data sources, perhaps removing restricted information
+or denying access (raise an appropriate exception).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>obj</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – serialised object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>serialised resource object.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.before_collection_post">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">before_collection_post</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#before_collection_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.before_collection_post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before enacting view_instance.collection_post().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>obj</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – JSON-API object to be created.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.before_delete">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">before_delete</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">db_item</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#before_delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.before_delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before an object is deleted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>db_item</strong> – item returned by sqlalchemy query.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.before_patch">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">before_patch</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">partial_object</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#before_patch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.before_patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before a patch is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>partial_object</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a>) – JSON-API patch object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>altered patch object.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.before_relationships_delete">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">before_relationships_delete</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">parent_db_item</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#before_relationships_delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.before_relationships_delete" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.before_relationships_patch">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">before_relationships_patch</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#before_relationships_patch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.before_relationships_patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before enacting view_instance.relationships_patch().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – resource identifier or a list of them.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyramid_jsonapi.callbacks_doc.before_relationships_post">
+<code class="sig-prename descclassname">pyramid_jsonapi.callbacks_doc.</code><code class="sig-name descname">before_relationships_post</code><span class="sig-paren">(</span><em class="sig-param">view_instance</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/callbacks_doc.html#before_relationships_post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.callbacks_doc.before_relationships_post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called before enacting view_instance.relationships_post().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view_instance</strong> (<em>pyramid_jsonapi.CollectionViewBase</em>) – the current view
+instance.</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><em>dict</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – resource identifier or a list of them.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pyramid_jsonapi.collection_view.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.collection_view module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pyramid_jsonapi.metadata.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.metadata package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

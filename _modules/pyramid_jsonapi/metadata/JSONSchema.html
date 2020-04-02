@@ -1,0 +1,519 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.metadata.JSONSchema &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+          <li><a href="../metadata.html">pyramid_jsonapi.metadata</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.metadata.JSONSchema</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.metadata.JSONSchema</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;JSONSchema metadata plugin.</span>
+
+<span class="sd">This plugin provides JSONSchema schemas and validation.</span>
+
+<span class="sd">This module provides 3 ``metadata`` views:</span>
+
+<span class="sd">* ``JSONSchema``  - The full JSONSchema for JSONAPI (as provided by jsonapi.org)</span>
+<span class="sd">* ``JSONSchema/endpoint/{endpoint}`` - JSONSchema for a specific endpoint, with attributes defined.</span>
+<span class="sd">* ``JSONSchema/resource/{resource}`` -  JSONSchema of just the attributes for a resource.</span>
+
+<span class="sd">Configuration</span>
+<span class="sd">-------------</span>
+
+<span class="sd">This plugin uses `alchemyjsonschema &lt;https://github.com/podhmo/alchemyjsonschema&gt;`_</span>
+<span class="sd">to provide mapping between pyramid model and JSONSchema types.</span>
+
+<span class="sd">``alchemyjsonschema`` provides a ``default_column_to_schema`` dictionary, which maps</span>
+<span class="sd">column types to jsonschema types. If you wish to extend this, you can do so by importing</span>
+<span class="sd">this module and modifying this constant prior to importing pyramid_jsonapi.</span>
+<span class="sd">For example, to extend the default mapping to include ``uuid`` types:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    import alchemyjsonschema</span>
+
+<span class="sd">    alchemyjsonschema.default_column_to_schema.update(</span>
+<span class="sd">        {</span>
+<span class="sd">            sqlalchemy_utils.types.uuid.UUIDType: &quot;string&quot;</span>
+<span class="sd">        }</span>
+<span class="sd">    )</span>
+
+<span class="sd">    jsonapi = pyramid_jsonapi.PyramidJSONAPI(config, models)</span>
+
+
+<span class="sd">Endpoint View</span>
+<span class="sd">-------------</span>
+
+<span class="sd">The endpoint view expects the path to include the endpoint in question, and 3 query parameters must be provided:</span>
+
+<span class="sd">* method - http method (GET, POST etc)</span>
+<span class="sd">* direction - &#39;request&#39; or &#39;response&#39;</span>
+<span class="sd">* code - http status code (if direction is &#39;response&#39;)</span>
+
+<span class="sd">For example:</span>
+
+<span class="sd">``https://localhost:6543/metadata/JSONSchema/endpoint/people?method=get&amp;direction=response&amp;code=200``</span>
+
+<span class="sd">Will return the schema that matches a valid response (200 OK) to a GET to ``/api/people``</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">pkgutil</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="c1"># Dict and deepcopy performance in python &lt; 3.6 is lacking</span>
+<span class="c1"># pickle/unpickle hack gives much better performance.</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">minor</span> <span class="o">&gt;=</span> <span class="mi">6</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pickle</span>
+    <span class="n">deepcopy</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># pylint:disable=invalid-name</span>
+
+<span class="kn">import</span> <span class="nn">alchemyjsonschema</span>
+<span class="kn">import</span> <span class="nn">jsonschema</span>
+<span class="kn">from</span> <span class="nn">pyramid.httpexceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HTTPBadRequest</span><span class="p">,</span>
+    <span class="n">HTTPNotFound</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pyramid_jsonapi.metadata</span> <span class="kn">import</span> <span class="n">VIEWS</span>
+
+
+<div class="viewcode-block" id="JSONSchema"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema">[docs]</a><span class="k">class</span> <span class="nc">JSONSchema</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Metadata plugin to generate and validate JSONSchema for sqlalchemy,</span>
+<span class="sd">    using alchemyjsonschema to map sqlalchemy types.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">            api: A PyramidJSONAPI class instance</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            views (list): VIEWS named tuples associating methods with views</span>
+<span class="sd">            column_to_schema (dict): alchemyjsonschema column to schema mapping.</span>
+<span class="sd">                This defaults to alchemyjsonschema.default_column_to_schema,</span>
+<span class="sd">                but can be extended or overridden.</span>
+
+<span class="sd">            For example, to add a mapping of &#39;JSONB&#39; to &#39;string&#39;::</span>
+<span class="sd">                from sqlalchemy.dialects.postgresql import JSONB</span>
+<span class="sd">                self.column_to_schema[JSONB] = &#39;string&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">views</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">VIEWS</span><span class="p">(</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;template&#39;</span><span class="p">,</span>
+                <span class="n">route_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">request_method</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+            <span class="p">),</span>
+            <span class="n">VIEWS</span><span class="p">(</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;resource_attributes_view&#39;</span><span class="p">,</span>
+                <span class="n">route_name</span><span class="o">=</span><span class="s1">&#39;resource/</span><span class="si">{endpoint}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="n">request_method</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+            <span class="p">),</span>
+            <span class="n">VIEWS</span><span class="p">(</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;endpoint_schema_view&#39;</span><span class="p">,</span>
+                <span class="n">route_name</span><span class="o">=</span><span class="s1">&#39;endpoint/</span><span class="si">{endpoint}</span><span class="s1">{sep:/?}{method:.*}&#39;</span><span class="p">,</span>
+                <span class="n">request_method</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">api</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">column_to_schema</span> <span class="o">=</span> <span class="n">alchemyjsonschema</span><span class="o">.</span><span class="n">default_column_to_schema</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema_post</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_schema</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build_definitions</span><span class="p">()</span>
+
+<div class="viewcode-block" id="JSONSchema.template"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.template">[docs]</a>    <span class="k">def</span> <span class="nf">template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>  <span class="c1"># pylint:disable=unused-argument</span>
+        <span class="sd">&quot;&quot;&quot;Return the JSONAPI jsonschema dict (as a pyramid view).</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            request (optional): Pyramid Request object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            JSONAPI schema document.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span></div>
+
+<div class="viewcode-block" id="JSONSchema.load_schema"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.load_schema">[docs]</a>    <span class="k">def</span> <span class="nf">load_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load the JSONAPI jsonschema from file.</span>
+
+<span class="sd">        Reads &#39;pyramid_jsonapi.schema_file&#39; from config,</span>
+<span class="sd">        or defaults to one provided with the package.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">schema_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">schema_file</span>
+        <span class="k">if</span> <span class="n">schema_file</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">schema_f</span><span class="p">:</span>
+                <span class="n">schema</span> <span class="o">=</span> <span class="n">schema_f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+                <span class="s1">&#39;schema/jsonapi-schema.json&#39;</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+        <span class="c1"># POSTs can omit the id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema_post</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Custom schemas may not have this structure</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">schema_post</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">][</span><span class="s1">&#39;resource&#39;</span><span class="p">][</span><span class="s1">&#39;required&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">IndexError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+            <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="JSONSchema.resource_attributes_view"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes_view">[docs]</a>    <span class="k">def</span> <span class="nf">resource_attributes_view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call resource() via a pyramid view.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            request: Pyramid Request object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Results of resource_attributes() method call.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            HTTPNotFound error for unknown endpoints.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Extract endpoint from route pattern, use to get resource schema, return this</span>
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">matchdict</span><span class="p">[</span><span class="s1">&#39;endpoint&#39;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_attributes</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span><span class="s2">&quot;Invalid endpoint specified: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="JSONSchema.resource_attributes"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes">[docs]</a>    <span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">resource_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return jsonschema attributes for a specific resource.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            endpoint (str): endpoint to obtain schema for.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing jsonschema attributes for the endpoint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Hack relevant view_class out of endpoint name</span>
+        <span class="n">view_class</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">view_classes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">collection_name</span> <span class="o">==</span> <span class="n">endpoint</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">classifier</span> <span class="o">=</span> <span class="n">alchemyjsonschema</span><span class="o">.</span><span class="n">Classifier</span><span class="p">(</span><span class="n">mapping</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">column_to_schema</span><span class="p">)</span>
+        <span class="n">factory</span> <span class="o">=</span> <span class="n">alchemyjsonschema</span><span class="o">.</span><span class="n">SchemaFactory</span><span class="p">(</span><span class="n">alchemyjsonschema</span><span class="o">.</span><span class="n">NoForeignKeyWalker</span><span class="p">,</span>
+                                                  <span class="n">classifier</span><span class="o">=</span><span class="n">classifier</span><span class="p">)</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">schema</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">factory</span><span class="p">(</span><span class="n">view_class</span><span class="o">.</span><span class="n">model</span><span class="p">))</span>
+        <span class="k">except</span> <span class="n">alchemyjsonschema</span><span class="o">.</span><span class="n">InvalidStatus</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Schema Error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+        <span class="c1"># Remove &#39;id&#39; attribute</span>
+        <span class="c1"># (returned by db, but not stored in attrs in jsonapi)</span>
+        <span class="k">if</span> <span class="s1">&#39;properties&#39;</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]:</span>
+                <span class="k">del</span> <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;required&#39;</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;required&#39;</span><span class="p">]:</span>
+                    <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;required&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span>
+                <span class="c1"># Empty required list is invalid jsonschema</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;required&#39;</span><span class="p">]:</span>
+                    <span class="k">del</span> <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;required&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">schema</span></div>
+
+<div class="viewcode-block" id="JSONSchema.endpoint_schema_view"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.endpoint_schema_view">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_schema_view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pyramid view for endpoint_schema.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            request: Pyramid Request object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Results of endpoint_schema() method call.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            HTTPNotFound error for unknown endpoints.</span>
+
+<span class="sd">        Takes 1 path parameert:</span>
+<span class="sd">          * &#39;endpoint&#39;</span>
+
+<span class="sd">        Takes 3 optional query parameters:</span>
+<span class="sd">          * &#39;method&#39;: http method (defaults to get)</span>
+<span class="sd">          * &#39;direction&#39;: request or response (defaults to response)</span>
+<span class="sd">          * &#39;code&#39;: http status code</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">matchdict</span><span class="p">[</span><span class="s1">&#39;endpoint&#39;</span><span class="p">]</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;method&#39;</span><span class="p">)</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;direction&#39;</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_schema</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="JSONSchema.endpoint_schema"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.endpoint_schema">[docs]</a>    <span class="k">def</span> <span class="nf">endpoint_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">code</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate a full schema for an endpoint.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            endpoint (string): Endpoint name</span>
+<span class="sd">            method (string): http method (defaults to &#39;get&#39;)</span>
+<span class="sd">            direction (string): request or response (defaults to response)</span>
+<span class="sd">            code (string): http status code</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            JSONSchema (dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">direction</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s2">&quot;Invalid parameters specified&quot;</span><span class="p">)</span>
+
+        <span class="c1"># reject invalid endpoints</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_attrs&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span><span class="s2">&quot;Invalid endpoint specified: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">))</span>
+
+        <span class="n">success</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">][</span><span class="s1">&#39;success&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;response&#39;</span> <span class="ow">and</span> <span class="n">code</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+            <span class="c1"># Return reference to failure part of schema</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;$ref&#39;</span><span class="p">:</span> <span class="s1">&#39;#/definitions/failure&#39;</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s1">&#39;request&#39;</span><span class="p">:</span>
+            <span class="c1"># Replace data with single (ep-specific) resource</span>
+            <span class="c1"># (POST/PATCH can only be single resource)</span>
+            <span class="n">success</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$ref&#39;</span><span class="p">:</span> <span class="s1">&#39;#/definitions/</span><span class="si">{}</span><span class="s1">_attrs&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)}</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># direction == response</span>
+            <span class="c1"># Replace data with ep-specific data ref</span>
+            <span class="n">success</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$ref&#39;</span><span class="p">:</span> <span class="s1">&#39;#/definitions/</span><span class="si">{}</span><span class="s1">_data&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)}</span>
+
+        <span class="k">return</span> <span class="n">success</span></div>
+
+<div class="viewcode-block" id="JSONSchema.validate"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_body</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Validate schema against jsonschema.&quot;&quot;&quot;</span>
+
+        <span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="c1"># TODO: How do we validate PATCH requests?</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s1">&#39;patch&#39;</span><span class="p">:</span>
+            <span class="n">schm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;post&#39;</span><span class="p">:</span>
+                <span class="n">schm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema_post</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">jsonschema</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">json_body</span><span class="p">,</span> <span class="n">schm</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">jsonschema</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ValidationError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="JSONSchema.build_definitions"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.build_definitions">[docs]</a>    <span class="k">def</span> <span class="nf">build_definitions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Build data and attribute references for all endpoints,</span>
+<span class="sd">        and updates the &#39;global&#39; schema.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">view_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">view_classes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">endpoint</span> <span class="o">=</span> <span class="n">view_class</span><span class="o">.</span><span class="n">collection_name</span>
+
+            <span class="c1"># Get attributes for this endpoint</span>
+            <span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_attributes</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+
+            <span class="c1"># Add a resource definition for this endpoint to the &#39;global&#39; schema</span>
+            <span class="n">attr_ref</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$ref&#39;</span><span class="p">:</span> <span class="s1">&#39;#/definitions/</span><span class="si">{}</span><span class="s1">_attrs&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)}</span>
+            <span class="n">resource</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">][</span><span class="s1">&#39;resource&#39;</span><span class="p">])</span>
+            <span class="n">resource</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;attributes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">attrs</span>
+            <span class="n">resource</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;pattern&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;^</span><span class="si">{}</span><span class="s2">$&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">][</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_attrs&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)]</span> <span class="o">=</span> <span class="n">resource</span>
+
+            <span class="c1"># Add a data definition for this endpoint to the &#39;global&#39; schema</span>
+            <span class="n">ep_data</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+            <span class="c1"># Data can be a single resource...</span>
+            <span class="n">ep_data</span><span class="p">[</span><span class="s1">&#39;oneOf&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr_ref</span>
+            <span class="c1"># Or an array.</span>
+            <span class="n">ep_data</span><span class="p">[</span><span class="s1">&#39;oneOf&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;items&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr_ref</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="s1">&#39;definitions&#39;</span><span class="p">][</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_data&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">endpoint</span><span class="p">)]</span> <span class="o">=</span> <span class="n">ep_data</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

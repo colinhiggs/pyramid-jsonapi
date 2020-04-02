@@ -1,0 +1,10 @@
+pyramid\_jsonapi.metadata.JSONSchema package
+============================================
+
+Module contents
+---------------
+
+.. automodule:: pyramid_jsonapi.metadata.JSONSchema
+   :members:
+   :undoc-members:
+   :show-inheritance:

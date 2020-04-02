@@ -1,0 +1,7 @@
+pyramid\_jsonapi.callbacks\_doc module
+======================================
+
+.. automodule:: pyramid_jsonapi.callbacks_doc
+   :members:
+   :undoc-members:
+   :show-inheritance:

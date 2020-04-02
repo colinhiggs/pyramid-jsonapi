@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.metadata.JSONSchema package &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pyramid_jsonapi.metadata.OpenAPI package" href="pyramid_jsonapi.metadata.OpenAPI.html" />
+    <link rel="prev" title="Metadata Modules" href="../metadata.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../metadata.html">Metadata Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../metadata.html#built-in-modules">Built-in Modules</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.metadata.JSONSchema package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-pyramid_jsonapi.metadata.JSONSchema">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.metadata.OpenAPI.html">pyramid_jsonapi.metadata.OpenAPI package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../metadata.html#custom-modules">Custom Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../metadata.html">Metadata Modules</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.metadata.JSONSchema package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/pyramid_jsonapi.metadata.JSONSchema.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pyramid-jsonapi-metadata-jsonschema-package">
+<h1>pyramid_jsonapi.metadata.JSONSchema package<a class="headerlink" href="#pyramid-jsonapi-metadata-jsonschema-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-pyramid_jsonapi.metadata.JSONSchema">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyramid_jsonapi.metadata.JSONSchema" title="Permalink to this headline">¶</a></h2>
+<p>JSONSchema metadata plugin.</p>
+<p>This plugin provides JSONSchema schemas and validation.</p>
+<p>This module provides 3 <code class="docutils literal notranslate"><span class="pre">metadata</span></code> views:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">JSONSchema</span></code>  - The full JSONSchema for JSONAPI (as provided by jsonapi.org)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">JSONSchema/endpoint/{endpoint}</span></code> - JSONSchema for a specific endpoint, with attributes defined.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">JSONSchema/resource/{resource}</span></code> -  JSONSchema of just the attributes for a resource.</p></li>
+</ul>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>This plugin uses <a class="reference external" href="https://github.com/podhmo/alchemyjsonschema">alchemyjsonschema</a>
+to provide mapping between pyramid model and JSONSchema types.</p>
+<p><code class="docutils literal notranslate"><span class="pre">alchemyjsonschema</span></code> provides a <code class="docutils literal notranslate"><span class="pre">default_column_to_schema</span></code> dictionary, which maps
+column types to jsonschema types. If you wish to extend this, you can do so by importing
+this module and modifying this constant prior to importing pyramid_jsonapi.
+For example, to extend the default mapping to include <code class="docutils literal notranslate"><span class="pre">uuid</span></code> types:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">alchemyjsonschema</span>
+
+<span class="n">alchemyjsonschema</span><span class="o">.</span><span class="n">default_column_to_schema</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="n">sqlalchemy_utils</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUIDType</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">jsonapi</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">PyramidJSONAPI</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">models</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="endpoint-view">
+<h3>Endpoint View<a class="headerlink" href="#endpoint-view" title="Permalink to this headline">¶</a></h3>
+<p>The endpoint view expects the path to include the endpoint in question, and 3 query parameters must be provided:</p>
+<ul class="simple">
+<li><p>method - http method (GET, POST etc)</p></li>
+<li><p>direction - ‘request’ or ‘response’</p></li>
+<li><p>code - http status code (if direction is ‘response’)</p></li>
+</ul>
+<p>For example:</p>
+<p><code class="docutils literal notranslate"><span class="pre">https://localhost:6543/metadata/JSONSchema/endpoint/people?method=get&amp;direction=response&amp;code=200</span></code></p>
+<p>Will return the schema that matches a valid response (200 OK) to a GET to <code class="docutils literal notranslate"><span class="pre">/api/people</span></code></p>
+<dl class="class">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema">
+<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.metadata.JSONSchema.</code><code class="sig-name descname">JSONSchema</code><span class="sig-paren">(</span><em class="sig-param">api</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Metadata plugin to generate and validate JSONSchema for sqlalchemy,
+using alchemyjsonschema to map sqlalchemy types.</p>
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.build_definitions">
+<code class="sig-name descname">build_definitions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.build_definitions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.build_definitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build data and attribute references for all endpoints,
+and updates the ‘global’ schema.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.endpoint_schema">
+<code class="sig-name descname">endpoint_schema</code><span class="sig-paren">(</span><em class="sig-param">endpoint</em>, <em class="sig-param">method</em>, <em class="sig-param">direction</em>, <em class="sig-param">code</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.endpoint_schema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.endpoint_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a full schema for an endpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>endpoint</strong> (<em>string</em>) – Endpoint name</p></li>
+<li><p><strong>method</strong> (<em>string</em>) – http method (defaults to ‘get’)</p></li>
+<li><p><strong>direction</strong> (<em>string</em>) – request or response (defaults to response)</p></li>
+<li><p><strong>code</strong> (<em>string</em>) – http status code</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>JSONSchema (dict)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.endpoint_schema_view">
+<code class="sig-name descname">endpoint_schema_view</code><span class="sig-paren">(</span><em class="sig-param">request</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.endpoint_schema_view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.endpoint_schema_view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pyramid view for endpoint_schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>request</strong> – Pyramid Request object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Results of endpoint_schema() method call.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>HTTPNotFound error for unknown endpoints.</strong> – </p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Takes 1 path parameert:</dt><dd><ul class="simple">
+<li><p>‘endpoint’</p></li>
+</ul>
+</dd>
+<dt>Takes 3 optional query parameters:</dt><dd><ul class="simple">
+<li><p>‘method’: http method (defaults to get)</p></li>
+<li><p>‘direction’: request or response (defaults to response)</p></li>
+<li><p>‘code’: http status code</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.load_schema">
+<code class="sig-name descname">load_schema</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.load_schema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.load_schema" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the JSONAPI jsonschema from file.</p>
+<p>Reads ‘pyramid_jsonapi.schema_file’ from config,
+or defaults to one provided with the package.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes">
+<code class="sig-name descname">resource_attributes</code><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.resource_attributes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return jsonschema attributes for a specific resource.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>endpoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – endpoint to obtain schema for.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary containing jsonschema attributes for the endpoint.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes_view">
+<code class="sig-name descname">resource_attributes_view</code><span class="sig-paren">(</span><em class="sig-param">request</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.resource_attributes_view"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes_view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call resource() via a pyramid view.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>request</strong> – Pyramid Request object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Results of resource_attributes() method call.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>HTTPNotFound error for unknown endpoints.</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.template">
+<code class="sig-name descname">template</code><span class="sig-paren">(</span><em class="sig-param">request=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the JSONAPI jsonschema dict (as a pyramid view).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>request</strong> (<em>optional</em>) – Pyramid Request object.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>JSONAPI schema document.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyramid_jsonapi.metadata.JSONSchema.JSONSchema.validate">
+<code class="sig-name descname">validate</code><span class="sig-paren">(</span><em class="sig-param">json_body</em>, <em class="sig-param">method='get'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata/JSONSchema.html#JSONSchema.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate schema against jsonschema.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pyramid_jsonapi.metadata.OpenAPI.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.metadata.OpenAPI package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../metadata.html" class="btn btn-neutral float-left" title="Metadata Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,397 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting Started &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Consuming the API from the Client End" href="client.html" />
+    <link rel="prev" title="The pyramid-jsonapi project" href="welcome.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generating-an-api-from-your-models">Generating an API From Your Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-create-assumptions">Auto-Create Assumptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trying-your-api-out">Trying Your API Out</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Getting Started</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/api-creation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started">
+<span id="id1"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Stable releases are uploaded to pypi:
+<a class="reference external" href="https://pypi.python.org/pypi?:action=display&amp;name=pyramid_jsonapi">https://pypi.python.org/pypi?:action=display&amp;name=pyramid_jsonapi</a>. You
+can install it in the usual way:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -i pyramid_jsonapi
+</pre></div>
+</div>
+</li>
+<li><p>Development releases are also uploaded to pypi. These have versions with
+‘.devN’ appended, where ‘N’ is the number of commits since the stable tag. You
+can install the latest one (perhaps into a virtualenv for play purposes) with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install --pre -i pyramid_jsonapi
+</pre></div>
+</div>
+</li>
+<li><p>See the <a class="reference internal" href="developing.html#developing"><span class="std std-ref">Developing pyramid-jsonapi</span></a> documentation for details.</p></li>
+<li><p>Since pyramid_jsonapi is pure python, You can download the latest code from
+<a class="reference external" href="https://github.com/colinhiggs/pyramid-jsonapi">https://github.com/colinhiggs/pyramid-jsonapi</a> and add the directory you
+downloaded/cloned to to your PYTHONPATH.</p></li>
+</ul>
+</div>
+<div class="section" id="generating-an-api-from-your-models">
+<h2>Generating an API From Your Models<a class="headerlink" href="#generating-an-api-from-your-models" title="Permalink to this headline">¶</a></h2>
+<p>First import the <code class="docutils literal notranslate"><span class="pre">pyramid_jsonapi</span></code> module and any model classes or modules which
+you would like to expose as API collection endpoints. In your application’s
+<code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyramid_jsonapi</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">models</span>
+</pre></div>
+</div>
+<p>Then instantiate an api object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pj_api</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">PyramidJSONAPI</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="p">[</span><span class="n">get_db_session</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This is the class that encapsulates a whole API representing a set of models.
+The constructor has two mandatory and one optional arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">config</span></code> is the usual Configurator object used in pyramid.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">models</span></code> can either be a module (as in the example above) defining classes
+which inherit from <code class="xref py py-func docutils literal notranslate"><span class="pre">declarative_base()</span></code> or an iterable of such classes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_dbsession</span></code> (optional) should be a
+callable which accepts an instance of
+<code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.CollectionViewBase</span></code> and returns a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">sqlalchemy.orm.session.Session</span></code> (or an equivalent, like a
+<code class="xref py py-func docutils literal notranslate"><span class="pre">sqlalchemy.orm.scoped_session()</span></code>)</p></li>
+</ul>
+<p>Once you have an instance of <code class="docutils literal notranslate"><span class="pre">PyramidJSONAPI</span></code> you instruct it to build
+endpoints (routes and views) with the method
+<code class="docutils literal notranslate"><span class="pre">api.create_jsonapi_using_magic_and_pixie_dust()</span></code> (or <code class="docutils literal notranslate"><span class="pre">api.create_jsonapi()</span></code>). This
+is deliberately a two step affair to give you the chance to manipulate certain
+things (like the list of available endpoints) before the endpoints are
+constructed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pj_api</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">PyramidJSONAPI</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">models</span><span class="p">)</span>
+
+<span class="c1"># Do something here like add a view for OPTIONS requests.</span>
+
+<span class="n">pj_api</span><span class="o">.</span><span class="n">create_jsonapi_using_magic_and_pixie_dust</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="auto-create-assumptions">
+<h2>Auto-Create Assumptions<a class="headerlink" href="#auto-create-assumptions" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Your model classes all inherit from a base class returned by sqlalchemy’s
+<code class="docutils literal notranslate"><span class="pre">declarative-base()</span></code>.</p></li>
+<li><p>Each model has a single primary_key column. This will be auto-detected and
+stored in <code class="docutils literal notranslate"><span class="pre">__pyramid_jsonapi__</span></code> dict attr in the model.</p></li>
+<li><p>Use a separate primary key for association objects rather than the
+composite key defined by the left and right referenced foreign keys.</p></li>
+<li><p>You are happy to give your collection end-points the same name as the
+corresponding database table (can be overridden).</p></li>
+<li><p>You have defined any relationships to exposed via the API using
+<code class="docutils literal notranslate"><span class="pre">sqlalchemy.orm.relationship()</span></code> (or <code class="docutils literal notranslate"><span class="pre">backref()</span></code>).</p></li>
+<li><p>You are happy to expose any so defined relationship via a relationship URL.</p></li>
+<li><p>API endpoints will be provided at <code class="docutils literal notranslate"><span class="pre">/api/...</span></code> by default.</p></li>
+<li><p>Metadata endpoints will be provided at <code class="docutils literal notranslate"><span class="pre">/metadata/...</span></code> by default.</p></li>
+</ol>
+<p>Some of those behaviours can be adjusted, see <a class="reference internal" href="customisation.html#customisation"><span class="std std-ref">Customising the Generated API</span></a>.</p>
+</div>
+<div class="section" id="trying-your-api-out">
+<h2>Trying Your API Out<a class="headerlink" href="#trying-your-api-out" title="Permalink to this headline">¶</a></h2>
+<p>You should now have a working JSON-API. A quick test. The following assumes that
+you have already created and set up a pyramid project in development mode
+(<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">develop</span></code> in pyramid 1.6, <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span></code> in pyramid 1.7).</p>
+<p>Make sure you have activated your virtualenv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> env/bin/activate
+</pre></div>
+</div>
+<p>Start the server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pserve your_project/development.ini
+</pre></div>
+</div>
+<p>Assuming you have a collection named ‘people’ and are using the rather lovely
+<a class="reference external" href="https://github.com/jkbrzt/httpie/">httpie</a> to test:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http http://localhost:6543/api/people
+
+HTTP/1.1 <span class="m">200</span> OK
+Content-Length: <span class="m">1387</span>
+Content-Type: application/vnd.api+json<span class="p">;</span> <span class="nv">charset</span><span class="o">=</span>UTF-8
+Date: Fri, <span class="m">28</span> Aug <span class="m">2015</span> <span class="m">20</span>:22:46 GMT
+Server: waitress
+</pre></div>
+</div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;people&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;alice&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;self&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:6543/api/people/1&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;relationships&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;&lt;some_single_relationship&gt;&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;rel_type&gt;&quot;</span><span class="p">,</span> <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;some_id&gt;&quot;</span><span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span><span class="nt">&quot;&lt;another_person&gt;&quot;</span><span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>See <code class="docutils literal notranslate"><span class="pre">test_project/test_project/__init__.py</span></code> for a fully working
+<code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> file.</p>
+<p>You don’t need a <code class="docutils literal notranslate"><span class="pre">views.py</span></code> unless you have some other routes and views.</p>
+<p>There’s also some metadata available at <code class="docutils literal notranslate"><span class="pre">http://localhost:6543/metadata</span></code>.
+pyramid_jsonapi currently includes metadata modules to produce JSONSchema and
+OpenAPI/Swagger. See the <a class="reference internal" href="metadata.html#metadata"><span class="std std-ref">Metadata Modules</span></a> section.</p>
+<p>The following will fetch the JSONSchema for a successful response to a GET on the
+people endpoint:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http http://localhost:6543/metadata/JSONSchema/endpoint/people?method<span class="o">=</span>get<span class="p">&amp;</span><span class="nv">direction</span><span class="o">=</span>response<span class="p">&amp;</span><span class="nv">code</span><span class="o">=</span><span class="m">200</span>
+</pre></div>
+</div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/meta&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;included&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;uniqueItems&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;To reduce the number of HTTP requests, servers **MAY** allow responses that include related resources along with the requested primary resources. Such responses are called \&quot;compound documents\&quot;.&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/resource&quot;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;jsonapi&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/jsonapi&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/people_data&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;links&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;allOf&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="nt">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/links&quot;</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="nt">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/pagination&quot;</span>
+                <span class="p">}</span>
+            <span class="p">],</span>
+            <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Link members related to the primary data.&quot;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;data&quot;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="client.html" class="btn btn-neutral float-right" title="Consuming the API from the Client End" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="welcome.html" class="btn btn-neutral float-left" title="The pyramid-jsonapi project" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

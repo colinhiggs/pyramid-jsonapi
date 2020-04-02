@@ -1,0 +1,10 @@
+pyramid\_jsonapi.metadata.OpenAPI package
+=========================================
+
+Module contents
+---------------
+
+.. automodule:: pyramid_jsonapi.metadata.OpenAPI
+   :members:
+   :undoc-members:
+   :show-inheritance:

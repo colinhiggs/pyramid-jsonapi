@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Developing pyramid-jsonapi &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyramid_jsonapi package" href="apidoc/pyramid_jsonapi.html" />
+    <link rel="prev" title="pyramid_jsonapi.metadata.OpenAPI package" href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Developing pyramid-jsonapi</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#development">Development</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contribution">Contribution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#tests">Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pep8">PEP8</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pylint">pylint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#idiomatic-python">Idiomatic Python</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#python-versions">Python Versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#versioning">Versioning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Developing pyramid-jsonapi</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/developing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="developing-pyramid-jsonapi">
+<span id="developing"></span><h1>Developing pyramid-jsonapi<a class="headerlink" href="#developing-pyramid-jsonapi" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="development">
+<h2>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
+<p>This project is set up to use <cite>tox</cite> to create a suitable testing environment.
+You must first install <cite>tox</cite> - either system-wide, or in it’s own virtualenv:</p>
+<p>Set up the <cite>tox</cite> environment as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># To install tox</span>
+python3 -mvenv toxenv
+toxenv/bin/pip install tox
+
+<span class="c1"># To run tox and test the project:</span>
+toxenv/bin/tox
+</pre></div>
+</div>
+<p><em>Note</em>: The <cite>toxenv</cite> virtualenv only exists to deliver <cite>tox</cite>, <em>NOT</em> for development.</p>
+<p><cite>tox</cite> creates it’s own virtualenvs for testing in <cite>.tox/</cite> which can be used for code testing and development.
+These contain all of the dependencies for both the project and testing, as well as the local <cite>pyramid-jsonapi</cite></p>
+<p>You can use these in the usual way for your own testing and development, e.g.:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> .tox/py3/bin/activate
+</pre></div>
+</div>
+</div>
+<div class="section" id="contribution">
+<h2>Contribution<a class="headerlink" href="#contribution" title="Permalink to this headline">¶</a></h2>
+<p>All contributions are welcome!  You can contribute by making <em>pull requests</em> to
+the git repo: <a class="reference external" href="https://github.com/colinhiggs/pyramid-jsonapi">https://github.com/colinhiggs/pyramid-jsonapi</a></p>
+<p>Travis (<a class="reference external" href="https://travis-ci.org/colinhiggs/pyramid-jsonapi">https://travis-ci.org/colinhiggs/pyramid-jsonapi</a>) is run against
+all PRs and commits to ensure consistent, high-quality code.</p>
+<div class="section" id="tests">
+<h3>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">unittest</span></code> tests should be created for all new code. Coverage can be reviewed at:
+<a class="reference external" href="https://coveralls.io/github/colinhiggs/pyramid-jsonapi">https://coveralls.io/github/colinhiggs/pyramid-jsonapi</a></p>
+</div>
+<div class="section" id="pep8">
+<h3>PEP8<a class="headerlink" href="#pep8" title="Permalink to this headline">¶</a></h3>
+<p>Code should pass PEP8 validation:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>long lines should be avoided, but not at the expense of readability. (<code class="docutils literal notranslate"><span class="pre">pycodestyle</span> <span class="pre">--ignore=E501</span></code> is used when testing).</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="pylint">
+<h3>pylint<a class="headerlink" href="#pylint" title="Permalink to this headline">¶</a></h3>
+<p>Code should pass pylint validation:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">pylint:</span> <span class="pre">disable=xxx</span></code> is allowed where there is a clear reason for doing so. Please document as necessary.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="idiomatic-python">
+<h3>Idiomatic Python<a class="headerlink" href="#idiomatic-python" title="Permalink to this headline">¶</a></h3>
+<p>Is to be preferred wherever possible.</p>
+</div>
+<div class="section" id="python-versions">
+<h3>Python Versions<a class="headerlink" href="#python-versions" title="Permalink to this headline">¶</a></h3>
+<p>Currently pyramid_jsonapi is built and tested against python 3. 3.4 or later is recommended.</p>
+</div>
+<div class="section" id="versioning">
+<h3>Versioning<a class="headerlink" href="#versioning" title="Permalink to this headline">¶</a></h3>
+<p>Semantic versioning should be used, see
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0440/">PEP440 - Version Identification and Dependency Specification</a>
+for details.</p>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Documentation is built using sphinx. This is done automatically using Travis for
+certain builds (e.g. tagged releases) and pushed to the <em>gh-pages</em> branch.</p>
+<p>Note that the documentation uses the <code class="docutils literal notranslate"><span class="pre">sphinx-rtd-theme</span></code></p>
+<p>To manually build the documentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docs/sphinx.sh
+</pre></div>
+</div>
+<p>Documentation will be written to <cite>docs/build/</cite> (in .gitignore).</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="apidoc/pyramid_jsonapi.html" class="btn btn-neutral float-right" title="pyramid_jsonapi package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.metadata.OpenAPI package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

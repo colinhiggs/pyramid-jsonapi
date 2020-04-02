@@ -1,0 +1,7 @@
+pyramid\_jsonapi.collection\_view module
+========================================
+
+.. automodule:: pyramid_jsonapi.collection_view
+   :members:
+   :undoc-members:
+   :show-inheritance:

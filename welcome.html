@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>The pyramid-jsonapi project &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="api-creation.html" />
+    <link rel="prev" title="pyramid-jsonapi Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The pyramid-jsonapi project</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#quick-start">Quick start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installing-pyramid-jsonapi">Installing <cite>pyramid_jsonapi</cite></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-creating-an-api">Auto-Creating an API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>The pyramid-jsonapi project</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/welcome.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-pyramid-jsonapi-project">
+<h1>The pyramid-jsonapi project<a class="headerlink" href="#the-pyramid-jsonapi-project" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/pyramid_jsonapi"><img alt="https://img.shields.io/pypi/v/pyramid_jsonapi.svg" src="https://img.shields.io/pypi/v/pyramid_jsonapi.svg" /></a>
+<img alt="https://img.shields.io/pypi/pyversions/pyramid_jsonapi.svg" src="https://img.shields.io/pypi/pyversions/pyramid_jsonapi.svg" /><a class="reference external image-reference" href="https://travis-ci.org/colinhiggs/pyramid-jsonapi"><img alt="https://travis-ci.org/colinhiggs/pyramid-jsonapi.svg?branch=master" src="https://travis-ci.org/colinhiggs/pyramid-jsonapi.svg?branch=master" /></a>
+<a class="reference external image-reference" href="https://coveralls.io/github/colinhiggs/pyramid-jsonapi?branch=master"><img alt="https://coveralls.io/repos/github/colinhiggs/pyramid-jsonapi/badge.svg?branch=master" src="https://coveralls.io/repos/github/colinhiggs/pyramid-jsonapi/badge.svg?branch=master" /></a>
+<img alt="https://colinhiggs.github.io/pyramid-jsonapi/pylint-badge.svg" src="https://colinhiggs.github.io/pyramid-jsonapi/pylint-badge.svg" /><p>Create a JSON-API (<a class="reference external" href="http://jsonapi.org/">http://jsonapi.org/</a>) standard API from a database using
+the sqlAlchemy ORM and pyramid framework.</p>
+<p>The core idea behind pyramid-jsonapi is to create a working JSON-API
+automatically, starting from the sort of <code class="docutils literal notranslate"><span class="pre">models.py</span></code> file shipped with a
+typical pyramid + sqlalchemy application.</p>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Documentation is available at: <a class="reference external" href="https://colinhiggs.github.io/pyramid-jsonapi/">https://colinhiggs.github.io/pyramid-jsonapi/</a></p>
+</div>
+</div>
+<div class="section" id="quick-start">
+<h1>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installing-pyramid-jsonapi">
+<h2>Installing <cite>pyramid_jsonapi</cite><a class="headerlink" href="#installing-pyramid-jsonapi" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -i pyramid_jsonapi
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="api-creation.html#getting-started"><span class="std std-ref">Getting Started</span></a> for other installation options, including installing
+development versions.</p>
+</div>
+<div class="section" id="auto-creating-an-api">
+<h2>Auto-Creating an API<a class="headerlink" href="#auto-creating-an-api" title="Permalink to this headline">¶</a></h2>
+<p>Declare your models somewhere using sqlalchemy’s
+<code class="xref py py-func docutils literal notranslate"><span class="pre">sqlalchemy.ext.declarative.declarative_base()</span></code>. In this documentation we
+assume that you have done so in a file called <code class="docutils literal notranslate"><span class="pre">models.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;people&#39;</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">BigInteger</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">autoincrement</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Text</span><span class="p">)</span>
+    <span class="n">blogs</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Blog&#39;</span><span class="p">,</span> <span class="n">backref</span><span class="o">=</span><span class="s1">&#39;owner&#39;</span><span class="p">)</span>
+    <span class="n">posts</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span> <span class="n">backref</span><span class="o">=</span><span class="s1">&#39;author&#39;</span><span class="p">)</span>
+
+<span class="c1"># and the rest...</span>
+</pre></div>
+</div>
+<p>If you are happy with the defaults, you can get away with the following
+additions to the standard pyramid alchemy scaffold’s top level <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyramid_jsonapi</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">models</span> <span class="c1"># Your models module.</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">global_config</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">):</span>
+
+  <span class="c1"># The usual stuff from the pyramid alchemy setup.</span>
+  <span class="n">config</span> <span class="o">=</span> <span class="n">Configurator</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+
+  <span class="c1"># pyramid_jsonapi uses the renderer labelled &#39;json&#39;. As usual, if you have</span>
+  <span class="c1"># any types to serialise that the default JSON renderer can&#39;t handle, you</span>
+  <span class="c1"># must alter it. For example:</span>
+  <span class="c1">#</span>
+  <span class="c1">#renderer = JSON(sort_keys=True)</span>
+  <span class="c1">#renderer.add_adapter(datetime.date, datetime_adapter)</span>
+  <span class="c1">#config.add_renderer(&#39;json&#39;, renderer)</span>
+
+  <span class="c1"># Instantiate a PyramidJSONAPI class instance.</span>
+  <span class="n">pj</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">PyramidJSONAPI</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">models</span><span class="p">)</span>
+
+  <span class="c1"># If you are using pyramid 1.7 or older, you will need to pass a third</span>
+  <span class="c1"># argument to the constructor: a callable which accepts a CollectionView</span>
+  <span class="c1"># instance as an argument and returns a sqlalchemy database session.</span>
+  <span class="c1">#</span>
+  <span class="c1"># For example:</span>
+  <span class="c1"># pj = pyramid_jsonapi.PyramidJSONAPI(</span>
+  <span class="c1">#   config, models, lambda view: models.DBSession</span>
+  <span class="c1"># )</span>
+
+  <span class="c1"># Create the routes and views automagically:</span>
+  <span class="n">pj</span><span class="o">.</span><span class="n">create_jsonapi_using_magic_and_pixie_dust</span><span class="p">()</span>
+
+  <span class="c1"># Routes and views are added imperatively, so no need for a scan - unless</span>
+  <span class="c1"># you have defined other routes and views declaratively.</span>
+
+  <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">make_wsgi_app</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Or, without all the comments:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyramid_jsonapi</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">models</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">global_config</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">):</span>
+  <span class="n">config</span> <span class="o">=</span> <span class="n">Configurator</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+  <span class="n">pj</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">PyramidJSONAPI</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">models</span><span class="p">)</span>
+  <span class="n">pj</span><span class="o">.</span><span class="n">create_jsonapi_using_magic_and_pixie_dust</span><span class="p">()</span>
+  <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">make_wsgi_app</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Yes, there really is a method called
+<a class="reference internal" href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust" title="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust()</span></code></a>. No, you
+don’t <em>have</em> to call it that. If you are feeling more sensible you can use the
+synonym <a class="reference internal" href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi" title="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyramid_jsonapi.PyramidJSONAPI.create_jsonapi()</span></code></a>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api-creation.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="pyramid-jsonapi Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

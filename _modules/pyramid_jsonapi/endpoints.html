@@ -1,0 +1,512 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyramid_jsonapi.endpoints &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.14
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.endpoints</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.endpoints</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Classes to store and manipulate endpoints and routes.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">pyramid.httpexceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HTTPBadRequest</span><span class="p">,</span>
+    <span class="n">HTTPCreated</span><span class="p">,</span>
+    <span class="n">HTTPConflict</span><span class="p">,</span>
+    <span class="n">HTTPFailedDependency</span><span class="p">,</span>
+    <span class="n">HTTPForbidden</span><span class="p">,</span>
+    <span class="n">HTTPInternalServerError</span><span class="p">,</span>
+    <span class="n">HTTPNotAcceptable</span><span class="p">,</span>
+    <span class="n">HTTPNotFound</span><span class="p">,</span>
+    <span class="n">HTTPOk</span><span class="p">,</span>
+    <span class="n">HTTPUnsupportedMediaType</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="RoutePatternConstructor"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.RoutePatternConstructor">[docs]</a><span class="k">class</span> <span class="nc">RoutePatternConstructor</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Construct pyramid_jsonapi route patterns.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">api</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">settings</span>
+        <span class="c1"># type-specific methods that wrap create_pattern</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_pattern</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">create_pattern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_pattern_api_prefix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata_pattern</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">create_pattern</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_pattern_metadata_prefix</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RoutePatternConstructor.pattern_from_components"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.RoutePatternConstructor.pattern_from_components">[docs]</a>    <span class="k">def</span> <span class="nf">pattern_from_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">components</span><span class="p">,</span> <span class="n">start_sep</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">end_sep</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct a route pattern from components.</span>
+
+<span class="sd">        Join components together with self.sep.</span>
+<span class="sd">        Remove all occurrences of &#39;&#39;, and strip extra separators.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            *components (str): route pattern components.</span>
+<span class="sd">            start_sep (bool): Add a leading separator</span>
+<span class="sd">            end_sep (bool): Add a trailing separator</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">psep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_pattern_sep</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">components</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">]</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">psep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">components</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">psep</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">psep</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">start_sep</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">psep</span><span class="p">):</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">psep</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">end_sep</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">psep</span><span class="p">):</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">psep</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pattern</span></div>
+
+<div class="viewcode-block" id="RoutePatternConstructor.create_pattern"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.RoutePatternConstructor.create_pattern">[docs]</a>    <span class="k">def</span> <span class="nf">create_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_prefix</span><span class="p">,</span> <span class="n">endpoint_name</span><span class="p">,</span> <span class="o">*</span><span class="n">components</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">rstrip</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate a pattern from a type_prefix, endpoint name and suffix components.</span>
+
+<span class="sd">        This method is not usually called directly.  Instead, the wrapping</span>
+<span class="sd">        `api_pattern` and `metadata_pattern` partial methods are used.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            type_prefix (str): api or metadataprefix (see &#39;partial&#39; methods).</span>
+<span class="sd">            endpoint_name (str): An endpoint name.</span>
+<span class="sd">            base (str): Base string to prepend to pattern (defaults to &#39;/&#39;).</span>
+<span class="sd">            rstrip (bool): Strip trailing separator (defaults to True).</span>
+<span class="sd">            *components (str): components to add after collection name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern_from_components</span><span class="p">(</span>
+            <span class="n">base</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_pattern_prefix</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span>
+            <span class="n">type_prefix</span><span class="p">,</span>
+            <span class="n">endpoint_name</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">components</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">rstrip</span><span class="p">:</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_pattern_sep</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pattern</span></div></div>
+
+
+<div class="viewcode-block" id="EndpointData"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData">[docs]</a><span class="k">class</span> <span class="nc">EndpointData</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Class to hold endpoint data and utility methods.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        api: A PyramidJSONAPI object.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rp_constructor</span> <span class="o">=</span> <span class="n">RoutePatternConstructor</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>
+
+        <span class="c1"># Mapping of endpoints, http_methods and options for constructing routes and views.</span>
+        <span class="c1"># Update this dictionary prior to calling create_jsonapi()</span>
+        <span class="c1"># &#39;responses&#39; can be &#39;global&#39;, &#39;per-endpoint&#39; and &#39;per-endpoint-method&#39;</span>
+        <span class="c1"># Mandatory &#39;endpoint&#39; keys: http_methods</span>
+        <span class="c1"># Optional &#39;endpoint&#39; keys: route_pattern</span>
+        <span class="c1"># Mandatory &#39;http_method&#39; keys: function</span>
+        <span class="c1"># Optional &#39;http_method&#39; keys: renderer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;query_parameters&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;filter&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;page&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;sort&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="c1"># Top-level: apply to all endpoints</span>
+                <span class="n">HTTPUnsupportedMediaType</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Servers MUST respond with a 415 Unsupported Media Type status code if a request specifies the header Content-Type: application/vnd.api+json with any media type parameters.&#39;</span><span class="p">]},</span>
+                <span class="n">HTTPNotAcceptable</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Servers MUST respond with a 406 Not Acceptable status code if a request’s Accept header contains the JSON API media type and all instances of that media type are modified with media type parameters.&#39;</span><span class="p">]},</span>
+                <span class="n">HTTPBadRequest</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a server encounters a query parameter that does not follow the naming conventions above, and the server does not know how to process it as a query parameter from this specification, it MUST return 400 Bad Request.&#39;</span><span class="p">,</span>
+                                            <span class="s1">&#39;If the server does not support sorting as specified in the query parameter sort, it MUST return 400 Bad Request.&#39;</span><span class="p">,</span>
+                                            <span class="s1">&#39;If an endpoint does not support the include parameter, it MUST respond with 400 Bad Request to any requests that include it.&#39;</span><span class="p">,</span>
+                                            <span class="s1">&#39;If the request content is malformed in some way.&#39;</span><span class="p">]},</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;endpoints&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;collection&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">HTTPInternalServerError</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;An error occurred on the server.&#39;</span><span class="p">]}</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;http_methods&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;GET&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;collection_get&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s1">&#39;POST&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;collection_post&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;request_schema&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPCreated</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a POST request did not include a Client-Generated ID and the requested resource has been created successfully, the server MUST return a 201 Created status code.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPForbidden</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 403 Forbidden in response to an unsupported request to create a resource with a client-generated ID.&#39;</span><span class="p">,</span>
+                                                           <span class="s1">&#39;A server MAY return 403 Forbidden in response to an unsupported request to create a resource.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPNotFound</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 404 Not Found when processing a request to modify a resource that does not exist.&#39;</span><span class="p">,</span>
+                                                          <span class="s1">&#39;A server MUST return 404 Not Found when processing a request that references a related resource that does not exist.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPConflict</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 409 Conflict when processing a POST request to create a resource with a client-generated ID that already exists.&#39;</span><span class="p">,</span>
+                                                          <span class="s1">&#39;A server MUST return 409 Conflict when processing a POST request in which the resource object’s type is not among the type(s) that constitute the collection represented by the endpoint.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPBadRequest</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Request is malformed in some way.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s1">&#39;item&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">HTTPInternalServerError</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;An error occurred on the server.&#39;</span><span class="p">]}</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;route_pattern&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="s1">&#39;pattern&#39;</span><span class="p">:</span> <span class="s1">&#39;{{</span><span class="si">{}</span><span class="s1">}}&#39;</span><span class="p">},</span>
+                    <span class="s1">&#39;http_methods&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;DELETE&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;delete&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return a 200 OK status code if a deletion request is successful and the server responds with only top-level meta data.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPNotFound</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server SHOULD return a 404 Not Found status code if a deletion request fails due to the resource not existing.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPFailedDependency</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a database constraint would be broken by deleting the specified resource from the relationship.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s1">&#39;GET&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;get&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPNotFound</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST respond with 404 Not Found when processing a request to fetch a single resource that does not exist.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s1">&#39;PATCH&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;request_schema&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If an update is successful and the server doesn’t update any attributes besides those provided, the server MUST return either a 200 OK status code and response document&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPForbidden</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 403 Forbidden in response to an unsupported request to update a resource or relationship.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPNotFound</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 404 Not Found when processing a request to modify a resource that does not exist.&#39;</span><span class="p">,</span>
+                                                          <span class="s1">&#39;A server MUST return 404 Not Found when processing a request that references a related resource that does not exist.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPBadRequest</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Request is malformed in some way.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPConflict</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MAY return 409 Conflict when processing a PATCH request to update a resource if that update would violate other server-enforced constraints (such as a uniqueness constraint on a property other than id).&#39;</span><span class="p">,</span>
+                                                          <span class="s1">&#39;A server MUST return 409 Conflict when processing a PATCH request in which the resource object’s type and id do not match the server’s endpoint.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s1">&#39;related&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">HTTPBadRequest</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a server is unable to identify a relationship path or does not support inclusion of resources from a path, it MUST respond with 400 Bad Request.&#39;</span><span class="p">]},</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;route_pattern&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;relationship&#39;</span><span class="p">],</span> <span class="s1">&#39;pattern&#39;</span><span class="p">:</span> <span class="s1">&#39;{{</span><span class="si">{}</span><span class="s1">}}</span><span class="si">{sep}</span><span class="s1">{{</span><span class="si">{}</span><span class="s1">}}&#39;</span><span class="p">},</span>
+                    <span class="s1">&#39;http_methods&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;GET&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;related_get&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPBadRequest</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A bad filter is used.&#39;</span><span class="p">]},</span>
+                            <span class="p">}</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">HTTPNotFound</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 404 Not Found when processing a request to fetch a relationship link URL that does not exist.&#39;</span><span class="p">]},</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;route_pattern&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;relationship&#39;</span><span class="p">],</span> <span class="s1">&#39;pattern&#39;</span><span class="p">:</span> <span class="s1">&#39;{{</span><span class="si">{}</span><span class="s1">}}</span><span class="si">{sep}</span><span class="s1">relationships</span><span class="si">{sep}</span><span class="s1">{{</span><span class="si">{}</span><span class="s1">}}&#39;</span><span class="p">},</span>
+                    <span class="s1">&#39;http_methods&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;DELETE&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;relationships_delete&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;request_schema&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If all of the specified resources are able to be removed from, or are already missing from, the relationship then the server MUST return a successful response.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPConflict</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 409 Conflict when processing a DELETE request in which the resource object’s type and id do not match the server’s endpoint.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPFailedDependency</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a database constraint would be broken by deleting the specified resource from the relationship.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPForbidden</span><span class="p">:</span> <span class="p">{</span>
+                                    <span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span>
+                                        <span class="s1">&#39;If the client makes a DELETE request to a URL from a relationship link the server MUST delete the specified members from the relationship or return a 403 Forbidden response.&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;A server MUST return 403 Forbidden in response to an unsupported request to update a relationship.&#39;</span>
+                                    <span class="p">]</span>
+                                <span class="p">},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s1">&#39;GET&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;relationships_get&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST respond to a successful request to fetch a relationship with a 200 OK response.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPBadRequest</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a server is unable to identify a relationship path or does not support inclusion of resources from a path, it MUST respond with 400 Bad Request.&#39;</span><span class="p">,</span>
+                                                            <span class="s1">&#39;A bad filter is used.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s1">&#39;PATCH&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;relationships_patch&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;request_schema&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPOk</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a server accepts an update but also changes the targeted relationship(s) in other ways than those specified by the request, it MUST return a 200 OK response&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPConflict</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 409 Conflict when processing a PATCH request in which the resource object’s type and id do not match the server’s endpoint.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPForbidden</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a client makes a PATCH request to a URL from a to-many relationship link, the server MUST either completely replace every member of the relationship, return an appropriate error response if some resources can not be found or accessed, or return a 403 Forbidden response if complete replacement is not allowed by the server.&#39;</span><span class="p">,</span>
+                                                           <span class="s1">&#39;A server MUST return 403 Forbidden in response to an unsupported request to update a relationship.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPFailedDependency</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a database constraint would be broken by modifying the specified resource in a relationship.&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                        <span class="s1">&#39;POST&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;function&#39;</span><span class="p">:</span> <span class="s1">&#39;relationships_post&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;request_schema&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="s1">&#39;responses&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">HTTPConflict</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 409 Conflict when processing a POST request in which the resource object’s type is not among the type(s) that constitute the collection represented by the endpoint.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPFailedDependency</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;If a database constraint would be broken by adding the specified resource to the relationship.&#39;</span><span class="p">]},</span>
+                                <span class="n">HTTPForbidden</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A server MUST return 403 Forbidden in response to an unsupported request to update a relationship.&quot;&#39;</span><span class="p">]},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="EndpointData.make_route_name"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.make_route_name">[docs]</a>    <span class="k">def</span> <span class="nf">make_route_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attach prefix and suffix to name to generate a route_name.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            name: A pyramid route name.</span>
+
+<span class="sd">        Keyword Arguments:</span>
+<span class="sd">            suffix: An (optional) suffix to append to the route name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_name_sep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_name_prefix</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_name_sep</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EndpointData.route_pattern_to_suffix"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.route_pattern_to_suffix">[docs]</a>    <span class="k">def</span> <span class="nf">route_pattern_to_suffix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert route_pattern dict to suffix string.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pattern_dict</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pattern_dict</span><span class="p">[</span><span class="s1">&#39;pattern&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">sep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">route_pattern_sep</span><span class="p">,</span>
+                <span class="o">*</span><span class="n">pattern_dict</span><span class="p">[</span><span class="s1">&#39;fields&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span></div>
+
+<div class="viewcode-block" id="EndpointData.add_routes_views"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.add_routes_views">[docs]</a>    <span class="k">def</span> <span class="nf">add_routes_views</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate routes and views from the endpoints data object.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            view: A view_class to associate routes and views with.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">endpoint_opts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">route_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_route_name</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                <span class="n">suffix</span><span class="o">=</span><span class="n">endpoint</span>
+            <span class="p">)</span>
+            <span class="n">route_pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rp_constructor</span><span class="o">.</span><span class="n">api_pattern</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">route_pattern_to_suffix</span><span class="p">(</span>
+                    <span class="n">endpoint_opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;route_pattern&#39;</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">add_route</span><span class="p">(</span><span class="n">route_name</span><span class="p">,</span> <span class="n">route_pattern</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">http_method</span><span class="p">,</span> <span class="n">method_opts</span> <span class="ow">in</span> <span class="n">endpoint_opts</span><span class="p">[</span><span class="s1">&#39;http_methods&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">add_view</span><span class="p">(</span>
+                    <span class="n">view</span><span class="p">,</span>
+                    <span class="n">attr</span><span class="o">=</span><span class="n">method_opts</span><span class="p">[</span><span class="s1">&#39;function&#39;</span><span class="p">],</span>
+                    <span class="n">request_method</span><span class="o">=</span><span class="n">http_method</span><span class="p">,</span>
+                    <span class="n">route_name</span><span class="o">=</span><span class="n">route_name</span><span class="p">,</span>
+                    <span class="n">renderer</span><span class="o">=</span><span class="n">method_opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;renderer&#39;</span><span class="p">,</span> <span class="s1">&#39;json&#39;</span><span class="p">)</span>
+                <span class="p">)</span></div>
+
+<div class="viewcode-block" id="EndpointData.find_all_keys"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.find_all_keys">[docs]</a>    <span class="k">def</span> <span class="nf">find_all_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ep_type</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generator to fetch all the instances of a particular key in part of the tree.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">          ep_type: per-endpoint - e.g. collection, item etc.</span>
+<span class="sd">          method: http method</span>
+
+<span class="sd">          Returns:</span>
+<span class="sd">            Yields the value of each matching key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># top-level instance</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="c1"># ep-type instance</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">][</span><span class="n">ep_type</span><span class="p">]:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">][</span><span class="n">ep_type</span><span class="p">][</span><span class="n">name</span><span class="p">]</span>
+        <span class="c1"># method instance</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">][</span><span class="n">ep_type</span><span class="p">][</span><span class="s1">&#39;http_methods&#39;</span><span class="p">][</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()]:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">][</span><span class="n">ep_type</span><span class="p">][</span><span class="s1">&#39;http_methods&#39;</span><span class="p">][</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()][</span><span class="n">name</span><span class="p">]</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Colin Higgs
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
