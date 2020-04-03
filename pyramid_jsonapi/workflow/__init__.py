@@ -131,6 +131,9 @@ def make_method(name, api):
             )
         return ret
 
+    # Make stages available as an attribute of the method.
+    method.stages = stages
+
     return method
 
 
