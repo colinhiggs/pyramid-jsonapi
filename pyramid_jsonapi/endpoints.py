@@ -106,6 +106,7 @@ class EndpointData():
                                             'If the server does not support sorting as specified in the query parameter sort, it MUST return 400 Bad Request.',
                                             'If an endpoint does not support the include parameter, it MUST respond with 400 Bad Request to any requests that include it.',
                                             'If the request content is malformed in some way.']},
+                HTTPForbidden: {'reason': ['The authenticated user is not allowed to access the resource in this way.']},
             },
             'endpoints': {
                 'collection': {

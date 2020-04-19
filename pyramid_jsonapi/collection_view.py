@@ -28,6 +28,8 @@ ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
+import pyramid_jsonapi.workflow as wf
+
 
 class CollectionViewBase:
     """Base class for all view classes.
@@ -62,6 +64,8 @@ class CollectionViewBase:
     relname = None
     view_classes = None
     settings = None
+    permission_filters = None
+
 
     def __init__(self, request):
         self.request = request
@@ -1408,3 +1412,57 @@ class CollectionViewBase:
             class: subclass of CollectionViewBase providing view for ``model``.
         """
         return self.api.view_classes[model](self.request)
+
+    @staticmethod
+    def true_filter(*args):
+        return True
+
+    @classmethod
+    def register_permission_filter(cls, permissions, stages, pfunc):
+        for permission in permissions:
+            for stage in stages:
+                cls.permission_filters[permission][stage] = pfunc
+
+    @classmethod
+    def permission_filter(cls, permission_sought, stage_name):
+        try:
+            return cls.permission_filters[permission_sought][stage_name]
+        except KeyError:
+            return cls.true_filter
+
+    @functools.lru_cache()
+    def permission_handler(self, endpoint_name, stage_name, pfunc):
+        # Look for the most specific permission handler first: see if one is
+        # defined by the workflow method module (wf_kind_method).
+        wf_kind_endpoint = importlib.import_module(
+            getattr(settings, 'workflow_{}'.format(endpoint_name))
+        )
+        try:
+            return wf_kind_endpoint.permission_handler(stage_name, pfunc)
+        except (KeyError, AttributeError):
+            # Either no permission_handler (AttributeError) or it doesn't handle
+            # method_name or stage_name (KeyError). Either way look for a
+            # handler in the wf_kind package.
+            wf_kind = importlib.import_module(wf_kind_method.__package__)
+            # Last part after the underscore of the endpoint name should be the
+            # HTTP method/verb.
+            http_method = endpoint_name.split('_').pop()
+            try:
+                return wf_kind.permission_handler(http_method, stage_name, pfunc)
+            except (KeyError, AttributeError):
+                # Use generic workflow module if it handles this stage.
+                try:
+                    return wf.permission_handler(http_method, stage_name, pfunc)
+                except KeyError:
+                    # This method and stage is completely unhandled. Return a
+                    # handler that effectively does nothing.
+                    return lambda view, arg, pdata: arg
+
+    def add_permission_function(self, methods, stage_name, func):
+        # We need to figure out where the permission logic is implemented. We'll
+        # look at the specific workflow.method module first, then at the
+        # specific workflow, then then at pyramid_jsonapi.workflow. For example,
+        # for the loop workflow and GET method we'd look at
+        # pj.workflow.loop.get/collection_get etc, then pj.workflow.loop, then
+        # pj.workflow.
+        pass

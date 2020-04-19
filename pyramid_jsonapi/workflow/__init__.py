@@ -137,12 +137,31 @@ def make_method(name, api):
     return method
 
 
+def partition(items, predicate=bool):
+    trues, falses = [], []
+    for item in items:
+        if predicate(item):
+            trues.append(item)
+        else:
+            falses.append(item)
+    return (trues, falses)
+
+
 def execute_stage(view, stages, stage_name, arg, previous_data=None):
     for handler in stages[stage_name]:
         arg = handler(view, arg, previous_data)
     if previous_data is not None:
         previous_data[stage_name] = arg
     return arg
+
+
+def permission_handler(stage_name, pfunc):
+    def alter_document_handler(view, doc, pdata):
+        return doc
+    handlers = {
+        'alter_document': alter_document_handler,
+    }
+    return handler[stage_name]
 
 
 @functools.lru_cache()
@@ -287,19 +306,19 @@ class ResultObject:
             self.obj_id = None
         else:
             self.obj_id = self.view.id_col(self.object)
-
-    def serialise(self):
-        # An object of 'None' is a special case.
-        if self.object is None:
-            return None
-        # Object's id and type are required at the top level of json-api
-        # objects.
-        obj_url = self.view.request.route_url(
+        self.url = self.view.request.route_url(
             self.view.api.endpoint_data.make_route_name(
                 self.view.collection_name, suffix='item'
             ),
             **{'id': self.obj_id}
         )
+
+        self._included_dict = None
+
+    def serialise(self):
+        # An object of 'None' is a special case.
+        if self.object is None:
+            return None
         atts = {
             key: getattr(self.object, key)
             for key in self.view.requested_attributes.keys()
@@ -309,7 +328,7 @@ class ResultObject:
             rel_name: res.rel_dict(
                 rel=self.view.relationships[rel_name],
                 rel_name=rel_name,
-                parent_url=obj_url
+                parent_url=self.url
             )
             for rel_name, res in self.related.items()
         }
@@ -317,7 +336,7 @@ class ResultObject:
             'type': self.view.collection_name,
             'id': str(self.obj_id),
             'attributes': atts,
-            'links': {'self': obj_url},
+            'links': {'self': self.url},
             'relationships': rels,
         }
 
@@ -330,24 +349,36 @@ class ResultObject:
             'id': str(self.obj_id)
         }
 
+    @property
     def included_dict(self):
+        return self.compute_included_dict()
+        if self._included_dict is None:
+            self._included_dict = self.compute_included_dict()
+        return self._included_dict
+
+    def compute_included_dict(self):
         incd = {}
         for rel_name, res in self.related.items():
             if not res.is_included:
                 continue
-            incd.update(res.included_dict())
+            incd.update(res.included_dict)
         return incd
 
 
 class Results:
-    def __init__(self, view, objects=None, many=True, count=None, limit=None, is_included=False, is_top=False):
+    def __init__(self, view, objects=None, many=True, count=None, limit=None, is_included=False, is_top=False, not_found_message='Object not found.'):
         self.view = view
         self.objects = objects or []
+        self.rejected_objects = []
         self.many = many
         self.count = count
         self.limit = limit
         self.is_included = is_included
         self.is_top = is_top
+        self.not_found_message = not_found_message
+
+        self._meta = None
+        self._included_dict = None
 
     def serialise(self, identifiers=False):
         doc = Doc()
@@ -358,9 +389,9 @@ class Results:
             doc['data'] = self.identifiers()
         else:
             doc['data'] = self.data()
-        doc['meta'] = self.meta()
-        if not identifiers:
             doc['included'] = self.included()
+        doc['meta'] = self.meta
+
         return doc
 
     def serialise_object_with(self, method_name):
@@ -371,9 +402,18 @@ class Results:
             try:
                 return data[0]
             except IndexError:
-                return None
+                if self.rejected_objects:
+                    raise HTTPNotFound(self.not_found_message)
+                else:
+                    return None
 
+    @property
     def meta(self):
+        if self._meta is None:
+            self._meta = self.compute_meta()
+        return self._meta
+
+    def compute_meta(self):
         meta = {}
         if self.many:
             meta.update(
@@ -412,18 +452,33 @@ class Results:
         return rd
 
     def included(self):
-        return [o.serialise() for o in self.included_dict().values()]
+        return [o.serialise() for o in self.included_dict.values()]
 
+    @property
     def included_dict(self):
-        if self.is_top:
-            included_dict = {}
-        else:
-            included_dict = {
-                (self.view.collection_name, o.obj_id): o for o in self.objects
-            }
+        return self.compute_included_dict()
+        if self._included_dict is None:
+            self._included_dict = self.compute_included_dict()
+        return self._included_dict
+
+    def compute_included_dict(self):
+        included_dict = {}
         for o in self.objects:
-            included_dict.update(o.included_dict())
+            if not self.is_top:
+                included_dict[(self.view.collection_name, o.obj_id)] = o
+            included_dict.update(o.included_dict)
         return included_dict
+
+    def filter(self, predicate, included_dict=None):
+        if included_dict is None:
+            included_dict = self.included_dict
+        accepted = []
+        for obj in self.objects:
+            if predicate(self, obj):
+                accepted.append(obj)
+            else:
+                self.rejected_objects.append(obj)
+        self.objects = accepted
 
 
 class Doc(dict):

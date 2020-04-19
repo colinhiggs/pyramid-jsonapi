@@ -5,6 +5,7 @@ from . import views
 
 # The jsonapi module.
 import pyramid_jsonapi
+import pyramid_jsonapi.workflow as wf
 
 # Import models as a module: needed for create_jsonapi...
 from . import models
@@ -60,9 +61,19 @@ def main(global_config, **settings):
     # Create the routes and views automagically.
     pj.create_jsonapi_using_magic_and_pixie_dust()
 
-    person_view = pj.view_classes[
-        models.Person
-    ]
+    person_view = pj.view_classes[models.Person]
+    blogs_view = pj.view_classes[models.Blog]
+    def add_some_info(view, doc, pdata):
+        doc['meta']['added'] = 'some random info'
+        return doc
+
+    person_view.get.stages['alter_document'].append(add_some_info)
+    person_view.get.stages['alter_results'].append(
+        wf.loop.permission_handler('get','alter_results')
+    )
+    person_view.register_permission_filter(['get'], ['alter_results'], lambda res, obj: obj.obj_id == 1)
+    blogs_view.register_permission_filter(['get'], ['alter_results'], lambda res, obj: obj.obj_id == 2)
+
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

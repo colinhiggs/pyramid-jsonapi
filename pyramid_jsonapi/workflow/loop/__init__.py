@@ -3,6 +3,7 @@ import sqlalchemy
 
 from pyramid.httpexceptions import (
     HTTPBadRequest,
+    HTTPForbidden,
 )
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
@@ -55,3 +56,24 @@ def fill_related(stages, obj, include_path=None):
         if many:
             obj.related[rel_name].count = count
             obj.related[rel_name].limit = limit
+
+
+def permission_handler(http_method, stage_name):
+    def get_adr_handler(view, results, pdata):
+        results.filter(
+            view.permission_filter('get', 'alter_direct_results')
+        )
+        return results
+    def get_ar_handler(view, results, pdata):
+        results.filter(view.permission_filter('get', 'alter_results'))
+        for obj in results.objects:
+            for (rel_name, rel_results) in obj.related.items():
+                rel_results.filter(rel_results.view.permission_filter('get', 'alter_results'))
+        return results
+    handlers = {
+        'get': {
+            'alter_direct_results': get_adr_handler,
+            'alter_results': get_ar_handler,
+        }
+    }
+    return handlers[http_method.lower()][stage_name]
