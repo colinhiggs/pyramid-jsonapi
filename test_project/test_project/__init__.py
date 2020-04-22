@@ -68,11 +68,11 @@ def main(global_config, **settings):
         return doc
 
     person_view.get.stages['alter_document'].append(add_some_info)
-    person_view.get.stages['alter_results'].append(
-        wf.loop.permission_handler('get','alter_results')
-    )
-    person_view.register_permission_filter(['get'], ['alter_results'], lambda res, obj: obj.obj_id == 1)
-    blogs_view.register_permission_filter(['get'], ['alter_results'], lambda res, obj: obj.obj_id == 2)
+    # person_view.get.stages['alter_results'].append(
+    #     wf.loop.permission_handler('get','alter_results')
+    # )
+    person_view.register_permission_filter(['get'], ['alter_direct_results', 'alter_related_results'], lambda res, obj: obj.object.name == 'alice')
+    blogs_view.register_permission_filter(['get'], ['alter_direct_results', 'alter_related_results'], lambda res, obj: obj.object.title == 'second: alice')
 
 
     # Back to the usual pyramid stuff.

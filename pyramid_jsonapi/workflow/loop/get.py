@@ -28,6 +28,8 @@ def workflow(view, stages, data):
         not_found_message='No item {} in {}'.format(view.obj_id, view.collection_name)
     )
     results = wf.execute_stage(view, stages, 'alter_direct_results', results)
-    wf.loop.fill_related(stages, results.objects[0])
+    if results.objects:
+        # Implies stages alter_related_query and alter_related_results.
+        wf.loop.fill_related(stages, results.objects[0])
     results = wf.execute_stage(view, stages, 'alter_results', results)
     return results.serialise()

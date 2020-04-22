@@ -43,11 +43,11 @@ def make_method(name, api):
         'alter_document': deque(),
         'validate_response': deque()
     }
-    stage_order = ['alter_request', 'validate_request']
+    stage_order = ['alter_request', 'validate_request',]
     for stage_name in wf_module.stages:
         stages[stage_name] = deque()
         stage_order.append(stage_name)
-    stage_order.append('alter_document')
+    stage_order.append('alter_results')
     stage_order.append('validate_response')
     stages['validate_request'].append(validate_request_headers)
     stages['validate_request'].append(validate_request_valid_json)
@@ -161,7 +161,7 @@ def permission_handler(stage_name, pfunc):
     handlers = {
         'alter_document': alter_document_handler,
     }
-    return handler[stage_name]
+    return handlers[stage_name]
 
 
 @functools.lru_cache()
@@ -351,12 +351,6 @@ class ResultObject:
 
     @property
     def included_dict(self):
-        return self.compute_included_dict()
-        if self._included_dict is None:
-            self._included_dict = self.compute_included_dict()
-        return self._included_dict
-
-    def compute_included_dict(self):
         incd = {}
         for rel_name, res in self.related.items():
             if not res.is_included:
@@ -379,6 +373,7 @@ class Results:
 
         self._meta = None
         self._included_dict = None
+        self._flag_filtered = False
 
     def serialise(self, identifiers=False):
         doc = Doc()
@@ -456,12 +451,6 @@ class Results:
 
     @property
     def included_dict(self):
-        return self.compute_included_dict()
-        if self._included_dict is None:
-            self._included_dict = self.compute_included_dict()
-        return self._included_dict
-
-    def compute_included_dict(self):
         included_dict = {}
         for o in self.objects:
             if not self.is_top:
@@ -469,9 +458,9 @@ class Results:
             included_dict.update(o.included_dict)
         return included_dict
 
-    def filter(self, predicate, included_dict=None):
-        if included_dict is None:
-            included_dict = self.included_dict
+    def filter(self, predicate, force_rerun=False):
+        # if self._flag_filtered and not force_rerun:
+        #     return
         accepted = []
         for obj in self.objects:
             if predicate(self, obj):
@@ -479,6 +468,7 @@ class Results:
             else:
                 self.rejected_objects.append(obj)
         self.objects = accepted
+        self._flag_filtered = True
 
 
 class Doc(dict):

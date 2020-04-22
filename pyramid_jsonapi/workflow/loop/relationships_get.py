@@ -14,9 +14,10 @@ import pyramid_jsonapi.workflow as wf
 
 stages = (
     'alter_query',
-    'alter_results',
+    'alter_direct_results',
     'alter_related_query',
     'alter_related_results',
+    'alter_results',
 )
 
 
@@ -52,12 +53,13 @@ def workflow(view, stages, data):
         count = len(res_objs)
 
     results = wf.Results(
-        view,
+        view.rel_view,
         objects=res_objs,
         many=many,
         is_top=True,
         count=count,
         limit=limit
     )
+    results = wf.execute_stage(view, stages, 'alter_direct_results', results)
     results = wf.execute_stage(view, stages, 'alter_results', results)
     return results.serialise(identifiers=True)

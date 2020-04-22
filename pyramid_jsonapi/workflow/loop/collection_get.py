@@ -8,9 +8,10 @@ from pyramid.httpexceptions import (
 
 stages = (
     'alter_query',
-    'alter_results',
+    'alter_direct_results',
     'alter_related_query',
     'alter_related_results',
+    'alter_results',
 )
 
 
@@ -43,7 +44,8 @@ def workflow(view, stages, data):
         count=count,
         limit=limit
     )
-    results = wf.execute_stage(view, stages, 'alter_results', results)
+    results = wf.execute_stage(view, stages, 'alter_direct_results', results)
     for res in results.objects:
         wf.loop.fill_related(stages, res)
+    results = wf.execute_stage(view, stages, 'alter_results', results)
     return results.serialise()

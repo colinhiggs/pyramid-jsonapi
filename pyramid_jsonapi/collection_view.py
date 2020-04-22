@@ -2,6 +2,7 @@
 # pylint: disable=too-many-lines; It's mostly docstrings
 import functools
 import itertools
+import importlib
 import logging
 import re
 from collections.abc import Sequence
@@ -1418,51 +1419,53 @@ class CollectionViewBase:
         return True
 
     @classmethod
-    def register_permission_filter(cls, permissions, stages, pfunc):
-        for permission in permissions:
+    def register_permission_filter(cls, http_verbs, stages, pfunc):
+        for http_verb in http_verbs:
+            # Theoretically it would be more efficient to define this mapping
+            # somewhere else since we redifine it for every registration. But
+            # this is close to where it is used and there shouldn't be a large
+            # Number of calls to register_permission_filter.
+            verb_to_endpoints = {
+                'get': ['get', 'collection_get', 'related_get', 'relationships_get'],
+                'post': ['collection_post', 'relationships_post'],
+                'patch': ['patch', 'relationships_patch'],
+                'delete': ['delete', 'relationships_delete'],
+            }
             for stage in stages:
-                cls.permission_filters[permission][stage] = pfunc
+                cls.permission_filters[http_verb][stage] = pfunc
+                for ep_name in verb_to_endpoints[http_verb]:
+                    getattr(cls, ep_name).stages[stage].append(
+                        cls.permission_handler(ep_name, stage)
+                    )
 
     @classmethod
     def permission_filter(cls, permission_sought, stage_name):
-        try:
-            return cls.permission_filters[permission_sought][stage_name]
-        except KeyError:
-            return cls.true_filter
+        return cls.permission_filters[permission_sought][stage_name]
 
-    @functools.lru_cache()
-    def permission_handler(self, endpoint_name, stage_name, pfunc):
+    @classmethod
+    def permission_handler(cls, endpoint_name, stage_name):
         # Look for the most specific permission handler first: see if one is
         # defined by the workflow method module (wf_kind_method).
         wf_kind_endpoint = importlib.import_module(
-            getattr(settings, 'workflow_{}'.format(endpoint_name))
+            getattr(cls.api.settings, 'workflow_{}'.format(endpoint_name))
         )
         try:
-            return wf_kind_endpoint.permission_handler(stage_name, pfunc)
+            return wf_kind_endpoint.permission_handler(stage_name)
         except (KeyError, AttributeError):
             # Either no permission_handler (AttributeError) or it doesn't handle
             # method_name or stage_name (KeyError). Either way look for a
             # handler in the wf_kind package.
-            wf_kind = importlib.import_module(wf_kind_method.__package__)
+            wf_kind = importlib.import_module(wf_kind_endpoint.__package__)
             # Last part after the underscore of the endpoint name should be the
             # HTTP method/verb.
             http_method = endpoint_name.split('_').pop()
             try:
-                return wf_kind.permission_handler(http_method, stage_name, pfunc)
+                return wf_kind.permission_handler(http_method, stage_name)
             except (KeyError, AttributeError):
                 # Use generic workflow module if it handles this stage.
                 try:
-                    return wf.permission_handler(http_method, stage_name, pfunc)
+                    return wf.permission_handler(http_method, stage_name)
                 except KeyError:
                     # This method and stage is completely unhandled. Return a
                     # handler that effectively does nothing.
                     return lambda view, arg, pdata: arg
-
-    def add_permission_function(self, methods, stage_name, func):
-        # We need to figure out where the permission logic is implemented. We'll
-        # look at the specific workflow.method module first, then at the
-        # specific workflow, then then at pyramid_jsonapi.workflow. For example,
-        # for the loop workflow and GET method we'd look at
-        # pj.workflow.loop.get/collection_get etc, then pj.workflow.loop, then
-        # pj.workflow.
-        pass

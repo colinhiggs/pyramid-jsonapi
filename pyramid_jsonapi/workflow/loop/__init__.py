@@ -38,21 +38,22 @@ def fill_related(stages, obj, include_path=None):
         )
 
         try:
-            rel_results = [wf.ResultObject(rel_view, o) for o in query.all()]
+            rel_results_objs = [wf.ResultObject(rel_view, o) for o in query.all()]
         except sqlalchemy.exc.DataError as exc:
             raise HTTPBadRequest(str(exc.orig))
+        rel_results = wf.Results(
+            rel_view,
+            objects=rel_results_objs,
+            many=many,
+            is_included=is_included
+        )
         rel_results = wf.execute_stage(
             view, stages, 'alter_related_results', rel_results
         )
         if is_included:
-            for rel_obj in rel_results:
+            for rel_obj in rel_results.objects:
                 fill_related(stages, rel_obj, include_path=rel_include_path)
-        obj.related[rel_name] = wf.Results(
-            rel_view,
-            objects=rel_results,
-            many=many,
-            is_included=is_included
-        )
+        obj.related[rel_name] = rel_results
         if many:
             obj.related[rel_name].count = count
             obj.related[rel_name].limit = limit
@@ -60,19 +61,45 @@ def fill_related(stages, obj, include_path=None):
 
 def permission_handler(http_method, stage_name):
     def get_adr_handler(view, results, pdata):
-        results.filter(
-            view.permission_filter('get', 'alter_direct_results')
-        )
+        try:
+            filter = results.view.permission_filter('get', 'alter_direct_results')
+        except KeyError:
+            return results
+        results.filter(filter)
         return results
-    def get_ar_handler(view, results, pdata):
-        results.filter(view.permission_filter('get', 'alter_results'))
+
+    def filter_related(results, stage_name):
         for obj in results.objects:
             for (rel_name, rel_results) in obj.related.items():
-                rel_results.filter(rel_results.view.permission_filter('get', 'alter_results'))
+                try:
+                    # See if there's a permission filter for the related view.
+                    filter = rel_results.view.permission_filter('get', stage_name)
+                except KeyError:
+                    # No filter - next iteration.
+                    continue
+                # There was one. Filter the related results.
+                rel_results.filter(filter)
         return results
+
+    def get_arr_handler(view, results, pdata):
+        try:
+            # See if there's a permission filter for the related view.
+            filter = results.view.permission_filter('get', 'alter_related_results')
+        except KeyError:
+            # No filter.
+            return results
+        results.filter(filter)
+        return results
+
+    def get_ar_handler(view, results, pdata):
+        results.filter(results.view.permission_filter('get', 'alter_results'))
+        filter_related(results, 'alter_results')
+        return results
+
     handlers = {
         'get': {
             'alter_direct_results': get_adr_handler,
+            'alter_related_results': get_arr_handler,
             'alter_results': get_ar_handler,
         }
     }
