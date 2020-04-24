@@ -463,7 +463,7 @@ class Results:
         #     return
         accepted = []
         for obj in self.objects:
-            if predicate(self, obj):
+            if predicate(obj, self):
                 accepted.append(obj)
             else:
                 self.rejected_objects.append(obj)

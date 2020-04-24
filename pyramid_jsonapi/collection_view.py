@@ -1420,6 +1420,8 @@ class CollectionViewBase:
 
     @classmethod
     def register_permission_filter(cls, http_verbs, stages, pfunc):
+        # Permission filters should have the signature:
+        #   pfilter(object_rep, containing_rep, permission_sought, stage_name, view_instance)
         for http_verb in http_verbs:
             # Theoretically it would be more efficient to define this mapping
             # somewhere else since we redifine it for every registration. But

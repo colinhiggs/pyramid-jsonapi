@@ -1,9 +1,14 @@
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
+from functools import (
+    partial
+)
+
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden,
+    HTTPNotFound,
 )
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
@@ -60,47 +65,125 @@ def fill_related(stages, obj, include_path=None):
 
 
 def permission_handler(http_method, stage_name):
-    def get_adr_handler(view, results, pdata):
+    def apply_results_filter(results, stage_name, view):
         try:
-            filter = results.view.permission_filter('get', 'alter_direct_results')
+            filter = results.view.permission_filter('get', stage_name)
         except KeyError:
             return results
-        results.filter(filter)
+        results.filter(
+            partial(
+                filter,
+                permission_sought='get',
+                stage_name=stage_name,
+                view_instance=view,
+            )
+        )
         return results
 
-    def filter_related(results, stage_name):
+    def get_alter_direct_results_handler(view, results, pdata):
+        return apply_results_filter(results, 'alter_direct_results', view)
+
+    def get_alter_related_results_handler(view, results, pdata):
+        return apply_results_filter(results, 'alter_related_results', view)
+
+    def get_alter_results_handler(view, results, pdata):
+        apply_results_filter(results, 'alter_results', view)
         for obj in results.objects:
             for (rel_name, rel_results) in obj.related.items():
-                try:
-                    # See if there's a permission filter for the related view.
-                    filter = rel_results.view.permission_filter('get', stage_name)
-                except KeyError:
-                    # No filter - next iteration.
-                    continue
-                # There was one. Filter the related results.
-                rel_results.filter(filter)
+                apply_results_filter(rel_results, 'alter_results', view)
         return results
 
-    def get_arr_handler(view, results, pdata):
+    def partition_doc_data(doc_data, partitioner):
+        if partitioner is None:
+            return doc_data, []
+        accepted, rejected = [], []
+        for item in doc_data:
+            if partitioner(item, doc_data):
+                accepted.append(item)
+            else:
+                rejected.append(item)
+        return accepted, rejected
+
+    def get_alter_document_handler(view, doc, pdata):
+        data = doc['data']
+        # Make it so that the data part is always a list for later code DRYness.
+        # We'll put it back the way it was later. Honest ;-).
+        if isinstance(data, list):
+            many = True
+        else:
+            data = [data]
+            many = False
+
+        # Find the top level filter function to run over data.
         try:
-            # See if there's a permission filter for the related view.
-            filter = results.view.permission_filter('get', 'alter_related_results')
+            data_filter = partial(
+                view.permission_filter('get', 'alter_document'),
+                permission_sought='get',
+                stage_name='alter_document',
+                view_instance=view,
+            )
         except KeyError:
-            # No filter.
-            return results
-        results.filter(filter)
-        return results
+            data_filter = None
 
-    def get_ar_handler(view, results, pdata):
-        results.filter(results.view.permission_filter('get', 'alter_results'))
-        filter_related(results, 'alter_results')
-        return results
+        # Remember what was rejected so it can be removed from included later.
+        rejected_set = set()
+        accepted, rejected = partition_doc_data(data, data_filter)
+
+        # Filter any related items.
+        for item in data:
+            for rel_name, rel_dict in item.get('relationships', {}).items():
+                rel_data = rel_dict['data']
+                if isinstance(rel_data, list):
+                    rel_many = True
+                else:
+                    rel_data = [rel_data]
+                    rel_many = False
+                rel_view = view.view_instance(view.relationships[rel_name].tgt_class)
+                try:
+                    rel_filter = partial(
+                        rel_view.permission_filter('get', 'alter_document'),
+                        permission_sought='get',
+                        stage_name='alter_document',
+                        view_instance=view,
+                    )
+                except KeyError:
+                    rel_filter = None
+                rel_accepted, rel_rejected = partition_doc_data(rel_data, rel_filter)
+                rejected_set |= {(item['type'], item['id']) for item in rel_rejected}
+                if rel_many:
+                    rel_dict['data'] = rel_accepted
+                else:
+                    try:
+                        rel_dict['data'] = rel_accepted[0]
+                    except IndexError:
+                        rel_dict['data'] = None
+
+        # Time to do what we promised and put scalars back.
+        if many:
+            doc['data'] = accepted
+        else:
+            try:
+                doc['data'] = accepted[0]
+            except IndexError:
+                if rejected:
+                    raise(HTTPNotFound('Object not found.'))
+                else:
+                    doc['data'] = None
+
+        # Remove any rejected items from included.
+        included = [
+            item for item in doc.get('included', {})
+            if (item['type'], item['id']) not in rejected_set
+        ]
+        doc['included'] = included
+        return doc
 
     handlers = {
         'get': {
-            'alter_direct_results': get_adr_handler,
-            'alter_related_results': get_arr_handler,
-            'alter_results': get_ar_handler,
+            'alter_direct_results': get_alter_direct_results_handler,
+            'alter_related_results': get_alter_related_results_handler,
+            'alter_results': get_alter_results_handler,
+            'alter_document': get_alter_document_handler,
         }
     }
     return handlers[http_method.lower()][stage_name]
