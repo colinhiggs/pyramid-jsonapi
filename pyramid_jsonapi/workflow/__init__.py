@@ -8,6 +8,10 @@ from collections import (
     deque,
 )
 
+from functools import (
+    partial
+)
+
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
     MANYTOMANY,
@@ -155,13 +159,98 @@ def execute_stage(view, stages, stage_name, arg, previous_data=None):
     return arg
 
 
-def permission_handler(stage_name, pfunc):
-    def alter_document_handler(view, doc, pdata):
+def permission_handler(http_method, stage_name):
+    def partition_doc_data(doc_data, partitioner):
+        if partitioner is None:
+            return doc_data, []
+        accepted, rejected = [], []
+        for item in doc_data:
+            if partitioner(item, doc_data):
+                accepted.append(item)
+            else:
+                rejected.append(item)
+        return accepted, rejected
+
+    def get_alter_document_handler(view, doc, pdata):
+        data = doc['data']
+        # Make it so that the data part is always a list for later code DRYness.
+        # We'll put it back the way it was later. Honest ;-).
+        if isinstance(data, list):
+            many = True
+        else:
+            data = [data]
+            many = False
+
+        # Find the top level filter function to run over data.
+        try:
+            data_filter = partial(
+                view.permission_filter('get', 'alter_document'),
+                permission_sought='get',
+                stage_name='alter_document',
+                view_instance=view,
+            )
+        except KeyError:
+            data_filter = None
+
+        # Remember what was rejected so it can be removed from included later.
+        rejected_set = set()
+        accepted, rejected = partition_doc_data(data, data_filter)
+
+        # Filter any related items.
+        for item in data:
+            for rel_name, rel_dict in item.get('relationships', {}).items():
+                rel_data = rel_dict['data']
+                if isinstance(rel_data, list):
+                    rel_many = True
+                else:
+                    rel_data = [rel_data]
+                    rel_many = False
+                rel_view = view.view_instance(view.relationships[rel_name].tgt_class)
+                try:
+                    rel_filter = partial(
+                        rel_view.permission_filter('get', 'alter_document'),
+                        permission_sought='get',
+                        stage_name='alter_document',
+                        view_instance=view,
+                    )
+                except KeyError:
+                    rel_filter = None
+                rel_accepted, rel_rejected = partition_doc_data(rel_data, rel_filter)
+                rejected_set |= {(item['type'], item['id']) for item in rel_rejected}
+                if rel_many:
+                    rel_dict['data'] = rel_accepted
+                else:
+                    try:
+                        rel_dict['data'] = rel_accepted[0]
+                    except IndexError:
+                        rel_dict['data'] = None
+
+        # Time to do what we promised and put scalars back.
+        if many:
+            doc['data'] = accepted
+        else:
+            try:
+                doc['data'] = accepted[0]
+            except IndexError:
+                if rejected:
+                    raise(HTTPNotFound('Object not found.'))
+                else:
+                    doc['data'] = None
+
+        # Remove any rejected items from included.
+        included = [
+            item for item in doc.get('included', {})
+            if (item['type'], item['id']) not in rejected_set
+        ]
+        doc['included'] = included
         return doc
+
     handlers = {
-        'alter_document': alter_document_handler,
+        'get': {
+            'alter_document': get_alter_document_handler,
+        }
     }
-    return handlers[stage_name]
+    return handlers[http_method.lower()][stage_name]
 
 
 @functools.lru_cache()
