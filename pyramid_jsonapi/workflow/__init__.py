@@ -245,10 +245,29 @@ def permission_handler(http_method, stage_name):
         doc['included'] = included
         return doc
 
+    def post_alter_request_handler(view, request, pdata):
+        try:
+            pfilter = view.permission_filter('post', 'alter_request')
+        except KeyError:
+            return request
+        allowed = pfilter(
+            request.json_body['data'],
+            request.json_body,
+            permission_sought='post',
+            stage_name='alter_request',
+            view_instance=view,
+        )
+        if not allowed:
+            raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+        return request
+
     handlers = {
         'get': {
             'alter_document': get_alter_document_handler,
-        }
+        },
+        'post': {
+            'alter_request': post_alter_request_handler,
+        },
     }
     return handlers[http_method.lower()][stage_name]
 

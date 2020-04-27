@@ -17,10 +17,10 @@ from pyramid.httpexceptions import (
 )
 
 stages = (
-    'alter_',
-    'alter_results',
+    'alter_direct_results',
     'alter_related_query',
     'alter_related_results',
+    'alter_results',
 )
 
 
@@ -117,6 +117,14 @@ def workflow(view, stages, prev_data):
     view.request.response.headers['Location'] = view.request.route_url(
         view.api.endpoint_data.make_route_name(view.collection_name, suffix='item'),
         **{'id': view.id_col(item)}
+    )
+
+    results = wf.Results(
+        view,
+        objects=[wf.ResultObject(view, item)],
+        many=False,
+        is_top=True,
+        not_found_message='No item {} in {}'.format(view.obj_id, view.collection_name)
     )
     doc = wf.Doc()
     ro = wf.ResultObject(view, item)

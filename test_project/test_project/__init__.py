@@ -67,16 +67,20 @@ def main(global_config, **settings):
         doc['meta']['added'] = 'some random info'
         return doc
 
+    # Add some random information via the alter_document stage.
     person_view.get.stages['alter_document'].append(add_some_info)
-    # person_view.get.stages['alter_results'].append(
-    #     wf.loop.permission_handler('get','alter_results')
-    # )
+
+    # Apply GET permission functions at the alter_direct_results and
+    # alter_related_results stages.
     # person_view.register_permission_filter(['get'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.name == 'alice')
     # blogs_view.register_permission_filter(['get'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.title == 'second: alice')
 
-    person_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '1')
-    blogs_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
+    # Apply GET permission functions at the alter_document stages.
+    # person_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '1')
+    # blogs_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
 
+    # Apply POST permission function at the alter_request stage.
+    # person_view.register_permission_filter(['post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['attributes']['name'])
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()
