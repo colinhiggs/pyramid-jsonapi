@@ -80,7 +80,17 @@ def main(global_config, **settings):
     # blogs_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
 
     # Apply POST permission function at the alter_request stage.
-    # person_view.register_permission_filter(['post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['attributes']['name'])
+    def post_filter(item, context, view_instance, **kwargs):
+        fn_name = view_instance.api.endpoint_data.get_function_name(
+            view_instance,
+            'POST',
+            view_instance.request.matched_route.pattern
+        )
+        if fn_name == 'collection_post':
+            return 'bad' not in item['attributes']['name']
+        else:
+            return item['id'] == 1
+    # person_view.register_permission_filter(['post'], ['alter_request'], post_filter)
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

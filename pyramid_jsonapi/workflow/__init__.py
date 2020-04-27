@@ -246,19 +246,45 @@ def permission_handler(http_method, stage_name):
         return doc
 
     def post_alter_request_handler(view, request, pdata):
+        # Make sure there is a permission filter registered.
         try:
-            pfilter = view.permission_filter('post', 'alter_request')
+            pfilter = partial(
+                view.permission_filter('post', 'alter_request'),
+                permission_sought='post',
+                stage_name='alter_request',
+                view_instance=view,
+            )
         except KeyError:
             return request
-        allowed = pfilter(
-            request.json_body['data'],
-            request.json_body,
-            permission_sought='post',
-            stage_name='alter_request',
-            view_instance=view,
+
+        # To differentiate between collection_post and relationships_post
+        ep_function = view.api.endpoint_data.get_function_name(
+            view,
+            'POST',
+            request.matched_route.pattern,
         )
-        if not allowed:
-            raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+        if ep_function == 'collection_post':
+            allowed = pfilter(
+                request.json_body['data'],
+                request.json_body,
+                permission_sought='post',
+                stage_name='alter_request',
+                view_instance=view,
+            )
+            if not pfilter(request.json_body['data'], request.json_body):
+                raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+        elif ep_function == 'relationships_post':
+            # TODO: option to select alternate behaviour
+            if True:
+                new_data = [
+                    item for item in request.json_body['data']
+                    if pfilter(item, request.json_body['data'])
+                ]
+                request.json_body['data'] = new_data
+            else:
+                for item in request.json_body['data']:
+                    if not pfilter(item, request.json_body['data']):
+                        raise HTTPForbidden('No permission to POST {}'.format(item))
         return request
 
     handlers = {

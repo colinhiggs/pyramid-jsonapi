@@ -311,3 +311,23 @@ class EndpointData():
         # method instance
         if name in self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()]:
             yield self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()][name]
+
+    def get_function_name(self, view, http_method, route_pattern):
+        """Find the name of the function which handles the given route and method.
+        """
+        for endpoint, endpoint_opts in self.endpoints['endpoints'].items():
+            ep_route_pattern = self.rp_constructor.api_pattern(
+                view.collection_name,
+                self.route_pattern_to_suffix(
+                    endpoint_opts.get('route_pattern', {})
+                )
+            )
+            if ep_route_pattern == route_pattern:
+                return endpoint_opts['http_methods'][http_method.upper()]['function']
+        raise Exception(
+            'No endpoint function found for {}, {}, {},'.format(
+                view.collection_name,
+                http_method,
+                route_pattern,
+            )
+        )
