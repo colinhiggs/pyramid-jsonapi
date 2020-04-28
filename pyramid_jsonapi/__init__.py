@@ -239,24 +239,24 @@ class PyramidJSONAPI():
                 ``collection_view_factory()``
         """
 
-        # Find the primary key column from the model and use as 'id_col_name'
-        try:
-            keycols = sqlalchemy.inspect(model).primary_key
-        except sqlalchemy.exc.NoInspectionAvailable:
-            # Trying to inspect the declarative_base() raises this exception. We
-            # don't want to add it to the API.
-            return
-        # Only deal with one primary key column.
-        if len(keycols) > 1:
-            raise Exception(
-                'Model {} has more than one primary key.'.format(
-                    model.__name__
-                )
-            )
-
         if not hasattr(model, '__pyramid_jsonapi__'):
             model.__pyramid_jsonapi__ = {}
+
         if 'id_col_name' not in model.__pyramid_jsonapi__:
+            # Find the primary key column from the model and use as 'id_col_name'
+            try:
+                keycols = sqlalchemy.inspect(model).primary_key
+            except sqlalchemy.exc.NoInspectionAvailable:
+                # Trying to inspect the declarative_base() raises this exception.
+                # We don't want to add it to the API.
+                return
+            # Only deal with one primary key column.
+            if len(keycols) > 1:
+                raise Exception(
+                    'Model {} has more than one primary key.'.format(
+                        model.__name__
+                    )
+                )
             model.__pyramid_jsonapi__['id_col_name'] = keycols[0].name
 
         # Create a view class for use in the various add_view() calls below.
