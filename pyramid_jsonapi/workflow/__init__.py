@@ -47,7 +47,7 @@ def make_method(name, api):
         'alter_document': deque(),
         'validate_response': deque()
     }
-    stage_order = ['alter_request', 'validate_request',]
+    stage_order = ['alter_request', 'validate_request', ]
     for stage_name in wf_module.stages:
         stages[stage_name] = deque()
         stage_order.append(stage_name)

@@ -67,7 +67,6 @@ class CollectionViewBase:
     settings = None
     permission_filters = None
 
-
     def __init__(self, request):
         self.request = request
         if self.api.get_dbsession:
