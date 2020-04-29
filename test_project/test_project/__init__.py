@@ -72,8 +72,8 @@ def main(global_config, **settings):
 
     # Apply GET permission functions at the alter_direct_results and
     # alter_related_results stages.
-    # person_view.register_permission_filter(['get'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.name == 'alice')
-    # blogs_view.register_permission_filter(['get'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.title == 'second: alice')
+    # person_view.register_permission_filter(['ALL_GET'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.name == 'alice')
+    # blogs_view.register_permission_filter(['ALL_GET'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.title == 'second: alice')
 
     # Apply GET permission functions at the alter_document stages.
     # person_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '1')
@@ -91,6 +91,8 @@ def main(global_config, **settings):
         else:
             return item['id'] == 1
     # person_view.register_permission_filter(['post'], ['alter_request'], post_filter)
+
+    # person_view.register_permission_filter(['ALL'], ['alter_document'], lambda obj, *args, **kwargs: True)
 
     # Back to the usual pyramid stuff.
     return config.make_wsgi_app()

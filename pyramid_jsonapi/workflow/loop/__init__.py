@@ -64,16 +64,16 @@ def fill_related(stages, obj, include_path=None):
             obj.related[rel_name].limit = limit
 
 
-def permission_handler(http_method, stage_name):
-    def apply_results_filter(results, stage_name, view):
+def permission_handler(endpoint_name, stage_name):
+    def apply_results_filter(results, endpoint_name, stage_name, view):
         try:
-            filter = results.view.permission_filter('get', stage_name)
+            filter = results.view.permission_filter(endpoint_name, stage_name)
         except KeyError:
             return results
         results.filter(
             partial(
                 filter,
-                permission_sought='get',
+                endpoint_name=endpoint_name,
                 stage_name=stage_name,
                 view_instance=view,
             )
@@ -81,16 +81,16 @@ def permission_handler(http_method, stage_name):
         return results
 
     def get_alter_direct_results_handler(view, results, pdata):
-        return apply_results_filter(results, 'alter_direct_results', view)
+        return apply_results_filter(results, endpoint_name, 'alter_direct_results', view)
 
     def get_alter_related_results_handler(view, results, pdata):
-        return apply_results_filter(results, 'alter_related_results', view)
+        return apply_results_filter(results, endpoint_name, 'alter_related_results', view)
 
     def get_alter_results_handler(view, results, pdata):
-        apply_results_filter(results, 'alter_results', view)
+        apply_results_filter(results, endpoint_name, 'alter_results', view)
         for obj in results.objects:
             for (rel_name, rel_results) in obj.related.items():
-                apply_results_filter(rel_results, 'alter_results', view)
+                apply_results_filter(rel_results, endpoint_name, 'alter_results', view)
         return results
 
     handlers = {
@@ -100,4 +100,6 @@ def permission_handler(http_method, stage_name):
             'alter_results': get_alter_results_handler,
         }
     }
-    return handlers[http_method.lower()][stage_name]
+    for ep in ('collection_get', 'related_get', 'relationships_get'):
+        handlers[ep] = handlers['get']
+    return handlers[endpoint_name][stage_name]

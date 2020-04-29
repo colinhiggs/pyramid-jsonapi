@@ -159,7 +159,7 @@ def execute_stage(view, stages, stage_name, arg, previous_data=None):
     return arg
 
 
-def permission_handler(http_method, stage_name):
+def permission_handler(endpoint_name, stage_name):
     def partition_doc_data(doc_data, partitioner):
         if partitioner is None:
             return doc_data, []
@@ -185,7 +185,7 @@ def permission_handler(http_method, stage_name):
         try:
             data_filter = partial(
                 view.permission_filter('get', 'alter_document'),
-                permission_sought='get',
+                endpoint_name=endpoint_name,
                 stage_name='alter_document',
                 view_instance=view,
             )
@@ -209,7 +209,7 @@ def permission_handler(http_method, stage_name):
                 try:
                     rel_filter = partial(
                         rel_view.permission_filter('get', 'alter_document'),
-                        permission_sought='get',
+                        endpoint_name=endpoint_name,
                         stage_name='alter_document',
                         view_instance=view,
                     )
@@ -250,7 +250,7 @@ def permission_handler(http_method, stage_name):
         try:
             pfilter = partial(
                 view.permission_filter('post', 'alter_request'),
-                permission_sought='post',
+                endpoint_name=endpoint_name,
                 stage_name='alter_request',
                 view_instance=view,
             )
@@ -258,22 +258,22 @@ def permission_handler(http_method, stage_name):
             return request
 
         # To differentiate between collection_post and relationships_post
-        ep_function = view.api.endpoint_data.get_function_name(
-            view,
-            'POST',
-            request.matched_route.pattern,
-        )
-        if ep_function == 'collection_post':
+        # ep_function = view.api.endpoint_data.get_function_name(
+        #     view,
+        #     'POST',
+        #     request.matched_route.pattern,
+        # )
+        if endpoint_name == 'collection_post':
             allowed = pfilter(
                 request.json_body['data'],
                 request.json_body,
-                permission_sought='post',
+                permission_sought=endpoint_name,
                 stage_name='alter_request',
                 view_instance=view,
             )
             if not pfilter(request.json_body['data'], request.json_body):
                 raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
-        elif ep_function == 'relationships_post':
+        elif endpoint_name == 'relationships_post':
             # TODO: option to select alternate behaviour
             if True:
                 new_data = [
@@ -291,11 +291,14 @@ def permission_handler(http_method, stage_name):
         'get': {
             'alter_document': get_alter_document_handler,
         },
-        'post': {
+        'collection_post': {
             'alter_request': post_alter_request_handler,
         },
     }
-    return handlers[http_method.lower()][stage_name]
+    for ep in ('collection_get', 'related_get', 'realationships_get'):
+        handlers[ep] = handlers['get']
+    handlers['relationships_post'] = handlers['collection_post']
+    return handlers[endpoint_name][stage_name]
 
 
 @functools.lru_cache()

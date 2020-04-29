@@ -1418,35 +1418,62 @@ class CollectionViewBase:
         return True
 
     @classmethod
-    def register_permission_filter(cls, http_verbs, stages, pfunc):
+    def register_permission_filter(cls, endpoint_names, stages, pfunc):
         # Permission filters should have the signature:
-        #   pfilter(object_rep, containing_rep, permission_sought, stage_name, view_instance)
-        for http_verb in http_verbs:
-            # Theoretically it would be more efficient to define this mapping
-            # somewhere else since we redifine it for every registration. But
-            # this is close to where it is used and there shouldn't be a large
-            # Number of calls to register_permission_filter.
-            verb_to_endpoints = {
-                'get': ['get', 'collection_get', 'related_get', 'relationships_get'],
-                'post': ['collection_post', 'relationships_post'],
-                'patch': ['patch', 'relationships_patch'],
-                'delete': ['delete', 'relationships_delete'],
+        #   pfilter(object_rep, containing_rep, endpoint_name, stage_name, view_instance)
+
+        # Theoretically it would be more efficient to define this mapping
+        # somewhere else since we redifine it for every registration. But
+        # this is close to where it is used and there shouldn't be a large
+        # Number of calls to register_permission_filter.
+        subs = {
+            'ALL_GET': {'get', 'collection_get', 'related_get', 'relationships_get'},
+            'ALL_POST': {'collection_post', 'relationships_post'},
+            'ALL_PATCH': {'patch', 'relationships_patch'},
+            'ALL_DELETE': {'delete', 'relationships_delete'},
+            'ALL_RELATIONSHIPS': {
+                'relationships_get',
+                'relationships_post',
+                'relationships_patch',
+                'relationships_delete',
+            },
+            'ALL_COLLECTION': {'collection_get', 'collection_post'},
+            'ALL': {
+                'get', 'collection_get', 'related_get', 'relationships_get',
+                'collection_post', 'relationships_post',
+                'patch', 'relationships_patch',
+                'delete', 'relationships_delete',
             }
-            for stage in stages:
-                cls.permission_filters[http_verb][stage] = pfunc
-                for ep_name in verb_to_endpoints[http_verb]:
-                    getattr(cls, ep_name).stages[stage].append(
-                        cls.permission_handler(ep_name, stage)
-                    )
+        }
+        new_eps = set()
+        for ep in endpoint_names:
+            sub = subs.get(ep)
+            if sub:
+                new_eps |= sub
+            else:
+                new_eps.add(ep)
+        endpoint_names = new_eps
+
+        for stage_name in stages:
+            for ep_name in endpoint_names:
+                cls.permission_filters[ep_name][stage_name] = pfunc
+                ep_func = getattr(cls, ep_name)
+                try:
+                    stage = ep_func.stages[stage_name]
+                except KeyError:
+                    raise KeyError('Endpoint {} has no stage {}.'.format(ep_name, stage_name))
+                stage.append(
+                    cls.permission_handler(ep_name, stage_name)
+                )
 
     @classmethod
-    def permission_filter(cls, permission_sought, stage_name):
-        return cls.permission_filters[permission_sought][stage_name]
+    def permission_filter(cls, endpoint_name, stage_name):
+        return cls.permission_filters[endpoint_name][stage_name]
 
     @classmethod
     def permission_handler(cls, endpoint_name, stage_name):
         # Look for the most specific permission handler first: see if one is
-        # defined by the workflow method module (wf_kind_method).
+        # defined by the workflow method module (wf_kind_endpoint).
         wf_kind_endpoint = importlib.import_module(
             getattr(cls.api.settings, 'workflow_{}'.format(endpoint_name))
         )
@@ -1459,13 +1486,12 @@ class CollectionViewBase:
             wf_kind = importlib.import_module(wf_kind_endpoint.__package__)
             # Last part after the underscore of the endpoint name should be the
             # HTTP method/verb.
-            http_method = endpoint_name.split('_').pop()
             try:
-                return wf_kind.permission_handler(http_method, stage_name)
+                return wf_kind.permission_handler(endpoint_name, stage_name)
             except (KeyError, AttributeError):
                 # Use generic workflow module if it handles this stage.
                 try:
-                    return wf.permission_handler(http_method, stage_name)
+                    return wf.permission_handler(endpoint_name, stage_name)
                 except KeyError:
                     # This method and stage is completely unhandled. Return a
                     # handler that effectively does nothing.
