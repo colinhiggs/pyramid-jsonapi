@@ -268,7 +268,6 @@ def permission_handler(endpoint_name, stage_name):
             raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
         return request
 
-
     def relationships_post_alter_request_handler(view, request, pdata):
         # Make sure there is a permission filter registered.
         try:
