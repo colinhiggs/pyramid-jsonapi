@@ -76,21 +76,12 @@ def main(global_config, **settings):
     # blogs_view.register_permission_filter(['ALL_GET'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.title == 'second: alice')
 
     # Apply GET permission functions at the alter_document stages.
-    # person_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '1')
-    # blogs_view.register_permission_filter(['get'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
+    # person_view.register_permission_filter(['ALL_GET'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '1')
+    # blogs_view.register_permission_filter(['ALL_GET'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
 
     # Apply POST permission function at the alter_request stage.
-    def post_filter(item, context, view_instance, **kwargs):
-        fn_name = view_instance.api.endpoint_data.get_function_name(
-            view_instance,
-            'POST',
-            view_instance.request.matched_route.pattern
-        )
-        if fn_name == 'collection_post':
-            return 'bad' not in item['attributes']['name']
-        else:
-            return item['id'] == 1
-    # person_view.register_permission_filter(['post'], ['alter_request'], post_filter)
+    person_view.register_permission_filter(['collection_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['attributes']['name'])
+    # person_view.register_permission_filter(['relationships_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['id'] == 1)
 
     # person_view.register_permission_filter(['ALL'], ['alter_document'], lambda obj, *args, **kwargs: True)
 

@@ -245,11 +245,11 @@ def permission_handler(endpoint_name, stage_name):
         doc['included'] = included
         return doc
 
-    def post_alter_request_handler(view, request, pdata):
+    def collection_post_alter_request_handler(view, request, pdata):
         # Make sure there is a permission filter registered.
         try:
             pfilter = partial(
-                view.permission_filter('post', 'alter_request'),
+                view.permission_filter(endpoint_name, 'alter_request'),
                 endpoint_name=endpoint_name,
                 stage_name='alter_request',
                 view_instance=view,
@@ -257,34 +257,88 @@ def permission_handler(endpoint_name, stage_name):
         except KeyError:
             return request
 
-        # To differentiate between collection_post and relationships_post
-        # ep_function = view.api.endpoint_data.get_function_name(
-        #     view,
-        #     'POST',
-        #     request.matched_route.pattern,
-        # )
-        if endpoint_name == 'collection_post':
-            allowed = pfilter(
-                request.json_body['data'],
-                request.json_body,
-                permission_sought=endpoint_name,
+        allowed = pfilter(
+            request.json_body['data'],
+            request.json_body,
+            endpoint_name=endpoint_name,
+            stage_name='alter_request',
+            view_instance=view,
+        )
+        if not pfilter(request.json_body['data'], request.json_body):
+            raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+        return request
+
+
+    def relationships_post_alter_request_handler(view, request, pdata):
+        # Make sure there is a permission filter registered.
+        try:
+            pfilter = partial(
+                view.permission_filter(endpoint_name, 'alter_request'),
+                endpoint_name=endpoint_name,
                 stage_name='alter_request',
                 view_instance=view,
             )
-            if not pfilter(request.json_body['data'], request.json_body):
-                raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
-        elif endpoint_name == 'relationships_post':
+        except KeyError:
+            return request
+
+        # TODO: option to select alternate behaviour
+        if True:
+            # Pretend that the request only contained the items which are allowed.
+            new_data = [
+                item for item in request.json_body['data']
+                if pfilter(item, request.json_body['data'])
+            ]
+            request.json_body['data'] = new_data
+        else:
+            # Deny the whole request if we lack permission for any one item.
+            for item in request.json_body['data']:
+                if not pfilter(item, request.json_body['data']):
+                    raise HTTPForbidden('No permission to POST {}'.format(item))
+        return request
+
+    def patch_alter_request_handler(view, request, pdata):
+        try:
+            pfilter = partial(
+                view.permission_filter(endpoint_name, 'alter_request'),
+                endpoint_name=endpoint_name,
+                stage_name='alter_request',
+                view_instance=view,
+            )
+        except KeyError:
+            return request
+        if not pfilter(request.json_body['data'], request.json_body):
+            raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
+        return request
+
+    def relationships_patch_alter_request_handler(view, request, pdata):
+        try:
+            pfilter = partial(
+                view.permission_filter(endpoint_name, 'alter_request'),
+                endpoint_name=endpoint_name,
+                stage_name='alter_request',
+                view_instance=view,
+            )
+        except KeyError:
+            return request
+
+        data = request.json_body['data']
+
+        if isinstance(data, list):
+            # To_many relationship.
+
             # TODO: option to select alternate behaviour
             if True:
-                new_data = [
-                    item for item in request.json_body['data']
-                    if pfilter(item, request.json_body['data'])
-                ]
-                request.json_body['data'] = new_data
+                # Pretend that the request only contained the items which are allowed.
+                request.json_body['data'] = [item for item in data if pfilter(item, data)]
             else:
-                for item in request.json_body['data']:
-                    if not pfilter(item, request.json_body['data']):
-                        raise HTTPForbidden('No permission to POST {}'.format(item))
+                # Deny the whole request if we lack permission for any one item.
+                for item in data:
+                    if not pfilter(item, data):
+                        raise HTTPForbidden('No permission to PATCH {}'.format(item))
+        else:
+            # To_one relationship.
+            if not pfilter(item, data):
+                raise HTTPForbidden('No permission to PATCH {}'.format(item))
         return request
 
     handlers = {
@@ -292,12 +346,20 @@ def permission_handler(endpoint_name, stage_name):
             'alter_document': get_alter_document_handler,
         },
         'collection_post': {
-            'alter_request': post_alter_request_handler,
+            'alter_request': collection_post_alter_request_handler,
+        },
+        'relationships_post': {
+            'alter_request': relationships_post_alter_request_handler,
+        },
+        'patch': {
+            'alter_request': patch_alter_request_handler,
+        },
+        'relationships_patch': {
+            'alter_request': relationships_patch_alter_request_handler,
         },
     }
     for ep in ('collection_get', 'related_get', 'realationships_get'):
         handlers[ep] = handlers['get']
-    handlers['relationships_post'] = handlers['collection_post']
     return handlers[endpoint_name][stage_name]
 
 
