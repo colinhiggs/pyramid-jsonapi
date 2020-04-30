@@ -80,7 +80,7 @@ def main(global_config, **settings):
     # blogs_view.register_permission_filter(['ALL_GET'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
 
     # Apply POST permission function at the alter_request stage.
-    person_view.register_permission_filter(['collection_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['attributes']['name'])
+    # person_view.register_permission_filter(['collection_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['attributes']['name'])
     # person_view.register_permission_filter(['relationships_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['id'] == 1)
 
     # person_view.register_permission_filter(['ALL'], ['alter_document'], lambda obj, *args, **kwargs: True)
