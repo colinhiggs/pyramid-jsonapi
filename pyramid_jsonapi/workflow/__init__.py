@@ -345,6 +345,51 @@ def permission_handler(endpoint_name, stage_name):
                 raise HTTPForbidden('No permission to PATCH {}'.format(item))
         return request
 
+    def delete_alter_request_handler(view, request, pdata):
+        try:
+            pfilter = partial(
+                view.permission_filter(endpoint_name, 'alter_request'),
+                endpoint_name=endpoint_name,
+                stage_name='alter_request',
+                view_instance=view,
+            )
+        except KeyError:
+            return request
+        if not pfilter({'type': view.collection_name, 'id': view.obj_id}, view.request):
+            raise HTTPForbidden('No permission to delete {}/{}'.format(
+                view.collection_name, view.obj_id
+            ))
+        return request
+
+    def relationships_delete_alter_request_handler(view, request, pdata):
+        try:
+            pfilter = partial(
+                view.permission_filter(endpoint_name, 'alter_request'),
+                endpoint_name=endpoint_name,
+                stage_name='alter_request',
+                view_instance=view,
+            )
+        except KeyError:
+            return request
+        # TODO: option to select alternate behaviour
+        if True:
+            # Pretend that the request only contained the items which are allowed.
+            new_data = [
+                item for item in request.json_body['data']
+                if pfilter(item, request.json_body['data'])
+            ]
+            request.json_body['data'] = new_data
+        else:
+            # Deny the whole request if we lack permission for any one item.
+            for item in request.json_body['data']:
+                if not pfilter(item, request.json_body['data']):
+                    raise HTTPForbidden(
+                        'No permission to DELETE {} from relationship {}.'.format(
+                            item, view.relname
+                        )
+                    )
+        return request
+
     handlers = {
         'get': {
             'alter_document': get_alter_document_handler,
@@ -361,6 +406,12 @@ def permission_handler(endpoint_name, stage_name):
         'relationships_patch': {
             'alter_request': relationships_patch_alter_request_handler,
         },
+        'delete': {
+            'alter_request': delete_alter_request_handler,
+        },
+        'relationships_delete': {
+            'alter_request': relationships_delete_alter_request_handler,
+        }
     }
     for ep in ('collection_get', 'related_get', 'realationships_get'):
         handlers[ep] = handlers['get']
