@@ -1001,7 +1001,7 @@ class CollectionViewBase:
                 self.model
             ).options(
                 load_only(self.key_column.name)
-            ).get(obj_id)
+            ).filter(self.key_column == obj_id).one()
         except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
             item = False
         return bool(item)
