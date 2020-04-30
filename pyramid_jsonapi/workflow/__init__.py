@@ -293,7 +293,11 @@ def permission_handler(endpoint_name, stage_name):
             # Deny the whole request if we lack permission for any one item.
             for item in request.json_body['data']:
                 if not pfilter(item, request.json_body['data']):
-                    raise HTTPForbidden('No permission to POST {}'.format(item))
+                    raise HTTPForbidden(
+                        'No permission to POST {} to relationship {}.'.format(
+                            item, view.relname
+                        )
+                    )
         return request
 
     def patch_alter_request_handler(view, request, pdata):
