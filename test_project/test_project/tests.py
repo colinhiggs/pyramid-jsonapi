@@ -2591,7 +2591,7 @@ class TestFeatures(DBTestBase):
         test_app = self.test_app(
             options={'pyramid_jsonapi_tests.models_iterable': 'list'}
         )
-        test_app.get('/people/1')
+        test_app.get('/blogs/1')
 
     def test_feature_debug_endpoints(self):
         '''Should create a set of debug endpoints for manipulating the database.'''

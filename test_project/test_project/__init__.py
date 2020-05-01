@@ -18,7 +18,7 @@ from pyramid.httpexceptions import (
 test_settings = {
     'models_iterable': {
         'module': models,
-        'list': [models.Person, models.Blog],
+        'list': [models.Blog, models.Person, models.Post],
         'composite_key': [models2.CompositeKey]
     }
 }
