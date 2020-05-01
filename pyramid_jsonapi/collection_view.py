@@ -997,14 +997,13 @@ class CollectionViewBase:
             bool: True if object exists, False if not.
         """
         try:
-            item = self.dbsession.query(
+            return bool(self.dbsession.query(
                 self.model
             ).options(
                 load_only(self.key_column.name)
-            ).filter(self.key_column == obj_id).one()
+            ).filter(self.key_column == obj_id).one_or_none())
         except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
-            item = False
-        return bool(item)
+            return False
 
     def mapped_info_from_name(self, name, model=None):
         """Get the pyramid_jsonapi info dictionary for a mapped object.
