@@ -46,11 +46,11 @@ Sketch of procedure:
   1. `False` denies access to the whole resource. A config setting changes behaviour between forbidden error and pretending `{blogs/1}` doesn't exist.
   1. A dictionary in the form `{'attributes': {'title', 'content'}, 'relationships': {'posts'}}` gives the same level of access to selected attributes and relationships (access to the contents of listed attributes and existence of relationships).
   1. Now loop through all related items in _allowed_ relationships:
-    1. Ask for `get` permission to each related resource.
-    1. `True` _or_ a dictionary means a resource identifier for that resource will be present in that relationship.
-    1. `False` means a resource identifier will not be present.
-    1. If a related resource's identifier is present in the relationship data then it may be included (if the request asked for it to be).
-    1. Each included resource will be shown depending on `get` permissions as above (but requested for the included resource).
+     1. Ask for `get` permission to each related resource.
+     1. `True` _or_ a dictionary means a resource identifier for that resource will be present in that relationship.
+     1. `False` means a resource identifier will not be present.
+     1. If a related resource's identifier is present in the relationship data then it may be included (if the request asked for it to be).
+     1. Each included resource will be shown depending on `get` permissions as above (but requested for the included resource).
 
 #### example: `GET /blogs`
 View method: `collection_get`
@@ -74,7 +74,7 @@ View method: `related_get`
 Permissions required:
 
   1. `GET` for `{blogs/1}` relationship `owner`.
-    - Note: if no further permissions were enforced, this would result in returning the resource `{people/1}`.
+     - Note: if no further permissions were enforced, this would result in returning the resource `{people/1}`.
   2. Same permissions required as outlined in the `GET /blogs/1` example above but for the `{people/1}` resource.
 
 #### example: `GET /blogs/1/posts` (to_many rel)
@@ -87,7 +87,7 @@ View method: `relationships_get`
 Permissions required:
 
   1. `GET` for `{blogs/1}` relationship `owner`.
-    - Note: if no further permissions were enforced, this would result in returning the resource identifier for `{people/1}`.
+     - Note: if no further permissions were enforced, this would result in returning the resource identifier for `{people/1}`.
   2. `GET` for res id for `{people/1}` (`pfilter` result of `True` or any dictionary will do).
   3. `GET` as appropriate for any resources in `included`.
 
@@ -177,11 +177,11 @@ Permissions required:
 
   1. `PATCH` permission to the `title` attribute.
   1. `PATCH` permission on `{blogs/1}.owner` to set value to `{people/2}`.
-    1. `POST` permission on `{people/2}.blogs` to add `{blogs/1}`.
+     1. `POST` permission on `{people/2}.blogs` to add `{blogs/1}`.
   1. `POST` permission on `{blogs/1}.posts` to add `{posts/3}`.
-    1. `PATCH` permission on `{posts/3}.blog` to set value to `{blogs/1}`.
+     1. `PATCH` permission on `{posts/3}.blog` to set value to `{blogs/1}`.
   1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/1}`.
-    1. `PATCH` permission on `{posts/1}.blog` to set value to `None/null`.
+     1. `PATCH` permission on `{posts/1}.blog` to set value to `None/null`.
 
 #### example: `PATCH /blogs/1/relationships/owner`
 
