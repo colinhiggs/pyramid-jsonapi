@@ -35,22 +35,22 @@ View methdod: `get`
 Permissions required:
 
   1. `GET` for each attribute value (via return of `get_pfilter(obj, resource=True, ...)` being `True` or `{'attributes': {'the_attribute'}}`); `False` will result in no object (`HTTPForbidden` or `HTTPNotFound`).
-  - `GET` for each relationship or it will not appear.
-  - `GET` for each related item (via return of `get_pfilter(identifier, resource=False, ...)`) or it will not be returned (`meta` _might_ have list of items removed from return).
-  - `GET` for each item in `included`; These will, in turn, be subject to the above permission rules.
+  1. `GET` for each relationship or it will not appear.
+  1. `GET` for each related item (via return of `get_pfilter(identifier, resource=False, ...)`) or it will not be returned (`meta` _might_ have list of items removed from return).
+  1. `GET` for each item in `included`; These will, in turn, be subject to the above permission rules.
 
 Sketch of procedure:
 
   1. ask for `get` permission to `/blogs/1`:
-  - `True` gives access to the content of all attributes (`title`, `content`, and `secret_code`) and shows the _existence_ of all rels (`owner` and `posts`).
-  - `False` denies access to the whole object. A config setting changes behaviour between forbidden error and pretending `/blogs/1` doesn't exist.
-  - A dictionary in the form `{'attributes': {'title', 'content'}, 'relationships': {'posts'}}` gives the same level of access to selected attributes and relationships (access to the contents of listed attributes and existence of relationships).
-  - Now loop through all related items in _allowed_ relationships:
+  1. `True` gives access to the content of all attributes (`title`, `content`, and `secret_code`) and shows the _existence_ of all rels (`owner` and `posts`).
+  1. `False` denies access to the whole object. A config setting changes behaviour between forbidden error and pretending `/blogs/1` doesn't exist.
+  1. A dictionary in the form `{'attributes': {'title', 'content'}, 'relationships': {'posts'}}` gives the same level of access to selected attributes and relationships (access to the contents of listed attributes and existence of relationships).
+  1. Now loop through all related items in _allowed_ relationships:
     1. Ask for `get` permission to each related object.
-    - `True` _or_ a dictionary means a resource identifier for that object will be present in that relationship.
-    - `False` means a resource identifier will not be present.
-    - If a related object's identifier is present in the relationship data then it may be included (if the request asked for it to be).
-    - Each included object will be shown depending on `get` permissions as above (but requested for the included object).
+    1. `True` _or_ a dictionary means a resource identifier for that object will be present in that relationship.
+    1. `False` means a resource identifier will not be present.
+    1. If a related object's identifier is present in the relationship data then it may be included (if the request asked for it to be).
+    1. Each included object will be shown depending on `get` permissions as above (but requested for the included object).
 
 #### example: `GET /blogs`
 View method: `collection_get`
@@ -62,11 +62,11 @@ Same as `GET /blogs/1` example above, but applied to each object in `data`.
 Sketch of procedure:
 
   1. `get` permission checked for every object in `data`.
-  - If `True`, add whole object.
-  - If `False`, remove object.
-  - If dictionary, modify object and add.
-  - Check related objects for each primary object in `data` as for `GET /blogs/1` above.
-  - Build `included` as for `GET /blogs/1` example above.
+  1. If `True`, add whole object.
+  1. If `False`, remove object.
+  1. If dictionary, modify object and add.
+  1. Check related objects for each primary object in `data` as for `GET /blogs/1` above.
+  1. Build `included` as for `GET /blogs/1` example above.
 
 #### example: `GET /blogs/1/owner` (to_one rel)
 View method: `related_get`
