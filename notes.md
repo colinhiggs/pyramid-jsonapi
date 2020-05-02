@@ -137,10 +137,25 @@ POST /blogs
 #### example: `POST /blogs/1/relationships/posts [resource identifiers]`
 View method: `relationships_post`
 
+Assume `{posts/10}.owner` is currently `None` and `{posts/20}.owner` is currently `{blogs/2}`.
+
+```json
+POST /blogs/1/relationships/posts
+{
+  "data": [
+    {"type": "posts", "id": "10"},
+    {"type": "posts", "id": "20"},    
+  ]
+}
+```
+
 Permissions required:
 
-  1. `POST` permission to add each `post` resource identifier listed to the `posts` relationship of `{blogs/1}`.
-  2. `PATCH` permission to alter the `blog` relationship of each `post` to `{blogs/1}`.
+  1. `POST` permission on `{blogs/1}.posts` to add `{posts/10}`.
+    1. `PATCH` permission on `{posts/10}.owner` to set value to `{blogs/1}`.
+  1. `POST` permission on `{blogs/1}.posts` to add `{posts/20}`.
+    1. `PATCH` permission on `{posts/20}.owner` to set value to `{blogs/1}`.
+    2. `DELETE` permission on `{blogs/2}.posts` to remove `{posts/20}`.
 
 
 #### example: `PATCH /blogs/1`
@@ -171,21 +186,64 @@ PATCH /blogs/1
 }
 ```
 
-We assume that the `title` is changing, the `owner` is changing and that the list of `posts` is changing from `[1,2]` to `[2,3]` (removing `{posts/1}` and adding `posts/2`).
+We assume that the `title` is changing, the `owner` is changing from `{people/1}` to `{people/2}`, and that the list of `posts` is changing from `[1,2]` to `[2,3]` (removing `{posts/1}` and adding `{posts/2}`).
 
 Permissions required:
 
   1. `PATCH` permission to the `title` attribute.
   1. `PATCH` permission on `{blogs/1}.owner` to set value to `{people/2}`.
      1. `POST` permission on `{people/2}.blogs` to add `{blogs/1}`.
+     1. `DELETE` permission on `{people/1}.blogs` to remove `{blogs/1}`
   1. `POST` permission on `{blogs/1}.posts` to add `{posts/3}`.
      1. `PATCH` permission on `{posts/3}.blog` to set value to `{blogs/1}`.
+     1. `DELETE` permission on `{blogs/ID}.posts` to remove `{posts/3}` if `{posts/3}.blog` is currently `{blogs/ID}`.
   1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/1}`.
      1. `PATCH` permission on `{posts/1}.blog` to set value to `None/null`.
 
 #### example: `PATCH /blogs/1/relationships/owner`
 
+```json
+PATCH /blogs/1/relationships/owner
+{
+  "data": {"type": "people", "id": "2"}
+}
+```
+
+Permissions required:
+
+  1. `PATCH` permission on `{blogs/1}.owner` to set value to `{people/2}`.
+  1. `POST` permission on `{people/2}.blogs` to add `{blogs/1}`.
+  1. `DELETE` permission on `{people/1}.blogs` to remove `{blogs/1}`.
+
 #### example: `PATCH /blogs/1/relationships/posts`
+
+Assume:
+  - `{blogs/1}.posts` is currently `[{posts/1}, {posts/2}]`.
+  - `{posts/3}.blog` is currently `None`.
+  - `{posts/4}.blog` is currently `{blogs/2}`.
+
+```json
+PATCH /blogs/1/relationships/posts
+{
+  "data": [
+    {"type": "posts", "id": "2"},
+    {"type": "posts", "id": "3"},
+    {"type": "posts", "id": "4"}
+  ]
+}
+```
+
+So this constitutes removing `{posts/1}` and adding `{posts/3}` and `{posts/4}`.
+
+Permissions required:
+
+  1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/1}`.
+    1. `PATCH` permission on `{posts/1}.blog` to set value to `None`.
+  1. `POST` permission on `{blogs/1}.posts` to add `{posts/3}`.
+    1. `PATCH` permission on `{posts/3}.blog` to set value to `{blogs/1}`.
+  1. `POST` permission on `{blogs/1}.posts` to add `{posts/4}`.
+    1. `PATCH` permission on `{posts/4}.blog` to set value to `{blogs/1}`.
+    1. `DELETE` permission on `{blogs/2}.posts` to remove `{posts/4}`.
 
 #### example: `DELETE /blogs/1`
 
