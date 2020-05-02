@@ -238,12 +238,12 @@ So this constitutes removing `{posts/1}` and adding `{posts/3}` and `{posts/4}`.
 Permissions required:
 
   1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/1}`.
-    1. `PATCH` permission on `{posts/1}.blog` to set value to `None`.
+     1. `PATCH` permission on `{posts/1}.blog` to set value to `None`.
   1. `POST` permission on `{blogs/1}.posts` to add `{posts/3}`.
-    1. `PATCH` permission on `{posts/3}.blog` to set value to `{blogs/1}`.
+     1. `PATCH` permission on `{posts/3}.blog` to set value to `{blogs/1}`.
   1. `POST` permission on `{blogs/1}.posts` to add `{posts/4}`.
-    1. `PATCH` permission on `{posts/4}.blog` to set value to `{blogs/1}`.
-    1. `DELETE` permission on `{blogs/2}.posts` to remove `{posts/4}`.
+     1. `PATCH` permission on `{posts/4}.blog` to set value to `{blogs/1}`.
+     1. `DELETE` permission on `{blogs/2}.posts` to remove `{posts/4}`.
 
 #### example: `DELETE /blogs/1`
 
