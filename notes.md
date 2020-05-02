@@ -2,7 +2,7 @@
 
 ## Permissions
 
-`/blogs/1` has the following representation:
+`{blogs/1}` has the following representation:
 
 ```python
 {
@@ -41,16 +41,16 @@ Permissions required:
 
 Sketch of procedure:
 
-  1. ask for `get` permission to `{blogs/1}`:
+  1. ask for `GET` permission to `{blogs/1}`:
   1. `True` gives access to the content of all attributes (`title`, `content`, and `secret_code`) and shows the _existence_ of all rels (`owner` and `posts`).
   1. `False` denies access to the whole resource. A config setting changes behaviour between forbidden error and pretending `{blogs/1}` doesn't exist.
   1. A dictionary in the form `{'attributes': {'title', 'content'}, 'relationships': {'posts'}}` gives the same level of access to selected attributes and relationships (access to the contents of listed attributes and existence of relationships).
   1. Now loop through all related items in _allowed_ relationships:
-     1. Ask for `get` permission to each related resource.
+     1. Ask for `GET` permission to each related resource.
      1. `True` _or_ a dictionary means a resource identifier for that resource will be present in that relationship.
      1. `False` means a resource identifier will not be present.
      1. If a related resource's identifier is present in the relationship data then it may be included (if the request asked for it to be).
-     1. Each included resource will be shown depending on `get` permissions as above (but requested for the included resource).
+     1. Each included resource will be shown depending on `GET` permissions as above (but requested for the included resource).
 
 #### example: `GET /blogs`
 View method: `collection_get`
@@ -61,7 +61,7 @@ Same as `GET /blogs/1` example above, but applied to each resource in `data`.
 
 Sketch of procedure:
 
-  1. `get` permission checked for every resource in `data`.
+  1. `GET` permission checked for every resource in `data`.
   1. If `True`, add whole resource.
   1. If `False`, remove resource.
   1. If dictionary, modify resource and add.
