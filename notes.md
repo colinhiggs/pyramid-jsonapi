@@ -247,4 +247,20 @@ Permissions required:
 
 #### example: `DELETE /blogs/1`
 
+Assume `{blogs/1}` is as represented at the beginning of the permissions section.
+
+Permissions required:
+
+  1. `DELETE` permission on `{blogs/1}`.
+     1. `DELETE` permission on `{people/1}.blogs` to remove `{blogs/1}`.
+     1. `PATCH` permission on `{posts/1}.blog` to set value to `None`.
+     1. `PATCH` permission on `{posts/2}.blog` to set value to `None`.
+
 #### example: `DELETE /blogs/1/relationships/posts`
+
+Permissions required:
+
+1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/1}`.
+   1. `PATCH` permission on `{posts/1}.blog` to set value to `None`.
+1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/2}`.
+   1. `PATCH` permission on `{posts/2}.blog` to set value to `None`.
