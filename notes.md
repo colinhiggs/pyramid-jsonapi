@@ -32,12 +32,19 @@
 #### example: `GET /blogs/1`
 View methdod: `get`
 
-Permissions required:
+Permissions required in general:
 
   1. `GET` for each attribute value (via return of `get_pfilter(obj, resource=True, ...)` being `True` or `{'attributes': {'the_attribute'}}`); `False` will result in no resource (`HTTPForbidden` or `HTTPNotFound`).
   1. `GET` for each relationship or it will not appear.
   1. `GET` for each related item (via return of `get_pfilter(identifier, resource=False, ...)`) or it will not be returned (`meta` _might_ have list of items removed from return).
   1. `GET` for each resource in `included`; These will, in turn, be subject to the above permission rules.
+
+Permissions required for `{blogs/1}`:
+
+  1. `GET` permission (not `False`) on `{blogs/1}` to see that `{blogs/1}` exists.
+  1. `GET` permission on `{blogs/1}.title, content, secret_code` to see existence and value of `title`, `content`, `secret_code`.
+  1. `GET` permission on `{blogs/1}.owner` to see 
+
 
 Sketch of procedure:
 
