@@ -41,9 +41,15 @@ Permissions required in general:
 
 Permissions required for `{blogs/1}`:
 
-  1. `GET` permission (not `False`) on `{blogs/1}` to see that `{blogs/1}` exists.
+  1. `GET` permission on `{blogs/1}` to see that `{blogs/1}` exists.
+     - `blogs1_GET_perms = blogs_view_class.pfilter[GET](blogs_view_instance, {blogs/1})`
+     - `blogs1_GET_perms == True or isinstance(blogs1_GET_perms, dict)` for exists permission.
   1. `GET` permission on `{blogs/1}.title, content, secret_code` to see existence and value of `title`, `content`, `secret_code`.
-  1. `GET` permission on `{blogs/1}.owner` to see 
+     - `blogs1_GET_perms == True` or `'title' in blogs1_GET_perms['attributes']` etc.
+  1. `GET` permission on `{blogs/1}.owner` to see that `{blogs/1}.owner` exists.
+     1. `blogs1_GET_perms == True` or `'owner' in blogs1_GET_perms['attributes']`.
+     1. `GET` permission on `{people/1}` or else resource identifier will not be added.
+        1. `people1_GET_perms = people_view_class.pfilter[GET](blogs_view_instance, {people/1})`
 
 
 Sketch of procedure:

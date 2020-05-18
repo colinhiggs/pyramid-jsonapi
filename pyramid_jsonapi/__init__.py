@@ -353,6 +353,26 @@ class PyramidJSONAPI():
 
         return view_class
 
+    def enable_permission_handlers(self, permission, stage_names):
+        perm_to_eps = {
+            'get': {'get', 'collection_get', 'related_get', 'relationships_get'},
+            'post': {'collection_post', 'relationships_post'},
+            'patch': {'patch', 'relationships_patch'},
+            'delete': {'delete', 'relationships_delete'},
+        }
+        perm_to_eps['write'] = perm_to_eps['post'] | perm_to_eps['patch'] | perm_to_eps['delete']
+        for model, view_class in self.view_classes.items():
+            for ep_name in perm_to_eps[permission.lower()]:
+                ep_func = getattr(view_class, ep_name)
+                for stage_name in stage_names:
+                    try:
+                        stage = ep_func.stages[stage_name]
+                    except KeyError:
+                        raise KeyError('Endpoint {} has no stage {}.'.format(ep_name, stage_name))
+                    stage.append(
+                        view_class.permission_handler(ep_name, stage_name)
+                    )
+
 
 class StdRelationship:
     """Standardise access to relationship informationself.

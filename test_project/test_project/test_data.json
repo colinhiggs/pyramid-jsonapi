@@ -4,11 +4,13 @@
       [
         {
           "id": "1",
-          "name": "alice"
+          "name": "alice",
+          "age": 21
         },
         {
           "id": "2",
-          "name": "bob"
+          "name": "bob",
+          "age": 42
         },
         {
           "id": "3",
@@ -16,7 +18,8 @@
         },
         {
           "id": "4",
-          "name": "secret_squirrel"
+          "name": "secret_squirrel",
+          "age": 63
         },
         {
           "id": "10",

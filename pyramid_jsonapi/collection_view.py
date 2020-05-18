@@ -1417,57 +1417,39 @@ class CollectionViewBase:
         return True
 
     @classmethod
-    def register_permission_filter(cls, endpoint_names, stages, pfunc):
+    def register_permission_filter(cls, permissions, stages, pfunc):
         # Permission filters should have the signature:
-        #   pfilter(object_rep, containing_rep, endpoint_name, stage_name, view_instance)
+        #   pfilter(object_rep, containing_rep, permission_sought, stage_name, view_instance)
 
         # Theoretically it would be more efficient to define this mapping
         # somewhere else since we redifine it for every registration. But
         # this is close to where it is used and there shouldn't be a large
         # Number of calls to register_permission_filter.
-        subs = {
-            'ALL_GET': {'get', 'collection_get', 'related_get', 'relationships_get'},
-            'ALL_POST': {'collection_post', 'relationships_post'},
-            'ALL_PATCH': {'patch', 'relationships_patch'},
-            'ALL_DELETE': {'delete', 'relationships_delete'},
-            'ALL_RELATIONSHIPS': {
-                'relationships_get',
-                'relationships_post',
-                'relationships_patch',
-                'relationships_delete',
-            },
-            'ALL_COLLECTION': {'collection_get', 'collection_post'},
-            'ALL': {
-                'get', 'collection_get', 'related_get', 'relationships_get',
-                'collection_post', 'relationships_post',
-                'patch', 'relationships_patch',
-                'delete', 'relationships_delete',
-            }
+        perm_to_eps = {
+            'get': {'get', 'collection_get', 'related_get', 'relationships_get'},
+            'post': {'collection_post', 'relationships_post'},
+            'patch': {'patch', 'relationships_patch'},
+            'delete': {'delete', 'relationships_delete'},
         }
-        new_eps = set()
-        for ep in endpoint_names:
-            sub = subs.get(ep)
-            if sub:
-                new_eps |= sub
-            else:
-                new_eps.add(ep)
-        endpoint_names = new_eps
-
         for stage_name in stages:
-            for ep_name in endpoint_names:
-                cls.permission_filters[ep_name][stage_name] = pfunc
-                ep_func = getattr(cls, ep_name)
-                try:
-                    stage = ep_func.stages[stage_name]
-                except KeyError:
-                    raise KeyError('Endpoint {} has no stage {}.'.format(ep_name, stage_name))
-                stage.append(
-                    cls.permission_handler(ep_name, stage_name)
-                )
+            for perm in permissions:
+                perm = perm.lower()
+                # Register the filter function.
+                cls.permission_filters[perm][stage_name] = pfunc
+                # # Add appropriate stage handlers.
+                # for ep_name in perm_to_eps[perm]:
+                #     ep_func = getattr(cls, ep_name)
+                #     try:
+                #         stage = ep_func.stages[stage_name]
+                #     except KeyError:
+                #         raise KeyError('Endpoint {} has no stage {}.'.format(ep_name, stage_name))
+                #     stage.append(
+                #         cls.permission_handler(ep_name, stage_name)
+                #     )
 
     @classmethod
-    def permission_filter(cls, endpoint_name, stage_name):
-        return cls.permission_filters[endpoint_name][stage_name]
+    def permission_filter(cls, permission, stage_name):
+        return cls.permission_filters[permission][stage_name]
 
     @classmethod
     def permission_handler(cls, endpoint_name, stage_name):

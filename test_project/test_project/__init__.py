@@ -72,13 +72,23 @@ def main(global_config, **settings):
 
     # Apply GET permission functions at the alter_direct_results and
     # alter_related_results stages.
-    # person_view.register_permission_filter(['ALL_GET'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.name == 'alice')
-    # blogs_view.register_permission_filter(['ALL_GET'], ['alter_direct_results', 'alter_related_results'], lambda obj, *args, **kwargs: obj.object.title == 'second: alice')
+    # pj.enable_permission_handlers('get', ['alter_direct_results', 'alter_related_results'])
+    # person_view.register_permission_filter(
+    #     ['get'],
+    #     ['alter_direct_results', 'alter_related_results'],
+    #     lambda obj, *args, **kwargs: obj.object.name != 'alice',
+    # )
+    # blogs_view.register_permission_filter(
+    #     ['get'],
+    #     ['alter_direct_results', 'alter_related_results'],
+    #     lambda obj, *args, **kwargs: obj.object.id != 3,
+    # )
 
     # Apply GET permission functions at the alter_document stages.
     # person_view.register_permission_filter(['ALL_GET'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '1')
     # blogs_view.register_permission_filter(['ALL_GET'], ['alter_document'], lambda item, *args, **kwargs: item['id'] == '2')
 
+    # pj.enable_permission_handlers('write', ['alter_request'])
     # Apply POST permission function at the alter_request stage.
     # person_view.register_permission_filter(['collection_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['attributes']['name'])
     # person_view.register_permission_filter(['relationships_post'], ['alter_request'], lambda item, *args, **kwargs: 'bad' not in item['id'] == 1)
@@ -86,4 +96,6 @@ def main(global_config, **settings):
     # person_view.register_permission_filter(['ALL'], ['alter_document'], lambda obj, *args, **kwargs: True)
 
     # Back to the usual pyramid stuff.
-    return config.make_wsgi_app()
+    app = config.make_wsgi_app()
+    app.pj = pj
+    return app

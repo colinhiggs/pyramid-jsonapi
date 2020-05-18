@@ -650,10 +650,7 @@ class Results:
             try:
                 return data[0]
             except IndexError:
-                if self.rejected_objects:
-                    raise HTTPNotFound(self.not_found_message)
-                else:
-                    return None
+                return None
 
     @property
     def meta(self):

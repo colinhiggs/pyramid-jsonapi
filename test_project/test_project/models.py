@@ -50,6 +50,7 @@ class Person(Base):
     __tablename__ = 'people'
     id = IdColumn()
     name = Column(Text)
+    age = Column(Integer)
     invisible = Column(Text)
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')

@@ -65,32 +65,41 @@ def fill_related(stages, obj, include_path=None):
 
 
 def permission_handler(endpoint_name, stage_name):
-    def apply_results_filter(results, endpoint_name, stage_name, view):
+    def apply_results_filter(results, stage_name, view):
         try:
-            filter = results.view.permission_filter(endpoint_name, stage_name)
+            filter = results.view.permission_filter('get', stage_name)
         except KeyError:
             return results
         results.filter(
             partial(
                 filter,
-                endpoint_name=endpoint_name,
+                permission_sought='get',
                 stage_name=stage_name,
                 view_instance=view,
             )
         )
+        try:
+            obj = results.objects[0].object
+        except:
+            pass
         return results
 
     def get_alter_direct_results_handler(view, results, pdata):
-        return apply_results_filter(results, endpoint_name, 'alter_direct_results', view)
+        results = apply_results_filter(results, 'alter_direct_results', view)
+        if not results.many and results.rejected_objects:
+            raise HTTPNotFound('No item {} in {}'.format(view.obj_id, view.collection_name))
+        return results
 
     def get_alter_related_results_handler(view, results, pdata):
-        return apply_results_filter(results, endpoint_name, 'alter_related_results', view)
+        return apply_results_filter(results, 'alter_related_results', view)
 
     def get_alter_results_handler(view, results, pdata):
-        apply_results_filter(results, endpoint_name, 'alter_results', view)
+        apply_results_filter(results, 'alter_results', view)
+        if not results.many and results.rejected_objects:
+            raise HTTPNotFound('No item {} in {}'.format(view.obj_id, view.collection_name))
         for obj in results.objects:
             for (rel_name, rel_results) in obj.related.items():
-                apply_results_filter(rel_results, endpoint_name, 'alter_results', view)
+                apply_results_filter(rel_results, 'alter_results', view)
         return results
 
     handlers = {
