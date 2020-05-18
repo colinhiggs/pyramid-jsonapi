@@ -80,7 +80,7 @@ def permission_handler(endpoint_name, stage_name):
         )
         try:
             obj = results.objects[0].object
-        except:
+        except IndexError:
             pass
         return results
 
