@@ -565,6 +565,8 @@ class ResultObject:
             ),
             **{'id': self.obj_id}
         )
+        self.attribute_mask = set(self.view.requested_attributes)
+        self.rel_mask = set(self.view.requested_relationships)
 
         self._included_dict = None
 
@@ -574,7 +576,7 @@ class ResultObject:
             return None
         atts = {
             key: getattr(self.object, key)
-            for key in self.view.requested_attributes.keys()
+            for key in self.attribute_mask
             if self.view.mapped_info_from_name(key).get('visible', True)
         }
         rels = {
@@ -584,6 +586,7 @@ class ResultObject:
                 parent_url=self.url
             )
             for rel_name, res in self.related.items()
+            if rel_name in self.rel_mask
         }
         return {
             'type': self.view.collection_name,
@@ -713,10 +716,23 @@ class Results:
         #     return
         accepted = []
         for obj in self.objects:
-            if predicate(obj, self):
+            pred = predicate(obj, self)
+            if pred:
                 accepted.append(obj)
+                if isinstance(pred, dict):
+                    # A dictionary result means that some attributes and/or
+                    # relationships are permitted.
+                    atts = pred.get('attributes', set())
+                    if atts is True:
+                        atts = obj.attribute_mask
+                    obj.attribute_mask &= set(atts)
+                    rels = pred.get('relationships', set())
+                    if rels is True:
+                        rels = obj.rel_mask
+                    obj.rel_mask &= set(rels)
             else:
                 self.rejected_objects.append(obj)
+
         self.objects = accepted
         self._flag_filtered = True
 

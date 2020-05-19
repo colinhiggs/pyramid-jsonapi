@@ -1436,16 +1436,6 @@ class CollectionViewBase:
                 perm = perm.lower()
                 # Register the filter function.
                 cls.permission_filters[perm][stage_name] = pfunc
-                # # Add appropriate stage handlers.
-                # for ep_name in perm_to_eps[perm]:
-                #     ep_func = getattr(cls, ep_name)
-                #     try:
-                #         stage = ep_func.stages[stage_name]
-                #     except KeyError:
-                #         raise KeyError('Endpoint {} has no stage {}.'.format(ep_name, stage_name))
-                #     stage.append(
-                #         cls.permission_handler(ep_name, stage_name)
-                #     )
 
     @classmethod
     def permission_filter(cls, permission, stage_name):

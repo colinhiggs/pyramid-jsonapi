@@ -238,7 +238,7 @@ class TestPermissions(DBTestBase):
         )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
-                return {'attributes': True, 'relationships': {}}
+                return {'attributes': True, 'relationships': {'blogs'}}
             else:
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
