@@ -304,10 +304,7 @@ class PyramidJSONAPI():
         class_attrs['collection_name'] = collection_name or model.__tablename__
         class_attrs['exposed_fields'] = expose_fields
         class_attrs['permission_filters'] = {
-            'get': {}, 'collection_get': {}, 'related_get': {}, 'relationships_get': {},
-            'collection_post': {}, 'relationships_post': {},
-            'patch': {}, 'relationships_patch': {},
-            'delete': {}, 'relationships_delete': {},
+            'get': {}, 'post': {}, 'patch': {}, 'delete': {},
         }
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
