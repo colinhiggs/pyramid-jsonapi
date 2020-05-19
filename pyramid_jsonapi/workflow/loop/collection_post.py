@@ -87,7 +87,6 @@ def workflow(view, stages, prev_data):
                         )
                 setattr(item, relname, rel_items)
             else:
-                print('Adding to_one related.')
                 if (not isinstance(reldata, dict)) and (reldata is not None):
                     raise HTTPBadRequest(
                         'Relationship data should be a resource identifier object or null.'
