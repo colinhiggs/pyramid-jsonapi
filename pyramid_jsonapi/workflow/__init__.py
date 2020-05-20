@@ -170,6 +170,7 @@ def partition_doc_data(doc_data, partitioner):
             rejected.append(item)
     return accepted, rejected
 
+
 def get_alter_document_handler(view, doc, pdata):
     data = doc['data']
     # Make it so that the data part is always a list for later code DRYness.
@@ -184,7 +185,7 @@ def get_alter_document_handler(view, doc, pdata):
     try:
         data_filter = partial(
             view.permission_filter('get', 'alter_document'),
-            endpoint_name=endpoint_name,
+            permission_sought='get',
             stage_name='alter_document',
             view_instance=view,
         )
@@ -208,7 +209,7 @@ def get_alter_document_handler(view, doc, pdata):
             try:
                 rel_filter = partial(
                     rel_view.permission_filter('get', 'alter_document'),
-                    endpoint_name=endpoint_name,
+                    permission_sought='get',
                     stage_name='alter_document',
                     view_instance=view,
                 )
@@ -244,6 +245,7 @@ def get_alter_document_handler(view, doc, pdata):
     doc['included'] = included
     return doc
 
+
 def collection_post_alter_request_handler(view, request, pdata):
     # Make sure there is a permission filter registered.
     try:
@@ -264,12 +266,13 @@ def collection_post_alter_request_handler(view, request, pdata):
         raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
     return request
 
+
 def relationships_post_alter_request_handler(view, request, pdata):
     # Make sure there is a permission filter registered.
     try:
         pfilter = partial(
-            view.permission_filter(endpoint_name, 'alter_request'),
-            endpoint_name=endpoint_name,
+            view.permission_filter('post', 'alter_request'),
+            permission_sought='post',
             stage_name='alter_request',
             view_instance=view,
         )
@@ -295,11 +298,12 @@ def relationships_post_alter_request_handler(view, request, pdata):
                 )
     return request
 
+
 def patch_alter_request_handler(view, request, pdata):
     try:
         pfilter = partial(
-            view.permission_filter(endpoint_name, 'alter_request'),
-            endpoint_name=endpoint_name,
+            view.permission_filter('patch', 'alter_request'),
+            permission_sought='patch',
             stage_name='alter_request',
             view_instance=view,
         )
@@ -309,11 +313,12 @@ def patch_alter_request_handler(view, request, pdata):
         raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
     return request
 
+
 def relationships_patch_alter_request_handler(view, request, pdata):
     try:
         pfilter = partial(
-            view.permission_filter(endpoint_name, 'alter_request'),
-            endpoint_name=endpoint_name,
+            view.permission_filter('patch', 'alter_request'),
+            permission_sought='patch',
             stage_name='alter_request',
             view_instance=view,
         )
@@ -340,11 +345,12 @@ def relationships_patch_alter_request_handler(view, request, pdata):
             raise HTTPForbidden('No permission to PATCH {}'.format(item))
     return request
 
+
 def delete_alter_request_handler(view, request, pdata):
     try:
         pfilter = partial(
-            view.permission_filter(endpoint_name, 'alter_request'),
-            endpoint_name=endpoint_name,
+            view.permission_filter('delete', 'alter_request'),
+            permission_sought='delete',
             stage_name='alter_request',
             view_instance=view,
         )
@@ -356,11 +362,12 @@ def delete_alter_request_handler(view, request, pdata):
         ))
     return request
 
+
 def relationships_delete_alter_request_handler(view, request, pdata):
     try:
         pfilter = partial(
-            view.permission_filter(endpoint_name, 'alter_request'),
-            endpoint_name=endpoint_name,
+            view.permission_filter('delete', 'alter_request'),
+            permission_sought='delete',
             stage_name='alter_request',
             view_instance=view,
         )
@@ -384,6 +391,7 @@ def relationships_delete_alter_request_handler(view, request, pdata):
                     )
                 )
         return request
+
 
 permission_handlers = {
     'get': {
@@ -417,6 +425,7 @@ permission_handlers = {
         'alter_request': relationships_delete_alter_request_handler,
     }
 }
+
 
 def permission_handler(endpoint_name, stage_name):
     return permission_handlers[endpoint_name][stage_name]
