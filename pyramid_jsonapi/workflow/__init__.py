@@ -159,262 +159,267 @@ def execute_stage(view, stages, stage_name, arg, previous_data=None):
     return arg
 
 
-def permission_handler(endpoint_name, stage_name):
-    def partition_doc_data(doc_data, partitioner):
-        if partitioner is None:
-            return doc_data, []
-        accepted, rejected = [], []
-        for item in doc_data:
-            if partitioner(item, doc_data):
-                accepted.append(item)
+def partition_doc_data(doc_data, partitioner):
+    if partitioner is None:
+        return doc_data, []
+    accepted, rejected = [], []
+    for item in doc_data:
+        if partitioner(item, doc_data):
+            accepted.append(item)
+        else:
+            rejected.append(item)
+    return accepted, rejected
+
+def get_alter_document_handler(view, doc, pdata):
+    data = doc['data']
+    # Make it so that the data part is always a list for later code DRYness.
+    # We'll put it back the way it was later. Honest ;-).
+    if isinstance(data, list):
+        many = True
+    else:
+        data = [data]
+        many = False
+
+    # Find the top level filter function to run over data.
+    try:
+        data_filter = partial(
+            view.permission_filter('get', 'alter_document'),
+            endpoint_name=endpoint_name,
+            stage_name='alter_document',
+            view_instance=view,
+        )
+    except KeyError:
+        data_filter = None
+
+    # Remember what was rejected so it can be removed from included later.
+    rejected_set = set()
+    accepted, rejected = partition_doc_data(data, data_filter)
+
+    # Filter any related items.
+    for item in data:
+        for rel_name, rel_dict in item.get('relationships', {}).items():
+            rel_data = rel_dict['data']
+            if isinstance(rel_data, list):
+                rel_many = True
             else:
-                rejected.append(item)
-        return accepted, rejected
-
-    def get_alter_document_handler(view, doc, pdata):
-        data = doc['data']
-        # Make it so that the data part is always a list for later code DRYness.
-        # We'll put it back the way it was later. Honest ;-).
-        if isinstance(data, list):
-            many = True
-        else:
-            data = [data]
-            many = False
-
-        # Find the top level filter function to run over data.
-        try:
-            data_filter = partial(
-                view.permission_filter('get', 'alter_document'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_document',
-                view_instance=view,
-            )
-        except KeyError:
-            data_filter = None
-
-        # Remember what was rejected so it can be removed from included later.
-        rejected_set = set()
-        accepted, rejected = partition_doc_data(data, data_filter)
-
-        # Filter any related items.
-        for item in data:
-            for rel_name, rel_dict in item.get('relationships', {}).items():
-                rel_data = rel_dict['data']
-                if isinstance(rel_data, list):
-                    rel_many = True
-                else:
-                    rel_data = [rel_data]
-                    rel_many = False
-                rel_view = view.view_instance(view.relationships[rel_name].tgt_class)
-                try:
-                    rel_filter = partial(
-                        rel_view.permission_filter('get', 'alter_document'),
-                        endpoint_name=endpoint_name,
-                        stage_name='alter_document',
-                        view_instance=view,
-                    )
-                except KeyError:
-                    rel_filter = None
-                rel_accepted, rel_rejected = partition_doc_data(rel_data, rel_filter)
-                rejected_set |= {(item['type'], item['id']) for item in rel_rejected}
-                if rel_many:
-                    rel_dict['data'] = rel_accepted
-                else:
-                    try:
-                        rel_dict['data'] = rel_accepted[0]
-                    except IndexError:
-                        rel_dict['data'] = None
-
-        # Time to do what we promised and put scalars back.
-        if many:
-            doc['data'] = accepted
-        else:
+                rel_data = [rel_data]
+                rel_many = False
+            rel_view = view.view_instance(view.relationships[rel_name].tgt_class)
             try:
-                doc['data'] = accepted[0]
-            except IndexError:
-                if rejected:
-                    raise(HTTPNotFound('Object not found.'))
-                else:
-                    doc['data'] = None
+                rel_filter = partial(
+                    rel_view.permission_filter('get', 'alter_document'),
+                    endpoint_name=endpoint_name,
+                    stage_name='alter_document',
+                    view_instance=view,
+                )
+            except KeyError:
+                rel_filter = None
+            rel_accepted, rel_rejected = partition_doc_data(rel_data, rel_filter)
+            rejected_set |= {(item['type'], item['id']) for item in rel_rejected}
+            if rel_many:
+                rel_dict['data'] = rel_accepted
+            else:
+                try:
+                    rel_dict['data'] = rel_accepted[0]
+                except IndexError:
+                    rel_dict['data'] = None
 
-        # Remove any rejected items from included.
-        included = [
-            item for item in doc.get('included', {})
-            if (item['type'], item['id']) not in rejected_set
-        ]
-        doc['included'] = included
-        return doc
-
-    def collection_post_alter_request_handler(view, request, pdata):
-        # Make sure there is a permission filter registered.
+    # Time to do what we promised and put scalars back.
+    if many:
+        doc['data'] = accepted
+    else:
         try:
-            pfilter = partial(
-                view.permission_filter(endpoint_name, 'alter_request'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_request',
-                view_instance=view,
-            )
-        except KeyError:
-            return request
+            doc['data'] = accepted[0]
+        except IndexError:
+            if rejected:
+                raise(HTTPNotFound('Object not found.'))
+            else:
+                doc['data'] = None
 
-        allowed = pfilter(
-            request.json_body['data'],
-            request.json_body,
+    # Remove any rejected items from included.
+    included = [
+        item for item in doc.get('included', {})
+        if (item['type'], item['id']) not in rejected_set
+    ]
+    doc['included'] = included
+    return doc
+
+def collection_post_alter_request_handler(view, request, pdata):
+    # Make sure there is a permission filter registered.
+    try:
+        pfilter = partial(
+            view.permission_filter('post', 'alter_request'),
+            permission_sought='post',
+            stage_name='alter_request',
+            view_instance=view,
+        )
+    except KeyError:
+        return request
+
+    # allowed = pfilter(
+    #     request.json_body['data'],
+    #     request.json_body,
+    # )
+    if not pfilter(request.json_body['data'], request.json_body):
+        raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+    return request
+
+def relationships_post_alter_request_handler(view, request, pdata):
+    # Make sure there is a permission filter registered.
+    try:
+        pfilter = partial(
+            view.permission_filter(endpoint_name, 'alter_request'),
             endpoint_name=endpoint_name,
             stage_name='alter_request',
             view_instance=view,
         )
-        if not pfilter(request.json_body['data'], request.json_body):
-            raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+    except KeyError:
         return request
 
-    def relationships_post_alter_request_handler(view, request, pdata):
-        # Make sure there is a permission filter registered.
-        try:
-            pfilter = partial(
-                view.permission_filter(endpoint_name, 'alter_request'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_request',
-                view_instance=view,
-            )
-        except KeyError:
-            return request
+    # TODO: option to select alternate behaviour
+    if True:
+        # Pretend that the request only contained the items which are allowed.
+        new_data = [
+            item for item in request.json_body['data']
+            if pfilter(item, request.json_body['data'])
+        ]
+        request.json_body['data'] = new_data
+    else:
+        # Deny the whole request if we lack permission for any one item.
+        for item in request.json_body['data']:
+            if not pfilter(item, request.json_body['data']):
+                raise HTTPForbidden(
+                    'No permission to POST {} to relationship {}.'.format(
+                        item, view.relname
+                    )
+                )
+    return request
+
+def patch_alter_request_handler(view, request, pdata):
+    try:
+        pfilter = partial(
+            view.permission_filter(endpoint_name, 'alter_request'),
+            endpoint_name=endpoint_name,
+            stage_name='alter_request',
+            view_instance=view,
+        )
+    except KeyError:
+        return request
+    if not pfilter(request.json_body['data'], request.json_body):
+        raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
+    return request
+
+def relationships_patch_alter_request_handler(view, request, pdata):
+    try:
+        pfilter = partial(
+            view.permission_filter(endpoint_name, 'alter_request'),
+            endpoint_name=endpoint_name,
+            stage_name='alter_request',
+            view_instance=view,
+        )
+    except KeyError:
+        return request
+
+    data = request.json_body['data']
+
+    if isinstance(data, list):
+        # To_many relationship.
 
         # TODO: option to select alternate behaviour
         if True:
             # Pretend that the request only contained the items which are allowed.
-            new_data = [
-                item for item in request.json_body['data']
-                if pfilter(item, request.json_body['data'])
-            ]
-            request.json_body['data'] = new_data
+            request.json_body['data'] = [item for item in data if pfilter(item, data)]
         else:
             # Deny the whole request if we lack permission for any one item.
-            for item in request.json_body['data']:
-                if not pfilter(item, request.json_body['data']):
-                    raise HTTPForbidden(
-                        'No permission to POST {} to relationship {}.'.format(
-                            item, view.relname
-                        )
+            for item in data:
+                if not pfilter(item, data):
+                    raise HTTPForbidden('No permission to PATCH {}'.format(item))
+    else:
+        # To_one relationship.
+        if not pfilter(item, data):
+            raise HTTPForbidden('No permission to PATCH {}'.format(item))
+    return request
+
+def delete_alter_request_handler(view, request, pdata):
+    try:
+        pfilter = partial(
+            view.permission_filter(endpoint_name, 'alter_request'),
+            endpoint_name=endpoint_name,
+            stage_name='alter_request',
+            view_instance=view,
+        )
+    except KeyError:
+        return request
+    if not pfilter({'type': view.collection_name, 'id': view.obj_id}, view.request):
+        raise HTTPForbidden('No permission to delete {}/{}'.format(
+            view.collection_name, view.obj_id
+        ))
+    return request
+
+def relationships_delete_alter_request_handler(view, request, pdata):
+    try:
+        pfilter = partial(
+            view.permission_filter(endpoint_name, 'alter_request'),
+            endpoint_name=endpoint_name,
+            stage_name='alter_request',
+            view_instance=view,
+        )
+    except KeyError:
+        return request
+    # TODO: option to select alternate behaviour
+    if True:
+        # Pretend that the request only contained the items which are allowed.
+        new_data = [
+            item for item in request.json_body['data']
+            if pfilter(item, request.json_body['data'])
+        ]
+        request.json_body['data'] = new_data
+    else:
+        # Deny the whole request if we lack permission for any one item.
+        for item in request.json_body['data']:
+            if not pfilter(item, request.json_body['data']):
+                raise HTTPForbidden(
+                    'No permission to DELETE {} from relationship {}.'.format(
+                        item, view.relname
                     )
+                )
         return request
 
-    def patch_alter_request_handler(view, request, pdata):
-        try:
-            pfilter = partial(
-                view.permission_filter(endpoint_name, 'alter_request'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_request',
-                view_instance=view,
-            )
-        except KeyError:
-            return request
-        if not pfilter(request.json_body['data'], request.json_body):
-            raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
-        return request
-
-    def relationships_patch_alter_request_handler(view, request, pdata):
-        try:
-            pfilter = partial(
-                view.permission_filter(endpoint_name, 'alter_request'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_request',
-                view_instance=view,
-            )
-        except KeyError:
-            return request
-
-        data = request.json_body['data']
-
-        if isinstance(data, list):
-            # To_many relationship.
-
-            # TODO: option to select alternate behaviour
-            if True:
-                # Pretend that the request only contained the items which are allowed.
-                request.json_body['data'] = [item for item in data if pfilter(item, data)]
-            else:
-                # Deny the whole request if we lack permission for any one item.
-                for item in data:
-                    if not pfilter(item, data):
-                        raise HTTPForbidden('No permission to PATCH {}'.format(item))
-        else:
-            # To_one relationship.
-            if not pfilter(item, data):
-                raise HTTPForbidden('No permission to PATCH {}'.format(item))
-        return request
-
-    def delete_alter_request_handler(view, request, pdata):
-        try:
-            pfilter = partial(
-                view.permission_filter(endpoint_name, 'alter_request'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_request',
-                view_instance=view,
-            )
-        except KeyError:
-            return request
-        if not pfilter({'type': view.collection_name, 'id': view.obj_id}, view.request):
-            raise HTTPForbidden('No permission to delete {}/{}'.format(
-                view.collection_name, view.obj_id
-            ))
-        return request
-
-    def relationships_delete_alter_request_handler(view, request, pdata):
-        try:
-            pfilter = partial(
-                view.permission_filter(endpoint_name, 'alter_request'),
-                endpoint_name=endpoint_name,
-                stage_name='alter_request',
-                view_instance=view,
-            )
-        except KeyError:
-            return request
-        # TODO: option to select alternate behaviour
-        if True:
-            # Pretend that the request only contained the items which are allowed.
-            new_data = [
-                item for item in request.json_body['data']
-                if pfilter(item, request.json_body['data'])
-            ]
-            request.json_body['data'] = new_data
-        else:
-            # Deny the whole request if we lack permission for any one item.
-            for item in request.json_body['data']:
-                if not pfilter(item, request.json_body['data']):
-                    raise HTTPForbidden(
-                        'No permission to DELETE {} from relationship {}.'.format(
-                            item, view.relname
-                        )
-                    )
-        return request
-
-    handlers = {
-        'get': {
-            'alter_document': get_alter_document_handler,
-        },
-        'collection_post': {
-            'alter_request': collection_post_alter_request_handler,
-        },
-        'relationships_post': {
-            'alter_request': relationships_post_alter_request_handler,
-        },
-        'patch': {
-            'alter_request': patch_alter_request_handler,
-        },
-        'relationships_patch': {
-            'alter_request': relationships_patch_alter_request_handler,
-        },
-        'delete': {
-            'alter_request': delete_alter_request_handler,
-        },
-        'relationships_delete': {
-            'alter_request': relationships_delete_alter_request_handler,
-        }
+permission_handlers = {
+    'get': {
+        'alter_document': get_alter_document_handler,
+    },
+    'collection_get': {
+        'alter_document': get_alter_document_handler,
+    },
+    'related_get': {
+        'alter_document': get_alter_document_handler,
+    },
+    'relationships_get': {
+        'alter_document': get_alter_document_handler,
+    },
+    'collection_post': {
+        'alter_request': collection_post_alter_request_handler,
+    },
+    'relationships_post': {
+        'alter_request': relationships_post_alter_request_handler,
+    },
+    'patch': {
+        'alter_request': patch_alter_request_handler,
+    },
+    'relationships_patch': {
+        'alter_request': relationships_patch_alter_request_handler,
+    },
+    'delete': {
+        'alter_request': delete_alter_request_handler,
+    },
+    'relationships_delete': {
+        'alter_request': relationships_delete_alter_request_handler,
     }
-    for ep in ('collection_get', 'related_get', 'realationships_get'):
-        handlers[ep] = handlers['get']
-    return handlers[endpoint_name][stage_name]
+}
+
+def permission_handler(endpoint_name, stage_name):
+    return permission_handlers[endpoint_name][stage_name]
 
 
 @functools.lru_cache()

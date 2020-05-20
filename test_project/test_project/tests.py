@@ -308,6 +308,49 @@ class TestPermissions(DBTestBase):
         self.assertNotIn('1', ppl_ids)
         self.assertIn('2', ppl_ids)
 
+    def test_post_alterreq_collection(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            'post',
+            ['alter_request']
+        )
+        # Not allowed to post the name "forbidden"
+        def pfilter(obj, *args, **kwargs):
+            return obj['attributes'].get('name') != 'forbidden'
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            pfilter,
+        )
+        # Make sure we can't post the forbidden name.
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'forbidden'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+        # Make sure we can post some other name.
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'allowed'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
