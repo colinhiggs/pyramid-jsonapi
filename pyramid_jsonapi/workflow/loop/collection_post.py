@@ -25,8 +25,6 @@ stages = (
 
 
 def workflow(view, stages, prev_data):
-    print('collection_post workflow')
-    print(stages['alter_request'])
     try:
         data = view.request.json_body['data']
     except KeyError:
