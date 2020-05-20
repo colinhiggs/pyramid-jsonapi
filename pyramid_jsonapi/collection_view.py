@@ -1236,6 +1236,27 @@ class CollectionViewBase:
         return set(param.split(','))
 
     @property
+    def all_attributes(self):
+        """Return a dictionary of all attributes.
+        Normal and hybrid, requested or not.
+
+        Returns:
+            dict: dict in the form:
+
+                .. parsed-literal::
+
+                    {
+                        <colname>: <column_object>,
+                        ...
+                    }
+        """
+        return {
+            k: v for k, v in itertools.chain(
+                self.attributes.items(), self.hybrid_attributes.items()
+            )
+        }
+
+    @property
     def requested_attributes(self):
         """Return a dictionary of attributes.
 
@@ -1255,9 +1276,7 @@ class CollectionViewBase:
                     }
         """
         return {
-            k: v for k, v in itertools.chain(
-                self.attributes.items(), self.hybrid_attributes.items()
-            )
+            k: v for k, v in self.all_attributes.items()
             if k in self.requested_field_names
         }
 
