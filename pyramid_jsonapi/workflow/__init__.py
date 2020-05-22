@@ -1,5 +1,6 @@
 import functools
 import importlib
+import json
 import logging
 import re
 import sqlalchemy
@@ -30,6 +31,8 @@ from pyramid.httpexceptions import (
     HTTPInternalServerError,
     status_map,
 )
+from sqlalchemy.orm.relationships import RelationshipProperty
+
 
 import pyramid_jsonapi
 
@@ -171,6 +174,37 @@ def partition_doc_data(doc_data, partitioner):
     return accepted, rejected
 
 
+def permission_to_dict(view, permission):
+    if permission is False:
+        return {
+            'id': False,
+            'attributes': set(),
+            'relationships': set()
+        }
+    if permission is True:
+        allowed = {
+            'id': True,
+            'attributes': set(view.all_attributes),
+            'relationships': set(view.relationships),
+        }
+    else:
+        # Make a shallow copy of permission so we don't alter it.
+        allowed = dict()
+        allowed.update(permission)
+    # allowed should now be a dictionary.
+    if 'id' not in allowed:
+        allowed['id'] = True
+    if allowed['attributes'] is True:
+        allowed['attributes'] = set(view.all_attributes)
+    if allowed['attributes'] is False:
+        allowed['attributes'] = set()
+    if allowed['relationships'] is True:
+        allowed['relationships'] = set(view.relationships)
+    if allowed['relationships'] is False:
+        allowed['relationships'] = set()
+    return allowed
+
+
 def get_alter_document_handler(view, doc, pdata):
     data = doc['data']
     # Make it so that the data part is always a list for later code DRYness.
@@ -249,21 +283,96 @@ def get_alter_document_handler(view, doc, pdata):
 def collection_post_alter_request_handler(view, request, pdata):
     # Make sure there is a permission filter registered.
     try:
-        pfilter = partial(
-            view.permission_filter('post', 'alter_request'),
+        pfilter = view.permission_filter('post', 'alter_request')
+    except KeyError:
+        return request
+
+    obj_data = request.json_body['data']
+    allowed = permission_to_dict(
+        view,
+        pfilter(
+            obj_data,
+            request.json_body,
             permission_sought='post',
             stage_name='alter_request',
             view_instance=view,
         )
-    except KeyError:
-        return request
-
-    # allowed = pfilter(
-    #     request.json_body['data'],
-    #     request.json_body,
-    # )
-    if not pfilter(request.json_body['data'], request.json_body):
+    )
+    if allowed.get('id', True) is False:
+        # Straight up forbidden to create object.
         raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+    for att_name in list(obj_data.get('attributes', {}).keys()):
+        if att_name not in allowed['attributes']:
+            del(obj_data['attributes'][att_name])
+            # TODO: alternatively raise HTTPForbidden?
+    rel_names = list(obj_data.get('relationships', {}).keys())
+    for rel_name in rel_names:
+        if rel_name not in allowed['relationships']:
+            del(obj_data['relationships'][rel_name])
+            # TODO: alternatively raise HTTPForbidden?
+    # Loop through a shallow copy of obj_data['relationships'] so that we
+    # can delete entries without causing problems.
+    rels_copy = {}
+    rels_copy.update(obj_data.get('relationships', {}))
+    for rel_name, rel_dict in rels_copy.items():
+        # For each of these allowed rels, look to see if the *other end*
+        # of the relationship is to_one (in which case we need PATCH permission
+        # to that rel in order to set it to this object) or to_many (in which
+        # case we need POST permission in order to add this object to it).
+        rel = view.relationships[rel_name]
+        mirror_rel = rel.mirror_relationship
+        # if rel.direction in (ONETOMANY, MANYTOMANY):
+        #     tgt_ris = rel_dict['data']
+        # else:
+        #     tgt_ris = [rel_dict['data']]
+        if mirror_rel:
+            if mirror_rel.direction in (ONETOMANY, MANYTOMANY):
+                # Need POST permission on tgt_ri.mirror_rel.
+                permission_sought = 'post'
+            else:
+                # Need PATCH permission on tgt_ri.mirror_rel.
+                permission_sought = 'patch'
+            try:
+                mfilter = mirror_rel.view_class.permission_filter(
+                    permission_sought, 'alter_request'
+                )
+            except KeyError:
+                # No filter registered - treat as always True and skip this
+                # rel.
+                continue
+            if rel.direction in (ONETOMANY, MANYTOMANY):
+                allowed_ris = []
+                for tgt_ri in rel_dict['data']:
+                    mallowed = permission_to_dict(
+                        mirror_rel.view_class(view.request),
+                        mfilter(
+                            tgt_ri,
+                            rel_dict,
+                            permission_sought=permission_sought,
+                            stage_name='alter_request',
+                            view_instance=view,
+                        )
+                    )
+                    if mirror_rel.name in mallowed['relationships']:
+                        allowed_ris.append(tgt_ri)
+                    # TODO: alternatively raise HTTPForbidden?
+                rel_dict['data'] = allowed_ris
+            else:
+                mallowed = permission_to_dict(
+                    mirror_rel.view_class(view.request),
+                    mfilter(
+                        rel_dict['data'],
+                        rel_dict,
+                        permission_sought=permission_sought,
+                        stage_name='alter_request',
+                        view_instance=view,
+                    )
+                )
+                if mirror_rel.name not in mallowed['relationships']:
+                    del(obj_data['relationships'][rel_name])
+                    # TODO: alternatively raise HTTPForbidden?
+
+    request.body = json.dumps({'data': obj_data}).encode()
     return request
 
 

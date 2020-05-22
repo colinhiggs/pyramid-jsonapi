@@ -179,6 +179,7 @@ class ArticleByObj(Base):
         cascade='all, delete-orphan',
         backref='article'
     )
+    authors_by_proxy = association_proxy('author_associations', 'author')
 
 
 class ArticleAuthorAssociation(Base):

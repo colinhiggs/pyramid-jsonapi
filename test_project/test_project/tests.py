@@ -20,6 +20,7 @@ import json
 from parameterized import parameterized
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
+import pprint
 
 from test_project.models import (
     DBSession,
@@ -97,6 +98,7 @@ def tearDownModule():
     global postgresql
     DBSession.close()
     postgresql.stop()
+
 
 def rels_doc_func(func, i, param):
     src, tgt, comment = param[0]
@@ -312,7 +314,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'post',
+            'write',
             ['alter_request']
         )
         # Not allowed to post the name "forbidden"
@@ -350,6 +352,125 @@ class TestPermissions(DBTestBase):
             },
             headers={'Content-Type': 'application/vnd.api+json'},
         )
+
+    def test_post_alterreq_collection_with_rels(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            'write',
+            ['alter_request']
+        )
+        def blogs_pfilter(obj, *args, **kwargs):
+            return {'attributes': True, 'relationships': True}
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow POST to all atts and to 3 relationships.
+        def people_pfilter(obj, *args, **kwargs):
+            return {
+                'attributes': True,
+                'relationships': {
+                    'comments', 'articles_by_proxy', 'articles_by_assoc'
+                }
+            }
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /comments: allow PATCH (required to set 'comments.author') on all
+        # but comments/4.
+        pj.view_classes[test_project.models.Comment].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'4'}
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'10'}
+        )
+        person_in = {
+            'data': {
+                'type': 'people',
+                'attributes': {
+                    'name': 'post perms test'
+                },
+                'relationships': {
+                    'posts': {
+                        'data': [
+                            {'type': 'posts', 'id': '20'},
+                            {'type': 'posts', 'id': '21'}
+                        ]
+                    },
+                    'comments': {
+                        'data': [
+                            {'type': 'comments', 'id': '4'},
+                            {'type': 'comments', 'id': '5'},
+                        ]
+                    },
+                    'articles_by_assoc': {
+                        'data': [
+                            {'type': 'articles_by_assoc', 'id': '10'},
+                            {'type': 'articles_by_assoc', 'id': '11'},
+                        ]
+                    },
+                    'articles_by_proxy': {
+                        'data': [
+                            {'type': 'articles_by_obj', 'id': '10'},
+                            {'type': 'articles_by_obj', 'id': '11'},
+                        ]
+                    }
+                }
+            }
+        }
+        person_out = test_app.post_json(
+            '/people',
+            person_in,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body['data']
+        rels = person_out['relationships']
+        self.assertEqual(len(rels['posts']['data']),0)
+        self.assertIn({'type': 'comments', 'id': '5'}, rels['comments']['data'])
+        self.assertNotIn({'type': 'comments', 'id': '4'}, rels['comments']['data'])
+        self.assertIn({'type': 'articles_by_assoc', 'id': '10'}, rels['articles_by_assoc']['data'])
+        self.assertNotIn({'type': 'articles_by_assoc', 'id': '11'}, rels['articles_by_assoc']['data'])
+        self.assertIn({'type': 'articles_by_obj', 'id': '11'}, rels['articles_by_proxy']['data'])
+        self.assertNotIn({'type': 'articles_by_obj', 'id': '10'}, rels['articles_by_proxy']['data'])
+        # pprint.pprint(person_out['relationships'])
+
+        # blogs have a to_one and a to_many relationship.
+        # test_app.post_json(
+        #     '/blogs',
+        #     {
+        #         'data': {
+        #             'type': 'blogs',
+        #             'attributes': {
+        #                 'title': 'test'
+        #             },
+        #             'relationships': {
+        #                 'owner': {
+        #                     'data': {'type': 'people', 'id': '10'}
+        #                 },
+        #                 'posts': {
+        #                     'data': [
+        #                         {'type': 'posts', 'id': '11'}
+        #                     ]
+        #                 }
+        #             }
+        #         }
+        #     },
+        #     headers={'Content-Type': 'application/vnd.api+json'},
+        # )
 
 
 class TestRelationships(DBTestBase):

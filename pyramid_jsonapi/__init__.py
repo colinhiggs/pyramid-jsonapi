@@ -39,6 +39,11 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm.interfaces import (
+    MANYTOMANY,
+    MANYTOONE,
+    ONETOMANY,
+)
 from sqlalchemy.orm.relationships import RelationshipProperty
 
 import pyramid_jsonapi.collection_view
@@ -372,7 +377,7 @@ class PyramidJSONAPI():
 
 
 class StdRelationship:
-    """Standardise access to relationship informationself.
+    """Standardise access to relationship information.
 
     Attributes:
         obj: the actual object representing the relationship.
@@ -399,9 +404,9 @@ class StdRelationship:
     def proxy_direction(self):
         ps = self.obj.for_class(self.src_class)
         if ps.scalar:
-            return sqlalchemy.orm.interfaces.MANYTOONE
+            return MANYTOONE
         else:
-            return sqlalchemy.orm.interfaces.MANYTOMANY
+            return MANYTOMANY
 
     @property
     def rel_tgt_class(self):
@@ -411,6 +416,61 @@ class StdRelationship:
     def proxy_tgt_class(self):
         ps = self.obj.for_class(self.src_class)
         return getattr(ps.target_class, ps.value_attr).mapper.class_
+
+    @property
+    def rel_mirror_relationship(self):
+        tgt_view = self.view_class.api.view_classes[self.tgt_class]
+        found = None
+        for rname, r in tgt_view.relationships.items():
+            if not isinstance(r.obj, RelationshipProperty):
+                # Making the assumption that the mirror of any normal rel
+                # will be another normal rel.
+                continue
+            if self.direction is MANYTOMANY:
+                # For MANYTOMANY we need to look at the secondaryjoin.
+                if (
+                    self.obj.primaryjoin.left == r.obj.secondaryjoin.left and
+                    self.obj.primaryjoin.right == r.obj.secondaryjoin.right and
+                    self.obj.secondaryjoin.left == r.obj.primaryjoin.left and
+                    self.obj.secondaryjoin.right == r.obj.primaryjoin.right
+                ):
+                    return StdRelationship(rname, r.obj, tgt_view)
+            else:
+                if (
+                    self.obj.primaryjoin.left == r.obj.primaryjoin.left and
+                    self.obj.primaryjoin.right == r.obj.primaryjoin.right
+                ):
+                    # Done.
+                    return StdRelationship(rname, r.obj, tgt_view)
+        return None
+
+    @property
+    def proxy_mirror_relationship(self):
+        tgt_view = self.view_class.api.view_classes[self.tgt_class]
+        pi = self.obj.for_class(self.src_class)
+        for rname, r in tgt_view.relationships.items():
+            if r.obj.extension_type is not ASSOCIATION_PROXY:
+                # Assume that the mirror of any association proxy rel
+                # will be another association proxy.
+                continue
+            rpi = r.obj.for_class(r.src_class)
+            if (
+                pi.local_attr.property.primaryjoin.left == rpi.remote_attr.property.primaryjoin.left and
+                pi.local_attr.property.primaryjoin.right == rpi.remote_attr.property.primaryjoin.right and
+                pi.remote_attr.property.primaryjoin.left == rpi.local_attr.property.primaryjoin.left and
+                pi.remote_attr.property.primaryjoin.right == rpi.local_attr.property.primaryjoin.right
+            ):
+                return StdRelationship(rname, r.obj, tgt_view)
+        return None
+
+    @property
+    def mirror_relationship(self):
+        if isinstance(self.obj, RelationshipProperty):
+            return self.rel_mirror_relationship
+        elif self.obj.extension_type is ASSOCIATION_PROXY:
+            return self.proxy_mirror_relationship
+        else:
+            return None
 
 
 class DebugView:
