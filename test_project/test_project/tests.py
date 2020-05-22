@@ -448,29 +448,27 @@ class TestPermissions(DBTestBase):
         self.assertNotIn({'type': 'articles_by_obj', 'id': '10'}, rels['articles_by_proxy']['data'])
         # pprint.pprint(person_out['relationships'])
 
-        # blogs have a to_one and a to_many relationship.
-        # test_app.post_json(
-        #     '/blogs',
-        #     {
-        #         'data': {
-        #             'type': 'blogs',
-        #             'attributes': {
-        #                 'title': 'test'
-        #             },
-        #             'relationships': {
-        #                 'owner': {
-        #                     'data': {'type': 'people', 'id': '10'}
-        #                 },
-        #                 'posts': {
-        #                     'data': [
-        #                         {'type': 'posts', 'id': '11'}
-        #                     ]
-        #                 }
-        #             }
-        #         }
-        #     },
-        #     headers={'Content-Type': 'application/vnd.api+json'},
-        # )
+        # Still need to test a to_one relationship. Posts has one of those.
+        post_out = test_app.post_json(
+            '/posts',
+            {
+                'data': {
+                    'type': 'posts',
+                    'attributes': {
+                        'title': 'test'
+                    },
+                    'relationships': {
+                        'author': {
+                            'data': {'type': 'people', 'id': '10'}
+                        },
+                        'blog': {
+                            'data': {'type': 'blogs', 'id': '10'}
+                        }
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
 
 
 class TestRelationships(DBTestBase):
