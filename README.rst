@@ -23,9 +23,9 @@ typical pyramid + sqlalchemy application.
 
 .. note::
 
-  Most work has shifted to an upcoming new version. The ``2_2_master`` is where
-  the development is happening, although the resulting release is likely to be
-  named "3" rather than "2" due to the number of breaking changes. More
+  Most work has shifted to an upcoming new version. The ``2_2_master`` branch is
+  where the development is happening, although the resulting release is likely
+  to be named "3" rather than "2" due to the number of breaking changes. More
   information soon. 
 
 Documentation
