@@ -174,37 +174,6 @@ def partition_doc_data(doc_data, partitioner):
     return accepted, rejected
 
 
-def permission_to_dict(view, permission):
-    if permission is False:
-        return {
-            'id': False,
-            'attributes': set(),
-            'relationships': set()
-        }
-    if permission is True:
-        allowed = {
-            'id': True,
-            'attributes': set(view.all_attributes),
-            'relationships': set(view.relationships),
-        }
-    else:
-        # Make a shallow copy of permission so we don't alter it.
-        allowed = dict()
-        allowed.update(permission)
-    # allowed should now be a dictionary.
-    if 'id' not in allowed:
-        allowed['id'] = True
-    if allowed['attributes'] is True:
-        allowed['attributes'] = set(view.all_attributes)
-    if allowed['attributes'] is False:
-        allowed['attributes'] = set()
-    if allowed['relationships'] is True:
-        allowed['relationships'] = set(view.relationships)
-    if allowed['relationships'] is False:
-        allowed['relationships'] = set()
-    return allowed
-
-
 def get_alter_document_handler(view, doc, pdata):
     data = doc['data']
     # Make it so that the data part is always a list for later code DRYness.
@@ -288,16 +257,7 @@ def collection_post_alter_request_handler(view, request, pdata):
         return request
 
     obj_data = request.json_body['data']
-    allowed = permission_to_dict(
-        view,
-        pfilter(
-            obj_data,
-            request.json_body,
-            permission_sought='post',
-            stage_name='alter_request',
-            view_instance=view,
-        )
-    )
+    allowed = pfilter(view, obj_data, request.json_body)
     if allowed.get('id', True) is False:
         # Straight up forbidden to create object.
         raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
@@ -340,34 +300,17 @@ def collection_post_alter_request_handler(view, request, pdata):
                 # No filter registered - treat as always True and skip this
                 # rel.
                 continue
+            mirror_view = mirror_rel.view_class(view.request)
             if rel.direction in (ONETOMANY, MANYTOMANY):
                 allowed_ris = []
                 for tgt_ri in rel_dict['data']:
-                    mallowed = permission_to_dict(
-                        mirror_rel.view_class(view.request),
-                        mfilter(
-                            tgt_ri,
-                            rel_dict,
-                            permission_sought=permission_sought,
-                            stage_name='alter_request',
-                            view_instance=view,
-                        )
-                    )
+                    mallowed = mfilter(mirror_view, tgt_ri, rel_dict)
                     if mirror_rel.name in mallowed['relationships']:
                         allowed_ris.append(tgt_ri)
                     # TODO: alternatively raise HTTPForbidden?
                 rel_dict['data'] = allowed_ris
             else:
-                mallowed = permission_to_dict(
-                    mirror_rel.view_class(view.request),
-                    mfilter(
-                        rel_dict['data'],
-                        rel_dict,
-                        permission_sought=permission_sought,
-                        stage_name='alter_request',
-                        view_instance=view,
-                    )
-                )
+                mallowed = mfilter(mirror_view, rel_dict['data'], rel_dict)
                 if mirror_rel.name not in mallowed['relationships']:
                     del(obj_data['relationships'][rel_name])
                     # TODO: alternatively raise HTTPForbidden?
@@ -840,19 +783,16 @@ class Results:
         accepted = []
         for obj in self.objects:
             pred = predicate(obj, self)
-            if pred:
+            if pred and pred.get('id', True):
                 accepted.append(obj)
-                if isinstance(pred, dict):
-                    # A dictionary result means that some attributes and/or
-                    # relationships are permitted.
-                    atts = pred.get('attributes', set())
-                    if atts is True:
-                        atts = obj.attribute_mask
-                    obj.attribute_mask &= set(atts)
-                    rels = pred.get('relationships', set())
-                    if rels is True:
-                        rels = obj.rel_mask
-                    obj.rel_mask &= set(rels)
+                atts = pred.get('attributes', set())
+                if atts is True:
+                    atts = obj.attribute_mask
+                obj.attribute_mask &= set(atts)
+                rels = pred.get('relationships', set())
+                if rels is True:
+                    rels = obj.rel_mask
+                obj.rel_mask &= set(rels)
             else:
                 self.rejected_objects.append(obj)
 

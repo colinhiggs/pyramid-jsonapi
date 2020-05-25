@@ -73,9 +73,7 @@ def permission_handler(endpoint_name, stage_name):
         results.filter(
             partial(
                 filter,
-                permission_sought='get',
-                stage_name=stage_name,
-                view_instance=view,
+                view
             )
         )
         try:

@@ -6,7 +6,7 @@ import importlib
 import logging
 import re
 from collections.abc import Sequence
-
+from functools import partial
 from pyramid.httpexceptions import (
     HTTPNotFound,
     HTTPForbidden,
@@ -1435,6 +1435,36 @@ class CollectionViewBase:
     def true_filter(*args):
         return True
 
+    def permission_to_dict(self, permission):
+        if permission is False:
+            return {
+                'id': False,
+                'attributes': set(),
+                'relationships': set()
+            }
+        if permission is True:
+            allowed = {
+                'id': True,
+                'attributes': set(self.all_attributes),
+                'relationships': set(self.relationships),
+            }
+        else:
+            # Make a shallow copy of permission so we don't alter it.
+            allowed = dict()
+            allowed.update(permission)
+        # allowed should now be a dictionary.
+        if 'id' not in allowed:
+            allowed['id'] = True
+        if allowed['attributes'] is True:
+            allowed['attributes'] = set(self.all_attributes)
+        if allowed['attributes'] is False:
+            allowed['attributes'] = set()
+        if allowed['relationships'] is True:
+            allowed['relationships'] = set(self.relationships)
+        if allowed['relationships'] is False:
+            allowed['relationships'] = set()
+        return allowed
+
     @classmethod
     def register_permission_filter(cls, permissions, stages, pfunc):
         # Permission filters should have the signature:
@@ -1453,8 +1483,19 @@ class CollectionViewBase:
         for stage_name in stages:
             for perm in permissions:
                 perm = perm.lower()
+
                 # Register the filter function.
-                cls.permission_filters[perm][stage_name] = pfunc
+                def dictified_pfunc(view, *args, **kwargs):
+                    return view.permission_to_dict(
+                        pfunc(
+                            *args,
+                            view_instance=view,
+                            stage_name=stage_name,
+                            permission_sought=perm,
+                            **kwargs
+                        )
+                    )
+                cls.permission_filters[perm][stage_name] = dictified_pfunc
 
     @classmethod
     def permission_filter(cls, permission, stage_name):
