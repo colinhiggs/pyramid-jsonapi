@@ -165,9 +165,9 @@ POST /blogs/1/relationships/posts
 Permissions required:
 
   1. `POST` permission on `{blogs/1}.posts` to add `{posts/10}`.
-    1. `PATCH` permission on `{posts/10}.owner` to set value to `{blogs/1}`.
+    1. `PATCH` permission on `{posts/10}.blog` to set value to `{blogs/1}`.
   1. `POST` permission on `{blogs/1}.posts` to add `{posts/20}`.
-    1. `PATCH` permission on `{posts/20}.owner` to set value to `{blogs/1}`.
+    1. `PATCH` permission on `{posts/20}.blog` to set value to `{blogs/1}`.
     2. `DELETE` permission on `{blogs/2}.posts` to remove `{posts/20}`.
 
 

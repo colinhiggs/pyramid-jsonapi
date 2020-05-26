@@ -470,6 +470,101 @@ class TestPermissions(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
         )
 
+    def test_post_alterreq_relationship(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            'write',
+            ['alter_request']
+        )
+        def blogs_pfilter(obj, *args, **kwargs):
+            if obj['id'] == '12':
+                return False
+            else:
+                return {'attributes': True, 'relationships': True}
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow POST to all atts and to 3 relationships.
+        def people_pfilter(obj, *args, **kwargs):
+            if kwargs['permission_sought'] == 'delete' and obj['id'] == '20':
+                return False
+            if kwargs['permission_sought'] == 'post' and obj['id'] == '12':
+                return False
+            return {
+                'attributes': True,
+                'relationships': {
+                    'blogs', 'articles_by_proxy', 'articles_by_assoc'
+                }
+            }
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post', 'delete'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'10'}
+        )
+        # ONETOMANY relationship.
+        out = test_app.post_json(
+            '/people/1/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                    {'type': 'blogs', 'id': '11'},
+                    {'type': 'blogs', 'id': '12'},
+                    {'type': 'blogs', 'id': '20'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body
+        # pprint.pprint(out)
+
+        # Now fetch people/1 and see if the new blogs are there.
+        p1 = test_app.get('/people/1').json_body['data']
+        blogs = p1['relationships']['blogs']['data']
+        # Should have left the original blogs in place.
+        self.assertIn({'type': 'blogs', 'id': '1'}, blogs)
+        # Should have added blogs/10 (previously no owner)
+        self.assertIn({'type': 'blogs', 'id': '10'}, blogs)
+        # Should have added blogs/11 (previously owned by 11)
+        self.assertIn({'type': 'blogs', 'id': '11'}, blogs)
+        # blogs/12 disallowed by blogs filter.
+        self.assertNotIn({'type': 'blogs', 'id': '12'}, blogs)
+        # blogs/20 disallowed by people filter on people/20.
+        self.assertNotIn({'type': 'blogs', 'id': '20'}, blogs)
+
+        # MANYTOMANY relationship.
+        out = test_app.post_json(
+            '/people/1/relationships/articles_by_assoc',
+            {
+                'data': [
+                    {'type': 'articles_by_assoc', 'id': '10'},
+                    {'type': 'articles_by_assoc', 'id': '11'},
+                    {'type': 'articles_by_assoc', 'id': '12'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body
+        p1 = test_app.get('/people/1').json_body['data']
+        articles = p1['relationships']['articles_by_assoc']['data']
+        # Should have added articles_by_assoc/10
+        self.assertIn({'type': 'articles_by_assoc', 'id': '10'}, articles)
+        # articles_by_assoc/11 disallowed by articles_by_assoc filter.
+        self.assertNotIn({'type': 'articles_by_assoc', 'id': '11'}, articles)
+        # articles_by_assoc/12 disallowed by people filter.
+        # self.assertNotIn({'type': 'articles_by_assoc', 'id': '12'}, articles)
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
