@@ -70,12 +70,7 @@ def permission_handler(endpoint_name, stage_name):
             filter = results.view.permission_filter('get', stage_name)
         except KeyError:
             return results
-        results.filter(
-            partial(
-                filter,
-                view
-            )
-        )
+        results.filter(filter)
         try:
             obj = results.objects[0].object
         except IndexError:

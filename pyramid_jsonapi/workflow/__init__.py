@@ -257,7 +257,7 @@ def collection_post_alter_request_handler(view, request, pdata):
         return request
 
     obj_data = request.json_body['data']
-    allowed = pfilter(view, obj_data, request.json_body)
+    allowed = pfilter(obj_data)
     if allowed.get('id', True) is False:
         # Straight up forbidden to create object.
         raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
@@ -286,6 +286,7 @@ def collection_post_alter_request_handler(view, request, pdata):
         # else:
         #     tgt_ris = [rel_dict['data']]
         if mirror_rel:
+            mirror_view = mirror_rel.view_class(view.request)
             if mirror_rel.direction in (ONETOMANY, MANYTOMANY):
                 # Need POST permission on tgt_ri.mirror_rel.
                 permission_sought = 'post'
@@ -293,24 +294,23 @@ def collection_post_alter_request_handler(view, request, pdata):
                 # Need PATCH permission on tgt_ri.mirror_rel.
                 permission_sought = 'patch'
             try:
-                mfilter = mirror_rel.view_class.permission_filter(
+                mfilter = mirror_view.permission_filter(
                     permission_sought, 'alter_request'
                 )
             except KeyError:
                 # No filter registered - treat as always True and skip this
                 # rel.
                 continue
-            mirror_view = mirror_rel.view_class(view.request)
             if rel.direction in (ONETOMANY, MANYTOMANY):
                 allowed_ris = []
                 for tgt_ri in rel_dict['data']:
-                    mallowed = mfilter(mirror_view, tgt_ri, rel_dict)
+                    mallowed = mfilter(tgt_ri)
                     if mirror_rel.name in mallowed['relationships']:
                         allowed_ris.append(tgt_ri)
                     # TODO: alternatively raise HTTPForbidden?
                 rel_dict['data'] = allowed_ris
             else:
-                mallowed = mfilter(mirror_view, rel_dict['data'], rel_dict)
+                mallowed = mfilter(rel_dict['data'])
                 if mirror_rel.name not in mallowed['relationships']:
                     del(obj_data['relationships'][rel_name])
                     # TODO: alternatively raise HTTPForbidden?
@@ -327,23 +327,24 @@ def relationships_post_alter_request_handler(view, request, pdata):
         return request
 
     # First need permision to POST to obj.rel.
-    obj_perms = pfilter(view, {'type': view.collection_name, 'id': view.obj_id}, None)
+    obj_perms = pfilter({'type': view.collection_name, 'id': view.obj_id})
     if view.rel.name not in obj_perms['relationships']:
         request.body = json.dumps({'data': []}).encode()
         return request
 
     # We might need
     mirror_rel = view.rel.mirror_relationship
+    mirror_view = mirror_rel.view_class(request)
     try:
         del_filter = view.permission_filter('delete', 'alter_request')
     except KeyError:
         del_filter = False
     try:
-        m_patch_filter = mirror_rel.view_class.permission_filter('patch', 'alter_request')
+        m_patch_filter = mirror_view.permission_filter('patch', 'alter_request')
     except KeyError:
         m_patch_filter = False
     try:
-        m_post_filter = mirror_rel.view_class.permission_filter('post', 'alter_request')
+        m_post_filter = mirror_view.permission_filter('post', 'alter_request')
     except KeyError:
         m_post_filter = False
     new_data = []
@@ -353,11 +354,9 @@ def relationships_post_alter_request_handler(view, request, pdata):
             # Check permission to alter other end of relationship.
             related = view.dbsession.query(
                 view.rel.tgt_class
-            ).filter(mirror_rel.view_class.key_column == ri['id']).one_or_none()
+            ).filter(mirror_view.key_column == ri['id']).one_or_none()
             if related:
-                related_resource = ResultObject(
-                    mirror_rel.view_class(request), related
-                )
+                related_resource = ResultObject(mirror_view, related)
             else:
                 # Trying to add a related id that doesn't exist. This
                 # is an error but we leave it to be caught later in the
@@ -374,26 +373,20 @@ def relationships_post_alter_request_handler(view, request, pdata):
                 old_dict = old_resource.to_dict()
                 if (
                     del_filter and old_dict and
-                    view.rel.name not in del_filter(
-                        view, old_dict, None
-                    )['relationships']
+                    view.rel.name not in del_filter(old_dict)['relationships']
                 ):
                     # Not allowed to alter this relationship.
                     # print(f'No DELETE on {old_dict["type"]}/{old_dict["id"]}.{view.rel.name}')
                     continue
                 # Need PATCH on related.mirror
-                perms = m_patch_filter(
-                    mirror_rel.view_class(request), related_resource.to_dict(), None
-                )
+                perms = m_patch_filter(related_resource.to_dict())
                 if mirror_rel.name not in perms['relationships']:
                     # print(f'No PATCH on {related_resource.to_dict()}')
                     continue
             else:
                 # MANYTOMANY
                 # Need POST on related.mirror
-                perms = m_post_filter(
-                    mirror_rel.view_class(request), related_resource.to_dict(), None
-                )
+                perms = m_post_filter(related_resource.to_dict())
                 if mirror_rel.name not in perms['relationships']:
                     continue
         # if adding:
@@ -851,7 +844,7 @@ class Results:
         #     return
         accepted = []
         for obj in self.objects:
-            pred = predicate(obj, self)
+            pred = predicate(obj)
             if pred and pred.get('id', True):
                 accepted.append(obj)
                 atts = pred.get('attributes', set())

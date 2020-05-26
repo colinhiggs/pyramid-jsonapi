@@ -1468,8 +1468,7 @@ class CollectionViewBase:
     @classmethod
     def register_permission_filter(cls, permissions, stages, pfunc):
         # Permission filters should have the signature:
-        #   pfilter(object_rep, containing_rep, permission_sought, stage_name, view_instance)
-
+        #   pfunc(object_rep, permission_sought, stage_name, view_instance)
         # Theoretically it would be more efficient to define this mapping
         # somewhere else since we redifine it for every registration. But
         # this is close to where it is used and there shouldn't be a large
@@ -1485,21 +1484,24 @@ class CollectionViewBase:
                 perm = perm.lower()
 
                 # Register the filter function.
-                def dictified_pfunc(view, *args, **kwargs):
+                def dictified_pfunc(view, object_rep):
                     return view.permission_to_dict(
                         pfunc(
-                            *args,
+                            object_rep,
                             view_instance=view,
                             stage_name=stage_name,
                             permission_sought=perm,
-                            **kwargs
                         )
                     )
                 cls.permission_filters[perm][stage_name] = dictified_pfunc
 
-    @classmethod
-    def permission_filter(cls, permission, stage_name):
-        return cls.permission_filters[permission][stage_name]
+    def permission_filter(self, permission, stage_name):
+        # dictified_pfunc has signature (view, object_rep, new_rep). We want
+        # (object_rep, new_rep) since view instance should be known via method
+        # call.
+        return partial(
+            self.permission_filters[permission][stage_name], self
+        )
 
     @classmethod
     def permission_handler(cls, endpoint_name, stage_name):
