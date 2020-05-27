@@ -635,6 +635,7 @@ def relationships_patch_alter_request_handler(view, request, pdata):
         raise HTTPForbidden(f'No permission to alter remote side of {view.collection_name}/{view.obj_id}.{view.rel.name}')
     return request
 
+
 def delete_alter_request_handler(view, request, pdata):
     try:
         pfilter = partial(
