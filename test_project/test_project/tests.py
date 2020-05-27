@@ -769,6 +769,90 @@ class TestPermissions(DBTestBase):
             status=403
         )
 
+    def test_patch_alterreq_relationships(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            'write',
+            ['alter_request']
+        )
+        def people_pfilter(obj, **kwargs):
+            if obj['id'] == '1':
+                return False
+            if obj['id'] == '2':
+                return {'attributes': True, 'relationships': False}
+            return True
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            people_pfilter
+        )
+        def blogs_pfilter(obj, **kwargs):
+            if obj['id'] == '10':
+                # Not allowed to change blogs/10 at all.
+                return False
+            if obj['id'] == '11':
+                # Not allowed to set owner of blogs/11 to None.
+                if obj['relationships']['owner']['data'] is None:
+                    return {'attributes': True, 'relationships': {'posts'}}
+            if obj['id'] == '12':
+                # Not allowed to set owner of blogs/12 to people/11
+                if obj['relationships']['owner']['data'].get('id') == '11':
+                    return {'attributes': True, 'relationships': {'posts'}}
+            return True
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter
+        )
+        # No permission to patch people/1 at all.
+        test_app.patch_json(
+            '/people/1/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+        # No permission to patch relationship of people/2.
+        test_app.patch_json(
+            '/people/2/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+
+        test_app.patch_json(
+            '/people/11/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                    {'type': 'blogs', 'id': '12'},
+                    {'type': 'blogs', 'id': '13'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        blog_ids = [
+            b['id'] for b in
+            test_app.get('/people/11').json_body['data']['relationships']['blogs']['data']
+        ]
+        # No permission to blogs/10
+        self.assertNotIn('10', blog_ids)
+        # No permission to set blogs/11.owner = people/11
+        self.assertNotIn('12', blog_ids)
+        # No permission to set blogs/11.owner = None
+        self.assertIn('11', blog_ids)
+        # Allowed to add blogs/13 :)
+        self.assertIn('13', blog_ids)
+
+
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
     '''
