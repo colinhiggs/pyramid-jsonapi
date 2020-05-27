@@ -105,6 +105,10 @@ def rels_doc_func(func, i, param):
     return '{}:{}/{} ({})'.format(func.__name__, src.collection, src.rel, comment)
 
 
+def make_ri(_type, _id):
+    return { 'type': _type, 'id': _id }
+
+
 class DBTestBase(unittest.TestCase):
 
     _test_app = None
@@ -565,6 +569,205 @@ class TestPermissions(DBTestBase):
         self.assertNotIn({'type': 'articles_by_assoc', 'id': '11'}, articles)
         # articles_by_assoc/12 disallowed by people filter.
         # self.assertNotIn({'type': 'articles_by_assoc', 'id': '12'}, articles)
+
+    def test_patch_alterreq_item_with_rels(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            'write',
+            ['alter_request']
+        )
+        def blogs_pfilter(obj, **kwargs):
+            return {'attributes': True, 'relationships': True}
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow PATCH to all atts and to 3 relationships.
+        def people_pfilter(obj, **kwargs):
+            return {
+                'attributes': True,
+                'relationships': {
+                    'comments', 'articles_by_proxy', 'articles_by_assoc'
+                }
+            }
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /comments: allow PATCH (required to set 'comments.author') on all
+        # but comments/4.
+        def comments_pfilter(obj, **kwargs):
+            if obj['id'] == '4' and obj['relationships']['author']['data']['id'] == '1':
+                # We're not allowing people/1 to be the author of comments/4 for
+                # some reason.
+                return False
+            return True
+        pj.view_classes[test_project.models.Comment].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            comments_pfilter
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        person_in = {
+            'data': {
+                'type': 'people',
+                'id': '1',
+                'attributes': {
+                    'name': 'post perms test'
+                },
+                'relationships': {
+                    'posts': {
+                        'data': [
+                            {'type': 'posts', 'id': '1'},
+                            {'type': 'posts', 'id': '2'},
+                            {'type': 'posts', 'id': '3'},
+                            {'type': 'posts', 'id': '20'},
+                        ]
+                    },
+                    'comments': {
+                        'data': [
+                            {'type': 'comments', 'id': '1'},
+                            {'type': 'comments', 'id': '4'},
+                            {'type': 'comments', 'id': '5'},
+                        ]
+                    },
+                    'articles_by_assoc': {
+                        'data': [
+                            {'type': 'articles_by_assoc', 'id': '10'},
+                            {'type': 'articles_by_assoc', 'id': '11'},
+                        ]
+                    },
+                    'articles_by_proxy': {
+                        'data': [
+                            {'type': 'articles_by_obj', 'id': '1'},
+                            {'type': 'articles_by_obj', 'id': '10'},
+                            {'type': 'articles_by_obj', 'id': '11'},
+                        ]
+                    }
+                }
+            }
+        }
+        test_app.patch_json(
+            '/people/1',
+            person_in,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        person_out = test_app.get('/people/1').json_body['data']
+        rels = person_out['relationships']
+        # pprint.pprint(rels['posts']['data'])
+        # pprint.pprint(rels['comments']['data'])
+        # pprint.pprint(rels['articles_by_assoc']['data'])
+        # pprint.pprint(rels['articles_by_proxy']['data'])
+
+        # Still need to test a to_one relationship. Blogs has one of those.
+        def blogs_pfilter(obj, **kwargs):
+            if obj['id'] == '13':
+                # Not allowed to change blogs/13 at all.
+                return False
+            if obj['id'] == '10':
+                # Not allowed to set owner of blogs/10 to people/13
+                if obj['relationships']['owner']['data'].get('id') == '13':
+                    # print('people/13 not allowed as owner of 10')
+                    return {'attributes': True, 'relationships': {'posts'}}
+            if obj['id'] == '11':
+                # Not allowed to set owner of blogs/11 to None.
+                if obj['relationships']['owner']['data'] is None:
+                    return {'attributes': True, 'relationships': {'posts'}}
+            return True
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter
+        )
+        blog = {
+            'data': {
+                'type': 'blogs', 'id': None,
+                'relationships': {
+                    'owner': {
+                        'data': None
+                    }
+                }
+            }
+        }
+        blog_owner = blog['data']['relationships']['owner']
+        # /blogs/10 is owned by no-one. Change owner to people/11. Should
+        # Have permission for this one.
+        ppl11 = make_ri('people', '11')
+        blog['data']['id'] = '10'
+        blog_owner['data'] = ppl11
+        self.assertNotEqual(
+            test_app.get('/blogs/10').json_body['data']['relationships']['owner']['data'],
+            ppl11
+        )
+        test_app.patch_json(
+            '/blogs/10',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertEqual(
+            test_app.get('/blogs/10').json_body['data']['relationships']['owner']['data'],
+            ppl11
+        )
+        # Not allowed to set blogs/10.owner to people/13 though.
+        ppl13 = make_ri('people', '13')
+        blog_owner['data'] = ppl13
+        test_app.patch_json(
+            '/blogs/10',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertNotEqual(
+            test_app.get('/blogs/10').json_body['data']['relationships']['owner']['data'],
+            ppl13
+        )
+
+        # Should be able to switch ownership of blogs/11 to people/12
+        ppl12 = make_ri('people', '12')
+        blog['data']['id'] = '11'
+        blog_owner['data'] = ppl12
+        test_app.patch_json(
+            '/blogs/11',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertEqual(
+            test_app.get('/blogs/11').json_body['data']['relationships']['owner']['data'],
+            ppl12
+        )
+        # but not to None
+        blog_owner['data'] = None
+        test_app.patch_json(
+            '/blogs/11',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertNotEqual(
+            test_app.get('/blogs/11').json_body['data']['relationships']['owner']['data'],
+            None
+        )
+
+        # Shouldn't be allowed to patch blogs/13 at all.
+        blog['data']['id'] = '13'
+        test_app.patch_json(
+            '/blogs/13',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.

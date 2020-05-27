@@ -13,6 +13,7 @@ from functools import (
     partial
 )
 
+from sqlalchemy.orm import load_only
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
     MANYTOMANY,
@@ -403,17 +404,202 @@ def relationships_post_alter_request_handler(view, request, pdata):
 
 
 def patch_alter_request_handler(view, request, pdata):
+    # Make sure there is a permission filter registered.
     try:
-        pfilter = partial(
-            view.permission_filter('patch', 'alter_request'),
-            permission_sought='patch',
-            stage_name='alter_request',
-            view_instance=view,
-        )
+        pfilter = view.permission_filter('patch', 'alter_request')
     except KeyError:
         return request
-    if not pfilter(request.json_body['data'], request.json_body):
+
+    obj_data = request.json_body['data']
+    allowed = pfilter(obj_data)
+    if allowed.get('id', True) is False:
+        # Straight up forbidden to PATCH object.
         raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
+    for att_name in list(obj_data.get('attributes', {}).keys()):
+        if att_name not in allowed['attributes']:
+            del(obj_data['attributes'][att_name])
+            # TODO: alternatively raise HTTPForbidden?
+    rel_names = list(obj_data.get('relationships', {}).keys())
+    for rel_name in rel_names:
+        if rel_name not in allowed['relationships']:
+            del(obj_data['relationships'][rel_name])
+            # TODO: alternatively raise HTTPForbidden?
+    # Loop through a shallow copy of obj_data['relationships'] so that we
+    # can delete entries without causing problems.
+    rels_copy = {}
+    rels_copy.update(obj_data.get('relationships', {}))
+    this_item = None
+    for rel_name, rel_dict in rels_copy.items():
+        # For each of these allowed rels, look to see if the *other end*
+        # of the relationship is to_one (in which case we need PATCH permission
+        # to that rel in order to set it to this object) or to_many (in which
+        # case we need POST permission in order to add this object to it).
+        rel = view.relationships[rel_name]
+        mirror_rel = rel.mirror_relationship
+        if not mirror_rel:
+            # No mirror relationship: no need to check permissions on it.
+            continue
+        if not this_item:
+            this_item = view.dbsession.query(
+                view.model
+            ).options(
+                load_only(view.key_column.name)
+            ).filter(
+                view.key_column == view.obj_id
+            ).one()
+        this_ro = ResultObject(view, this_item)
+        mirror_view = mirror_rel.view_class(view.request)
+        if rel.direction in (ONETOMANY, MANYTOMANY):
+            # rel data will be an array of ris. We'll need permission to post,
+            # delete, or patch each one on the mirror.
+            # Find the current related items.
+            current_related_ids = {
+                str(getattr(related_item, mirror_view.key_column.name))
+                for related_item in getattr(this_item, rel.name)
+            }
+            new_related_ids = {
+                item['id'] for item in rel_dict['data']
+            }
+            adding = new_related_ids - current_related_ids
+            removing = current_related_ids - new_related_ids
+            allowed_ids = set(current_related_ids)
+            # print(f'{rel.name}: cur {current_related_ids}, new {new_related_ids}')
+            # print(f'  add {adding}, rem {removing}')
+            if rel.direction is ONETOMANY:
+                # mirror_rel is MANYTOONE and we need PATCH permission for any
+                # alterations.
+                try:
+                    m_patch_filter = mirror_view.permission_filter('patch', 'alter_request')
+                except KeyError:
+                    continue
+                for _id in adding:
+                    mallowed = m_patch_filter(
+                        {
+                            'type': mirror_view.collection_name,
+                            'id': _id,
+                            'relationships': {
+                                mirror_rel.name: {
+                                    'data': this_ro.identifier()
+                                }
+                            }
+                        }
+                    )
+                    if mirror_rel.name in mallowed['relationships']:
+                        allowed_ids.add(_id)
+                    # TODO: alternatively raise HTTPForbidden?
+                for _id in removing:
+                    mallowed = m_patch_filter(
+                        {
+                            'type': mirror_view.collection_name,
+                            'id': _id,
+                            'relationships': {
+                                mirror_rel.name: {
+                                    'data': None
+                                }
+                            }
+                        }
+                    )
+                    if mirror_rel.name in mallowed['relationships']:
+                        allowed_ids.remove(_id)
+                    # TODO: alternatively raise HTTPForbidden?
+            else:
+                # mirror_rel is MANYTOMANY and we need POST permission to add or
+                # DELETE permission to remove.
+                try:
+                    m_post_filter = mirror_view.permission_filter('post', 'alter_request')
+                except KeyError:
+                    m_post_filter = False
+                try:
+                    m_del_filter = mirror_view.permission_filter('delete', 'alter_request')
+                except KeyError:
+                    m_del_filter = False
+                if m_post_filter:
+                    for _id in adding:
+                        mallowed = m_post_filter(
+                            {
+                                'type': mirror_view.collection_name,
+                                'id': _id,
+                                'relationships': {
+                                    mirror_rel.name: {
+                                        'data': this_ro.identifier()
+                                    }
+                                }
+                            }
+                        )
+                        if mirror_rel.name in mallowed['relationships']:
+                            allowed_ids.add(_id)
+                        # TODO: alternatively raise HTTPForbidden?
+                if m_del_filter:
+                    for _id in removing:
+                        mallowed = m_del_filter(
+                            {
+                                'type': mirror_view.collection_name,
+                                'id': _id,
+                                'relationships': {
+                                    mirror_rel.name: {
+                                        'data': this_ro.identifier()
+                                    }
+                                }
+                            }
+                        )
+                        if mirror_rel.name in mallowed['relationships']:
+                            allowed_ids.remove(_id)
+                        # TODO: alternatively raise HTTPForbidden?
+                else:
+                    allowed_ids -= removing
+
+            rel_dict['data'] = [
+                {'type': view.collection_name, 'id': _id}
+                for _id in allowed_ids
+            ]
+        else:
+            # rel.direction is MANYTOONE. There should be just one ri, or None.
+            cur_related = ResultObject(mirror_view, getattr(this_item, rel.name))
+            if cur_related.object is None and rel_dict['data'] is None:
+                # Nothing to do.
+                continue
+            if str(cur_related.obj_id) == rel_dict['data'].get('id'):
+                # Also nothing to do.
+                continue
+            if cur_related.object is not None:
+                # Need DELETE permission on cur_related.mirror_rel
+                try:
+                    m_del_filter = mirror_view.permission_filter('del', 'alter_request')
+                except KeyError:
+                    continue
+                mallowed = m_del_filter(
+                    {
+                        'type': mirror_view.collection_name,
+                        'id': cur_related.obj_id,
+                        'relationships': {
+                            mirror_rel.name: {
+                                'data': this_ro.identifier()
+                            }
+                        }
+                    }
+                )
+                if mirror_rel.name not in mallowed['relationships']:
+                    del(obj_data['relationships'][rel_name])
+            if rel_dict['data'] is not None:
+                # Need POST permission on cur_related.mirror_rel
+                try:
+                    m_post_filter = mirror_view.permission_filter('post', 'alter_request')
+                except KeyError:
+                    continue
+                mallowed = m_post_filter(
+                    {
+                        'type': mirror_view.collection_name,
+                        'id': cur_related.obj_id,
+                        'relationships': {
+                            mirror_rel.name: {
+                                'data': this_ro.identifier()
+                            }
+                        }
+                    }
+                )
+                if mirror_rel.name not in mallowed['relationships']:
+                    del(obj_data['relationships'][rel_name])
+    request.body = json.dumps({'data': obj_data}).encode()
     return request
 
 
