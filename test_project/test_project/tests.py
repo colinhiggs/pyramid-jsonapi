@@ -805,6 +805,8 @@ class TestPermissions(DBTestBase):
             ['alter_request'],
             blogs_pfilter
         )
+
+        # ONETOMANY tests
         # No permission to patch people/1 at all.
         test_app.patch_json(
             '/people/1/relationships/blogs',
@@ -852,6 +854,42 @@ class TestPermissions(DBTestBase):
         # Allowed to add blogs/13 :)
         self.assertIn('13', blog_ids)
 
+        # MANYTOMANY tests
+        def articles_by_assoc_pfilter(obj, **kwargs):
+            if obj['id'] == '10':
+                # Not allowed to change articles_by_assoc/10 at all.
+                return False
+            if obj['id'] == '12':
+                # Not allowed to alter author of articles_by_assoc/12
+                return {'attributes': True, 'relationships': False}
+            return True
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post', 'delete'],
+            ['alter_request'],
+            articles_by_assoc_pfilter
+        )
+        test_app.patch_json(
+            '/people/12/relationships/articles_by_assoc',
+            {
+                'data': [
+                    {'type': 'articles_by_assoc', 'id': '10'},
+                    {'type': 'articles_by_assoc', 'id': '1'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        article_ids = [
+            b['id'] for b in
+            test_app.get('/people/12').json_body['data']['relationships']['articles_by_assoc']['data']
+        ]
+        # No permission to add 10
+        self.assertNotIn('10', article_ids)
+        # Permission to remove 13
+        self.assertNotIn('13', article_ids)
+        # No permission to remove 12
+        self.assertIn('12', article_ids)
+        # Permission to add 1
+        self.assertIn('1', article_ids)
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
