@@ -335,6 +335,8 @@ class PyramidJSONAPI():
             if item.extension_type is ASSOCIATION_PROXY:
                 rels[key] = item
         class_attrs['hybrid_attributes'] = hybrid_atts
+        class_attrs['all_attributes'] = atts.copy()
+        class_attrs['all_attributes'].update(hybrid_atts)
         for key, rel in sqlalchemy.inspect(model).mapper.relationships.items():
             if expose_fields is None or key in expose_fields:
                 rels[key] = rel

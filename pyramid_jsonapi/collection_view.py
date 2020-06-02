@@ -44,6 +44,7 @@ class CollectionViewBase:
     # Define class attributes
     # Callable attributes use lambda to keep pylint happy
     api = None
+    all_attributes = None
     attributes = None
     callbacks = None
     collection_name = None
@@ -1234,27 +1235,6 @@ class CollectionViewBase:
         elif param == '':
             return set()
         return set(param.split(','))
-
-    @property
-    def all_attributes(self):
-        """Return a dictionary of all attributes.
-        Normal and hybrid, requested or not.
-
-        Returns:
-            dict: dict in the form:
-
-                .. parsed-literal::
-
-                    {
-                        <colname>: <column_object>,
-                        ...
-                    }
-        """
-        return {
-            k: v for k, v in itertools.chain(
-                self.attributes.items(), self.hybrid_attributes.items()
-            )
-        }
 
     @property
     def requested_attributes(self):
