@@ -15,7 +15,7 @@ stages = (
 )
 
 
-def workflow(view, stages, data):
+def workflow(view, stages):
     query = view.base_collection_query()
     query = view.query_add_sorting(query)
     query = view.query_add_filtering(query)

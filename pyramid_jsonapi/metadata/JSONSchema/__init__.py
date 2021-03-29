@@ -279,6 +279,9 @@ class JSONSchema():
     def validate(self, json_body, method='get'):
         """Validate schema against jsonschema."""
 
+        print('validiting:')
+        print(json_body)
+
         method = method.lower()
         # TODO: How do we validate PATCH requests?
         if method != 'patch':
@@ -288,7 +291,12 @@ class JSONSchema():
             try:
                 jsonschema.validate(json_body, schm)
             except (jsonschema.exceptions.ValidationError) as exc:
+                print('exception during validation')
                 raise HTTPBadRequest(str(exc))
+            except Exception as exc:
+                print('generic exception')
+                from pyramid.httpexceptions import HTTPInternalServerError
+                raise HTTPInternalServerError(str(exc))
 
     def build_definitions(self):
         """Build data and attribute references for all endpoints,

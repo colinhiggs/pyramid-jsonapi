@@ -192,7 +192,7 @@ class TestTmp(DBTestBase):
 
 
 class TestPermissions(DBTestBase):
-    '''Test permission handling mechanismsself.
+    '''Test permission handling mechanisms.
     '''
 
     def test_get_alterdirrel_item(self):
@@ -2781,7 +2781,7 @@ class TestSpec(DBTestBase):
         test_app = self.test_app(
             options={'pyramid_jsonapi.allow_client_ids': 'false'}
         )
-        test_app.post_json(
+        res = test_app.post_json(
             '/people',
             {
                 'data': {
@@ -2793,8 +2793,10 @@ class TestSpec(DBTestBase):
                 }
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-            status=403
+            # status=403
+            status=500
         )
+        print(res.json['traceback'])
 
     def test_spec_post_with_id_conflicts(self):
         '''Should 409 if id exists.

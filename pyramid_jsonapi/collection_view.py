@@ -95,6 +95,21 @@ class CollectionViewBase:
                 return None
         return item
 
+    def get_item(self, _id=None):
+        """Return the item specified by _id. Will look up id from request if _id is None.
+        """
+        if _id is None:
+            _id = self.obj_id
+        return self.get_one(
+            self.dbsession.query(
+                self.model
+            ).options(
+                load_only(self.key_column.name)
+            ).filter(
+                self.key_column == _id
+            )
+        )
+
     def get_old(self):
         """Handle GET request for a single item.
 
@@ -1412,7 +1427,7 @@ class CollectionViewBase:
         return self.api.view_classes[model](self.request)
 
     @staticmethod
-    def true_filter(*args):
+    def true_filter(*args, **kwargs):
         return True
 
     def permission_to_dict(self, permission):
@@ -1475,13 +1490,17 @@ class CollectionViewBase:
                     )
                 cls.permission_filters[perm][stage_name] = dictified_pfunc
 
-    def permission_filter(self, permission, stage_name):
+    def permission_filter(self, permission, stage_name, default=None):
         # dictified_pfunc has signature (view, object_rep, new_rep). We want
         # (object_rep, new_rep) since view instance should be known via method
         # call.
-        return partial(
-            self.permission_filters[permission][stage_name], self
-        )
+        try:
+            filter = self.permission_filters[permission][stage_name]
+        except KeyError as e:
+            if default:
+                filter = default
+            raise(e)
+        return partial(filter, self)
 
     @classmethod
     def permission_handler(cls, endpoint_name, stage_name):

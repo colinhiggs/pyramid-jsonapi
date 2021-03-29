@@ -14,7 +14,7 @@ requires = [
     'pyramid_mako',
     'pyramid_settings_wrapper',
     'pyyaml>=5.1', # openapi-spec-validator requires >= 5.1
-    'SQLAlchemy',
+    'SQLAlchemy<1.4',
     ]
 
 setup(

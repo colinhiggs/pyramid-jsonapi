@@ -37,7 +37,13 @@ import pyramid_settings_wrapper
 import sqlalchemy
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
+# DeclarativeMeta moved between sqlalchemy 1.3 and 1.4
+try:
+    # <= 1.3
+    from sqlalchemy.ext.declarative.api import DeclarativeMeta
+except ImportError:
+    # 1.4+
+    from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm.interfaces import (
     MANYTOMANY,
@@ -401,6 +407,10 @@ class StdRelationship:
     @property
     def rel_direction(self):
         return self.obj.direction
+
+    @property
+    def to_many(self):
+        return self.direction in (ONETOMANY, MANYTOMANY)
 
     @property
     def proxy_direction(self):

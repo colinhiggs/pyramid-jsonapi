@@ -10,7 +10,8 @@ from collections import (
 )
 
 from functools import (
-    partial
+    partial,
+    partialmethod
 )
 
 from sqlalchemy.orm import load_only
@@ -51,12 +52,12 @@ def make_method(name, api):
         'alter_document': deque(),
         'validate_response': deque()
     }
-    stage_order = ['alter_request', 'validate_request', ]
+    # stage_order = ['alter_request', 'validate_request', ]
     for stage_name in wf_module.stages:
         stages[stage_name] = deque()
-        stage_order.append(stage_name)
-    stage_order.append('alter_results')
-    stage_order.append('validate_response')
+        # stage_order.append(stage_name)
+    # stage_order.append('alter_results')
+    # stage_order.append('validate_response')
     stages['validate_request'].append(validate_request_headers)
     stages['validate_request'].append(validate_request_valid_json)
     stages['validate_request'].append(validate_request_common_validity)
@@ -97,8 +98,9 @@ def make_method(name, api):
     )
 
     def method(view):
-        data = {}
+        view.pj_shared = SharedState(view)
         try:
+            # execute_stage(view, stages, 'alter_request')
             request = execute_stage(
                 view, stages, 'alter_request', view.request
             )
@@ -106,12 +108,12 @@ def make_method(name, api):
                 view, stages, 'validate_request', request
             )
             view.request = request
-            document = wf_module.workflow(view, stages, data)
+            document = wf_module.workflow(view, stages)
             document = execute_stage(
                 view, stages, 'alter_document', document
             )
             ret = execute_stage(
-                view, stages, 'validate_response', document, data
+                view, stages, 'validate_response', document
             )
         except Exception as exc:
             if exc.__class__ not in responses:
@@ -409,14 +411,6 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
     if not mirror_rel:
         # No mirror relationship: no need to check permissions on it.
         return rel_dict
-    if not this_item:
-        this_item = view.dbsession.query(
-            view.model
-        ).options(
-            load_only(view.key_column.name)
-        ).filter(
-            view.key_column == view.obj_id
-        ).one()
     this_ro = ResultObject(view, this_item)
     mirror_view = mirror_rel.view_class(view.request)
     if rel.direction in (ONETOMANY, MANYTOMANY):
@@ -599,7 +593,7 @@ def patch_alter_request_handler(view, request, pdata):
     # can delete entries without causing problems.
     rels_copy = {}
     rels_copy.update(obj_data.get('relationships', {}))
-    this_item = None
+    this_item = view.get_item()
     for rel_name, rel_dict in rels_copy.items():
         # For each of these allowed rels, look to see if the *other end*
         # of the relationship is to_one (in which case we need PATCH permission
@@ -620,13 +614,14 @@ def relationships_patch_alter_request_handler(view, request, pdata):
         return request
 
     allowed = pfilter({'type': view.collection_name, 'id': view.obj_id})
-    if allowed.get('id', True) is False:
+    if not allowed.get('id', True):
         # Straight up forbidden to PATCH object.
         raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
     if view.rel.name not in allowed['relationships']:
         raise HTTPForbidden(f'No permission to PATCH {view.collection_name}/{view.obj_id}.{view.rel.name}')
+    this_item = view.get_item()
     new_rel_dict = patch_relationship_ar_helper(
-        view, None, view.rel.name,
+        view, this_item, view.rel.name,
         {'data': view.request.json_body['data']}
     )
     if new_rel_dict:
@@ -636,20 +631,84 @@ def relationships_patch_alter_request_handler(view, request, pdata):
     return request
 
 
+def get_item(view, item_or_id=None):
+    """Wrapper around view.get_item() to allow passing an item or an id."""
+    if item_or_id is None:
+        item_or_id = view.obj_id
+    if isinstance(item_or_id, view.model):
+        return item_or_id
+    else:
+        return view.get_item(item_or_id)
+
+
+def ar_check_mirror_rel_perms(view, permission, rel, rel_dict, item_or_id=None):
+    # Find the item rel is relative to.
+
+    # Check for direct permission to alter rel.
+    # filter = view.permission_filter(permission, 'alter_request', default=view.true_filter)
+    # if not filter(this_item):
+    #     return {'forward': False}
+    mirror_rel = rel.mirror_relationship
+    if not mirror_rel:
+        # No mirror relationship: no need to check permissions on it. Return
+        # False as a predicate value.
+        return False
+    # mirror_view = mirror_rel.view_class(view.request)
+    report = {
+        'post': {'allowed': set(), 'denied': set()},
+        'patch': {'allowed': set(), 'denied': set()},
+        'delete': {'allowed': set(), 'denied': set()}
+    }
+    # related_items = view.related_query(this_ro.obj_id, rel).all()
+    rel_data = rel_dict['data']
+    if rel.direction is MANYTOONE:
+        # Always a list for DRYness.
+        rel_data = [rel_data]
+    if mirror_rel.direction is MANYTOONE:
+        # Need patch permission for any alterations.
+        if permission == 'post':
+            adding = {'_id': 2}
+    return report
+
+
 def delete_alter_request_handler(view, request, pdata):
+    # Make sure there is a permission filter registered.
     try:
-        pfilter = partial(
-            view.permission_filter('delete', 'alter_request'),
-            permission_sought='delete',
-            stage_name='alter_request',
-            view_instance=view,
-        )
+        pfilter = view.permission_filter('delete', 'alter_request')
     except KeyError:
         return request
-    if not pfilter({'type': view.collection_name, 'id': view.obj_id}, view.request):
+
+    this_item = view.get_item()
+    this_ro = ResultObject(view, this_item)
+    this_data = this_ro.serialise()
+    allowed = pfilter(this_data, mask=view.everything_mask)
+    if not allowed['id']:
         raise HTTPForbidden('No permission to delete {}/{}'.format(
             view.collection_name, view.obj_id
         ))
+    for att_name in this_data.get('attributes', {}):
+        if att_name not in allowed['attributes']:
+            # Need permission to *all* attributes for delete to work sensibly.
+            raise HTTPForbidden('No permission to delete {}/{}[{}]'.format(
+                view.collection_name, view.obj_id, att_name
+            ))
+    for rel_name in this_data.get('relationships', {}):
+        if rel_name not in allowed['relationships']:
+            # Need permission to *all* relationships for delete to work sensibly.
+            raise HTTPForbidden('No permission to delete {}/{}.{}'.format(
+                view.collection_name, view.obj_id, rel_name
+            ))
+    for rel_name, rel_dict in this_data.get('relationships', {}).items():
+        rel = view.relationships[rel_name]
+        mirror_perms = ar_check_mirror_rel_perms(view, 'delete', rel, rel_dict)
+        if not mirror_perms:
+            # There is no mirror relationship for this rel.
+            continue
+        if mirror_perms['delete']['denied'] or mirror_perms['patch']['denied']:
+            # At least one required delete or patch on mirror is denied.
+            raise HTTPForbidden('No permission to delete {}/{}.{} by mirror relationship.'.format(
+                view.collection_name, view.obj_id, rel_name
+            ))
     return request
 
 
@@ -1026,24 +1085,33 @@ class Results:
             included_dict.update(o.included_dict)
         return included_dict
 
-    def filter(self, predicate, force_rerun=False):
+    def filter(self, predicate, reason='Permission denied', force_rerun=False):
         # if self._flag_filtered and not force_rerun:
         #     return
         accepted = []
         for obj in self.objects:
-            pred = predicate(obj)
-            if pred and pred.get('id', True):
+            pred = self.view.permission_to_dict(predicate(obj))
+            if pred['id']:
                 accepted.append(obj)
-                atts = pred.get('attributes', set())
-                if atts is True:
-                    atts = obj.attribute_mask
-                obj.attribute_mask &= set(atts)
-                rels = pred.get('relationships', set())
-                if rels is True:
-                    rels = obj.rel_mask
-                obj.rel_mask &= set(rels)
+                reject_atts = obj.attribute_mask - pred['attributes']
+                obj.attribute_mask &= pred['attributes']
+                # record rejected atts
+                self.view.pj_shared.rejected.reject_attributes(
+                    obj.identifier,
+                    reject_atts,
+                    reason,
+                )
+                reject_rels = obj.attribute_mask - pred['relationships']
+                obj.rel_mask &= pred['relationships']
+                # record rejected rels
+                self.view.pj_shared.rejected.reject_relationships(
+                    obj.identifier,
+                    reject_rels,
+                    reason,
+                )
             else:
                 self.rejected_objects.append(obj)
+                self.view.pj_shared.rejected.reject_object(obj.identifier, reason)
 
         self.objects = accepted
         self._flag_filtered = True
@@ -1056,3 +1124,37 @@ class Doc(dict):
             self[key].update(value)
         except KeyError:
             self[key] = value
+
+
+class SharedState():
+
+    def __init__(self, view, request=None, results=None, document=None, rejected=None):
+        self.view = view
+        self.request = request
+        self.results = results
+        self.document = document
+        self.rejected = rejected or Rejected(view)
+
+
+class Rejected():
+
+    def __init__(self, view, rejected=None):
+        self.view = view
+        self.rejected = rejected or {
+            'objects': {},
+            'attributes': {},
+            'relationships': {},
+        }
+
+    def reject_object(self, identifier, reason):
+        self.rejected['objects'][identifier] = reason
+
+    def _reject_multiple(self, category, identifier, things, reason):
+        new = {t: reason for t in things}
+        try:
+            self.rejected[category][identifier].update(new)
+        except KeyError:
+            self.rejected[category][identifier] = new
+
+    reject_attributes = partialmethod(_reject_multiple, category='attributes')
+    reject_relationships = partialmethod(_reject_multiple, category='relationships')

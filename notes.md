@@ -277,3 +277,29 @@ Permissions required:
    1. `PATCH` permission on `{posts/1}.blog` to set value to `None`.
 1. `DELETE` permission on `{blogs/1}.posts` to remove `{posts/2}`.
    1. `PATCH` permission on `{posts/2}.blog` to set value to `None`.
+
+### Permission Filters and Asking for Permission
+
+Each model can have on permission filter per stage and possible permission. The possible permissions are the lower case versions of the HTTP verbs: `get`, `post`, `patch`, `delete`. They should have the signature:
+
+`pfilter(target, mask, permission_sought, stage_name, view_instance)`
+
+A workflow that is seeking permission for an action will call the registered `pfilter`.
+
+mask = {
+  'id': True,
+  'attributes': {'att1': True, 'att2': False, ...},
+  'relationships': {'rel1': False, 'rel2': True, ...}
+}
+
+mask = view.nothing_mask
+mask = view.only_id_mask
+mask = view.all_attributes_mask
+mask = view.all_relationships_mask
+mask = view.everything_mask
+
+mask = view.attributes_mask(attributes)
+mask = view.relationships_mask(relationships)
+
+mask = view.mask_or(mask1, mask2)
+mask = view.mask_and(mask1, mask2)
