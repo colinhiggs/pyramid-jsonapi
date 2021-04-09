@@ -2793,8 +2793,7 @@ class TestSpec(DBTestBase):
                 }
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-            # status=403
-            status=500
+            status=403
         )
         print(res.json['traceback'])
 
