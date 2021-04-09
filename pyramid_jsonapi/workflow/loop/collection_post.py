@@ -24,7 +24,7 @@ stages = (
 )
 
 
-def workflow(view, stages, prev_data):
+def workflow(view, stages):
     try:
         data = view.request.json_body['data']
     except KeyError:
