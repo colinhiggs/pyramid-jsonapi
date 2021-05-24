@@ -63,7 +63,7 @@ Available column options:
 ===============   ==========    ================================================
 Option            Value Type    Description
 ===============   ==========    ================================================
-visible           Boolean       Whether or not to display this colum in the API.
+visible           Boolean       Whether or not to display this column in the API.
 ===============   ==========    ================================================
 
 Model Relationship Options
