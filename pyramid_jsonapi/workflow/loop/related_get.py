@@ -21,7 +21,7 @@ stages = (
 )
 
 
-def workflow(view, stages, data):
+def workflow(view, stages):
     query = wf.execute_stage(
         view, stages, 'alter_query',
         view.related_query(view.obj_id, view.rel)

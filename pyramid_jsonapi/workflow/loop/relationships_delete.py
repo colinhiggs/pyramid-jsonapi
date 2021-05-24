@@ -23,7 +23,7 @@ stages = (
 )
 
 
-def workflow(view, stages, data):
+def workflow(view, stages):
     if view.rel.direction is MANYTOONE:
         raise HTTPForbidden('Cannot DELETE to TOONE relationship link.')
     obj = view.dbsession.query(view.model).get(view.obj_id)

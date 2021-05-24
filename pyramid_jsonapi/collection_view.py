@@ -1424,7 +1424,12 @@ class CollectionViewBase:
         Returns:
             class: subclass of CollectionViewBase providing view for ``model``.
         """
-        return self.api.view_classes[model](self.request)
+        view_instance = self.api.view_classes[model](self.request)
+        try:
+            view_instance.pj_shared = self.pj_shared
+        except AttributeError:
+            pass
+        return view_instance
 
     @staticmethod
     def true_filter(*args, **kwargs):

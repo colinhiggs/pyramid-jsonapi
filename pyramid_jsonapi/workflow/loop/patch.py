@@ -20,7 +20,7 @@ stages = (
 )
 
 
-def workflow(view, stages, prev_data):
+def workflow(view, stages):
     request = wf.execute_stage(
         view, stages, 'validate_patch_request',
         view.request

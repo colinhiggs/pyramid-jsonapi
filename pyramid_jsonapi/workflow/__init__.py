@@ -1149,7 +1149,7 @@ class Rejected():
     def reject_object(self, identifier, reason):
         self.rejected['objects'][identifier] = reason
 
-    def _reject_multiple(self, category, identifier, things, reason):
+    def _reject_multiple(self, identifier, things, reason, category):
         new = {t: reason for t in things}
         try:
             self.rejected[category][identifier].update(new)

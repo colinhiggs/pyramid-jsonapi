@@ -23,7 +23,7 @@ stages = (
 )
 
 
-def workflow(view, stages, data):
+def workflow(view, stages):
     obj = view.dbsession.query(view.model).get(view.obj_id)
     if view.rel.direction is MANYTOONE:
         local_col, _ = view.rel.obj.local_remote_pairs[0]

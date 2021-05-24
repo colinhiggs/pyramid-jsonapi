@@ -10,7 +10,7 @@ stages = (
 )
 
 
-def workflow(view, stages, prev_data):
+def workflow(view, stages):
     item = view.get_one(
         view.single_item_query(loadonly=[view.key_column.name]),
         not_found_message='No item {} in collection {}'.format(
