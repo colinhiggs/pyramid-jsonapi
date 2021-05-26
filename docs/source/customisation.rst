@@ -268,8 +268,89 @@ It's also possible to specify a value transformation function to change the para
     value_transform=lambda val: re.sub(r'\*', '%', val)
   )
 
-Callbacks
----------
+Stages and the Workflow
+-----------------------
+
+``pyramid_jsonapi`` services requests in stages. These stages are sequences of
+functions implemented as ``collections.deque``: you can add your own functions
+using ``.append()`` or ``.appendleft()``, remove them with ``.pop()`` or
+``.popleft()`` and so on. The functions in each stage deque will be called in
+order at the appropriate point.
+
+The stages are run in the following order:
+
+* ``validate_request``
+* ``alter_request``
+* Any stages defined by a ``workflow`` function from a loadable workflow module.
+* ``alter_document``
+* ``validate_request``
+
+The Loop Workflow
+-----------------
+
+The default workflow is the ``loop`` workflow. It defines the following stages:
+
+* ``alter_direct_results``
+* ``alter_related_results``
+
+Authorisation
+-------------
+
+There are stage functions available for stages which handle most of the logic of
+authorisation. To use them, you must first load them into the appropriate stage
+deque(s). :func:`pyramid_jsonapi.PyramidJSONAPI.enable_permission_handlers` will
+do that.
+
+These handlers call permission filters to determine whether or not an action is
+permitted. The default permission filters allow everything, which is the same
+as not having any permission handlers at all. Permission filters should be
+registered with :func:`CollectionView.register_permission_filter`.
+
+Note that you supply the lists of permissions and stages handled by the
+permission filter function so you can either write functions that are quite
+specific or more general ones. They will have the permission sought and the
+current stage passed as arguments to aid in decision making.
+
+Permission filters will be called from within the code like this:
+
+.. code-block:: python
+
+  filter(
+    object_rep,
+    view_instance=view,
+    stage_name=stage_name,
+    permission_sought=perm,
+  )
+
+Where ``object_rep`` is some representation of the object to be authorised,
+``view_instance`` is the current view instance, ``stage_name`` is the name of
+the current stage, and ``permission_sought`` is one of ``get``, ``post``,
+``patch``, or ``delete``. Different stages imply different representations. For
+example the ``alter_request`` stage will pass a pyramid request object and the
+``alter_document`` stage will pass a dictionary suitable for JSON serialisation.
+
+Note that you can get the current sqlAlchemy session from
+``view_instance.dbsession`` (which you might need to make the queries required
+for authorisation) and the pyramid request from ``view_instance.request`` which
+should give you access to the usual things.
+
+The simplest thing that a permission filter can do is return ``True``
+(``permission_sought`` is granted for the whole object) or ``False``
+(``permission_sought`` is denied fro the whole object). To control permissions
+for attributes or relationships, you must use the fuller return representation:
+
+.. code-block:: python
+
+  {
+    'id': True|False, # Controls visibility of / action on the whole object.
+    'attributes': {'att1', 'att2', ...}, # The set of allowed attribute names.
+    'relationships': {'rel1', 'rel2', ...}, # The set of allowed rel names.
+  }
+
+
+
+Callbacks (Deprecated)
+----------------------
 
 At certain points during the processing of a request, ``pyramid_jsonapi`` will
 invoke any callback functions which have been registered. Callback sequences are
