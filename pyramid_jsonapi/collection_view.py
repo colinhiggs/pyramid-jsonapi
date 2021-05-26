@@ -1468,7 +1468,7 @@ class CollectionViewBase:
     @classmethod
     def register_permission_filter(cls, permissions, stages, pfunc):
         # Permission filters should have the signature:
-        #   pfunc(object_rep, permission_sought, stage_name, view_instance)
+        #   pfunc(object_rep, view_instance, permission_sought, stage_name)
         # Theoretically it would be more efficient to define this mapping
         # somewhere else since we redifine it for every registration. But
         # this is close to where it is used and there shouldn't be a large
