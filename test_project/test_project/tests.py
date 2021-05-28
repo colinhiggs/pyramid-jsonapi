@@ -199,7 +199,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'get',
+            ['get'],
             ['alter_direct_results', 'alter_related_results']
         )
         # Not allowed to see alice (people/1)
@@ -217,7 +217,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'get',
+            ['get'],
             ['alter_direct_results', 'alter_related_results']
         )
         def pfilter(obj, *args, **kwargs):
@@ -239,7 +239,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'get',
+            ['get'],
             ['alter_direct_results', 'alter_related_results']
         )
         def pfilter(obj, *args, **kwargs):
@@ -261,7 +261,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'get',
+            ['get'],
             ['alter_direct_results', 'alter_related_results']
         )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
@@ -279,7 +279,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'get',
+            ['get'],
             ['alter_direct_results', 'alter_related_results']
         )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
@@ -299,7 +299,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'get',
+            ['get'],
             ['alter_direct_results', 'alter_related_results']
         )
         # Not allowed to see alice (people/1)
@@ -318,7 +318,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'write',
+            ['write'],
             ['alter_request']
         )
         # Not allowed to post the name "forbidden"
@@ -361,7 +361,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'write',
+            ['write'],
             ['alter_request']
         )
         def blogs_pfilter(obj, *args, **kwargs):
@@ -478,7 +478,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'write',
+            ['write'],
             ['alter_request']
         )
         def blogs_pfilter(obj, *args, **kwargs):
@@ -574,7 +574,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'write',
+            ['write'],
             ['alter_request']
         )
         def blogs_pfilter(obj, **kwargs):
@@ -773,7 +773,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            'write',
+            ['write'],
             ['alter_request']
         )
         def people_pfilter(obj, **kwargs):

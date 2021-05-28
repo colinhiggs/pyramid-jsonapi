@@ -363,7 +363,7 @@ class PyramidJSONAPI():
 
         return view_class
 
-    def enable_permission_handlers(self, permission, stage_names):
+    def enable_permission_handlers(self, permissions, stage_names):
         perm_to_eps = {
             'get': {'get', 'collection_get', 'related_get', 'relationships_get'},
             'post': {'collection_post', 'relationships_post'},
@@ -371,8 +371,15 @@ class PyramidJSONAPI():
             'delete': {'delete', 'relationships_delete'},
         }
         perm_to_eps['write'] = perm_to_eps['post'] | perm_to_eps['patch'] | perm_to_eps['delete']
+
+        # Build a set of all the end points from permissions.
+        ep_names = set()
+        for perm in permissions:
+            ep_names.update(perm_to_eps[perm.lower()])
+
+        # Add permission handlers for all view classes.
         for model, view_class in self.view_classes.items():
-            for ep_name in perm_to_eps[permission.lower()]:
+            for ep_name in ep_names:
                 ep_func = getattr(view_class, ep_name)
                 for stage_name in stage_names:
                     try:
