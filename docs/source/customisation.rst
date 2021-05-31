@@ -388,7 +388,8 @@ database update). You might do something like this in ``__init__.py``:
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
   pj.enable_permission_handlers(['PATCH'], ['alter_request'])
   def patch_posts_filter(data, view, **kwargs):
-    post_obj = view.db_session.get(data['id'])
+    post_obj = view.db_session.get(models.Posts, data['id']) # sqlalchemy 1.4+
+    # post_obj = view.db_session.query(models.Posts).get(data['id']) # sqlalchemy < 1.4
     return view.request.remote_user == post_obj.author.name
   pj.view_classes[models.Posts].register_permission_filter(
     ['patch'],
