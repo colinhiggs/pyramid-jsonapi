@@ -379,9 +379,9 @@ they come from the database. You might have something like this in
   )
 
 Next, you want to do authorisation on PATCH requests and allow only the author
-of blog post to PATCH it. The ``alter_request`` stage is the most obvious place
-to do this (you want to alter the request before it is turned into a database
-update). You might do something like this in ``__init__.py``:
+of a blog post to PATCH it. The ``alter_request`` stage is the most obvious
+place to do this (you want to alter the request before it is turned into a
+database update). You might do something like this in ``__init__.py``:
 
 .. code-block:: python
 
