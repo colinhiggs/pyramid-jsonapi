@@ -279,19 +279,27 @@ order at the appropriate point.
 
 The stages are run in the following order:
 
-* ``validate_request``
-* ``alter_request``
+* ``validate_request``. Functions in this stage validate the request. For
+  example, ensuring that the correct headers are set and that any json validates
+  against the schema.
+* ``alter_request``. Functions in this stage alter the request. For example
+  possibly editing any POST or PATCH such that it contains a server defined
+  calculated attribute.
 * Any stages defined by a ``workflow`` function from a loadable workflow module.
-* ``alter_document``
-* ``validate_request``
+* ``alter_document``. Functions in this stage alter the ``document``, which is
+  to say the dictionary which will be JSON serialised and sent back in the
+  response.
+* ``validate_response``.
 
 The Loop Workflow
 -----------------
 
 The default workflow is the ``loop`` workflow. It defines the following stages:
 
-* ``alter_direct_results``
-* ``alter_related_results``
+* ``alter_direct_results``. Alter a :class:`workflow.Results` object containing
+  database results from a query of the requested collection.
+* ``alter_related_results``. Alter a :class:`workflow.Results` object containing
+  database results from a query of a related collection.
 
 Authorisation
 -------------
@@ -347,7 +355,46 @@ for attributes or relationships, you must use the fuller return representation:
     'relationships': {'rel1', 'rel2', ...}, # The set of allowed rel names.
   }
 
+Putting that together in some examples:
 
+Let's say you have banned the user 'baddy' and want to authorise GET requests so
+that baddy can no longer fetch blogs. Both the ``alter_document`` and
+``alter_..._results`` stages would make sense as places to influence what will
+be returned by a GET. We will choose the pair ``alter_direct_results`` and
+``alter_related_results`` here so that we are authorising results as soon as
+they come from the database. You might have something like this in
+``__init__.py``:
+
+.. code-block:: python
+
+  pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
+  pj.enable_permission_handlers(
+    ['get'],
+    ['alter_direct_results', 'alter_related_results']
+  )
+  pj.view_classes[models.Blogs].register_permission_filter(
+    ['get'],
+    ['alter_direct_results', 'alter_related_results'],
+    lambda obj, view, **kwargs:  view.request.remote_user != 'baddy',
+  )
+
+Next, you want to do authorisation on PATCH requests and allow only the author
+of blog post to PATCH it. The ``alter_request`` stage is the most obvious place
+to do this (you want to alter the request before it is turned into a database
+update). You might do something like this in ``__init__.py``:
+
+.. code-block:: python
+
+  pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
+  pj.enable_permission_handlers(['PATCH'], ['alter_request'])
+  def patch_posts_filter(data, view, **kwargs):
+    post_obj = view.db_session.get(data['id'])
+    return view.request.remote_user == post_obj.author.name
+  pj.view_classes[models.Posts].register_permission_filter(
+    ['patch'],
+    ['alter_request'],
+    patch_posts_filter
+  )
 
 Callbacks (Deprecated)
 ----------------------

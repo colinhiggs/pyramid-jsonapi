@@ -364,6 +364,22 @@ class PyramidJSONAPI():
         return view_class
 
     def enable_permission_handlers(self, permissions, stage_names):
+        '''
+        Add permission handlers to all views.
+
+        Permission handlers are not added to views by default for performance
+        reasons. Call this function to add permission handlers to *all* views
+        for the view methods that permissions implies and for the stage names
+        specified.
+
+        Arguments:
+            permissions: an iterable of permissions to be enabled. Each permission
+                should be one of ``get``, ``post``, ``patch``, ``delete`` or
+                ``write`` (which expands to the same as ``post``, ``patch`` and
+                ``delet``).
+            stage_names: an iterable of stage names to enable.
+
+        '''
         perm_to_eps = {
             'get': {'get', 'collection_get', 'related_get', 'relationships_get'},
             'post': {'collection_post', 'relationships_post'},
