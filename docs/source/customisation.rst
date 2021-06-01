@@ -334,8 +334,13 @@ Where ``object_rep`` is some representation of the object to be authorised,
 ``view_instance`` is the current view instance, ``stage_name`` is the name of
 the current stage, and ``permission_sought`` is one of ``get``, ``post``,
 ``patch``, or ``delete``. Different stages imply different representations. For
-example the ``alter_request`` stage will pass a pyramid request object and the
-``alter_document`` stage will pass a dictionary suitable for JSON serialisation.
+example the ``alter_request`` stage will pass a dictionary representing an item
+from ``data`` from the JSON contained in a pyramid request and the
+``alter_document`` stage will pass a similar dictionary representation of an
+object taken from the ``document`` to be serialised. The alter results stages
+from the loop workflow, on the other hand, will pass a
+:class:`workflow.ResultObject`, which is a wrapper around a sqlAlchemy ORM
+object (which you can get to as ``object_rep.object``).
 
 Note that you can get the current sqlAlchemy session from
 ``view_instance.dbsession`` (which you might need to make the queries required
