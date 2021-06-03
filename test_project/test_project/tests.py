@@ -314,6 +314,24 @@ class TestPermissions(DBTestBase):
         self.assertNotIn('1', ppl_ids)
         self.assertIn('2', ppl_ids)
 
+    def test_get_alterdirrel_collection_meta_info(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            ['get'],
+            ['alter_direct_results', 'alter_related_results']
+        )
+        # Not allowed to see alice (people/1)
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_direct_results', 'alter_related_results'],
+            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+        )
+        # Make sure we get the lowest ids with a filter.
+        res = test_app.get('/people?filter[id:lt]=3').json_body
+        meta = res['meta']
+        self.assertIn('people::1', meta['rejected']['objects'])
+
     def test_post_alterreq_collection(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj

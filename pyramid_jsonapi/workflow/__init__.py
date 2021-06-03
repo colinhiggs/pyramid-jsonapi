@@ -892,6 +892,37 @@ def alter_document_debug_info(view, doc, data):
     return doc
 
 
+def alter_document_collection_get_add_returned_count(view, doc, data):
+    """Add the returned count to meta."""
+    try:
+        meta = doc['meta']
+    except KeyError:
+        meta = doc['meta'] = {}
+    try:
+        results = meta['results']
+    except KeyError:
+        results = meta['results'] = {}
+    results['returned'] = len(doc['data'])
+    return doc
+
+
+def alter_document_add_denied(view, doc, data):
+    try:
+        meta = doc['meta']
+    except KeyError:
+        meta = doc['meta'] = {}
+    try:
+        results = meta['results']
+    except KeyError:
+        results = meta['results'] = {}
+    rejected_dict = view.pj_shared.rejected.rejected_dict
+    results['denied'] = len(rejected_dict['objects'])
+    meta['rejected'] = rejected_dict
+
+    # delete(results['available'])
+    return doc
+
+
 def alter_request_add_info(view, request, data):
     """Add information commonly used in view operations."""
 
@@ -980,6 +1011,21 @@ class ResultObject:
         }
 
     @property
+    def tuple_identifier(self):
+        if self.object is None:
+            return None
+        return (
+            self.view.collection_name,
+            str(self.obj_id)
+        )
+
+    @property
+    def str_identifier(self):
+        if self.object is None:
+            return None
+        return f'{self.view.collection_name}-::-{self.obj_id}'
+
+    @property
     def included_dict(self):
         incd = {}
         for rel_name, res in self.related.items():
@@ -1043,7 +1089,7 @@ class Results:
                     'results': {
                         'available': self.count,
                         'limit': self.limit,
-                        'returned': len(self.objects)
+                        # 'returned': len(self.objects)
                     }
                 }
             )
@@ -1097,21 +1143,21 @@ class Results:
                 obj.attribute_mask &= pred['attributes']
                 # record rejected atts
                 self.view.pj_shared.rejected.reject_attributes(
-                    obj.identifier,
+                    obj.tuple_identifier,
                     reject_atts,
                     reason,
                 )
-                reject_rels = obj.attribute_mask - pred['relationships']
+                reject_rels = obj.rel_mask - pred['relationships']
                 obj.rel_mask &= pred['relationships']
                 # record rejected rels
                 self.view.pj_shared.rejected.reject_relationships(
-                    obj.identifier,
+                    obj.tuple_identifier,
                     reject_rels,
                     reason,
                 )
             else:
                 self.rejected_objects.append(obj)
-                self.view.pj_shared.rejected.reject_object(obj.identifier, reason)
+                self.view.pj_shared.rejected.reject_object(obj.tuple_identifier, reason)
 
         self.objects = accepted
         self._flag_filtered = True
@@ -1150,6 +1196,8 @@ class Rejected():
         self.rejected['objects'][identifier] = reason
 
     def _reject_multiple(self, identifier, things, reason, category):
+        if not things:
+            return
         new = {t: reason for t in things}
         try:
             self.rejected[category][identifier].update(new)
@@ -1158,3 +1206,15 @@ class Rejected():
 
     reject_attributes = partialmethod(_reject_multiple, category='attributes')
     reject_relationships = partialmethod(_reject_multiple, category='relationships')
+
+    def identifier_to_str(self, identifier):
+        return f'{identifier[0]}::{identifier[1]}'
+
+    @property
+    def rejected_dict(self):
+        ret = {}
+        for part in ['objects', 'attributes', 'relationships']:
+            ret[part] = {
+                self.identifier_to_str(k): v for k, v in self.rejected[part].items()
+            }
+        return ret
