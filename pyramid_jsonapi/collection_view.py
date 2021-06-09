@@ -1380,6 +1380,19 @@ class CollectionViewBase:
                     inc.add('.'.join(curname))
         return inc
 
+    # @functools.lru_cache()
+    def path_is_included(self, path):
+        """Test if path is in requested includes.
+
+        Args:
+            path (list): list representation if include path to test.
+
+        Returns:
+            bool: True if path is in requested includes.
+
+        """
+        return '.'.join(path) in self.requested_include_names()
+
     @property
     def bad_include_paths(self):
         """Return a set of invalid 'include' parameters.

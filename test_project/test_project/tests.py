@@ -2028,6 +2028,8 @@ class TestSpec(DBTestBase):
         self.assertIn('data', r.json)
         self.assertIsInstance(r.json['data'], list)
         item = r.json['data'][0]
+        import pprint
+        pprint.pprint(r.json['data'])
 
 
     def test_spec_get_primary_data_array_of_one(self):

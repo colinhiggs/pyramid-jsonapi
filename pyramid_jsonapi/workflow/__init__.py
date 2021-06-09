@@ -147,6 +147,31 @@ def make_method(name, api):
     return method
 
 
+def wrapped_query_all(query):
+    """
+    Wrap query.all() so that SQLAlchemy exceptions can be transformed to
+    http ones.
+    """
+    try:
+        for obj in query.all():
+            yield obj
+    except sqlalchemy.exc.DataError as exc:
+        raise HTTPBadRequest(str(exc.orig))
+
+
+def follow_rel(view, rel_name, include_path=None):
+    """
+    True if rel_name should be followed and added.
+    """
+    include_path = include_path or []
+    rel_include_path = include_path + [rel_name]
+    if rel_name not in view.requested_relationships and not view.path_is_included(rel_include_path):
+        return False
+    if not view.mapped_info_from_name(rel_name).get('visible', True):
+        return False
+    return True
+
+
 def partition(items, predicate=bool):
     trues, falses = [], []
     for item in items:
