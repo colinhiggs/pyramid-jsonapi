@@ -294,12 +294,16 @@ The stages are run in the following order:
 The Loop Workflow
 -----------------
 
-The default workflow is the ``loop`` workflow. It defines the following stages:
+The default workflow is the ``loop`` workflow. It defines the following stages
+for ``GET`` related view methods:
 
-* ``alter_direct_results``. Alter a :class:`workflow.Results` object containing
-  database results from a query of the requested collection.
-* ``alter_related_results``. Alter a :class:`workflow.Results` object containing
-  database results from a query of a related collection.
+* ``alter_result``. Alter a :class:`workflow.ResultObject` object containing
+  a database result from a query of the requested collection. This might also
+  involve rejecting the whole object (for example, for authorisation purposes).
+* ``alter_related_result``. Alter a :class:`workflow.ResultObject` object
+  containing a database result from a query of a related collection.
+* ``alter_results``. Alter a :class:`workflow.Results` object containing the
+  full set of results processed so far.
 
 Authorisation
 -------------
@@ -323,7 +327,7 @@ Permission filters will be called from within the code like this:
 
 .. code-block:: python
 
-  filter(
+  your_filter(
     object_rep,
     view_instance=view,
     stage_name=stage_name,
@@ -337,7 +341,7 @@ the current stage, and ``permission_sought`` is one of ``get``, ``post``,
 example the ``alter_request`` stage will pass a dictionary representing an item
 from ``data`` from the JSON contained in a pyramid request and the
 ``alter_document`` stage will pass a similar dictionary representation of an
-object taken from the ``document`` to be serialised. The alter results stages
+object taken from the ``document`` to be serialised. The alter result stages
 from the loop workflow, on the other hand, will pass a
 :class:`workflow.ResultObject`, which is a wrapper around a sqlAlchemy ORM
 object (which you can get to as ``object_rep.object``).
@@ -349,7 +353,7 @@ should give you access to the usual things.
 
 The simplest thing that a permission filter can do is return ``True``
 (``permission_sought`` is granted for the whole object) or ``False``
-(``permission_sought`` is denied fro the whole object). To control permissions
+(``permission_sought`` is denied for the whole object). To control permissions
 for attributes or relationships, you must use the fuller return representation:
 
 .. code-block:: python
@@ -364,9 +368,9 @@ Putting that together in some examples:
 
 Let's say you have banned the user 'baddy' and want to authorise GET requests so
 that baddy can no longer fetch blogs. Both the ``alter_document`` and
-``alter_..._results`` stages would make sense as places to influence what will
-be returned by a GET. We will choose the pair ``alter_direct_results`` and
-``alter_related_results`` here so that we are authorising results as soon as
+``alter_..._result`` stages would make sense as places to influence what will
+be returned by a GET. We will choose the pair ``alter_result`` and
+``alter_related_result`` here so that we are authorising results as soon as
 they come from the database. You might have something like this in
 ``__init__.py``:
 
@@ -402,119 +406,48 @@ database update). You might do something like this in ``__init__.py``:
     patch_posts_filter
   )
 
-Callbacks (Deprecated)
-----------------------
-
-At certain points during the processing of a request, ``pyramid_jsonapi`` will
-invoke any callback functions which have been registered. Callback sequences are
-currently implemented as ``collections.deque``: you add your callback functions
-using ``.append()`` or ``.appendleft()``, remove them with ``.pop()`` or
-``.popleft()`` and so on. The functions in each callback list will be called in
-order at the appropriate point.
-
-Getting the Callback Deque
---------------------------
-
-Every view class (subclass of CollectionViewBase) has its own dictionary of
-callback deques (``view_class.callbacks``). That dictionary is keyed by callback
-deque name. For example, if you have a view_class and you would like to append
-your ``my_after_get`` function to the ``after_get`` deque:
+Imagine that ``Person`` objects have an ``age`` attribute. Access to ``age`` is
+sensitive so only the person themselves and anyone in the (externally defined)
+``age_viewers`` group should be able to see that attribute. Other viewers should
+still be able to see the object so we can't just return ``False`` from the
+permission filter - we must use the fuller return format.
 
 .. code-block:: python
 
-  view_class.callbacks['after_get'].append(my_after_get)
-
-If you don't currently have a view class, you can get one from a model class
-(for example, ``models.Person``) with:
-
-.. code-block:: python
-
-  person_view_class = pyramid_jsonapi.PyramidJSONAPI.view_classes[models.Person]
-
-Available Callback Deques
--------------------------
-
-The following is a list of available callbacks. Note that each item in the list
-has a name like ``pyramid_jsonapi.callbacks_doc.<callback_name>``. That's so
-that sphinx will link to auto-built documentation from the module
-``pyramid_jsonapi.callbacks_doc``. In practice you should use only the name
-after the last '.' to get callback deques.
-
-* :func:`pyramid_jsonapi.callbacks_doc.after_serialise_object`
-
-* :func:`pyramid_jsonapi.callbacks_doc.after_serialise_identifier`
-
-* :func:`pyramid_jsonapi.callbacks_doc.after_get`
-
-* :func:`pyramid_jsonapi.callbacks_doc.before_patch`
-
-* :func:`pyramid_jsonapi.callbacks_doc.before_delete`
-
-* :func:`pyramid_jsonapi.callbacks_doc.after_collection_get`
-
-* :func:`pyramid_jsonapi.callbacks_doc.before_collection_post`
-
-* :func:`pyramid_jsonapi.callbacks_doc.after_related_get`
-
-* :func:`pyramid_jsonapi.callbacks_doc.after_relationships_get`
-
-* :func:`pyramid_jsonapi.callbacks_doc.before_relationships_post`
-
-* :func:`pyramid_jsonapi.callbacks_doc.before_relationships_patch`
-
-* :func:`pyramid_jsonapi.callbacks_doc.before_relationships_delete`
-
-
-Canned Callbacks
-----------------
-
-Using the callbacks above, you could, in theory, do things like implement a
-permissions system, generalised call-outs to other data sources, or many other
-things. However, some of those would entail quite a lot of work as well as being
-potentially generally useful. In the interests of reuse, pyramid_jsonapi
-maintains sets of self consistent callbacks which cooperate towards one goal.
-
-So far there is only one such set: ``access_control_serialised_objects``. This
-set of callbacks implements an access control system based on the inspection of
-serialised (as dictionaries) objects before POST, PATCH and DELETE operations
-and after serialisation and GET operations.
-
-Registering Canned Callbacks
-----------------------------
-
-Given a callback set name, you can register callback sets on each view class:
-
-.. code-block:: python
-
-  view_class.append_callback_set('access_control_serialised_objects')
-
-or on all view classes:
-
-.. code-block:: python
-
-  pyramid_jsonapi.PyramidJSONAPI.append_callback_set_to_all_views(
-    'access_control_serialised_objects'
+  pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
+  pj.enable_permission_handlers(
+    ['get'],
+    ['alter_direct_results', 'alter_related_results']
   )
 
-Callback Sets
--------------
+  def get_person_filter(person, view, **kwargs):
+    # This could be done in one 'if' but we split it out here for clarity.
+    #
+    # A person should see the full object for themselves.
+    if view.request.remote_user == person.username:
+      return True
+    #
+    # Anyone in the age_viewers group should also see the full object.
+    # get_group_members() is an imagined function in this app which gets the
+    # members of a named group.
+    if view.request.remote_user in get_group_members('age_viewers'):
+      return True
 
-``access_control_serialised_objects``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Everyone else isn't allowed to see age.
+    return {
+      'id': True, # False would reject the whole object. Missing out the 'id'
+                  # key is the same as specifying True.
+      'attributes': set(view.all_attributes) - 'age',
+      'relationships': True # The same as allowing all attributes.
+    }
 
-These callbacks will allow, deny, or manipulate the results of actions
-dependent upon the return values of two methods of the calling view class:
-:func:`pyramid_jsonapi.CollectionViewBase.allowed_object` and
-:func:`pyramid_jsonapi.CollectionViewBase.allowed_fields`.
+  pj.view_classes[models.Person].register_permission_filter(
+    ['get'],
+    ['alter_direct_results', 'alter_related_results'],
+    get_person_filter
+  )
 
-The default implementations allow everything. To do anything else, you need to
-replace those methods with your own implementations.
+Authorisation and Relationships
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* :func:`pyramid_jsonapi.CollectionViewBase.allowed_object` will be given two
-  arguments: an instance of a view class, and the serialised object (so far). It
-  should return ``True`` if the operation (available from view.request) is
-  allowed on the object, or ``False`` if not.
-
-* :func:`pyramid_jsonapi.CollectionViewBase.allowed_fields` will be given one
-  argument: an instance of a view class. It should return the set of fields
-  (attributes and relationships) on which the current operation is allowed.
+Authorisation can get quite complicated around relationships.
