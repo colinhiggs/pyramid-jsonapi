@@ -447,7 +447,18 @@ permission filter - we must use the fuller return format.
     get_person_filter
   )
 
+What Happens With Authorisation Failures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Authorisation and Relationships
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Authorisation can get quite complicated around relationships.
+Authorisation can get quite complicated around relationships. Every operation on
+an object with relationships implies other operations on any related objects.
+The simplest example is ``GET``: ``get`` permission is required on any object
+directly fetched and *also* on any related object fetched. More complicated is
+any write based operation. For example, to update the owner of a blog, you need
+``patch`` permission on ``blog_x.owner``, ``post`` permission on
+``new_owner.blogs`` (to add ``blog_x`` to the reverse relationship) and
+``delete`` permission on ``old_owner.blogs`` (to remove ``blog_x`` from the
+reverse relationship).
