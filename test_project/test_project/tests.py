@@ -499,17 +499,15 @@ class TestPermissions(DBTestBase):
         self.assertNotIn({'type': 'articles_by_assoc', 'id': '11'}, rels['articles_by_assoc']['data'])
         self.assertIn({'type': 'articles_by_obj', 'id': '11'}, rels['articles_by_proxy']['data'])
         self.assertNotIn({'type': 'articles_by_obj', 'id': '10'}, rels['articles_by_proxy']['data'])
-        # pprint.pprint(person_out['relationships'])
 
         # Still need to test a to_one relationship. Posts has one of those.
         # Switching to " for quoting so that the following can be copy/pasted as
-        # JSON.
+        # JSON in manual tests.
         post_json = {
             "data": {
                 "type": "posts",
                 "attributes": {
-                    "title": "test",
-                    "published_at": "2021-06-16"
+                    "title": "test"
                 },
                 "relationships": {
                     "author": {

@@ -102,7 +102,7 @@ class Post(Base):
     id = IdColumn()
     title = Column(Text)
     content = Column(Text)
-    published_at = Column(DateTime, server_default=func.now())
+    published_at = Column(DateTime, nullable=False, server_default=func.now())
     json_content = Column(JSONB)
     blog_id = IdRefColumn('blogs.id')
     author_id = IdRefColumn('people.id', nullable=False)
