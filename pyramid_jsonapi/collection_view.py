@@ -19,6 +19,7 @@ from pyramid.httpexceptions import (
     HTTPInternalServerError,
     status_map,
 )
+from pyramid.settings import asbool
 import sqlalchemy
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.orm import load_only, aliased
@@ -58,6 +59,7 @@ class CollectionViewBase:
     max_limit = None
     model = lambda: None
     obj_id = None
+    not_found_message = None
     request = None
     rel = None
     rel_class = None
@@ -1153,6 +1155,11 @@ class CollectionViewBase:
             elif match.group(1) == 'page':
                 info['_page'][match.group(2)] = val
 
+        # Options.
+        info['pj_include_count'] = asbool(
+            request.params.get('pj_include_count', 'false')
+        )
+
         return info
 
     def pagination_links(self, count=0):
@@ -1509,15 +1516,21 @@ class CollectionViewBase:
                 cls.permission_filters[perm][stage_name] = dictified_pfunc
 
     def permission_filter(self, permission, stage_name, default=None):
-        # dictified_pfunc has signature (view, object_rep, new_rep). We want
-        # (object_rep, new_rep) since view instance should be known via method
-        # call.
+        """
+        Find the permission filter given a permission and stage name.
+        """
+        default = default or (lambda *a, **kw: True)
         try:
             filter = self.permission_filters[permission][stage_name]
         except KeyError as e:
-            if default:
-                filter = default
-            raise(e)
+            filter = lambda view, object_rep: view.permission_to_dict(
+                default(
+                    object_rep,
+                    view_instance=view,
+                    stage_name=stage_name,
+                    permission_sought=permission,
+                )
+            )
         return partial(filter, self)
 
     @classmethod

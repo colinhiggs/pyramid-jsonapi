@@ -1,11 +1,12 @@
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
-import itertools
 
 from functools import (
     partial
 )
-
+from itertools import (
+    islice,
+)
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden,
@@ -18,16 +19,27 @@ from sqlalchemy.orm.interfaces import (
 )
 
 
-def get_altered_objects(view, stages, stage_name, query, limit):
-    return itertools.islice(
-        filter(
-            lambda o: o.tuple_identifier not in view.pj_shared.rejected.rejected['objects'],
-            map(
-                partial(wf.execute_stage, view, stages, stage_name),
-                (wf.ResultObject(view, o) for o in wf.wrapped_query_all(query))
-            )
-        ),
-        limit
+def get_one_altered_result_object(view, stages, query):
+    res_obj = wf.execute_stage(
+        view, stages, 'alter_result',
+        wf.ResultObject(view, view.get_one(query, view.not_found_message))
+    )
+    if res_obj.tuple_identifier in view.pj_shared.rejected.rejected['objects']:
+        raise HTTPForbidden(view.not_found_message)
+    return res_obj
+
+
+def altered_objects_iterator(view, stages, stage_name, query):
+    """
+    Execute a query and return an iterator of objects filtered and altered by
+    the stage_name stage.
+    """
+    return filter(
+        lambda o: o.tuple_identifier not in view.pj_shared.rejected.rejected['objects'],
+        map(
+            partial(wf.execute_stage, view, stages, stage_name),
+            (wf.ResultObject(view, o) for o in wf.wrapped_query_all(query))
+        )
     )
 
 
@@ -47,11 +59,8 @@ def get_related(obj, rel_name, stages, include_path=None):
         view, stages, 'alter_related_query', query
     )
     rel_objs = list(
-        get_altered_objects(
-            view,
-            stages,
-            'alter_related_result',
-            query,
+        islice(
+            altered_objects_iterator(rel_view, stages, 'alter_related_result', query),
             view.related_limit(rel)
         )
     )
@@ -74,6 +83,15 @@ def get_related(obj, rel_name, stages, include_path=None):
     if many:
         rel_results.limit = view.related_limit(rel)
     return rel_results
+
+
+def fill_result_object_related(res_obj, stages):
+    view = res_obj.view
+    for rel_name in view.relationships:
+        if wf.follow_rel(view, rel_name):
+            res_obj.related[rel_name] = get_related(
+                res_obj, rel_name, stages
+            )
 
 
 def fill_related(stages, obj, include_path=None):
@@ -123,7 +141,7 @@ def fill_related(stages, obj, include_path=None):
             obj.related[rel_name].limit = limit
 
 
-def get_alter_handler(view, obj, pdata, stage_name='alter_data'):
+def get_alter_handler(view, obj, pdata, stage_name='alter_result'):
     reason = "Permission denied."
     predicate = view.permission_filter('get', stage_name)
     pred = view.permission_to_dict(predicate(obj))

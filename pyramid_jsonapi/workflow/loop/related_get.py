@@ -1,5 +1,8 @@
 import sqlalchemy
 
+from itertools import (
+    islice,
+)
 from pyramid.httpexceptions import (
     HTTPInternalServerError,
     HTTPBadRequest,
@@ -14,44 +17,39 @@ import pyramid_jsonapi.workflow as wf
 
 stages = (
     'alter_query',
-    'alter_direct_results',
+    'alter_result',
     'alter_related_query',
-    'alter_related_results',
+    'alter_related_result',
     'alter_results',
 )
 
 
-def workflow(view, stages):
-    query = wf.execute_stage(
-        view, stages, 'alter_query',
-        view.related_query(view.obj_id, view.rel)
-    )
-    count = 0
-    limit = 1
+def get_results(view, stages):
+    query = view.related_query(view.obj_id, view.rel)
+    qinfo = view.rel_view.collection_query_info(view.request)
+    rel_stages = getattr(view.rel_view, 'related_get').stages
+    limit = qinfo['page[limit]']
+    count = None
 
     if view.rel.direction is ONETOMANY or view.rel.direction is MANYTOMANY:
         many = True
         query = view.rel_view.query_add_sorting(query)
         query = view.rel_view.query_add_filtering(query)
-        qinfo = view.rel_view.collection_query_info(view.request)
-        try:
-            count = query.count()
-        except sqlalchemy.exc.ProgrammingError:
-            raise HTTPInternalServerError(
-                'An error occurred querying the database. Server logs may have details.'
-            )
         query = query.offset(qinfo['page[offset]'])
-        limit = qinfo['page[limit]']
         query = query.limit(qinfo['page[limit]'])
-
-        try:
-            res_objs = [wf.ResultObject(view.rel_view, o) for o in query.all()]
-        except sqlalchemy.exc.DataError as exc:
-            raise HTTPBadRequest(str(exc.orig))
+        query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
+        objects_iterator = wf.loop.altered_objects_iterator(
+            view.rel_view, rel_stages, 'alter_result', query
+        )
+        res_objs = list(islice(objects_iterator, limit))
+        if(qinfo['pj_include_count']):
+            count = len(res_objs) + sum(1 for _ in objects_iterator)
     else:
         many = False
-        res_objs = [wf.ResultObject(view.rel_view, view.rel_view.get_one(query))]
-        count = len(res_objs)
+        query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
+        res_objs = [wf.loop.get_one_altered_result_object(view.rel_view, rel_stages, query)]
+        if(qinfo['pj_include_count']):
+            count = 1
 
     results = wf.Results(
         view.rel_view,
@@ -61,8 +59,14 @@ def workflow(view, stages):
         count=count,
         limit=limit
     )
-    results = wf.execute_stage(view, stages, 'alter_direct_results', results)
-    for res in results.objects:
-        wf.loop.fill_related(stages, res)
-    results = wf.execute_stage(view, stages, 'alter_results', results)
-    return results.serialise()
+
+    # Fill the relationships with related objects.
+    # Stage 'alter_related_result' will run on each object.
+    for res_obj in results.objects:
+        wf.loop.fill_result_object_related(res_obj, stages)
+
+    return wf.execute_stage(view, stages, 'alter_results', results)
+
+
+def workflow(view, stages):
+    return get_results(view, stages).serialise()

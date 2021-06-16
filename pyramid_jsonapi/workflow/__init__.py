@@ -953,6 +953,7 @@ def alter_request_add_info(view, request, data):
 
     # Extract id and relationship from route, if provided
     view.obj_id = view.request.matchdict.get('id', None)
+    view.not_found_message = f'No item {view.obj_id} in {view.collection_name}'
     view.relname = view.request.matchdict.get('relationship', None)
     if view.relname:
         # Gather relationship info

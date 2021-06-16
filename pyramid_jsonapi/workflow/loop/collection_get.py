@@ -1,6 +1,7 @@
 import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
+from itertools import islice
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPInternalServerError,
@@ -9,10 +10,8 @@ from pyramid.httpexceptions import (
 stages = (
     'alter_query',
     'alter_result',
-    'alter_direct_results',
     'alter_related_query',
     'alter_related_result',
-    'alter_related_results',
     'alter_results',
 )
 
@@ -21,41 +20,48 @@ def workflow(view, stages):
     query = view.base_collection_query()
     query = view.query_add_sorting(query)
     query = view.query_add_filtering(query)
+    qinfo = view.collection_query_info(view.request)
+    query = query.offset(qinfo['page[offset]'])
+    limit = qinfo['page[limit]']
+
+    # If there is any chance that the code might alter the number of results
+    # after they come from the database then we can't rely on LIMIT and COUNT
+    # at the database end, so these have been disabled. They might return
+    # if a suitable flag is introduced.
     # try:
     #     count = query.count()
     # except sqlalchemy.exc.ProgrammingError:
     #     raise HTTPInternalServerError(
     #         'An error occurred querying the database. Server logs may have details.'
     #     )
-    qinfo = view.collection_query_info(view.request)
-    query = query.offset(qinfo['page[offset]'])
-    limit = qinfo['page[limit]']
     # query = query.limit(limit)
+
     query = wf.execute_stage(
         view, stages, 'alter_query', query
     )
 
     # Get the direct results from this collection (no related objects yet).
     # Stage 'alter_result' will run on each object.
+    objects_iterator = wf.loop.altered_objects_iterator(
+        view, stages, 'alter_result', query
+    )
+    objects = list(islice(objects_iterator, limit))
+    count = None
+    if(qinfo['pj_include_count']):
+        count = len(objects) + sum(1 for _ in objects_iterator)
     results = wf.Results(
         view,
-        objects=list(wf.loop.get_altered_objects(
-            view, stages, 'alter_result', query, limit
-        )),
+        objects=objects,
         many=True,
         is_top=True,
-        # count=count,
+        count=count,
         limit=limit
     )
 
     # Fill the relationships with related objects.
     # Stage 'alter_related_result' will run on each object.
     for res_obj in results.objects:
-        for rel_name in view.relationships:
-            if wf.follow_rel(view, rel_name):
-                res_obj.related[rel_name] = wf.loop.get_related(
-                    res_obj, rel_name, stages
-                )
+        wf.loop.fill_result_object_related(res_obj, stages)
 
     # A chance to alter the complete set of results before they are serialised.
     results = wf.execute_stage(view, stages, 'alter_results', results)

@@ -195,30 +195,30 @@ class TestPermissions(DBTestBase):
     '''Test permission handling mechanisms.
     '''
 
-    def test_get_alterdirrel_item(self):
+    def test_get_alter_result_item(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         # Shouldn't be allowed to see people/1 (alice)
-        test_app.get('/people/1', status=404)
+        test_app.get('/people/1', status=403)
         # Should be able to see people/2 (bob)
         test_app.get('/people/2')
 
-    def test_get_alterdirrel_item_individual_attributes(self):
+    def test_get_alter_result_item_individual_attributes(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
@@ -227,7 +227,7 @@ class TestPermissions(DBTestBase):
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             pfilter,
         )
         # Alice should have attribute 'name' but not 'age'.
@@ -235,12 +235,12 @@ class TestPermissions(DBTestBase):
         self.assertIn('name', alice['attributes'])
         self.assertNotIn('age', alice['attributes'])
 
-    def test_get_alterdirrel_item_individual_rels(self):
+    def test_get_alter_result_item_individual_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
@@ -249,7 +249,7 @@ class TestPermissions(DBTestBase):
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             pfilter,
         )
         # Alice should have relationship 'blogs' but not 'posts'.
@@ -257,17 +257,17 @@ class TestPermissions(DBTestBase):
         self.assertIn('blogs', alice['relationships'])
         self.assertNotIn('posts', alice['relationships'])
 
-    def test_get_alterdirrel_item_rel_ids(self):
+    def test_get_alter_result_item_rel_ids(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             lambda obj, *args, **kwargs: obj.object.id != 1,
         )
         alice = test_app.get('/people/1').json_body['data']
@@ -275,17 +275,17 @@ class TestPermissions(DBTestBase):
         self.assertIn({'type': 'blogs', 'id': '2'}, alice_blogs)
         self.assertNotIn({'type': 'blogs', 'id': '1'}, alice_blogs)
 
-    def test_get_alterdirrel_item_included_items(self):
+    def test_get_alter_result_item_included_items(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             lambda obj, *args, **kwargs: obj.object.id != 1,
         )
         included = test_app.get('/people/1?include=blogs').json_body['included']
@@ -295,42 +295,73 @@ class TestPermissions(DBTestBase):
         self.assertNotIn('1', included_blogs)
         self.assertIn('2', included_blogs)
 
-    def test_get_alterdirrel_collection(self):
+    def test_get_alter_result_collection(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         # Make sure we get the lowest ids with a filter.
-        people = test_app.get('/people?filter[id:lt]=3').json_body['data']
+        ret = test_app.get('/people?filter[id:lt]=3').json_body
+        people = ret['data']
         ppl_ids = { person['id'] for person in people }
         self.assertNotIn('1', ppl_ids)
         self.assertIn('2', ppl_ids)
 
-    def test_get_alterdirrel_collection_meta_info(self):
+    def test_get_alter_result_collection_meta_info(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_direct_results', 'alter_related_results']
+            ['alter_result', 'alter_related_result']
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_direct_results', 'alter_related_results'],
+            ['alter_result', 'alter_related_result'],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         # Make sure we get the lowest ids with a filter.
         res = test_app.get('/people?filter[id:lt]=3').json_body
         meta = res['meta']
         self.assertIn('people::1', meta['rejected']['objects'])
+
+    def test_related_get_alter_result(self):
+        '''
+        'related' link should fetch only allowed related resource(s).
+        '''
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        pj.enable_permission_handlers(
+            ['get'],
+            ['alter_result', 'alter_related_result']
+        )
+        # Not allowed to see blog with title 'main: alice' (aka blogs/1)
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['get'],
+            ['alter_result', 'alter_related_result'],
+            lambda obj, *args, **kwargs: obj.object.title != 'main: alice',
+        )
+        r = test_app.get('/people/1/blogs').json_body
+        data = r['data']
+        ids = {o['id'] for o in data}
+        self.assertIsInstance(data, list)
+        self.assertNotIn('1', ids)
+
+        # Not allowed to see alice (people/1)
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_result', 'alter_related_result'],
+            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+        )
+        r = test_app.get('/blogs/2/owner', status=403)
 
     def test_post_alterreq_collection(self):
         test_app = self.test_app({})
@@ -471,24 +502,43 @@ class TestPermissions(DBTestBase):
         # pprint.pprint(person_out['relationships'])
 
         # Still need to test a to_one relationship. Posts has one of those.
-        post_out = test_app.post_json(
-            '/posts',
-            {
-                'data': {
-                    'type': 'posts',
-                    'attributes': {
-                        'title': 'test'
+        # Switching to " for quoting so that the following can be copy/pasted as
+        # JSON.
+        post_json = {
+            "data": {
+                "type": "posts",
+                "attributes": {
+                    "title": "test",
+                    "published_at": "2021-06-16"
+                },
+                "relationships": {
+                    "author": {
+                        "data": {"type": "people", "id": "10"}
                     },
-                    'relationships': {
-                        'author': {
-                            'data': {'type': 'people', 'id': '10'}
-                        },
-                        'blog': {
-                            'data': {'type': 'blogs', 'id': '10'}
-                        }
+                    "blog": {
+                        "data": {"type": "blogs", "id": "10"}
                     }
                 }
-            },
+            }
+        }
+        # The Person permission filter defined above shouldn't allow us to POST
+        # post_json because we don't have permission to POST to Person.posts.
+        test_app.post_json(
+            '/posts',
+            post_json,
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409 # this should probably be a different status.
+        )
+        # Replace the permission filter for Person - we need to be able to
+        # alter the Person.posts relationship.
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda *a, **kw: True,
+        )
+        post_out = test_app.post_json(
+            '/posts',
+            post_json,
             headers={'Content-Type': 'application/vnd.api+json'},
         )
 
@@ -2028,8 +2078,6 @@ class TestSpec(DBTestBase):
         self.assertIn('data', r.json)
         self.assertIsInstance(r.json['data'], list)
         item = r.json['data'][0]
-        import pprint
-        pprint.pprint(r.json['data'])
 
 
     def test_spec_get_primary_data_array_of_one(self):
