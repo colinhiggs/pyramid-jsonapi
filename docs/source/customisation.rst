@@ -379,11 +379,11 @@ they come from the database. You might have something like this in
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
   pj.enable_permission_handlers(
     ['get'],
-    ['alter_direct_results', 'alter_related_results']
+    ['alter_result', 'alter_related_result']
   )
   pj.view_classes[models.Blogs].register_permission_filter(
     ['get'],
-    ['alter_direct_results', 'alter_related_results'],
+    ['alter_result', 'alter_related_result'],
     lambda obj, view, **kwargs:  view.request.remote_user != 'baddy',
   )
 
@@ -417,7 +417,7 @@ permission filter - we must use the fuller return format.
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
   pj.enable_permission_handlers(
     ['get'],
-    ['alter_direct_results', 'alter_related_results']
+    ['alter_result', 'alter_related_result']
   )
 
   def get_person_filter(person, view, **kwargs):
@@ -443,7 +443,7 @@ permission filter - we must use the fuller return format.
 
   pj.view_classes[models.Person].register_permission_filter(
     ['get'],
-    ['alter_direct_results', 'alter_related_results'],
+    ['alter_result', 'alter_related_result'],
     get_person_filter
   )
 
