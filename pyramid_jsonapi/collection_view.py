@@ -1086,7 +1086,11 @@ class CollectionViewBase:
             cls.max_limit,
             int(request.params.get('page[limit]', cls.default_limit))
         )
+        if info['page[limit]'] < 0:
+            raise HTTPBadRequest('page[limit] must not be negative.')
         info['page[offset]'] = int(request.params.get('page[offset]', 0))
+        if info['page[offset]'] < 0:
+            raise HTTPBadRequest('page[offset] must not be negative.')
 
         # Sorting.
         # Use param 'sort' as per spec.

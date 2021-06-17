@@ -65,7 +65,8 @@ def make_method(name, api):
     stages['validate_request'].append(validate_request_object_exists)
     stages['alter_request'].append(alter_request_add_info)
     stages['alter_document'].append(alter_document_self_link)
-    stages['alter_document'].append(alter_document_add_returned_count)
+    if name.endswith('get'):
+        stages['alter_document'].append(alter_document_add_returned_count)
     if api.settings.debug_meta:
         stages['alter_document'].append(alter_document_debug_info)
 
