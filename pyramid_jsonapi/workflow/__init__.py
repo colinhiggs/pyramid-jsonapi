@@ -7,6 +7,7 @@ import sqlalchemy
 
 from collections import (
     deque,
+    abc,
 )
 
 from functools import (
@@ -64,6 +65,7 @@ def make_method(name, api):
     stages['validate_request'].append(validate_request_object_exists)
     stages['alter_request'].append(alter_request_add_info)
     stages['alter_document'].append(alter_document_self_link)
+    stages['alter_document'].append(alter_document_add_returned_count)
     if api.settings.debug_meta:
         stages['alter_document'].append(alter_document_debug_info)
 
@@ -917,8 +919,11 @@ def alter_document_debug_info(view, doc, data):
     return doc
 
 
-def alter_document_collection_get_add_returned_count(view, doc, data):
+def alter_document_add_returned_count(view, doc, data):
     """Add the returned count to meta."""
+    # Don't add a returned count unless we're returning an array of objects.
+    if not isinstance(doc['data'], abc.Sequence):
+        return doc
     try:
         meta = doc['meta']
     except KeyError:

@@ -41,9 +41,12 @@ def get_results(view, stages):
         objects_iterator = wf.loop.altered_objects_iterator(
             view.rel_view, rel_stages, 'alter_result', query
         )
+        offset_count = 0
+        if 'page[offset]' in view.request.params:
+            offset_count = sum(1 for _ in islice(objects_iterator, qinfo['page[offset]']))
         res_objs = list(islice(objects_iterator, limit))
         if(qinfo['pj_include_count']):
-            count = len(res_objs) + sum(1 for _ in objects_iterator)
+            count = offset_count + len(res_objs) + sum(1 for _ in objects_iterator)
     else:
         many = False
         query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
@@ -63,7 +66,7 @@ def get_results(view, stages):
     # Fill the relationships with related objects.
     # Stage 'alter_related_result' will run on each object.
     for res_obj in results.objects:
-        wf.loop.fill_result_object_related(res_obj, stages)
+        wf.loop.fill_result_object_related(res_obj, rel_stages)
 
     return wf.execute_stage(view, stages, 'alter_results', results)
 

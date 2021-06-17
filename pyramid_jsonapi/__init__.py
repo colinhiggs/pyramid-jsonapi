@@ -288,9 +288,6 @@ class PyramidJSONAPI():
         view.patch = wf.make_method('patch', self)
         view.delete = wf.make_method('delete', self)
         view.collection_get = wf.make_method('collection_get', self)
-        view.collection_get.stages['alter_document'].append(  # pylint:disable=no-member
-            wf.alter_document_collection_get_add_returned_count
-        )
         view.collection_post = wf.make_method('collection_post', self)
         view.related_get = wf.make_method('related_get', self)
         view.relationships_get = wf.make_method('relationships_get', self)
