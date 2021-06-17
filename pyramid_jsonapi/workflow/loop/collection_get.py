@@ -21,7 +21,6 @@ def workflow(view, stages):
     query = view.query_add_sorting(query)
     query = view.query_add_filtering(query)
     qinfo = view.collection_query_info(view.request)
-    query = query.offset(qinfo['page[offset]'])
     limit = qinfo['page[limit]']
 
     # If there is any chance that the code might alter the number of results
@@ -35,6 +34,7 @@ def workflow(view, stages):
     #         'An error occurred querying the database. Server logs may have details.'
     #     )
     # query = query.limit(limit)
+    # query = query.offset(qinfo['page[offset]'])
 
     query = wf.execute_stage(
         view, stages, 'alter_query', query
@@ -45,10 +45,15 @@ def workflow(view, stages):
     objects_iterator = wf.loop.altered_objects_iterator(
         view, stages, 'alter_result', query
     )
+    # Only do paging the slow way if page[offset] is explicitly specified in the
+    # request.
+    offset_count = 0
+    if 'page[offset]' in view.request.params:
+        offset_count = sum(1 for _ in islice(objects_iterator, qinfo['page[offset]']))
     objects = list(islice(objects_iterator, limit))
     count = None
     if(qinfo['pj_include_count']):
-        count = len(objects) + sum(1 for _ in objects_iterator)
+        count = offset_count + len(objects) + sum(1 for _ in objects_iterator)
     results = wf.Results(
         view,
         objects=objects,
