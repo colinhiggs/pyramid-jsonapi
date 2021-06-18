@@ -2435,6 +2435,25 @@ class TestSpec(DBTestBase):
             prev = item['attributes']['content']
 
 
+    def test_spec_related_sort(self):
+        '''Should return collection sorted by related field.
+
+        Note: It is recommended that dot-separated (U+002E FULL-STOP, “.”) sort
+        fields be used to request sorting based upon relationship attributes.
+        For example, a sort field of author.name could be used to request that
+        the primary data be sorted based upon the name attribute of the author
+        relationship.
+        '''
+        res = self.test_app().get('/posts?sort=author.name')
+        data = res.json['data']
+        prev = ''
+        for item in data:
+            # author_name is a hybrid attribute that just happens to have
+            # author.name in it.
+            self.assertGreaterEqual(item['attributes']['author_name'], prev)
+            prev = item['attributes']['author_name']
+
+
     def test_spec_multiple_sort(self):
         '''Should return collection sorted by multiple fields, applied in order.
 
