@@ -3,6 +3,10 @@ import sqlalchemy
 
 from collections.abc import Sequence
 
+from .get import (
+    get_doc,
+)
+
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
     MANYTOMANY,
@@ -17,9 +21,9 @@ from pyramid.httpexceptions import (
 )
 
 stages = (
-    'alter_direct_results',
+    'alter_result',
     'alter_related_query',
-    'alter_related_results',
+    'alter_related_result',
     'alter_results',
 )
 
@@ -113,20 +117,13 @@ def workflow(view, stages):
     except sqlalchemy.exc.IntegrityError as exc:
         raise HTTPConflict(exc.args[0])
     view.request.response.status_code = 201
+    item_id = view.id_col(item)
     view.request.response.headers['Location'] = view.request.route_url(
         view.api.endpoint_data.make_route_name(view.collection_name, suffix='item'),
-        **{'id': view.id_col(item)}
+        **{'id': item_id}
     )
 
-    results = wf.Results(
-        view,
-        objects=[wf.ResultObject(view, item)],
-        many=False,
-        is_top=True,
-        not_found_message='No item {} in {}'.format(view.obj_id, view.collection_name)
+    # The rest of this is more or less a get.
+    return get_doc(
+        view, getattr(view, 'get').stages, view.single_item_query(item_id)
     )
-    doc = wf.Doc()
-    ro = wf.ResultObject(view, item)
-    wf.loop.fill_related(stages, ro)
-    doc['data'] = ro.serialise()
-    return doc

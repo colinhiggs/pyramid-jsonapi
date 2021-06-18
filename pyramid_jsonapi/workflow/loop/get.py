@@ -13,9 +13,9 @@ stages = (
 )
 
 
-def workflow(view, stages):
+def get_doc(view, stages, query):
     query = wf.execute_stage(
-        view, stages, 'alter_query', view.single_item_query()
+        view, stages, 'alter_query', query
     )
     res_obj = wf.loop.get_one_altered_result_object(view, stages, query)
     results = view.pj_shared.results = wf.Results(
@@ -32,3 +32,7 @@ def workflow(view, stages):
 
     results = wf.execute_stage(view, stages, 'alter_results', results)
     return results.serialise()
+
+
+def workflow(view, stages):
+    return get_doc(view, stages, view.single_item_query())
