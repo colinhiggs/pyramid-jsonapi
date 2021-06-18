@@ -713,16 +713,14 @@ class CollectionViewBase:
             if main_key == 'id':
                 main_key = self.key_column.name
             order_att = getattr(self.model, main_key)
-            # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
-            # sort_keys[0] is the name of an attribute or a
-            # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
-            # is the name of a relationship.
-            if hasattr(order_att, 'property') and isinstance(order_att.property, RelationshipProperty):
+            if main_key in self.relationships:
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
+                rel = self.relationships[main_key]
+                if rel.to_many:
+                    raise HTTPBadRequest(f"Can't sort by TO_MANY relationship {main_key}.")
                 query = query.join(order_att)
-                rel = order_att.property
                 try:
                     sub_key = sort_keys[1]
                 except IndexError:
@@ -730,7 +728,7 @@ class CollectionViewBase:
                     sub_key = self.view_instance(
                         rel.tgt_class
                     ).key_column.name
-                order_att = getattr(rel.mapper.entity, sub_key)
+                order_att = getattr(rel.tgt_class, sub_key)
             if key_info['ascending']:
                 query = query.order_by(order_att)
             else:
