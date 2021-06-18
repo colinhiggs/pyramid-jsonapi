@@ -2882,7 +2882,6 @@ class TestSpec(DBTestBase):
             headers={'Content-Type': 'application/vnd.api+json'},
             status=403
         )
-        print(res.json['traceback'])
 
     def test_spec_post_with_id_conflicts(self):
         '''Should 409 if id exists.
