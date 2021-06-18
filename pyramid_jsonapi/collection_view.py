@@ -730,7 +730,7 @@ class CollectionViewBase:
                     sub_key = self.view_instance(
                         rel.tgt_class
                     ).key_column.name
-                order_att = getattr(rel.obj.mapper.entity, sub_key)
+                order_att = getattr(rel.mapper.entity, sub_key)
             if key_info['ascending']:
                 query = query.order_by(order_att)
             else:
