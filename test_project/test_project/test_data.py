@@ -77,8 +77,8 @@ def set_item(model, data, opts):
     keycol = keycols[0]
     item = DBSession.query(model).get(data[keycol.name])
     if item:
-        DBSession.query(model)\
-            .filter(keycol == data[keycol.name]).update(data)
+        for key, val in data.items():
+            setattr(item, key, val)
     else:
         item = model(**data)
         DBSession.add(item)
