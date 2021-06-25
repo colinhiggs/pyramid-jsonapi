@@ -333,8 +333,11 @@ Filtering
 ~~~~~~~~~
 
 The JSON API spec doesn't say much about filtering syntax, other than that it
-should use the parameter key ``filter``. In this implementation, we use syntax
-like the following:
+should use the parameter key ``filter``. There are multiple filtering syntaxes
+available in pyramid_jsonapi.
+
+The first is simple filtering and has been
+available since the first release. It uses the following syntax:
 
 .. code::
 
@@ -353,8 +356,19 @@ This is simple and reasonably effective. It's a little awkward on readability th
 
 Search operators in sqlalchemy (called column comparators) must be registered before they are treated as valid for use in json-api filters. The procedure for registering them, and the list of those registered by default can be found in :ref:`search_filter_operators`.
 
+To specify another search filter syntax use the syntax name with a ``*`` in
+front in the square brackets after ``filter``, like
+``filter[*rql]=some rql filter``.
+
+Filter languages available:
+
+* RQL defined here `<https://github.com/persvr/rql>`_ as implemented in
+  rqlalchemy `<https://github.com/pjwerneck/rqlalchemy>`_.
+
 Filter Examples
 ^^^^^^^^^^^^^^^
+
+**Simple**:
 
 Find all the people with name 'alice':
 
@@ -379,3 +393,17 @@ Find all the posts where the author has the name 'alice':
 .. code-block:: bash
 
   http GET http://localhost:6543/api/posts?filter[author.name:eq]=alice
+
+**RQL**
+
+Find all the people with name 'alice':
+
+.. code-block:: bash
+
+  http :6543/api/people filter[*rql]='eq(name,alice)'
+
+Find all the posts where the author has the name 'alice':
+
+.. code-block:: bash
+
+  http :6543/api/posts filter[*rql]='eq((author,name),alice)'
