@@ -5,6 +5,8 @@ import itertools
 import importlib
 import logging
 import re
+import sqlalchemy
+from collections import namedtuple
 from collections.abc import Sequence
 from functools import partial
 from pyramid.httpexceptions import (
@@ -20,9 +22,13 @@ from pyramid.httpexceptions import (
     status_map,
 )
 from pyramid.settings import asbool
-import sqlalchemy
+from rqlalchemy import RQLQueryMixIn
 from sqlalchemy.ext.associationproxy import AssociationProxy
-from sqlalchemy.orm import load_only, aliased
+from sqlalchemy.orm import (
+    load_only,
+    aliased,
+    Query as BaseQuery,
+)
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -31,6 +37,13 @@ MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
 import pyramid_jsonapi.workflow as wf
+
+
+Entity = namedtuple('Entity', 'type')
+
+
+class RQLQuery(BaseQuery, RQLQueryMixIn):
+    pass
 
 
 class CollectionViewBase:
@@ -657,11 +670,14 @@ class CollectionViewBase:
     def base_collection_query(self, loadonly=None):
         if not loadonly:
             loadonly = self.allowed_requested_query_columns.keys()
-        return self.dbsession.query(
+        query = self.dbsession.query(
             self.model
         ).options(
             load_only(*loadonly)
         )
+        query._entities = [Entity(type=self.model)]
+        query.__class__ = RQLQuery
+        return query
 
     def single_item_query(self, obj_id=None, loadonly=None):
         """A query representing the single item referenced by id.
@@ -831,6 +847,9 @@ class CollectionViewBase:
                     )
                 )
             query = query.filter(comparator(val))
+
+        for rql in qinfo['_rql_filters']:
+            query = query.rql(rql)
 
         return query
 
@@ -1116,6 +1135,7 @@ class CollectionViewBase:
 
         # Find all parametrised parameters ( :) )
         info['_filters'] = {}
+        info['_rql_filters'] = []
         info['_page'] = {}
         for param in request.params.keys():
             match = re.match(r'(.*?)\[(.*?)\]', param)
@@ -1140,18 +1160,21 @@ class CollectionViewBase:
             #
             # Find all the filters.
             if match.group(1) == 'filter':
-                colspec = match.group(2)
-                operator = 'eq'
-                try:
-                    colspec, operator = colspec.split(':')
-                except ValueError:
-                    pass
-                colspec = colspec.split('.')
-                info['_filters'][param] = {
-                    'colspec': colspec,
-                    'op': operator,
-                    'value': val
-                }
+                if match.group(2) == '*rql':
+                    info['_rql_filters'].append(val)
+                else:
+                    colspec = match.group(2)
+                    operator = 'eq'
+                    try:
+                        colspec, operator = colspec.split(':')
+                    except ValueError:
+                        pass
+                    colspec = colspec.split('.')
+                    info['_filters'][param] = {
+                        'colspec': colspec,
+                        'op': operator,
+                        'value': val
+                    }
 
             # Paging.
             elif match.group(1) == 'page':
