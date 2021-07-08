@@ -868,7 +868,7 @@ class CollectionViewBase:
         Returns:
             int: paging limit for related resources.
         """
-        limit_comps = ['limit', 'relationships', relationship.obj.key]
+        limit_comps = ['limit', 'relationships', relationship.name]
         limit = self.default_limit
         qinfo = self.collection_query_info(self.request)
         while limit_comps:

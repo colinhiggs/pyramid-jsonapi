@@ -336,8 +336,11 @@ class PyramidJSONAPI():
         for key, item in sqlalchemy.inspect(model).all_orm_descriptors.items():
             if isinstance(item, hybrid_property):
                 if expose_fields is None or item.__name__ in expose_fields:
-                    hybrid_atts[item.__name__] = item
-                    fields[item.__name__] = item
+                    if item.info.get('pyramid_jsonapi', {}).get('relationship', False):
+                        rels[key] = item
+                    else:
+                        hybrid_atts[item.__name__] = item
+                        fields[item.__name__] = item
             if item.extension_type is ASSOCIATION_PROXY:
                 rels[key] = item
         class_attrs['hybrid_attributes'] = hybrid_atts
@@ -426,9 +429,16 @@ class StdRelationship:
             self.direction = self.rel_direction
             self.tgt_class = self.rel_tgt_class
             self.instrumented = getattr(self.src_class, self.name)
+            self.queryable = True
+        elif isinstance(obj, hybrid_property):
+            pj_info = obj.info['pyramid_jsonapi']['relationship']
+            self.direction = pj_info.get('direction', ONETOMANY)
+            self.queryable = pj_info.get('queryable', False)
+            self.tgt_class = pj_info.get('tgt_class')
         elif obj.extension_type is ASSOCIATION_PROXY:
             self.direction = self.proxy_direction
             self.tgt_class = self.proxy_tgt_class
+            self.queryable = True
 
     @property
     def rel_direction(self):

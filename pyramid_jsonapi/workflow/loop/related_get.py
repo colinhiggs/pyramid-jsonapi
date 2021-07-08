@@ -25,21 +25,32 @@ stages = (
 
 
 def get_results(view, stages):
-    query = view.related_query(view.obj_id, view.rel)
     qinfo = view.rel_view.collection_query_info(view.request)
     rel_stages = getattr(view.rel_view, 'related_get').stages
     limit = qinfo['page[limit]']
     count = None
+    if view.rel.queryable:
+        query = view.related_query(view.obj_id, view.rel)
+    else:
+        # We will need the original object with id view.obj_id.
+        obj = wf.loop.get_one_altered_result_object(
+            view, stages, view.single_item_query()
+        )
+        rel_objs = getattr(obj.object, view.rel.name)
 
     if view.rel.direction is ONETOMANY or view.rel.direction is MANYTOMANY:
         many = True
-        query = view.rel_view.query_add_sorting(query)
-        query = view.rel_view.query_add_filtering(query)
-        query = query.offset(qinfo['page[offset]'])
-        query = query.limit(qinfo['page[limit]'])
-        query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
+        if view.rel.queryable:
+            query = view.rel_view.query_add_sorting(query)
+            query = view.rel_view.query_add_filtering(query)
+            query = query.offset(qinfo['page[offset]'])
+            query = query.limit(qinfo['page[limit]'])
+            query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
+            rel_objs_iterable = wf.wrapped_query_all(query)
+        else:
+            rel_objs_iterable = rel_objs
         objects_iterator = wf.loop.altered_objects_iterator(
-            view.rel_view, rel_stages, 'alter_result', query
+            view.rel_view, rel_stages, 'alter_result', rel_objs_iterable
         )
         offset_count = 0
         if 'page[offset]' in view.request.params:
@@ -49,8 +60,17 @@ def get_results(view, stages):
             count = offset_count + len(res_objs) + sum(1 for _ in objects_iterator)
     else:
         many = False
-        query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
-        res_objs = [wf.loop.get_one_altered_result_object(view.rel_view, rel_stages, query)]
+        if view.rel.queryable:
+            query = wf.execute_stage(
+                view.rel_view, rel_stages, 'alter_query', query
+            )
+            res_objs = [
+                wf.loop.get_one_altered_result_object(
+                    view.rel_view, rel_stages, query
+                )
+            ]
+        else:
+            res_objs = [wf.ResultObject(view.rel_view, rel_objs)]
         if(qinfo['pj_include_count']):
             count = 1
 

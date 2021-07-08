@@ -43,7 +43,7 @@ def workflow(view, stages):
     # Get the direct results from this collection (no related objects yet).
     # Stage 'alter_result' will run on each object.
     objects_iterator = wf.loop.altered_objects_iterator(
-        view, stages, 'alter_result', query
+        view, stages, 'alter_result', wf.wrapped_query_all(query)
     )
     # Only do paging the slow way if page[offset] is explicitly specified in the
     # request.

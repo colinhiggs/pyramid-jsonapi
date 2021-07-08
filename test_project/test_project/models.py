@@ -12,18 +12,20 @@ from sqlalchemy import (
     func
     )
 from sqlalchemy.dialects.postgresql import JSONB
-
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-
 from sqlalchemy.orm import (
     scoped_session,
     sessionmaker,
     relationship,
     backref
     )
-
+from sqlalchemy.orm.interfaces import (
+    ONETOMANY,
+    MANYTOMANY,
+    MANYTOONE,
+)
 from zope.sqlalchemy import register
 
 DBSession = scoped_session(sessionmaker())
@@ -52,11 +54,14 @@ class Person(Base):
     name = Column(Text)
     age = Column(Integer)
     invisible = Column(Text)
+    @hybrid_property
+    def invisible_hybrid(self):
+        return 'boo!'
+
     blogs = relationship('Blog', backref='owner')
     posts = relationship('Post', backref='author')
     comments = relationship('Comment', backref='author')
     invisible_comments = relationship('Comment')
-
     articles_by_assoc = relationship(
         "ArticleByAssoc",
         secondary=authors_articles_assoc,
@@ -67,16 +72,13 @@ class Person(Base):
         cascade='all, delete-orphan',
         backref='author'
     )
-
     articles_by_proxy = association_proxy('article_associations', 'article')
 
-    @hybrid_property
-    def invisible_hybrid(self):
-        return 'boo!'
     # make invisible columns invisible to API
     invisible.info.update({'pyramid_jsonapi': {'visible': False}})
     invisible_hybrid.info.update({'pyramid_jsonapi': {'visible': False}})
     invisible_comments.info.update({'pyramid_jsonapi': {'visible': False}})
+
 
 class Blog(Base):
     __tablename__ = 'blogs'
@@ -87,7 +89,6 @@ class Blog(Base):
     id = IdColumn()
     title = Column(Text)
     owner_id = IdRefColumn('people.id')
-    posts = relationship('Post', backref='blog')
     # A read only hybrid property
     @hybrid_property
     def owner_name(self):
@@ -96,6 +97,24 @@ class Blog(Base):
         except AttributeError:
             # No owner
             return None
+
+    posts = relationship('Post', backref='blog')
+    # Using a hybrid property as a ONETOMANY relationship.
+    @hybrid_property
+    def posts_authors(self):
+        # Return the authors of all of the posts (as objects, like a relationship)
+        authors = set()
+        for post in self.posts:
+            authors.add(post.author)
+        return list(authors)
+    posts_authors.info['pyramid_jsonapi'] = {
+        'relationship': {
+            'direction': ONETOMANY,
+            'queryable': False,
+            'tgt_class': Person,
+        }
+    }
+
 
 class Post(Base):
     __tablename__ = 'posts'
@@ -106,7 +125,6 @@ class Post(Base):
     json_content = Column(JSONB)
     blog_id = IdRefColumn('blogs.id')
     author_id = IdRefColumn('people.id', nullable=False)
-    comments = relationship('Comment', backref = 'post')
     # A read-write hybrid property
     @hybrid_property
     def author_name(self):
@@ -120,6 +138,21 @@ class Post(Base):
     @author_name.setter
     def author_name(self, name):
         self.author.name = name
+
+    comments = relationship('Comment', backref = 'post')
+    # Using a hybrid property as a MANYTOONE relationship.
+    @hybrid_property
+    def blog_owner(self):
+        # Return the owner of the blog this post is in (as an object, like a
+        # relationship)
+        return self.blog.owner
+    blog_owner.info['pyramid_jsonapi'] = {
+        'relationship': {
+            'direction': MANYTOONE,
+            'queryable': False,
+            'tgt_class': Person,
+        }
+    }
 
 
 class Comment(Base):

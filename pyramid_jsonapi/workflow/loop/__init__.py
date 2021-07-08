@@ -29,16 +29,16 @@ def get_one_altered_result_object(view, stages, query):
     return res_obj
 
 
-def altered_objects_iterator(view, stages, stage_name, query):
+def altered_objects_iterator(view, stages, stage_name, objects_iterable):
     """
-    Execute a query and return an iterator of objects filtered and altered by
+    Return an iterator of objects from objects_iterable filtered and altered by
     the stage_name stage.
     """
     return filter(
         lambda o: o.tuple_identifier not in view.pj_shared.rejected.rejected['objects'],
         map(
             partial(wf.execute_stage, view, stages, stage_name),
-            (wf.ResultObject(view, o) for o in wf.wrapped_query_all(query))
+            (wf.ResultObject(view, o) for o in objects_iterable)
         )
     )
 
@@ -54,13 +54,23 @@ def get_related(obj, rel_name, stages, include_path=None):
     rel_view = view.view_instance(rel.tgt_class)
     many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
     is_included = view.path_is_included(rel_include_path)
-    query = view.related_query(obj.obj_id, rel, full_object=is_included)
-    query = wf.execute_stage(
-        view, stages, 'alter_related_query', query
-    )
+    if rel.queryable:
+        query = view.related_query(obj.obj_id, rel, full_object=is_included)
+        query = wf.execute_stage(
+            view, stages, 'alter_related_query', query
+        )
+        objects_iterable = wf.wrapped_query_all(query)
+    else:
+        objects_iterable = getattr(obj.object, rel_name)
+        if not many:
+            objects_iterable = [objects_iterable]
     rel_objs = list(
         islice(
-            altered_objects_iterator(rel_view, stages, 'alter_related_result', query),
+            altered_objects_iterator(
+                rel_view, stages,
+                'alter_related_result',
+                objects_iterable,
+            ),
             view.related_limit(rel)
         )
     )

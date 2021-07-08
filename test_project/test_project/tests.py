@@ -24,7 +24,9 @@ import pprint
 
 from test_project.models import (
     DBSession,
-    Base
+    Base,
+    Person,
+    Blog,
 )
 
 from test_project import test_data
@@ -3315,6 +3317,34 @@ class TestHybrid(DBTestBase):
         data = self.test_app().get('/people/1').json['data']
         # ...should now be called alice2.
         self.assertEqual(data['attributes']['name'], 'alice2')
+
+
+class TestHybridRelationships(DBTestBase):
+    '''Test cases for @hybrid_property relationships.'''
+
+    def test_hybrid_rel_to_one_get(self):
+        '''Post should have a relationship called blog_owner'''
+        data = self.test_app().get('/posts/1').json['data']
+        # Should have a relationship called blog_owner.
+        self.assertIn('blog_owner', data['relationships'])
+        # But not an attribute
+        self.assertNotIn('blog_owner', data['attributes'])
+        self.assertEqual(
+            data['relationships']['blog_owner']['data'],
+            {'type': 'people', 'id': '1'}
+        )
+
+    def test_hybrid_rel_to_many_get(self):
+        '''Blog should have a relationship called posts_authors'''
+        data = self.test_app().get('/blogs/1').json['data']
+        # Should have a relationship called posts_authors.
+        self.assertIn('posts_authors', data['relationships'])
+        # But not an attribute
+        self.assertNotIn('posts_authors', data['attributes'])
+        self.assertEqual(
+            data['relationships']['posts_authors']['data'],
+            [{'type': 'people', 'id': '1'}]
+        )
 
 
 class TestJoinedTableInheritance(DBTestBase):
