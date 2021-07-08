@@ -111,7 +111,7 @@ class Blog(Base):
         'relationship': {
             'direction': ONETOMANY,
             'queryable': False,
-            'tgt_class': Person,
+            'tgt_class': 'Person',
         }
     }
 

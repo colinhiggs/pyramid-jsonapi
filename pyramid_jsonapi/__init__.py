@@ -434,7 +434,13 @@ class StdRelationship:
             pj_info = obj.info['pyramid_jsonapi']['relationship']
             self.direction = pj_info.get('direction', ONETOMANY)
             self.queryable = pj_info.get('queryable', False)
-            self.tgt_class = pj_info.get('tgt_class')
+            tgt_class = pj_info.get('tgt_class')
+            if isinstance(tgt_class, str):
+                for mapper in view_class.model.registry.mappers:
+                    if mapper.class_.__name__ == tgt_class:
+                        tgt_class = mapper.class_
+                        break
+            self.tgt_class = tgt_class
         elif obj.extension_type is ASSOCIATION_PROXY:
             self.direction = self.proxy_direction
             self.tgt_class = self.proxy_tgt_class
