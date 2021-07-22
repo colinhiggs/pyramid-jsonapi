@@ -9,7 +9,8 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     CheckConstraint,
-    func
+    func,
+    select,
     )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -270,3 +271,13 @@ class TreeNode(Base):
     children = relationship("TreeNode",
         backref=backref('parent', remote_side=[id])
     )
+
+
+class PersonView(Base):
+    __table__ = select(Person).subquery()
+
+    posts = relationship('Post', backref='view_author')
+
+    __pyramid_jsonapi__ = {
+        'collection_name': 'view_people',
+    }
