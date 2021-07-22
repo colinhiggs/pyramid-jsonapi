@@ -959,7 +959,16 @@ class CollectionViewBase:
                 self.id_col(rel_class) == rel.secondaryjoin.right
             )
         elif rel.direction is MANYTOONE:
-            if rel.primaryjoin.left.table == rel.primaryjoin.right.table:
+            try:
+                left_table = rel.primaryjoin.left.table
+            except AttributeError:
+                left_table = None
+            try:
+                right_table = rel.primaryjoin.right.table
+            except AttributeError:
+                right_table = None
+            tables_exist = (left_table is not None) and (right_table is not None)
+            if tables_exist and left_table == right_table:
                 # This is a self-joined table with a child->parent rel. AKA
                 # adjacancy list. We need aliasing.
                 rel_class_alias = aliased(rel_class)

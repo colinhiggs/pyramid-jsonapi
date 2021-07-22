@@ -9,7 +9,8 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     CheckConstraint,
-    func
+    func,
+    select,
     )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -19,7 +20,9 @@ from sqlalchemy.orm import (
     scoped_session,
     sessionmaker,
     relationship,
-    backref
+    backref,
+    foreign,
+    remote,
     )
 from sqlalchemy.orm.interfaces import (
     ONETOMANY,
@@ -73,6 +76,13 @@ class Person(Base):
         backref='author'
     )
     articles_by_proxy = association_proxy('article_associations', 'article')
+    # A relationship that doesn't join along the usual fk -> pk lines.
+    blogs_from_titles = relationship(
+        'Blog',
+        primaryjoin="remote(Blog.title) == 'main: ' + foreign(Person.name)",
+        viewonly=True,
+    )
+
 
     # make invisible columns invisible to API
     invisible.info.update({'pyramid_jsonapi': {'visible': False}})
@@ -270,3 +280,13 @@ class TreeNode(Base):
     children = relationship("TreeNode",
         backref=backref('parent', remote_side=[id])
     )
+
+
+class PersonView(Base):
+    __table__ = select(Person).subquery()
+
+    posts = relationship('Post', backref='view_author')
+
+    __pyramid_jsonapi__ = {
+        'collection_name': 'view_people',
+    }
