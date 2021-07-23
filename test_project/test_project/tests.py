@@ -2302,8 +2302,11 @@ class TestSpec(DBTestBase):
         # Find all the resource identifiers.
         rids = set()
         for rel in person['data']['relationships'].values():
-            for item in rel['data']:
-                rids.add((item['type'], item['id']))
+            if isinstance(rel['data'], list):
+                for item in rel['data']:
+                    rids.add((item['type'], item['id']))
+            else:
+                rids.add((rel['data']['type'], rel['data']['id']))
 
         # Every included item should have an identifier somewhere.
         for item in person['included']:

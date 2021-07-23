@@ -79,8 +79,9 @@ class Person(Base):
     # A relationship that doesn't join along the usual fk -> pk lines.
     blogs_from_titles = relationship(
         'Blog',
-        primaryjoin="remote(Blog.title) == 'main: ' + foreign(Person.name)",
+        primaryjoin="remote(Blog.title).like('%' + foreign(Person.name))",
         viewonly=True,
+        uselist=True,
     )
 
 
