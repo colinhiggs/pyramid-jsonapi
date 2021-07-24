@@ -28,6 +28,15 @@ import datetime
 def datetime_adapter(obj, request):
     return obj.isoformat()
 
+# Make sure the schema generator understands some types from sqlalchemy_utils.
+import sqlalchemy_utils
+import alchemyjsonschema
+alchemyjsonschema.default_column_to_schema.update(
+    {
+        sqlalchemy_utils.LtreeType: "string"
+    }
+)
+
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.

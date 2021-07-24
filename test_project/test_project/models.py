@@ -1,3 +1,6 @@
+from ltree import (
+    LtreeMixin,
+)
 from sqlalchemy import (
     Table,
     Column,
@@ -291,3 +294,9 @@ class PersonView(Base):
     __pyramid_jsonapi__ = {
         'collection_name': 'view_people',
     }
+
+
+class LtreeNode(Base, LtreeMixin):
+    __tablename__ = 'ltree_nodes'
+
+    id = IdColumn()
