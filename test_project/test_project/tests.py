@@ -85,6 +85,19 @@ rel_infos = (
 )
 
 
+class MyTestApp(webtest.TestApp):
+
+    def _check_status(self, status, res):
+        try:
+            super()._check_status(status, res)
+        except webtest.AppError as e:
+            errors = res.json_body.get('errors', [{}])
+            raise webtest.AppError(
+                '%s\n%s',
+                errors, res.json_body.get('traceback')
+            )
+
+
 def setUpModule():
     '''Create a test DB and import data.'''
     # Create a new database somewhere in /tmp
@@ -154,7 +167,7 @@ class DBTestBase(unittest.TestCase):
                 category=SAWarning
             )
             app = get_app(config_path)
-            test_app = webtest.TestApp(app)
+            test_app = MyTestApp(app)
             test_app._pj_app = app
         if options:
             os.remove(config_path)
