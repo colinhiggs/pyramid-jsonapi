@@ -1003,7 +1003,7 @@ class CollectionViewBase:
 
         return query
 
-    def related_query(self, obj_id, relationship, full_object=True):
+    def related_query(self, obj, relationship, full_object=True):
         """Construct query for related objects.
 
         Parameters:
@@ -1025,6 +1025,10 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
+        if obj is None:
+            obj_id = None
+        else:
+            obj_id = self.id_col(obj)
         if isinstance(relationship.obj, AssociationProxy):
             query = self.association_proxy_query(
                 obj_id, relationship, full_object=full_object

@@ -55,10 +55,14 @@ def get_related(obj, rel_name, stages, include_path=None):
     many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
     is_included = view.path_is_included(rel_include_path)
     if rel.queryable:
-        query = view.related_query(obj.obj_id, rel, full_object=is_included)
+        query = view.related_query(obj.object, rel, full_object=is_included)
         query = wf.execute_stage(
             view, stages, 'alter_related_query', query
         )
+        # print('*' * 80)
+        # print(rel_name)
+        # print(query.statement.compile(view.dbsession.bind))
+        # print('*' * 80)
         objects_iterable = wf.wrapped_query_all(query)
     else:
         objects_iterable = getattr(obj.object, rel_name)

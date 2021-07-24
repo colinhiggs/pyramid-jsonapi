@@ -29,13 +29,13 @@ def get_results(view, stages):
     rel_stages = getattr(view.rel_view, 'related_get').stages
     limit = qinfo['page[limit]']
     count = None
+    # We will need the original object with id view.obj_id.
+    obj = wf.loop.get_one_altered_result_object(
+        view, stages, view.single_item_query()
+    )
     if view.rel.queryable:
-        query = view.related_query(view.obj_id, view.rel)
+        query = view.related_query(obj.object, view.rel)
     else:
-        # We will need the original object with id view.obj_id.
-        obj = wf.loop.get_one_altered_result_object(
-            view, stages, view.single_item_query()
-        )
         rel_objs = getattr(obj.object, view.rel.name)
 
     if view.rel.direction is ONETOMANY or view.rel.direction is MANYTOMANY:
