@@ -37,6 +37,7 @@ def get_results(view, stages):
         query = view.related_query(obj.object, view.rel)
     else:
         rel_objs = getattr(obj.object, view.rel.name)
+    # rel_objs = getattr(obj.object, view.rel.name)
 
     if view.rel.direction is ONETOMANY or view.rel.direction is MANYTOMANY:
         many = True

@@ -908,10 +908,14 @@ class CollectionViewBase:
         proxy = rel.obj.for_class(rel.src_class)
         query = self. dbsession.query(
             rel.tgt_class
-        ).join(proxy.remote_attr).filter(
-            # I thought the simpler
-            # proxy.local_attr.contains() should work but it doesn't
-            proxy.local_attr.property.local_remote_pairs[0][1] == obj_id
+        ).select_from(
+            rel.src_class
+        ).join(
+            proxy.local_attr
+        ).join(
+            proxy.remote_attr
+        ).filter(
+            self.id_col(rel.src_class) == obj_id
         )
         if full_object:
             query = query.options(
@@ -939,69 +943,22 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        rel = relationship.obj
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-        local_col, rem_col = rel.local_remote_pairs[0]
-        query = self.dbsession.query(rel_class)
-        if full_object:
-            query = query.options(
-                load_only(*rel_view.allowed_requested_query_columns.keys())
-            )
+        rel_model = relationship.tgt_class
+        tables = [
+            getattr(col, 'table', None)
+            for col in relationship.obj.local_remote_pairs[0]
+        ]
+        if tables[0] is tables[1]:
+            model = aliased(self.model)
         else:
-            query = query.options(load_only(rel_view.key_column.name))
-        if rel.direction is ONETOMANY:
-            query = query.filter(obj_id == rem_col)
-        elif rel.direction is MANYTOMANY:
-            query = query.filter(
-                obj_id == rel.primaryjoin.right
-            ).filter(
-                self.id_col(rel_class) == rel.secondaryjoin.right
-            )
-        elif rel.direction is MANYTOONE:
-            try:
-                left_table = rel.primaryjoin.left.table
-            except AttributeError:
-                left_table = None
-            try:
-                right_table = rel.primaryjoin.right.table
-            except AttributeError:
-                right_table = None
-            tables_exist = (left_table is not None) and (right_table is not None)
-            if tables_exist and left_table == right_table:
-                # This is a self-joined table with a child->parent rel. AKA
-                # adjacancy list. We need aliasing.
-                rel_class_alias = aliased(rel_class)
-
-                # Assume a 'Node' model with 'id' and 'parent_id' attributes and
-                # a relationship 'parent' such that parent_id stores the id of
-                # this Node's parent.
-                #
-                # The parent_id column from the aliased class.
-                right_alias = getattr(rel_class_alias, rel.primaryjoin.right.key)
-                # The id column from the aliased class.
-                left_alias = getattr(rel_class_alias, rel.primaryjoin.left.key)
-
-                query = query.join(
-                    rel_class_alias,
-                    # Node.id == Aliased.parent_id
-                    rel.primaryjoin.left == right_alias
-                ).filter(
-                    # Aliased.id == obj_id
-                    left_alias == obj_id
-                )
-            else:
-                query = query.filter(
-                    rel.primaryjoin
-                ).filter(
-                    self.id_col(self.model_from_table(local_col.table)) == obj_id
-                )
-        else:
-            raise HTTPError('Unknown relationships direction, "{}".'.format(
-                rel.direction.name
-            ))
-
-        return query
+            model = self.model
+        return self.dbsession.query(rel_model).select_from(
+            model
+        ).join(
+            getattr(model, relationship.name)
+        ).filter(
+            self.id_col(model) == obj_id
+        )
 
     def related_query(self, obj, relationship, full_object=True):
         """Construct query for related objects.
