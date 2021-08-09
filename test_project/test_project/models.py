@@ -1,4 +1,4 @@
-from ltree import (
+from ltree_models import (
     LtreeMixin,
 )
 from sqlalchemy import (

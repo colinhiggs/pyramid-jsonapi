@@ -1,4 +1,4 @@
-import ltree
+import ltree_models
 import sqlalchemy
 from sqlalchemy import (
     create_engine,
@@ -31,7 +31,7 @@ def setUpModule():
     global engine
     postgresql = testing.postgresql.Postgresql(port=7654)
     engine = create_engine(postgresql.url())
-    ltree.add_ltree_extension(engine)
+    ltree_models.add_ltree_extension(engine)
     DBSession.configure(bind=engine)
 
 
