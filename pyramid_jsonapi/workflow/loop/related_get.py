@@ -1,4 +1,5 @@
 import sqlalchemy
+import pyramid_jsonapi.workflow as wf
 
 from itertools import (
     islice,
@@ -12,14 +13,7 @@ from sqlalchemy.orm.interfaces import (
     MANYTOMANY,
     MANYTOONE,
 )
-
-import pyramid_jsonapi.workflow as wf
-
-stages = (
-    'alter_query',
-    'alter_result',
-    'alter_related_query',
-)
+from . import stages
 
 
 def get_results(view, stages):

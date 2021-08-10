@@ -1,6 +1,6 @@
+from . import stages
 from .related_get import (
     get_results,
-    stages,
 )
 
 

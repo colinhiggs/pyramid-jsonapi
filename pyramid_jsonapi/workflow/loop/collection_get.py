@@ -6,12 +6,7 @@ from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPInternalServerError,
 )
-
-stages = (
-    'alter_query',
-    'alter_result',
-    'alter_related_query',
-)
+from . import stages
 
 
 def workflow(view, stages):

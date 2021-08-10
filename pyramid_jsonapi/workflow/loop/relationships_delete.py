@@ -1,3 +1,4 @@
+import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 
 from pyramid.httpexceptions import (
@@ -12,13 +13,7 @@ from sqlalchemy.orm.interfaces import (
     MANYTOMANY,
     MANYTOONE,
 )
-
-import pyramid_jsonapi.workflow as wf
-
-stages = (
-    'alter_query',
-    'alter_related_query',
-)
+from . import stages
 
 
 def workflow(view, stages):
@@ -47,6 +42,9 @@ def workflow(view, stages):
                 pass
             else:
                 raise
+    obj = wf.execute_stage(
+        view, stages, 'before_write_item', obj
+    )
     try:
         view.dbsession.flush()
     except sqlalchemy.exc.IntegrityError as exc:

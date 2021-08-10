@@ -3,13 +3,7 @@ from pyramid.httpexceptions import (
     HTTPNotFound,
 )
 import pyramid_jsonapi.workflow as wf
-
-stages = (
-    'alter_query',
-    'alter_result',
-    'alter_related_query',
-)
-
+from . import stages
 
 def get_doc(view, stages, query):
     query = wf.execute_stage(

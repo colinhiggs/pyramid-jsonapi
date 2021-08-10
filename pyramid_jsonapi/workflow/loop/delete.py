@@ -4,10 +4,7 @@ import sqlalchemy
 from pyramid.httpexceptions import (
     HTTPFailedDependency,
 )
-
-stages = (
-    'before_delete',
-)
+from . import stages
 
 
 def workflow(view, stages):
@@ -18,7 +15,7 @@ def workflow(view, stages):
         )
     )
     item = wf.execute_stage(
-        view, stages, 'before_delete', item
+        view, stages, 'before_write_item', item
     )
     try:
         view.dbsession.delete(item)

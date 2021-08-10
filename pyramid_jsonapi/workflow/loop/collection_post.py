@@ -19,11 +19,7 @@ from pyramid.httpexceptions import (
     HTTPConflict,
     HTTPNotFound,
 )
-
-stages = (
-    'alter_result',
-    'alter_related_query',
-)
+from . import stages
 
 
 def workflow(view, stages):
@@ -109,6 +105,9 @@ def workflow(view, stages):
                     raise HTTPBadRequest(
                         'No id member in relationship data.'
                     )
+    item = wf.execute_stage(
+        view, stages, 'before_write_item', item
+    )
     try:
         view.dbsession.add(item)
         view.dbsession.flush()

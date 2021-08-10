@@ -19,6 +19,13 @@ from sqlalchemy.orm.interfaces import (
 )
 
 
+stages = (
+    'alter_query',
+    'alter_related_query',
+    'alter_result',
+    'before_write_item',
+)
+
 def get_one_altered_result_object(view, stages, query):
     res_obj = wf.execute_stage(
         view, stages, 'alter_result',

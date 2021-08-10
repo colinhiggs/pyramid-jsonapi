@@ -13,22 +13,12 @@ from pyramid.httpexceptions import (
 from sqlalchemy.orm import (
     load_only,
 )
-
-stages = (
-    'validate_patch_request',
-    'alter_json_data',
-)
+from . import stages
 
 
 def workflow(view, stages):
-    request = wf.execute_stage(
-        view, stages, 'validate_patch_request',
-        view.request
-    )
-    data = wf.execute_stage(
-        view, stages, 'alter_json_data',
-        request.json_body['data']
-    )
+    validate_patch_request(view)
+    data = view.request.json_body['data']
     atts = {}
     hybrid_atts = {}
     for key, value in data.get('attributes', {}).items():
@@ -112,7 +102,9 @@ def workflow(view, stages):
                     ))
                 rel_items.append(rel_item)
             setattr(item, relname, rel_items)
-
+    item = wf.execute_stage(
+        view, stages, 'before_write_item', item
+    )
     try:
         view.dbsession.flush()
     except sqlalchemy.exc.IntegrityError as exc:
@@ -132,7 +124,8 @@ def workflow(view, stages):
     return doc
 
 
-def stage_validate_patch_request(view, request, prev_data):
+def validate_patch_request(view):
+    request = view.request
     try:
         data = request.json_body['data']
     except KeyError:
