@@ -183,29 +183,35 @@ class DBTestBase(unittest.TestCase):
 
 class TestTmp(DBTestBase):
     '''To isolate tests so they can be run individually during development.'''
-    @parameterized.expand(rel_infos[1:2], doc_func=rels_doc_func)
-    def test_rels_related_get(self, src, tgt, comment):
-        ''''related' link should fetch related resource(s).
 
-        If present, a related resource link MUST reference a valid URL, even if
-        the relationship isn’t currently associated with any target resources.
-        '''
-        # Fetch item 1 from the collection
-        r = self.test_app().get('/{}/1'.format(src.collection))
-        item = r.json['data']
+    def test_ep_map(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        print(pj.endpoint_data.http_to_view_methods)
 
-        # Fetch the related url.
-        url = item['relationships'][src.rel]['links']['related']
-        data = self.test_app().get(url).json['data']
-
-        # Check that the returned data is of the expected type.
-        if tgt.many:
-            self.assertIsInstance(data, list)
-            for related_item in data:
-                self.assertEqual(related_item['type'], tgt.collection)
-        else:
-            self.assertIsInstance(data, dict)
-            self.assertEqual(data['type'], tgt.collection)
+    # @parameterized.expand(rel_infos[1:2], doc_func=rels_doc_func)
+    # def test_rels_related_get(self, src, tgt, comment):
+    #     ''''related' link should fetch related resource(s).
+    #
+    #     If present, a related resource link MUST reference a valid URL, even if
+    #     the relationship isn’t currently associated with any target resources.
+    #     '''
+    #     # Fetch item 1 from the collection
+    #     r = self.test_app().get('/{}/1'.format(src.collection))
+    #     item = r.json['data']
+    #
+    #     # Fetch the related url.
+    #     url = item['relationships'][src.rel]['links']['related']
+    #     data = self.test_app().get(url).json['data']
+    #
+    #     # Check that the returned data is of the expected type.
+    #     if tgt.many:
+    #         self.assertIsInstance(data, list)
+    #         for related_item in data:
+    #             self.assertEqual(related_item['type'], tgt.collection)
+    #     else:
+    #         self.assertIsInstance(data, dict)
+    #         self.assertEqual(data['type'], tgt.collection)
 
 
 class TestPermissions(DBTestBase):
@@ -216,12 +222,12 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
-            ['get'],
+            ['read'],
             ['alter_result']
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
-            ['get'],
+            ['read'],
             ['alter_result'],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )

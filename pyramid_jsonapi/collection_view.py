@@ -1484,18 +1484,17 @@ class CollectionViewBase:
     def register_permission_filter(cls, permissions, stages, pfunc):
         # Permission filters should have the signature:
         #   pfunc(object_rep, view_instance, permission_sought, stage_name)
-        # Theoretically it would be more efficient to define this mapping
-        # somewhere else since we redifine it for every registration. But
-        # this is close to where it is used and there shouldn't be a large
-        # Number of calls to register_permission_filter.
-        perm_to_eps = {
-            'get': {'get', 'collection_get', 'related_get', 'relationships_get'},
-            'post': {'collection_post', 'relationships_post'},
-            'patch': {'patch', 'relationships_patch'},
-            'delete': {'delete', 'relationships_delete'},
-        }
+
+        # expand out 'read' and 'write' http method sets into individual
+        # permissions.
+        perms = []
+        for p in permissions:
+            if p == 'read' or p == 'write':
+                perms.extend(cls.api.endpoint_data.endpoints['method_sets'][p])
+            else:
+                perms.append(p)
         for stage_name in stages:
-            for perm in permissions:
+            for perm in perms:
                 perm = perm.lower()
 
                 # Register the filter function.

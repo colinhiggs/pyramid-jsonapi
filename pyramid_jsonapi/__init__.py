@@ -315,8 +315,15 @@ class PyramidJSONAPI():
         class_attrs['collection_name'] = collection_name or model.__tablename__
         class_attrs['exposed_fields'] = expose_fields
         class_attrs['permission_filters'] = {
-            'get': {}, 'post': {}, 'patch': {}, 'delete': {},
+            m.lower(): {} for m in
+            self.endpoint_data.endpoints['method_sets']['read']
         }
+        class_attrs['permission_filters'].update(
+            {
+                m.lower(): {} for m in
+                self.endpoint_data.endpoints['method_sets']['write']
+            }
+        )
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
         # fields is atts + hybrid_atts + relationships
@@ -383,18 +390,10 @@ class PyramidJSONAPI():
             stage_names: an iterable of stage names to enable.
 
         '''
-        perm_to_eps = {
-            'get': {'get', 'collection_get', 'related_get', 'relationships_get'},
-            'post': {'collection_post', 'relationships_post'},
-            'patch': {'patch', 'relationships_patch'},
-            'delete': {'delete', 'relationships_delete'},
-        }
-        perm_to_eps['write'] = perm_to_eps['post'] | perm_to_eps['patch'] | perm_to_eps['delete']
-
         # Build a set of all the end points from permissions.
         ep_names = set()
         for perm in permissions:
-            ep_names.update(perm_to_eps[perm.lower()])
+            ep_names.update(self.endpoint_data.http_to_view_methods[perm.lower()])
 
         # Add permission handlers for all view classes.
         for model, view_class in self.view_classes.items():

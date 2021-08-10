@@ -1,6 +1,6 @@
 """Classes to store and manipulate endpoints and routes."""
 
-from functools import partial
+from functools import partial, lru_cache
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPCreated,
@@ -92,6 +92,10 @@ class EndpointData():
         # Mandatory 'http_method' keys: function
         # Optional 'http_method' keys: renderer
         self.endpoints = {
+            'method_sets': {
+                'read': { 'GET' },
+                'write': { 'POST', 'PATCH', 'DELETE' },
+            },
             'query_parameters': {
                 'fields': '',
                 'filter': '',
@@ -331,3 +335,24 @@ class EndpointData():
                 route_pattern,
             )
         )
+
+    @property
+    @lru_cache(maxsize=128)
+    def http_to_view_methods(self):
+        ep_map = {}
+        for ep_type in self.endpoints['endpoints'].values():
+            for http_name, data in ep_type['http_methods'].items():
+                http_name = http_name.lower()
+                try:
+                    view_methods = ep_map[http_name]
+                except KeyError:
+                    view_methods = ep_map[http_name] = set()
+                view_methods.add(data['function'])
+        ep_map['write'] = set()
+        for m in map(str.lower, self.endpoints['method_sets']['write']):
+            ep_map['write'] |= ep_map[m]
+        ep_map['read'] = set()
+        for m in map(str.lower, self.endpoints['method_sets']['read']):
+            ep_map['read'] |= ep_map[m]
+
+        return ep_map
