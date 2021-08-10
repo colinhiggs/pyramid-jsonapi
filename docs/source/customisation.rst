@@ -272,19 +272,45 @@ Stages and the Workflow
 -----------------------
 
 ``pyramid_jsonapi`` services requests in stages. These stages are sequences of
-functions implemented as ``collections.deque``: you can add your own functions
+functions implemented as a :class:`collections.deque` for each stage on each
+method of each view class. For example, the deque for the ``alter_request``
+stage of the ``collection_post()`` method for the view class associated with
+``models.Person`` could be accessed with
+
+.. code-block:: python
+
+  ar_stage = pj.view_classes[models.Person].collection_post.stages['alter_request']
+
+You can add your own functions
 using ``.append()`` or ``.appendleft()``, remove them with ``.pop()`` or
 ``.popleft()`` and so on. The functions in each stage deque will be called in
-order at the appropriate point.
+order at the appropriate point and should have the following signature:
+
+.. code-block:: python
+
+  def handler_function(view_instance, argument, previous_data):
+    # some function definition...
+    return same_type_of_thing_as_argument
+
+``argument`` in the ``alter_request`` stage would be a request, for example,
+while in ``alter_document`` it would be a document object.
+
+For example, let's say you would like to alter all posts to the people
+collection so that a created_on_server attribute is populated automatically.
+
+.. code-block:: python
+
+  def created_on_server_handler(view, request, prev):
+    request.json_data['data']
 
 The stages are run in the following order:
 
-* ``validate_request``. Functions in this stage validate the request. For
-  example, ensuring that the correct headers are set and that any json validates
-  against the schema.
 * ``alter_request``. Functions in this stage alter the request. For example
   possibly editing any POST or PATCH such that it contains a server defined
   calculated attribute.
+* ``validate_request``. Functions in this stage validate the request. For
+  example, ensuring that the correct headers are set and that any json validates
+  against the schema.
 * Any stages defined by a ``workflow`` function from a loadable workflow module.
 * ``alter_document``. Functions in this stage alter the ``document``, which is
   to say the dictionary which will be JSON serialised and sent back in the
