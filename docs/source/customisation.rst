@@ -294,16 +294,18 @@ The stages are run in the following order:
 The Loop Workflow
 -----------------
 
-The default workflow is the ``loop`` workflow. It defines the following stages
-for ``GET`` related view methods:
+The default workflow is the ``loop`` workflow. It defines the following stages:
 
+* ``alter_query``. Alter the :class:`sqlalchemy.orm.query.Query` which will be
+  executed (using ``.all()`` or ``.one()``) to fetch the primary result(s).
+* ``alter_related_query``. Alter the :class:`sqlalchemy.orm.query.Query` which
+  will be executed to fetch related result(s).
 * ``alter_result``. Alter a :class:`workflow.ResultObject` object containing
-  a database result from a query of the requested collection. This might also
-  involve rejecting the whole object (for example, for authorisation purposes).
-* ``alter_related_result``. Alter a :class:`workflow.ResultObject` object
-  containing a database result from a query of a related collection.
-* ``alter_results``. Alter a :class:`workflow.Results` object containing the
-  full set of results processed so far.
+  a database result (a sqlalchemy orm object) from a query of the requested
+  collection. This might also involve rejecting the whole object (for example,
+  for authorisation purposes).
+* ``before_write_item``. Alter a sqlalchemy orm item before it is written
+  (flushed) to the database.
 
 Authorisation
 -------------
@@ -341,7 +343,7 @@ the current stage, and ``permission_sought`` is one of ``get``, ``post``,
 example the ``alter_request`` stage will pass a dictionary representing an item
 from ``data`` from the JSON contained in a pyramid request and the
 ``alter_document`` stage will pass a similar dictionary representation of an
-object taken from the ``document`` to be serialised. The alter result stages
+object taken from the ``document`` to be serialised. The ``alter_result`` stage
 from the loop workflow, on the other hand, will pass a
 :class:`workflow.ResultObject`, which is a wrapper around a sqlAlchemy ORM
 object (which you can get to as ``object_rep.object``).
@@ -368,9 +370,9 @@ Putting that together in some examples:
 
 Let's say you have banned the user 'baddy' and want to authorise GET requests so
 that baddy can no longer fetch blogs. Both the ``alter_document`` and
-``alter_..._result`` stages would make sense as places to influence what will
-be returned by a GET. We will choose the pair ``alter_result`` and
-``alter_related_result`` here so that we are authorising results as soon as
+``alter_result`` stages would make sense as places to influence what will
+be returned by a GET. We will choose ``alter_result`` here so that we are
+authorising results as soon as
 they come from the database. You might have something like this in
 ``__init__.py``:
 
@@ -379,11 +381,11 @@ they come from the database. You might have something like this in
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
   pj.enable_permission_handlers(
     ['get'],
-    ['alter_result', 'alter_related_result']
+    ['alter_result']
   )
   pj.view_classes[models.Blogs].register_permission_filter(
     ['get'],
-    ['alter_result', 'alter_related_result'],
+    ['alter_result'],
     lambda obj, view, **kwargs:  view.request.remote_user != 'baddy',
   )
 
@@ -417,7 +419,7 @@ permission filter - we must use the fuller return format.
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
   pj.enable_permission_handlers(
     ['get'],
-    ['alter_result', 'alter_related_result']
+    ['alter_result']
   )
 
   def get_person_filter(person, view, **kwargs):
@@ -443,7 +445,7 @@ permission filter - we must use the fuller return format.
 
   pj.view_classes[models.Person].register_permission_filter(
     ['get'],
-    ['alter_result', 'alter_related_result'],
+    ['alter_result'],
     get_person_filter
   )
 
