@@ -217,12 +217,12 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result']
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result'],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         # Shouldn't be allowed to see people/1 (alice)
@@ -235,7 +235,7 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
@@ -244,7 +244,7 @@ class TestPermissions(DBTestBase):
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             pfilter,
         )
         # Alice should have attribute 'name' but not 'age'.
@@ -257,7 +257,7 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
@@ -266,7 +266,7 @@ class TestPermissions(DBTestBase):
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             pfilter,
         )
         # Alice should have relationship 'blogs' but not 'posts'.
@@ -279,12 +279,12 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             lambda obj, *args, **kwargs: obj.object.id != 1,
         )
         alice = test_app.get('/people/1').json_body['data']
@@ -297,12 +297,12 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             lambda obj, *args, **kwargs: obj.object.id != 1,
         )
         included = test_app.get('/people/1?include=blogs').json_body['included']
@@ -317,12 +317,12 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         # Make sure we get the lowest ids with a filter.
@@ -337,12 +337,12 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         # Make sure we get the lowest ids with a filter.
@@ -358,12 +358,12 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         pj.enable_permission_handlers(
             ['get'],
-            ['alter_result', 'alter_related_result']
+            ['alter_result', ]
         )
         # Not allowed to see blog with title 'main: alice' (aka blogs/1)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             lambda obj, *args, **kwargs: obj.object.title != 'main: alice',
         )
         r = test_app.get('/people/1/blogs').json_body
@@ -375,7 +375,7 @@ class TestPermissions(DBTestBase):
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
-            ['alter_result', 'alter_related_result'],
+            ['alter_result', ],
             lambda obj, *args, **kwargs: obj.object.name != 'alice',
         )
         r = test_app.get('/blogs/2/owner', status=403)

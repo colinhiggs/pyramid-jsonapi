@@ -23,7 +23,6 @@ from pyramid.httpexceptions import (
 stages = (
     'alter_result',
     'alter_related_query',
-    'alter_related_result',
     'alter_results',
 )
 

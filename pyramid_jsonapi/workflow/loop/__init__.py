@@ -72,7 +72,7 @@ def get_related(obj, rel_name, stages, include_path=None):
         islice(
             altered_objects_iterator(
                 rel_view, stages,
-                'alter_related_result',
+                'alter_result',
                 objects_iterable,
             ),
             view.related_limit(rel)
@@ -159,7 +159,6 @@ def permission_handler(endpoint_name, stage_name):
     handlers = {
         'get': {
             'alter_result': get_alter_handler,
-            'alter_related_result': partial(get_alter_handler, stage_name='alter_related_result'),
             'alter_results': get_alter_results_handler,
         }
     }

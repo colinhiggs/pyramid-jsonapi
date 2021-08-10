@@ -19,7 +19,6 @@ stages = (
     'alter_query',
     'alter_result',
     'alter_related_query',
-    'alter_related_result',
     'alter_results',
 )
 
@@ -85,7 +84,7 @@ def get_results(view, stages):
     )
 
     # Fill the relationships with related objects.
-    # Stage 'alter_related_result' will run on each object.
+    # Stage 'alter_result' will run on each object.
     for res_obj in results.objects:
         wf.loop.fill_result_object_related(res_obj, rel_stages)
 

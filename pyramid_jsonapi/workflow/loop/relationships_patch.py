@@ -19,7 +19,6 @@ stages = (
     'alter_query',
     'alter_results',
     'alter_related_query',
-    'alter_related_results',
 )
 
 
