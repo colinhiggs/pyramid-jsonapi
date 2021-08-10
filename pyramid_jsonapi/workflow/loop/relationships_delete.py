@@ -17,7 +17,6 @@ import pyramid_jsonapi.workflow as wf
 
 stages = (
     'alter_query',
-    'alter_results',
     'alter_related_query',
 )
 

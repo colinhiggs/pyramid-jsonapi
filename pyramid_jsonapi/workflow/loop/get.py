@@ -8,7 +8,6 @@ stages = (
     'alter_query',
     'alter_result',
     'alter_related_query',
-    'alter_results',
 )
 
 
@@ -29,7 +28,6 @@ def get_doc(view, stages, query):
     # Stage 'alter_result' will run on each related object.
     wf.loop.fill_result_object_related(res_obj, stages)
 
-    results = wf.execute_stage(view, stages, 'alter_results', results)
     return results.serialise()
 
 

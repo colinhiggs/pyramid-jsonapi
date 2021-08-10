@@ -135,31 +135,9 @@ def get_alter_handler(view, obj, pdata, stage_name='alter_result'):
 
 
 def permission_handler(endpoint_name, stage_name):
-    def apply_results_filter(results, stage_name, view):
-        try:
-            filter = results.view.permission_filter('get', stage_name)
-        except KeyError:
-            return results
-        results.filter(filter)
-        try:
-            obj = results.objects[0].object
-        except IndexError:
-            pass
-        return results
-
-    def get_alter_results_handler(view, results, pdata):
-        apply_results_filter(results, 'alter_results', view)
-        if not results.many and results.rejected_objects:
-            raise HTTPNotFound('No item {} in {}'.format(view.obj_id, view.collection_name))
-        for obj in results.objects:
-            for (rel_name, rel_results) in obj.related.items():
-                apply_results_filter(rel_results, 'alter_results', view)
-        return results
-
     handlers = {
         'get': {
             'alter_result': get_alter_handler,
-            'alter_results': get_alter_results_handler,
         }
     }
     for ep in ('collection_get', 'related_get', 'relationships_get'):

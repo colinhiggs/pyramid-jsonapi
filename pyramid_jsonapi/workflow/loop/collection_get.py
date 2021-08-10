@@ -11,7 +11,6 @@ stages = (
     'alter_query',
     'alter_result',
     'alter_related_query',
-    'alter_results',
 )
 
 
@@ -66,8 +65,5 @@ def workflow(view, stages):
     # Stage 'alter_result' will run on each object.
     for res_obj in results.objects:
         wf.loop.fill_result_object_related(res_obj, stages)
-
-    # A chance to alter the complete set of results before they are serialised.
-    results = wf.execute_stage(view, stages, 'alter_results', results)
 
     return results.serialise()

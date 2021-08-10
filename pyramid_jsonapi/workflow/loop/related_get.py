@@ -19,7 +19,6 @@ stages = (
     'alter_query',
     'alter_result',
     'alter_related_query',
-    'alter_results',
 )
 
 
@@ -88,7 +87,7 @@ def get_results(view, stages):
     for res_obj in results.objects:
         wf.loop.fill_result_object_related(res_obj, rel_stages)
 
-    return wf.execute_stage(view, stages, 'alter_results', results)
+    return results
 
 
 def workflow(view, stages):
