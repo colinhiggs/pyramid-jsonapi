@@ -1446,7 +1446,6 @@ class CollectionViewBase:
             pass
         return view_instance
 
-
     @classmethod
     def _add_stage_handler(
         cls, view_method, stage_name, hfunc,
@@ -1476,7 +1475,6 @@ class CollectionViewBase:
         else:
             stage.insert(stage.index(add_after) + 1, hfunc)
 
-
     @classmethod
     def add_stage_handler(
         cls, methods, stages, hfunc,
@@ -1501,7 +1499,6 @@ class CollectionViewBase:
                 cls._add_stage_handler(
                     vm_name, stage_name, hfunc, add_after, add_existing,
                 )
-
 
     @staticmethod
     def true_filter(*args, **kwargs):

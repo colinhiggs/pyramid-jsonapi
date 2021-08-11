@@ -26,6 +26,7 @@ stages = (
     'before_write_item',
 )
 
+
 def get_one_altered_result_object(view, stages, query):
     res_obj = wf.execute_stage(
         view, stages, 'alter_result',

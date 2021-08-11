@@ -5,6 +5,7 @@ from pyramid.httpexceptions import (
 import pyramid_jsonapi.workflow as wf
 from . import stages
 
+
 def get_doc(view, stages, query):
     query = wf.execute_stage(
         view, stages, 'alter_query', query

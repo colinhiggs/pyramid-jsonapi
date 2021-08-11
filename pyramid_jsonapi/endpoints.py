@@ -93,8 +93,8 @@ class EndpointData():
         # Optional 'http_method' keys: renderer
         self.endpoints = {
             'method_sets': {
-                'read': { 'GET' },
-                'write': { 'POST', 'PATCH', 'DELETE' },
+                'read': {'GET'},
+                'write': {'POST', 'PATCH', 'DELETE'},
             },
             'query_parameters': {
                 'fields': '',
