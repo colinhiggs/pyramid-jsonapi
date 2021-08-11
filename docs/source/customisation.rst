@@ -306,7 +306,8 @@ particular http method, use ``pj.endpoint_data.http_to_view_methods``:
   )
 
 The above would append ``hfunc`` to the stage ``alter_request`` for all of the
-view methods associated with the http method ``post``.
+view methods associated with the http method ``post`` (``collection_post``,
+``relationships_post``).
 
 If you do want to get directly at a stage deque, you can get it with something
 like:
