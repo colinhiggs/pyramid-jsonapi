@@ -273,35 +273,77 @@ Stages and the Workflow
 
 ``pyramid_jsonapi`` services requests in stages. These stages are sequences of
 functions implemented as a :class:`collections.deque` for each stage on each
-method of each view class. For example, the deque for the ``alter_request``
-stage of the ``collection_post()`` method for the view class associated with
-``models.Person`` could be accessed with
+method of each view class. It is possible to add (or remove) functions to those
+deques directly but it is recommended that you use one of two utility functions
+instead:
+
+.. code-block:: python
+
+  view_class.add_stage_handler(
+      'collection_get', 'alter_document', hfunc,
+      add_after='end',  # 'end' is the default
+      add_existing=False,   # False is the default
+  )
+
+will append ``hfunc`` to the deque for the stage ``alter_document`` of
+``view_class``'s method ``collection_get``. ``add_after`` can be ``'end'`` to
+append to the deque, ``'start'`` to appendleft, or an existing handler in the
+deque to insert after it. ``add_existing`` is a boolean determining whether the
+handler should be added to the deque even if it exists there already.
+
+You can add handlers for multiple stages and all of the view methods associated
+with an http method (the ``get`` http method is associated with the view
+methods ``get``, ``collection_get`` and others, for example).
+
+.. code-block:: python
+
+  add_stage_handler_by_http_method(
+    cls, ['post', 'patch', 'delete'], ['alter_request'], hfunc,
+    add_after='end',
+    add_existing=False,
+  )
+
+The above would append ``hfunc`` to the stage ``alter_request`` for all of the
+view methods associated with the http methods ``post``, ``patch``, and
+``delete`` (you can also use the shortcut ``write`` to represent that set).
+
+If you do want to get directly at a stage deque, you can get it with something
+like:
 
 .. code-block:: python
 
   ar_stage = pj.view_classes[models.Person].collection_post.stages['alter_request']
 
-You can add your own functions
-using ``.append()`` or ``.appendleft()``, remove them with ``.pop()`` or
-``.popleft()`` and so on. The functions in each stage deque will be called in
+The handler functions in each stage deque will be called in
 order at the appropriate point and should have the following signature:
 
 .. code-block:: python
 
-  def handler_function(view_instance, argument, previous_data):
+  def handler_function(argument, view_instance, stage, view_method):
     # some function definition...
     return same_type_of_thing_as_argument
 
 ``argument`` in the ``alter_request`` stage would be a request, for example,
-while in ``alter_document`` it would be a document object.
+while in ``alter_document`` it would be a document object. ``argument`` and
+``view_instance`` are passed positionally while ``stage`` and ``view_method``
+are keyword arguments.
 
 For example, let's say you would like to alter all posts to the people
 collection so that a created_on_server attribute is populated automatically.
 
 .. code-block:: python
 
-  def created_on_server_handler(view, request, prev):
-    request.json_data['data']
+  import socket
+
+  def sh_created_on_server(req, view, **kwargs):
+    obj_data = req.json_data['data']
+    obj_data['attributes']['created_on_server'] = socket.gethostname()
+    req.body = json.dumps({'data': obj_data}).encode()
+    return req
+
+  pj.view_classes[models.Person].add_stage_handler(
+    'collection_post', 'alter_request',
+  )
 
 The stages are run in the following order:
 
@@ -333,18 +375,31 @@ The default workflow is the ``loop`` workflow. It defines the following stages:
 * ``before_write_item``. Alter a sqlalchemy orm item before it is written
   (flushed) to the database.
 
-Authorisation
--------------
+Authorisation at the Object Level
+---------------------------------
 
-There are stage functions available for stages which handle most of the logic of
-authorisation. To use them, you must first load them into the appropriate stage
-deque(s). :func:`pyramid_jsonapi.PyramidJSONAPI.enable_permission_handlers` will
-do that.
+Authorisation of access a the object level can quite complicated in typical
+JSONAPI apis. The complexity arises from the connecting nature of relationships.
+Every operation on an object with relationships implies other operations on any
+related objects. The simplest example is ``GET``: ``get`` permission is required
+on any object directly fetched and *also* on any related object fetched. More
+complicated is any write based operation. For example, to update the owner of a
+blog, you need ``patch`` permission on ``blog_x.owner``, ``post`` permission on
+``new_owner.blogs`` (to add ``blog_x`` to the reverse relationship) and
+``delete`` permission on ``old_owner.blogs`` (to remove ``blog_x`` from the
+reverse relationship).
 
-These handlers call permission filters to determine whether or not an action is
-permitted. The default permission filters allow everything, which is the same
-as not having any permission handlers at all. Permission filters should be
-registered with :func:`CollectionView.register_permission_filter`.
+There are stage handlers available for stages which handle most of the logic of
+authorisation. The remaining logic is provided by permission filters which you
+provide. The job of a permission filter is to decide, for an individual object,
+whether the specified operation is allowed on that object or not. The permission
+handler built in to pyramid_jsonapi will call the permission filters at the
+appropriate times (including for related objects) and then stitch the answers
+back together into a coherent, authorised whole.
+
+The default permission filters allow everything, which is the same as not having
+any permission handlers at all. Permission filters should be registered with
+:func:`CollectionView.register_permission_filter`.
 
 Note that you supply the lists of permissions and stages handled by the
 permission filter function so you can either write functions that are quite
@@ -375,8 +430,8 @@ from the loop workflow, on the other hand, will pass a
 object (which you can get to as ``object_rep.object``).
 
 Note that you can get the current sqlAlchemy session from
-``view_instance.dbsession`` (which you might need to make the queries required
-for authorisation) and the pyramid request from ``view_instance.request`` which
+``view.dbsession`` (which you might need to make the queries required
+for authorisation) and the pyramid request from ``view.request`` which
 should give you access to the usual things.
 
 The simplest thing that a permission filter can do is return ``True``
@@ -405,10 +460,6 @@ they come from the database. You might have something like this in
 .. code-block:: python
 
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
-  pj.enable_permission_handlers(
-    ['get'],
-    ['alter_result']
-  )
   pj.view_classes[models.Blogs].register_permission_filter(
     ['get'],
     ['alter_result'],
@@ -423,7 +474,6 @@ database update). You might do something like this in ``__init__.py``:
 .. code-block:: python
 
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
-  pj.enable_permission_handlers(['PATCH'], ['alter_request'])
   def patch_posts_filter(data, view, **kwargs):
     post_obj = view.db_session.get(models.Posts, data['id']) # sqlalchemy 1.4+
     # post_obj = view.db_session.query(models.Posts).get(data['id']) # sqlalchemy < 1.4
@@ -443,10 +493,6 @@ permission filter - we must use the fuller return format.
 .. code-block:: python
 
   pj = pyramid_jsonapi.PyramidJSONAPI(config, models)
-  pj.enable_permission_handlers(
-    ['get'],
-    ['alter_result']
-  )
 
   def get_person_filter(person, view, **kwargs):
     # This could be done in one 'if' but we split it out here for clarity.
@@ -477,16 +523,3 @@ permission filter - we must use the fuller return format.
 
 What Happens With Authorisation Failures
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Authorisation and Relationships
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Authorisation can get quite complicated around relationships. Every operation on
-an object with relationships implies other operations on any related objects.
-The simplest example is ``GET``: ``get`` permission is required on any object
-directly fetched and *also* on any related object fetched. More complicated is
-any write based operation. For example, to update the owner of a blog, you need
-``patch`` permission on ``blog_x.owner``, ``post`` permission on
-``new_owner.blogs`` (to add ``blog_x`` to the reverse relationship) and
-``delete`` permission on ``old_owner.blogs`` (to remove ``blog_x`` from the
-reverse relationship).
