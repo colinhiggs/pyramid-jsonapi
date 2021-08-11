@@ -82,7 +82,6 @@ class CollectionViewBase:
     view_classes = None
     settings = None
     permission_filters = None
-    permission_handlers = None
 
     def __init__(self, request):
         self.request = request
@@ -1446,6 +1445,67 @@ class CollectionViewBase:
         except AttributeError:
             pass
         return view_instance
+
+
+    @classmethod
+    def add_stage_handler(
+        cls, view_method, stage_name, hfunc,
+        add_existing=False,
+        add_after='end'
+    ):
+        '''
+        Add a stage handler to a stage of a view method.
+        '''
+        vm_func = getattr(cls, view_method)
+        try:
+            stage = vm_func.stages[stage_name]
+        except KeyError:
+            raise KeyError(
+                f'Endpoint {view_method} has no stage {stage_name}.'
+            )
+        try:
+            index = stage.index(hfunc)
+        except ValueError:
+            index = False
+        if index and not add_existing:
+            return
+        if add_after == 'start':
+            stage.appendleft(hfunc)
+        elif add_after == 'end':
+            stage.append(hfunc)
+        else:
+            stage.insert(stage.index(add_after) + 1, hfunc)
+
+
+    @classmethod
+    def add_stage_handler_by_http_method(
+        cls, methods, stages, hfunc,
+        add_existing=False,
+        add_after='end'
+    ):
+        '''
+        Add a stage handler to view methods implied by http methods.
+
+        Arguments:
+            methods: an iterable of http method names (``get``, ``post`` etc.).
+            stages: an iterable of stage names.
+            hfunc: the handler function.
+            add_existing: If True, add this handler even if it exists in the
+                deque.
+            add_after: 'start', 'end', or an existing function.
+        '''
+        vm_names = set()
+        for hm in methods:
+            vm_names.update(
+                self.endpoint_data.http_to_view_methods[hm.lower()]
+            )
+        for vm_name in vm_names:
+            vm_func = getattr(cls, vm_name)
+            for stage_name in stages:
+                cls.add_stage_handler(
+                    vm_name, stage_name, hfunc, add_existing, add_after
+                )
+
 
     @staticmethod
     def true_filter(*args, **kwargs):
