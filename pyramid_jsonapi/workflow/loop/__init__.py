@@ -115,9 +115,9 @@ def fill_result_object_related(res_obj, stages):
             )
 
 
-def get_alter_handler(view, obj, pdata, stage_name='alter_result'):
+def shp_get_alter_result(obj, view, stage, view_method):
     reason = "Permission denied."
-    predicate = view.permission_filter('get', stage_name)
+    predicate = view.permission_filter('get', stage)
     # pred = view.permission_to_dict(predicate(obj))
     pred = predicate(obj)
     if pred['id']:
@@ -145,7 +145,7 @@ def get_alter_handler(view, obj, pdata, stage_name='alter_result'):
 def permission_handler(endpoint_name, stage_name):
     handlers = {
         'get': {
-            'alter_result': get_alter_handler,
+            'alter_result': shp_get_alter_result,
         }
     }
     for ep in ('collection_get', 'related_get', 'relationships_get'):

@@ -408,7 +408,7 @@ class PyramidJSONAPI():
                         view_class.permission_handler(ep_name, stage_name)
                     )
                 ep_func.stages['alter_document'].append(
-                    wf.alter_document_add_denied
+                    wf.sh_alter_document_add_denied
                 )
 
 

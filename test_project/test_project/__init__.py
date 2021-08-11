@@ -72,12 +72,12 @@ def main(global_config, **settings):
 
     person_view = pj.view_classes[models.Person]
     blogs_view = pj.view_classes[models.Blog]
-    def add_some_info(view, doc, pdata):
+    def sh_add_some_info(doc, view, stage, view_method):
         doc['meta']['added'] = 'some random info'
         return doc
 
     # Add some random information via the alter_document stage.
-    person_view.get.stages['alter_document'].append(add_some_info)
+    person_view.get.stages['alter_document'].append(sh_add_some_info)
 
     # Apply GET permission handlers at the alter_direct_results and
     # alter_related_results stages.

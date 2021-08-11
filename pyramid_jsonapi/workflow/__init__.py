@@ -48,6 +48,7 @@ def make_method(name, api):
 
     # Set up the stages.
     stages = {
+        '_view_method_name': name,
         'validate_request': deque(),
         'alter_request': deque(),
         'alter_document': deque(),
@@ -59,16 +60,16 @@ def make_method(name, api):
         # stage_order.append(stage_name)
     # stage_order.append('alter_results')
     # stage_order.append('validate_response')
-    stages['validate_request'].append(validate_request_headers)
-    stages['validate_request'].append(validate_request_valid_json)
-    stages['validate_request'].append(validate_request_common_validity)
-    stages['validate_request'].append(validate_request_object_exists)
-    stages['alter_request'].append(alter_request_add_info)
-    stages['alter_document'].append(alter_document_self_link)
+    stages['validate_request'].append(sh_validate_request_headers)
+    stages['validate_request'].append(sh_validate_request_valid_json)
+    stages['validate_request'].append(sh_validate_request_common_validity)
+    stages['validate_request'].append(sh_validate_request_object_exists)
+    stages['alter_request'].append(sh_alter_request_add_info)
+    stages['alter_document'].append(sh_alter_document_self_link)
     if name.endswith('get'):
-        stages['alter_document'].append(alter_document_add_returned_count)
+        stages['alter_document'].append(sh_alter_document_add_returned_count)
     if api.settings.debug_meta:
-        stages['alter_document'].append(alter_document_debug_info)
+        stages['alter_document'].append(sh_alter_document_debug_info)
 
     # Stack the deques.
     for stage_name, stage_deque in stages.items():
@@ -185,11 +186,14 @@ def partition(items, predicate=bool):
     return (trues, falses)
 
 
-def execute_stage(view, stages, stage_name, arg, previous_data=None):
+def execute_stage(view, stages, stage_name, arg):
     for handler in stages[stage_name]:
-        arg = handler(view, arg, previous_data)
-    if previous_data is not None:
-        previous_data[stage_name] = arg
+        arg = handler(
+            # view, arg, None
+            arg, view,
+            stage=stage_name,
+            view_method=stages['_view_method_name'],
+        )
     return arg
 
 
@@ -205,7 +209,7 @@ def partition_doc_data(doc_data, partitioner):
     return accepted, rejected
 
 
-def get_alter_document_handler(view, doc, pdata):
+def shp_get_alter_document(doc, view, stage, view_method):
     data = doc['data']
     # Make it so that the data part is always a list for later code DRYness.
     # We'll put it back the way it was later. Honest ;-).
@@ -280,7 +284,7 @@ def get_alter_document_handler(view, doc, pdata):
     return doc
 
 
-def collection_post_alter_request_handler(view, request, pdata):
+def shp_collection_post_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
         pfilter = view.permission_filter('post', 'alter_request')
@@ -350,7 +354,7 @@ def collection_post_alter_request_handler(view, request, pdata):
     return request
 
 
-def relationships_post_alter_request_handler(view, request, pdata):
+def shp_relationships_post_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
         pfilter = view.permission_filter('post', 'alter_request')
@@ -596,7 +600,7 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
     return rel_dict
 
 
-def patch_alter_request_handler(view, request, pdata):
+def shp_patch_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
         pfilter = view.permission_filter('patch', 'alter_request')
@@ -634,7 +638,7 @@ def patch_alter_request_handler(view, request, pdata):
     return request
 
 
-def relationships_patch_alter_request_handler(view, request, pdata):
+def shp_relationships_patch_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
         pfilter = view.permission_filter('patch', 'alter_request')
@@ -699,7 +703,7 @@ def ar_check_mirror_rel_perms(view, permission, rel, rel_dict, item_or_id=None):
     return report
 
 
-def delete_alter_request_handler(view, request, pdata):
+def shp_delete_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
         pfilter = view.permission_filter('delete', 'alter_request')
@@ -740,7 +744,7 @@ def delete_alter_request_handler(view, request, pdata):
     return request
 
 
-def relationships_delete_alter_request_handler(view, request, pdata):
+def shp_relationships_delete_alter_request(request, view, stage, view_method):
     try:
         pfilter = partial(
             view.permission_filter('delete', 'alter_request'),
@@ -772,34 +776,34 @@ def relationships_delete_alter_request_handler(view, request, pdata):
 
 permission_handlers = {
     'get': {
-        'alter_document': get_alter_document_handler,
+        'alter_document': shp_get_alter_document,
     },
     'collection_get': {
-        'alter_document': get_alter_document_handler,
+        'alter_document': shp_get_alter_document,
     },
     'related_get': {
-        'alter_document': get_alter_document_handler,
+        'alter_document': shp_get_alter_document,
     },
     'relationships_get': {
-        'alter_document': get_alter_document_handler,
+        'alter_document': shp_get_alter_document,
     },
     'collection_post': {
-        'alter_request': collection_post_alter_request_handler,
+        'alter_request': shp_collection_post_alter_request,
     },
     'relationships_post': {
-        'alter_request': relationships_post_alter_request_handler,
+        'alter_request': shp_relationships_post_alter_request,
     },
     'patch': {
-        'alter_request': patch_alter_request_handler,
+        'alter_request': shp_patch_alter_request,
     },
     'relationships_patch': {
-        'alter_request': relationships_patch_alter_request_handler,
+        'alter_request': shp_relationships_patch_alter_request,
     },
     'delete': {
-        'alter_request': delete_alter_request_handler,
+        'alter_request': shp_delete_alter_request,
     },
     'relationships_delete': {
-        'alter_request': relationships_delete_alter_request_handler,
+        'alter_request': shp_relationships_delete_alter_request,
     }
 }
 
@@ -823,7 +827,7 @@ def get_jsonapi_accepts(request):
     }
 
 
-def validate_request_headers(view, request, data):
+def sh_validate_request_headers(request, view, stage, view_method):
     """Check that request headers comply with spec.
 
     Raises:
@@ -851,7 +855,7 @@ def validate_request_headers(view, request, data):
     return request
 
 
-def validate_request_valid_json(view, request, data):
+def sh_validate_request_valid_json(request, view, stage, view_method):
     """Check that the body of any request is valid JSON.
 
     Raises:
@@ -866,7 +870,7 @@ def validate_request_valid_json(view, request, data):
     return request
 
 
-def validate_request_common_validity(view, request, data):
+def sh_validate_request_common_validity(request, view, stage, view_method):
     """Perform common request validity checks."""
 
     if request.content_length and view.api.settings.schema_validation:
@@ -888,7 +892,7 @@ def validate_request_common_validity(view, request, data):
     return request
 
 
-def validate_request_object_exists(view, request, data):
+def sh_validate_request_object_exists(request, view, stage, view_method):
     """Make sure that id exists in collection for all urls specifying an id."""
     if view.obj_id is not None:
         if not view.object_exists(view.obj_id):
@@ -896,14 +900,14 @@ def validate_request_object_exists(view, request, data):
     return request
 
 
-def alter_document_self_link(view, doc, data):
+def sh_alter_document_self_link(doc, view, stage, view_method):
     """Include a self link unless the method is PATCH."""
     if view.request.method != 'PATCH':
         doc.update_child('links', {'self': view.request.url})
     return doc
 
 
-def alter_document_debug_info(view, doc, data):
+def sh_alter_document_debug_info(doc, view, stage, view_method):
     """Potentially add some debug information."""
     debug = {
         'accept_header': {
@@ -920,7 +924,7 @@ def alter_document_debug_info(view, doc, data):
     return doc
 
 
-def alter_document_add_returned_count(view, doc, data):
+def sh_alter_document_add_returned_count(doc, view, stage, view_method):
     """Add the returned count to meta."""
     # Don't add a returned count unless we're returning an array of objects.
     if not isinstance(doc['data'], abc.Sequence):
@@ -937,7 +941,7 @@ def alter_document_add_returned_count(view, doc, data):
     return doc
 
 
-def alter_document_add_denied(view, doc, data):
+def sh_alter_document_add_denied(doc, view, stage, view_method):
     try:
         meta = doc['meta']
     except KeyError:
@@ -954,7 +958,7 @@ def alter_document_add_denied(view, doc, data):
     return doc
 
 
-def alter_request_add_info(view, request, data):
+def sh_alter_request_add_info(request, view, stage, view_method):
     """Add information commonly used in view operations."""
 
     # Extract id and relationship from route, if provided
