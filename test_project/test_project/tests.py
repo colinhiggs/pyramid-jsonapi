@@ -221,10 +221,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['read'],
-            ['alter_result']
-        )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['read'],
@@ -239,10 +235,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item_individual_attributes(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
                 return {'attributes': {'name'}, 'relationships': True}
@@ -261,10 +253,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item_individual_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         def pfilter(obj, *args, **kwargs):
             if obj.object.name == 'alice':
                 return {'attributes': True, 'relationships': {'blogs'}}
@@ -283,10 +271,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item_rel_ids(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
@@ -301,10 +285,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item_included_items(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         # Not allowed to see blogs/1 (one of alice's 2 blogs)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
@@ -321,10 +301,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_collection(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
@@ -341,10 +317,6 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_collection_meta_info(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
@@ -362,10 +334,6 @@ class TestPermissions(DBTestBase):
         '''
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['get'],
-            ['alter_result', ]
-        )
         # Not allowed to see blog with title 'main: alice' (aka blogs/1)
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['get'],
@@ -389,10 +357,6 @@ class TestPermissions(DBTestBase):
     def test_post_alterreq_collection(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['write'],
-            ['alter_request']
-        )
         # Not allowed to post the name "forbidden"
         def pfilter(obj, *args, **kwargs):
             return obj['attributes'].get('name') != 'forbidden'
@@ -432,10 +396,6 @@ class TestPermissions(DBTestBase):
     def test_post_alterreq_collection_with_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['write'],
-            ['alter_request']
-        )
         def blogs_pfilter(obj, *args, **kwargs):
             return {'attributes': True, 'relationships': True}
         pj.view_classes[test_project.models.Blog].register_permission_filter(
@@ -566,10 +526,6 @@ class TestPermissions(DBTestBase):
     def test_post_alterreq_relationship(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['write'],
-            ['alter_request']
-        )
         def blogs_pfilter(obj, *args, **kwargs):
             if obj['id'] == '12':
                 return False
@@ -662,10 +618,6 @@ class TestPermissions(DBTestBase):
     def test_patch_alterreq_item_with_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['write'],
-            ['alter_request']
-        )
         def blogs_pfilter(obj, **kwargs):
             return {'attributes': True, 'relationships': True}
         pj.view_classes[test_project.models.Blog].register_permission_filter(
@@ -861,10 +813,6 @@ class TestPermissions(DBTestBase):
     def test_patch_alterreq_relationships(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        pj.enable_permission_handlers(
-            ['write'],
-            ['alter_request']
-        )
         def people_pfilter(obj, **kwargs):
             if obj['id'] == '1':
                 return False

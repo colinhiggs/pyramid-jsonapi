@@ -324,6 +324,11 @@ class PyramidJSONAPI():
                 self.endpoint_data.endpoints['method_sets']['write']
             }
         )
+        class_attrs['permission_handlers'] = {
+            ep.lower(): {} for ep in
+            self.endpoint_data.http_to_view_methods['all']
+        }
+
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
         # fields is atts + hybrid_atts + relationships
@@ -400,6 +405,8 @@ class PyramidJSONAPI():
             for ep_name in ep_names:
                 ep_func = getattr(view_class, ep_name)
                 for stage_name in stage_names:
+                    if view_class.permission_handlers[ep_name].get(stage_name):
+                        continue
                     try:
                         stage = ep_func.stages[stage_name]
                     except KeyError:
@@ -407,6 +414,7 @@ class PyramidJSONAPI():
                     stage.append(
                         view_class.permission_handler(ep_name, stage_name)
                     )
+                    view_class.permission_handlers[ep_name][stage_name] = ep_func
                 ep_func.stages['alter_document'].append(
                     wf.sh_alter_document_add_denied
                 )

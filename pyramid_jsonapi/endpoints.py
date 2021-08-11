@@ -354,5 +354,6 @@ class EndpointData():
         ep_map['read'] = set()
         for m in map(str.lower, self.endpoints['method_sets']['read']):
             ep_map['read'] |= ep_map[m]
+        ep_map['all'] = ep_map['read'] | ep_map['write']
 
         return ep_map

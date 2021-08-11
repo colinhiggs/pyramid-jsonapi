@@ -82,6 +82,7 @@ class CollectionViewBase:
     view_classes = None
     settings = None
     permission_filters = None
+    permission_handlers = None
 
     def __init__(self, request):
         self.request = request
@@ -1493,6 +1494,7 @@ class CollectionViewBase:
                 perms.extend(cls.api.endpoint_data.endpoints['method_sets'][p])
             else:
                 perms.append(p)
+        cls.api.enable_permission_handlers(perms, stages)
         for stage_name in stages:
             for perm in perms:
                 perm = perm.lower()
