@@ -405,7 +405,7 @@ class PyramidJSONAPI():
                 )
                 for stage_name in stage_names:
                     view_class.add_stage_handler(
-                        ep_name, stage_name,
+                        [ep_name], [stage_name],
                         view_class.permission_handler(ep_name, stage_name)
                     )
 

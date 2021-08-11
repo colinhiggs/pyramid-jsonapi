@@ -274,38 +274,39 @@ Stages and the Workflow
 ``pyramid_jsonapi`` services requests in stages. These stages are sequences of
 functions implemented as a :class:`collections.deque` for each stage on each
 method of each view class. It is possible to add (or remove) functions to those
-deques directly but it is recommended that you use one of two utility functions
-instead:
+deques directly but it is recommended that you use the following utility
+function instead:
 
 .. code-block:: python
 
   view_class.add_stage_handler(
-      'collection_get', 'alter_document', hfunc,
+      ['get', 'collection_get'], ['alter_document'], hfunc,
       add_after='end',  # 'end' is the default
       add_existing=False,   # False is the default
   )
 
-will append ``hfunc`` to the deque for the stage ``alter_document`` of
-``view_class``'s method ``collection_get``. ``add_after`` can be ``'end'`` to
-append to the deque, ``'start'`` to appendleft, or an existing handler in the
-deque to insert after it. ``add_existing`` is a boolean determining whether the
-handler should be added to the deque even if it exists there already.
+will append ``hfunc`` to the deque for the ``alter_document`` stage of
+``view_class``'s methods ``get`` and ``collection_get``. ``add_after`` can be
+``'end'`` to append to the deque, ``'start'`` to appendleft, or an existing
+handler in the deque to insert after it. ``add_existing`` is a boolean
+determining whether the handler should be added to the deque even if it exists
+there already.
 
-You can add handlers for multiple stages and all of the view methods associated
-with an http method (the ``get`` http method is associated with the view
-methods ``get``, ``collection_get`` and others, for example).
+To register a handler for all of the view methods involved in servicing a
+particular http method, use ``pj.endpoint_data.http_to_view_methods``:
 
 .. code-block:: python
 
-  add_stage_handler_by_http_method(
-    cls, ['post', 'patch', 'delete'], ['alter_request'], hfunc,
-    add_after='end',
-    add_existing=False,
+  view_class.add_stage_handler(
+      api_instance.endpoint_data.http_to_view_methods['post'],
+      ['alter_request'],
+      hfunc,
+      add_after='end',  # 'end' is the default
+      add_existing=False,   # False is the default
   )
 
 The above would append ``hfunc`` to the stage ``alter_request`` for all of the
-view methods associated with the http methods ``post``, ``patch``, and
-``delete`` (you can also use the shortcut ``write`` to represent that set).
+view methods associated with the http method ``post``.
 
 If you do want to get directly at a stage deque, you can get it with something
 like:
@@ -342,7 +343,7 @@ collection so that a created_on_server attribute is populated automatically.
     return req
 
   pj.view_classes[models.Person].add_stage_handler(
-    'collection_post', 'alter_request',
+    ['collection_post'], ['alter_request'],
   )
 
 The stages are run in the following order:

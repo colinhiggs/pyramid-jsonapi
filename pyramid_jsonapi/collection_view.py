@@ -1448,7 +1448,7 @@ class CollectionViewBase:
 
 
     @classmethod
-    def add_stage_handler(
+    def _add_stage_handler(
         cls, view_method, stage_name, hfunc,
         add_after='end',
         add_existing=False,
@@ -1478,32 +1478,28 @@ class CollectionViewBase:
 
 
     @classmethod
-    def add_stage_handler_by_http_method(
+    def add_stage_handler(
         cls, methods, stages, hfunc,
         add_after='end',
         add_existing=False,
     ):
         '''
-        Add a stage handler to view methods implied by http methods.
+        Add a stage handler to stages of view methods.
 
         Arguments:
-            methods: an iterable of http method names (``get``, ``post`` etc.).
+            methods: an iterable of view method names (``get``,
+                ``collection_get`` etc.).
             stages: an iterable of stage names.
             hfunc: the handler function.
             add_existing: If True, add this handler even if it exists in the
                 deque.
             add_after: 'start', 'end', or an existing function.
         '''
-        vm_names = set()
-        for hm in methods:
-            vm_names.update(
-                self.endpoint_data.http_to_view_methods[hm.lower()]
-            )
-        for vm_name in vm_names:
+        for vm_name in methods:
             vm_func = getattr(cls, vm_name)
             for stage_name in stages:
-                cls.add_stage_handler(
-                    vm_name, stage_name, hfunc, add_existing, add_after
+                cls._add_stage_handler(
+                    vm_name, stage_name, hfunc, add_after, add_existing,
                 )
 
 
