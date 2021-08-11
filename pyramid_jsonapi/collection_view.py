@@ -1450,8 +1450,8 @@ class CollectionViewBase:
     @classmethod
     def add_stage_handler(
         cls, view_method, stage_name, hfunc,
+        add_after='end',
         add_existing=False,
-        add_after='end'
     ):
         '''
         Add a stage handler to a stage of a view method.
@@ -1480,8 +1480,8 @@ class CollectionViewBase:
     @classmethod
     def add_stage_handler_by_http_method(
         cls, methods, stages, hfunc,
+        add_after='end',
         add_existing=False,
-        add_after='end'
     ):
         '''
         Add a stage handler to view methods implied by http methods.
