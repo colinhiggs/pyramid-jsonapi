@@ -184,10 +184,10 @@ class DBTestBase(unittest.TestCase):
 class TestTmp(DBTestBase):
     '''To isolate tests so they can be run individually during development.'''
 
-    def test_ep_map(self):
-        test_app = self.test_app({})
-        pj = test_app._pj_app.pj
-        print(pj.endpoint_data.http_to_view_methods)
+    # def test_ep_map(self):
+    #     test_app = self.test_app({})
+    #     pj = test_app._pj_app.pj
+    #     print(pj.endpoint_data.http_to_view_methods)
 
     # @parameterized.expand(rel_infos[1:2], doc_func=rels_doc_func)
     # def test_rels_related_get(self, src, tgt, comment):
