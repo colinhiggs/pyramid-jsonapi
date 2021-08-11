@@ -118,7 +118,8 @@ def fill_result_object_related(res_obj, stages):
 def get_alter_handler(view, obj, pdata, stage_name='alter_result'):
     reason = "Permission denied."
     predicate = view.permission_filter('get', stage_name)
-    pred = view.permission_to_dict(predicate(obj))
+    # pred = view.permission_to_dict(predicate(obj))
+    pred = predicate(obj)
     if pred['id']:
         reject_atts = obj.attribute_mask - pred['attributes']
         obj.attribute_mask &= pred['attributes']
