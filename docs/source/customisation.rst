@@ -357,9 +357,9 @@ Permission filters will be called from within the code like this:
 
   your_filter(
     object_rep,
-    view_instance=view,
-    stage_name=stage_name,
-    permission_sought=perm,
+    view=view_instance,
+    stage=stage_name,
+    permission=permission_sought,
   )
 
 Where ``object_rep`` is some representation of the object to be authorised,
