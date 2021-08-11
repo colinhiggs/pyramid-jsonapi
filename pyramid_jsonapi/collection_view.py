@@ -1483,7 +1483,7 @@ class CollectionViewBase:
     @classmethod
     def register_permission_filter(cls, permissions, stages, pfunc):
         # Permission filters should have the signature:
-        #   pfunc(object_rep, view_instance, permission_sought, stage_name)
+        #   pfunc(object_rep, view, stage, permission)
 
         # expand out 'read' and 'write' http method sets into individual
         # permissions.
@@ -1502,9 +1502,9 @@ class CollectionViewBase:
                     return view.permission_to_dict(
                         pfunc(
                             object_rep,
-                            view_instance=view,
-                            stage_name=stage_name,
-                            permission_sought=perm,
+                            view=view,
+                            stage=stage_name,
+                            permission=perm,
                         )
                     )
                 cls.permission_filters[perm][stage_name] = dictified_pfunc

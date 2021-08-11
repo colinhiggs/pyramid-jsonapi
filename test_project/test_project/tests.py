@@ -582,9 +582,9 @@ class TestPermissions(DBTestBase):
         )
         # /people: allow POST to all atts and to 3 relationships.
         def people_pfilter(obj, *args, **kwargs):
-            if kwargs['permission_sought'] == 'delete' and obj['id'] == '20':
+            if kwargs['permission'] == 'delete' and obj['id'] == '20':
                 return False
-            if kwargs['permission_sought'] == 'post' and obj['id'] == '12':
+            if kwargs['permission'] == 'post' and obj['id'] == '12':
                 return False
             return {
                 'attributes': True,
