@@ -4,11 +4,10 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Developing pyramid-jsonapi &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  <title>Developing pyramid-jsonapi &mdash; pyramid_jsonapi 2.2.1 documentation</title>
   
 
   
@@ -67,7 +66,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.2.1
               </div>
             
           
@@ -181,9 +180,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="developing-pyramid-jsonapi">
+  <div class="section" id="developing-pyramid-jsonapi">
 <span id="developing"></span><h1>Developing pyramid-jsonapi<a class="headerlink" href="#developing-pyramid-jsonapi" title="Permalink to this headline">¶</a></h1>
-<section id="development">
+<div class="section" id="development">
 <h2>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
 <p>This project is set up to use <cite>tox</cite> to create a suitable testing environment.
 You must first install <cite>tox</cite> - either system-wide, or in it’s own virtualenv:</p>
@@ -203,19 +202,19 @@ These contain all of the dependencies for both the project and testing, as well 
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> .tox/py3/bin/activate
 </pre></div>
 </div>
-</section>
-<section id="contribution">
+</div>
+<div class="section" id="contribution">
 <h2>Contribution<a class="headerlink" href="#contribution" title="Permalink to this headline">¶</a></h2>
 <p>All contributions are welcome!  You can contribute by making <em>pull requests</em> to
 the git repo: <a class="reference external" href="https://github.com/colinhiggs/pyramid-jsonapi">https://github.com/colinhiggs/pyramid-jsonapi</a></p>
 <p>Travis (<a class="reference external" href="https://travis-ci.org/colinhiggs/pyramid-jsonapi">https://travis-ci.org/colinhiggs/pyramid-jsonapi</a>) is run against
 all PRs and commits to ensure consistent, high-quality code.</p>
-<section id="tests">
+<div class="section" id="tests">
 <h3>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">unittest</span></code> tests should be created for all new code. Coverage can be reviewed at:
 <a class="reference external" href="https://coveralls.io/github/colinhiggs/pyramid-jsonapi">https://coveralls.io/github/colinhiggs/pyramid-jsonapi</a></p>
-</section>
-<section id="pep8">
+</div>
+<div class="section" id="pep8">
 <h3>PEP8<a class="headerlink" href="#pep8" title="Permalink to this headline">¶</a></h3>
 <p>Code should pass PEP8 validation:</p>
 <blockquote>
@@ -223,8 +222,8 @@ all PRs and commits to ensure consistent, high-quality code.</p>
 <li><p>long lines should be avoided, but not at the expense of readability. (<code class="docutils literal notranslate"><span class="pre">pycodestyle</span> <span class="pre">--ignore=E501</span></code> is used when testing).</p></li>
 </ul>
 </div></blockquote>
-</section>
-<section id="pylint">
+</div>
+<div class="section" id="pylint">
 <h3>pylint<a class="headerlink" href="#pylint" title="Permalink to this headline">¶</a></h3>
 <p>Code should pass pylint validation:</p>
 <blockquote>
@@ -232,23 +231,23 @@ all PRs and commits to ensure consistent, high-quality code.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">pylint:</span> <span class="pre">disable=xxx</span></code> is allowed where there is a clear reason for doing so. Please document as necessary.</p></li>
 </ul>
 </div></blockquote>
-</section>
-<section id="idiomatic-python">
+</div>
+<div class="section" id="idiomatic-python">
 <h3>Idiomatic Python<a class="headerlink" href="#idiomatic-python" title="Permalink to this headline">¶</a></h3>
 <p>Is to be preferred wherever possible.</p>
-</section>
-<section id="python-versions">
+</div>
+<div class="section" id="python-versions">
 <h3>Python Versions<a class="headerlink" href="#python-versions" title="Permalink to this headline">¶</a></h3>
 <p>Currently pyramid_jsonapi is built and tested against python 3. 3.4 or later is recommended.</p>
-</section>
-<section id="versioning">
+</div>
+<div class="section" id="versioning">
 <h3>Versioning<a class="headerlink" href="#versioning" title="Permalink to this headline">¶</a></h3>
 <p>Semantic versioning should be used, see
 <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/">PEP440 - Version Identification and Dependency Specification</a>
 for details.</p>
-</section>
-</section>
-<section id="documentation">
+</div>
+</div>
+<div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <p>Documentation is built using sphinx. This is done automatically using Travis for
 certain builds (e.g. tagged releases) and pushed to the <em>gh-pages</em> branch.</p>
@@ -258,8 +257,8 @@ certain builds (e.g. tagged releases) and pushed to the <em>gh-pages</em> branch
 </pre></div>
 </div>
 <p>Documentation will be written to <cite>docs/build/</cite> (in .gitignore).</p>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>

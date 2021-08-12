@@ -4,11 +4,10 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Getting Started &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  <title>Getting Started &mdash; pyramid_jsonapi 2.2.1 documentation</title>
   
 
   
@@ -67,7 +66,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.2.1
               </div>
             
           
@@ -174,13 +173,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="getting-started">
+  <div class="section" id="getting-started">
 <span id="id1"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<section id="installation">
+<div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <ul>
 <li><p>Stable releases are uploaded to pypi:
-<a class="reference external" href="https://pypi.python.org/pypi?:action=display&amp;name=pyramid_jsonapi">https://pypi.python.org/pypi?:action=display&amp;name=pyramid_jsonapi</a>. You
+<a class="reference external" href="https://pypi.org/project/pyramid-jsonapi/">https://pypi.org/project/pyramid-jsonapi/</a>. You
 can install it in the usual way:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -i pyramid_jsonapi
 </pre></div>
@@ -198,8 +197,8 @@ can install the latest one (perhaps into a virtualenv for play purposes) with</p
 <a class="reference external" href="https://github.com/colinhiggs/pyramid-jsonapi">https://github.com/colinhiggs/pyramid-jsonapi</a> and add the directory you
 downloaded/cloned to to your PYTHONPATH.</p></li>
 </ul>
-</section>
-<section id="generating-an-api-from-your-models">
+</div>
+<div class="section" id="generating-an-api-from-your-models">
 <h2>Generating an API From Your Models<a class="headerlink" href="#generating-an-api-from-your-models" title="Permalink to this headline">¶</a></h2>
 <p>First import the <code class="docutils literal notranslate"><span class="pre">pyramid_jsonapi</span></code> module and any model classes or modules which
 you would like to expose as API collection endpoints. In your application’s
@@ -237,8 +236,8 @@ constructed:</p>
 <span class="n">pj_api</span><span class="o">.</span><span class="n">create_jsonapi_using_magic_and_pixie_dust</span><span class="p">()</span>
 </pre></div>
 </div>
-</section>
-<section id="auto-create-assumptions">
+</div>
+<div class="section" id="auto-create-assumptions">
 <h2>Auto-Create Assumptions<a class="headerlink" href="#auto-create-assumptions" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Your model classes all inherit from a base class returned by sqlalchemy’s
@@ -256,8 +255,8 @@ corresponding database table (can be overridden).</p></li>
 <li><p>Metadata endpoints will be provided at <code class="docutils literal notranslate"><span class="pre">/metadata/...</span></code> by default.</p></li>
 </ol>
 <p>Some of those behaviours can be adjusted, see <a class="reference internal" href="customisation.html#customisation"><span class="std std-ref">Customising the Generated API</span></a>.</p>
-</section>
-<section id="trying-your-api-out">
+</div>
+<div class="section" id="trying-your-api-out">
 <h2>Trying Your API Out<a class="headerlink" href="#trying-your-api-out" title="Permalink to this headline">¶</a></h2>
 <p>You should now have a working JSON-API. A quick test. The following assumes that
 you have already created and set up a pyramid project in development mode
@@ -353,8 +352,8 @@ people endpoint:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>

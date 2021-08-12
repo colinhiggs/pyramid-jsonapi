@@ -4,11 +4,10 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Customising the Generated API &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  <title>Customising the Generated API &mdash; pyramid_jsonapi 2.2.1 documentation</title>
   
 
   
@@ -67,7 +66,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.2.1
               </div>
             
           
@@ -184,9 +183,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="customising-the-generated-api">
+  <div class="section" id="customising-the-generated-api">
 <span id="customisation"></span><h1>Customising the Generated API<a class="headerlink" href="#customising-the-generated-api" title="Permalink to this headline">¶</a></h1>
-<section id="configuration-options">
+<div class="section" id="configuration-options">
 <h2>Configuration Options<a class="headerlink" href="#configuration-options" title="Permalink to this headline">¶</a></h2>
 <p>Configuration options are managed by <code class="xref py py-mod docutils literal notranslate"><span class="pre">pyramid_settings_wrapper.Settings</span></code>.
 This provides default values as class attributes.</p>
@@ -286,8 +285,8 @@ This provides default values as class attributes.</p>
 <span class="n">workflow_relationships_post</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">relationships_post</span>
 </pre></div>
 </div>
-</section>
-<section id="model-class-options">
+</div>
+<div class="section" id="model-class-options">
 <h2>Model Class Options<a class="headerlink" href="#model-class-options" title="Permalink to this headline">¶</a></h2>
 <p>The behaviour of classes (and, by extension, collections) is controlled via a special
 class attribute, <code class="docutils literal notranslate"><span class="pre">__pyramid_jsonapi__</span></code>. The value of this attribute should be
@@ -328,8 +327,8 @@ name <code class="docutils literal notranslate"><span class="pre">humans</span><
 </tr>
 </tbody>
 </table>
-</section>
-<section id="model-column-options">
+</div>
+<div class="section" id="model-column-options">
 <h2>Model Column Options<a class="headerlink" href="#model-column-options" title="Permalink to this headline">¶</a></h2>
 <p>Some behaviours can be controlled on a column by column basis. SQLAlchemy uses
 the special column attribute <code class="docutils literal notranslate"><span class="pre">info</span></code> to carry information (as a dictionary)
@@ -364,8 +363,8 @@ the <code class="docutils literal notranslate"><span class="pre">info</span></co
 </tr>
 </tbody>
 </table>
-</section>
-<section id="model-relationship-options">
+</div>
+<div class="section" id="model-relationship-options">
 <h2>Model Relationship Options<a class="headerlink" href="#model-relationship-options" title="Permalink to this headline">¶</a></h2>
 <p>The same <code class="docutils literal notranslate"><span class="pre">info</span></code> attribute used to specify column options above can be used to
 specify relationship options. For example, to make a relationship called
@@ -397,8 +396,8 @@ specify relationship options. For example, to make a relationship called
 </tr>
 </tbody>
 </table>
-</section>
-<section id="selectively-passing-models-for-api-generation">
+</div>
+<div class="section" id="selectively-passing-models-for-api-generation">
 <h2>Selectively Passing Models for API Generation<a class="headerlink" href="#selectively-passing-models-for-api-generation" title="Permalink to this headline">¶</a></h2>
 <p>Your database may have some tables which you do not wish to expose as collections in the generated API. You can be selective by:</p>
 <ul class="simple">
@@ -406,8 +405,8 @@ specify relationship options. For example, to make a relationship called
 <li><p>passing an iterable of only the model classes you wish to expose to
 <a class="reference internal" href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI" title="pyramid_jsonapi.PyramidJSONAPI"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyramid_jsonapi.PyramidJSONAPI()</span></code></a>.</p></li>
 </ul>
-</section>
-<section id="url-paths">
+</div>
+<div class="section" id="url-paths">
 <h2>URL Paths<a class="headerlink" href="#url-paths" title="Permalink to this headline">¶</a></h2>
 <p>There are a number of <cite>prefix</cite> configuration options that can be used to customise the URL path used in the generated API.
 These are useful for mixing the API with other pages, adding API versioning etc.</p>
@@ -418,8 +417,8 @@ The separator between fields is <cite>route_pattern_sep</cite> - shown here as t
 <span class="pre">/route_pattern_prefix/api_version/route_pattern_&lt;type&gt;_prefix/endpoint</span>
 <span class="pre">`</span></code></p>
 <p>These options and their defaults are documented above in <cite>Configuration Options</cite>.</p>
-</section>
-<section id="modifying-endpoints">
+</div>
+<div class="section" id="modifying-endpoints">
 <h2>Modifying Endpoints<a class="headerlink" href="#modifying-endpoints" title="Permalink to this headline">¶</a></h2>
 <p>Endpoints are created automatically from a dictionary: <code class="xref py py-data docutils literal notranslate"><span class="pre">api_object.endpoint_data.endpoints</span></code>.</p>
 <p>This takes the following format:</p>
@@ -497,8 +496,8 @@ to prevent them being flagged as errors.</p></li>
         <span class="n">vc</span><span class="o">.</span><span class="n">options_view</span> <span class="o">=</span> <span class="n">options_view</span>
 </pre></div>
 </div>
-</section>
-<section id="search-filter-operators">
+</div>
+<div class="section" id="search-filter-operators">
 <span id="id1"></span><h2>Search (Filter) Operators<a class="headerlink" href="#search-filter-operators" title="Permalink to this headline">¶</a></h2>
 <p>Search filters are on collection get operations are specified with URL paramaters of the form filter[attribute:op]=value. A number of search/filter operators are supported out of the box. The list currently includes the following for all column types:</p>
 <ul class="simple">
@@ -551,8 +550,8 @@ avoid much URL escaping.</p></li>
 <span class="p">)</span>
 </pre></div>
 </div>
-</section>
-<section id="stages-and-the-workflow">
+</div>
+<div class="section" id="stages-and-the-workflow">
 <h2>Stages and the Workflow<a class="headerlink" href="#stages-and-the-workflow" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">pyramid_jsonapi</span></code> services requests in stages. These stages are sequences of
 functions implemented as a <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.deque" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.deque</span></code></a> for each stage on each
@@ -631,8 +630,8 @@ to say the dictionary which will be JSON serialised and sent back in the
 response.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">validate_response</span></code>.</p></li>
 </ul>
-</section>
-<section id="the-loop-workflow">
+</div>
+<div class="section" id="the-loop-workflow">
 <h2>The Loop Workflow<a class="headerlink" href="#the-loop-workflow" title="Permalink to this headline">¶</a></h2>
 <p>The default workflow is the <code class="docutils literal notranslate"><span class="pre">loop</span></code> workflow. It defines the following stages:</p>
 <ul class="simple">
@@ -647,8 +646,8 @@ for authorisation purposes).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">before_write_item</span></code>. Alter a sqlalchemy orm item before it is written
 (flushed) to the database.</p></li>
 </ul>
-</section>
-<section id="authorisation-at-the-object-level">
+</div>
+<div class="section" id="authorisation-at-the-object-level">
 <h2>Authorisation at the Object Level<a class="headerlink" href="#authorisation-at-the-object-level" title="Permalink to this headline">¶</a></h2>
 <p>Authorisation of access a the object level can quite complicated in typical
 JSONAPI apis. The complexity arises from the connecting nature of relationships.
@@ -776,11 +775,11 @@ permission filter - we must use the fuller return format.</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<section id="what-happens-with-authorisation-failures">
+<div class="section" id="what-happens-with-authorisation-failures">
 <h3>What Happens With Authorisation Failures<a class="headerlink" href="#what-happens-with-authorisation-failures" title="Permalink to this headline">¶</a></h3>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
 
 
            </div>

@@ -7,7 +7,7 @@ Installation
 ------------
 
 * Stable releases are uploaded to pypi:
-  `<https://pypi.python.org/pypi?:action=display&name=pyramid_jsonapi>`_. You
+  `<https://pypi.org/project/pyramid-jsonapi/>`_. You
   can install it in the usual way:
 
   .. code-block:: bash

@@ -4,11 +4,10 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Consuming the API from the Client End &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  <title>Consuming the API from the Client End &mdash; pyramid_jsonapi 2.2.1 documentation</title>
   
 
   
@@ -67,7 +66,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.2.1
               </div>
             
           
@@ -182,11 +181,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="consuming-the-api-from-the-client-end">
+  <div class="section" id="consuming-the-api-from-the-client-end">
 <span id="client"></span><h1>Consuming the API from the Client End<a class="headerlink" href="#consuming-the-api-from-the-client-end" title="Permalink to this headline">¶</a></h1>
-<section id="get-ing-resources">
+<div class="section" id="get-ing-resources">
 <h2>GET-ing Resources<a class="headerlink" href="#get-ing-resources" title="Permalink to this headline">¶</a></h2>
-<section id="a-collection">
+<div class="section" id="a-collection">
 <h3>A Collection<a class="headerlink" href="#a-collection" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts
 </pre></div>
@@ -301,8 +300,8 @@
 </ul>
 </li>
 </ul>
-</section>
-<section id="a-single-resource">
+</div>
+<div class="section" id="a-single-resource">
 <h3>A Single Resource<a class="headerlink" href="#a-single-resource" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts/1
 </pre></div>
@@ -373,8 +372,8 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-</section>
-<section id="sparse-fieldsets">
+</div>
+<div class="section" id="sparse-fieldsets">
 <h3>Sparse Fieldsets<a class="headerlink" href="#sparse-fieldsets" title="Permalink to this headline">¶</a></h3>
 <p>We can ask only for certain fields (attributes and relationships are
 collectively known as fields).</p>
@@ -415,8 +414,8 @@ this:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</section>
-<section id="sorting">
+</div>
+<div class="section" id="sorting">
 <h3>Sorting<a class="headerlink" href="#sorting" title="Permalink to this headline">¶</a></h3>
 <p>You can specify a sorting attribute and order with the sort query parameter.</p>
 <p>Sort posts by title:</p>
@@ -429,8 +428,8 @@ this:</p>
 </div>
 <p>Sorting by multiple attributes (e.g. <code class="docutils literal notranslate"><span class="pre">sort=title,content</span></code>) and sorting by attributes of related objects (<cite>sort=author.name</cite>) are supported.</p>
 <p>A sort on id is assumed unless the sort parameter is specified.</p>
-</section>
-<section id="pagination">
+</div>
+<div class="section" id="pagination">
 <h3>Pagination<a class="headerlink" href="#pagination" title="Permalink to this headline">¶</a></h3>
 <p>You can specify the pagination limit and offset:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ http GET http://localhost:6543/api/posts?fields<span class="o">[</span>posts<span class="o">]=</span>title<span class="se">\&amp;</span>page<span class="o">[</span>limit<span class="o">]=</span><span class="m">2</span><span class="se">\&amp;</span>page<span class="o">[</span>offset<span class="o">]=</span><span class="m">2</span>
@@ -484,8 +483,8 @@ compact…</p>
 <p>There’s a default page limit which is used if the limit is not specified and a
 maximum limit that the server will allow. Both of these can be set in the ini
 file.</p>
-</section>
-<section id="filtering">
+</div>
+<div class="section" id="filtering">
 <h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h3>
 <p>The JSON API spec doesn’t say much about filtering syntax, other than that it
 should use the parameter key <code class="docutils literal notranslate"><span class="pre">filter</span></code>. There are multiple filtering syntaxes
@@ -512,7 +511,7 @@ front in the square brackets after <code class="docutils literal notranslate"><s
 <li><p>RQL defined here <a class="reference external" href="https://github.com/persvr/rql">https://github.com/persvr/rql</a> as implemented in
 rqlalchemy <a class="reference external" href="https://github.com/pjwerneck/rqlalchemy">https://github.com/pjwerneck/rqlalchemy</a>.</p></li>
 </ul>
-<section id="filter-examples">
+<div class="section" id="filter-examples">
 <h4>Filter Examples<a class="headerlink" href="#filter-examples" title="Permalink to this headline">¶</a></h4>
 <p><strong>Simple</strong>:</p>
 <p>Find all the people with name ‘alice’:</p>
@@ -540,10 +539,10 @@ rqlalchemy <a class="reference external" href="https://github.com/pjwerneck/rqla
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http :6543/api/posts filter<span class="o">[</span>*rql<span class="o">]=</span><span class="s1">&#39;eq((author,name),alice)&#39;</span>
 </pre></div>
 </div>
-</section>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
+</div>
 
 
            </div>
