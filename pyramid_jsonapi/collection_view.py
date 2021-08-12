@@ -2,10 +2,13 @@
 # pylint: disable=too-many-lines; It's mostly docstrings
 import functools
 import itertools
+import importlib
 import logging
 import re
+import sqlalchemy
+from collections import namedtuple
 from collections.abc import Sequence
-
+from functools import partial
 from pyramid.httpexceptions import (
     HTTPNotFound,
     HTTPForbidden,
@@ -19,16 +22,29 @@ from pyramid.httpexceptions import (
     HTTPMethodNotAllowed,
     status_map,
 )
-import pyramid_jsonapi.jsonapi
-import sqlalchemy
+from pyramid.settings import asbool
+from rqlalchemy import RQLQueryMixIn
 from sqlalchemy.ext.associationproxy import AssociationProxy
-from sqlalchemy.orm import load_only, aliased
+from sqlalchemy.orm import (
+    load_only,
+    aliased,
+    Query as BaseQuery,
+)
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.orm.exc import NoResultFound
 
 ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
+
+import pyramid_jsonapi.workflow as wf
+
+
+Entity = namedtuple('Entity', 'type')
+
+
+class RQLQuery(BaseQuery, RQLQueryMixIn):
+    pass
 
 
 class CollectionViewBase:
@@ -43,6 +59,7 @@ class CollectionViewBase:
     # Define class attributes
     # Callable attributes use lambda to keep pylint happy
     api = None
+    all_attributes = None
     attributes = None
     callbacks = None
     collection_name = None
@@ -56,6 +73,7 @@ class CollectionViewBase:
     max_limit = None
     model = lambda: None
     obj_id = None
+    not_found_message = None
     request = None
     rel = None
     rel_class = None
@@ -64,6 +82,7 @@ class CollectionViewBase:
     relname = None
     view_classes = None
     settings = None
+    permission_filters = None
 
     def __init__(self, request):
         self.request = request
@@ -78,206 +97,36 @@ class CollectionViewBase:
         """Return the column holding an item's id."""
         return getattr(item, item.__pyramid_jsonapi__['id_col_name'])
 
-    def jsonapi_view(func):  # pylint: disable=no-self-argument
-        """Decorator for view functions. Adds jsonapi boilerplate,
-        and tests response validity."""
-
-        def view_exceptions(func):
-            """Decorator to intercept all exceptions raised by wrapped view methods.
-
-            If the exception is 'valid' according to the schema, raise it.
-            Else raise a generic 4xx or 5xx error and log the real one.
-            """
-            @functools.wraps(func)
-            def new_func(self):  # pylint: disable=missing-docstring
-                ep_dict = self.api.endpoint_data.endpoints
-                # Get route_name from route
-                _, _, endpoint = self.request.matched_route.name.split(':')
-                method = self.request.method
-                try:
-                    responses = set(
-                        ep_dict['responses'].keys() |
-                        ep_dict['endpoints'][endpoint]['responses'].keys() |
-                        ep_dict['endpoints'][endpoint]['http_methods'][method]['responses'].keys()
-                    )
-                except KeyError:
-                    raise HTTPMethodNotAllowed(
-                        'Unsupported method "{}" for endpoint "{}"'.format(method, endpoint)
-                    )
-                try:
-                    result = func(self)  # pylint: disable=not-callable
-                    response_class = status_map[self.request.response.status_code]
-                    if response_class not in responses:
-                        logging.error(
-                            "Invalid response: %s for route_name: %s path: %s",
-                            response_class,
-                            self.request.matched_route.name,
-                            self.request.current_route_path()
-                        )
-                    return result
-                except Exception as exc:
-                    if exc.__class__ not in responses:
-                        logging.exception(
-                            "Invalid exception raised: %s for route_name: %s path: %s",
-                            exc.__class__,
-                            self.request.matched_route.name,
-                            self.request.current_route_path()
-                        )
-                        if hasattr(exc, 'code'):
-                            try:
-                                # We have a code but it's probably a string. We need an integer.
-                                int_code = int(exc.code)  # pylint: disable=no-member
-                            except Exception as ex2:
-                                # If we can't turn it into an integer then we're really stuck.
-                                # raise HTTPInternalServerError("Unexpected server error.")
-                                int_code = 500
-                            if 400 <= int_code < 500:  # pylint:disable=no-member
-                                raise HTTPBadRequest("Unexpected client error: {}".format(exc))
-                        else:
-                            raise HTTPInternalServerError("Unexpected server error.")
-                    raise
-            return new_func
-
-        @functools.lru_cache()
-        def get_jsonapi_accepts(request):
-            """Return a set of all 'application/vnd.api' parts of the accept
-            header.
-            """
-            accepts = re.split(
-                r',\s*',
-                request.headers.get('accept', '')
-            )
-            return {
-                a for a in accepts
-                if a.startswith('application/vnd.api')
-            }
-
-        def check_request_headers(request, jsonapi_accepts):
-            """Check that request headers comply with spec.
-
-            Raises:
-                HTTPUnsupportedMediaType
-                HTTPNotAcceptable
-            """
-            # Spec says to reject (with 415) any request with media type
-            # params.
-            if len(request.headers.get('content-type', '').split(';')) > 1:
-                raise HTTPUnsupportedMediaType(
-                    'Media Type parameters not allowed by JSONAPI ' +
-                    'spec (http://jsonapi.org/format).'
-                )
-            # Spec says throw 406 Not Acceptable if Accept header has no
-            # application/vnd.api+json entry without parameters.
-            if jsonapi_accepts and\
-                    'application/vnd.api+json' not in jsonapi_accepts:
-                raise HTTPNotAcceptable(
-                    'application/vnd.api+json must appear with no ' +
-                    'parameters in Accepts header ' +
-                    '(http://jsonapi.org/format).'
-                )
-
-        def check_request_valid_json(request):
-            """Check that the body of any request is valid JSON.
-
-            Raises:
-                HTTPBadRequest
-            """
-            if request.content_length:
-                try:
-                    request.json_body
-                except ValueError:
-                    raise HTTPBadRequest("Body is not valid JSON.")
-
-        @view_exceptions
-        @functools.wraps(func)
-        def view_wrapper(self):
-            """jsonapi boilerplate function to wrap decorated functions."""
-            check_request_headers(self.request, get_jsonapi_accepts(self.request))
-            check_request_valid_json(self.request)
-
-            if self.request.content_length and self.api.settings.schema_validation:
-                # Validate request JSON against the JSONAPI jsonschema
-                self.api.metadata.JSONSchema.validate(self.request.json_body, self.request.method)
-
-            # Spec says throw BadRequest if any include paths reference non
-            # existent attributes or relationships.
-            if self.bad_include_paths:
-                raise HTTPBadRequest(
-                    "Bad include paths {}".format(
-                        self.bad_include_paths
-                    )
-                )
-
-            # Spec says set Content-Type to application/vnd.api+json.
-            self.request.response.content_type = 'application/vnd.api+json'
-
-            # Extract id and relationship from route, if provided
-            self.obj_id = self.request.matchdict.get('id', None)
-            self.relname = self.request.matchdict.get('relationship', None)
-
-            if self.obj_id:
-                # Try to get the object
-                try:
-                    self.item = self.single_return(
-                        self.single_item_query(),
-                        'No id {} in collection {}'.format(
-                            self.obj_id,
-                            self.collection_name
-                        )
-                    )
-                except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
-                    # DataError is caused by e.g. id (int) = cat
-                    # StatementError is caused by e.g. id (uuid) = 1
-                    raise HTTPNotFound('Object {} not found in collection {}'.format(
-                        self.obj_id,
-                        self.collection_name
-                    ))
-
-            if self.relname:
-                # Gather relationship info
-                mapper = sqlalchemy.inspect(self.model).mapper
-                try:
-                    self.rel = self.relationships[self.relname]
-                except KeyError:
-                    raise HTTPNotFound('No relationship {} in collection {}'.format(
-                        self.relname,
-                        self.collection_name
-                    ))
-                self.rel_class = self.rel.tgt_class
-                self.rel_view = self.view_instance(self.rel_class)
-
-            # Update the dictionary with the results of the wrapped method.
-            ret = func(self)  # pylint:disable=not-callable
-            if ret:
-                # Include a self link unless the method is PATCH.
-                if self.request.method != 'PATCH':
-                    selfie = {'self': self.request.url}
-                    if hasattr(ret, 'links'):
-                        ret.links.update(selfie)
-                    else:
-                        ret.links = selfie
-
-                # Potentially add some debug information.
-                if self.api.settings.debug_meta:
-                    debug = {
-                        'accept_header': {
-                            a: None for a in get_jsonapi_accepts(self.request)
-                        },
-                        'qinfo_page':
-                            self.collection_query_info(self.request)['_page'],
-                        'atts': {k: None for k in self.attributes.keys()},
-                        'includes': {
-                            k: None for k in self.requested_include_names()
-                        }
-                    }
-                    ret.meta.update({'debug': debug})
-                return ret.as_dict()
+    def get_one(self, query, not_found_message=None):
+        try:
+            item = query.one()
+        except (NoResultFound, sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
+            # NoResultFound is sqlalchemy's native exception if there is no
+            #  such id in the collection.
+            # DataError is caused by e.g. id (int) = cat
+            # StatementError is caused by e.g. id (uuid) = 1
+            if not_found_message:
+                raise HTTPNotFound(not_found_message)
             else:
-                return {}
-        return view_wrapper
+                return None
+        return item
 
-    @jsonapi_view
-    def get(self):
+    def get_item(self, _id=None):
+        """Return the item specified by _id. Will look up id from request if _id is None.
+        """
+        if _id is None:
+            _id = self.obj_id
+        return self.get_one(
+            self.dbsession.query(
+                self.model
+            ).options(
+                load_only(self.key_column.name)
+            ).filter(
+                self.key_column == _id
+            )
+        )
+
+    def get_old(self):
         """Handle GET request for a single item.
 
         Get a single item from the collection, referenced by id.
@@ -311,15 +160,9 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people/1
         """
-        # We already fetched any item referenced by id while checking
-        # for existence in the wrapper. We put it into self.item in
-        # case it was needed.
-        for callback in self.callbacks['after_get']:
-            self.item = callback(self, self.item)
-        return self.item
+        pass
 
-    @jsonapi_view
-    def patch(self):
+    def patch_old(self):
         """Handle PATCH request for a single item.
 
         Update an existing item from a partially defined representation.
@@ -392,129 +235,9 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         """
-        try:
-            data = self.request.json_body['data']
-        except KeyError:
-            raise HTTPBadRequest('data attribute required in PATCHes.')
-        data_id = data.get('id')
-        if self.collection_name != data.get('type'):
-            raise HTTPConflict(
-                'JSON type ({}) does not match URL type ({}).'.format(
-                    data.get('type'), self.collection_name
-                )
-            )
-        if data_id != self.obj_id:
-            raise HTTPConflict(
-                'JSON id ({}) does not match URL id ({}).'.format(
-                    data_id, self.obj_id
-                )
-            )
-        for callback in self.callbacks['before_patch']:
-            data = callback(self, data)
-        atts = {}
-        hybrid_atts = {}
-        for key, value in data.get('attributes', {}).items():
-            if key in self.attributes:
-                atts[key] = value
-            elif key in self.hybrid_attributes:
-                hybrid_atts[key] = value
-            else:
-                raise HTTPNotFound(
-                    'Collection {} has no attribute {}'.format(
-                        self.collection_name, key
-                    )
-                )
-        atts[self.key_column.name] = self.obj_id
-        item = self.dbsession.merge(self.model(**atts))
-        for att, value in hybrid_atts.items():
-            try:
-                setattr(item, att, value)
-            except AttributeError:
-                raise HTTPConflict(
-                    'Attribute {} is read only.'.format(
-                        att
-                    )
-                )
+        pass
 
-        rels = data.get('relationships', {})
-        for relname, reldict in rels.items():
-            try:
-                rel = self.relationships[relname]
-            except KeyError:
-                raise HTTPNotFound(
-                    'Collection {} has no relationship {}'.format(
-                        self.collection_name, relname
-                    )
-                )
-            rel_view = self.view_instance(rel.tgt_class)
-            try:
-                reldata = reldict['data']
-            except KeyError:
-                raise HTTPBadRequest(
-                    "Relationship '{}' has no 'data' member.".format(relname)
-                )
-            except TypeError:
-                raise HTTPBadRequest(
-                    "Relationship '{}' is not a dictionary with a data member.".format(relname)
-                )
-            if reldata is None:
-                setattr(item, relname, None)
-            elif isinstance(reldata, dict):
-                if reldata.get('type') != rel_view.collection_name:
-                    raise HTTPConflict(
-                        'Type {} does not match relationship type {}'.format(
-                            reldata.get('type', None), rel_view.collection_name
-                        )
-                    )
-                if reldata.get('id') is None:
-                    raise HTTPBadRequest(
-                        'An id is required in a resource identifier.'
-                    )
-                rel_item = self.dbsession.query(
-                    rel.tgt_class
-                ).options(
-                    load_only(rel_view.key_column.name)
-                ).get(reldata['id'])
-                if not rel_item:
-                    raise HTTPNotFound('{}/{} not found'.format(
-                        rel_view.collection_name, reldata['id']
-                    ))
-                setattr(item, relname, rel_item)
-            elif isinstance(reldata, list):
-                rel_items = []
-                for res_ident in reldata:
-                    rel_item = self.dbsession.query(
-                        rel.tgt_class
-                    ).options(
-                        load_only(rel_view.key_column.name)
-                    ).get(res_ident['id'])
-                    if not rel_item:
-                        raise HTTPNotFound('{}/{} not found'.format(
-                            rel_view.collection_name, res_ident['id']
-                        ))
-                    rel_items.append(rel_item)
-                setattr(item, relname, rel_items)
-        try:
-            self.dbsession.flush()
-        except sqlalchemy.exc.IntegrityError as exc:
-            raise HTTPConflict(str(exc))
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.meta = {
-            'updated': {
-                'attributes': [
-                    att for att in itertools.chain(atts, hybrid_atts)
-                    if att != self.key_column.name
-                ],
-                'relationships': [r for r in rels]
-            }
-        }
-        # if an update is successful ... the server
-        # responds only with top-level meta data
-        doc.filter_keys = {'meta': {}}
-        return doc
-
-    @jsonapi_view
-    def delete(self):
+    def delete_old(self):
         """Handle DELETE request for single item.
 
         Delete the referenced item from the collection.
@@ -537,24 +260,9 @@ class CollectionViewBase:
 
                 http DELETE http://localhost:6543/people/1
         """
+        pass
 
-        doc = pyramid_jsonapi.jsonapi.Document()
-        item = self.single_item_query(loadonly=[self.key_column.name]).one()
-        for callback in self.callbacks['before_delete']:
-            callback(self, item)
-        try:
-            self.dbsession.delete(item)
-            self.dbsession.flush()
-        except sqlalchemy.exc.IntegrityError as exc:
-            raise HTTPFailedDependency(str(exc))
-        doc.update({
-            'data': self.serialise_resource_identifier(
-                self.obj_id
-            )})
-        return doc
-
-    @jsonapi_view
-    def collection_get(self):
+    def collection_get_old(self):
         """Handle GET requests for the collection.
 
         Get a set of items from the collection, possibly matching search/filter
@@ -606,33 +314,9 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/people?page[limit]=2&page[offset]=2&sort=-name&include=posts
         """
-        # Set up the query
-        query = self.dbsession.query(
-            self.model
-        ).options(
-            load_only(*self.allowed_requested_query_columns.keys())
-        )
-        query = self.query_add_sorting(query)
-        query = self.query_add_filtering(query)
-        qinfo = self.collection_query_info(self.request)
-        try:
-            count = query.count()
-        except sqlalchemy.exc.ProgrammingError:
-            raise HTTPInternalServerError(
-                'An error occurred querying the database. Server logs may have details.'
-            )
-        query = query.offset(qinfo['page[offset]'])
-        query = query.limit(qinfo['page[limit]'])
+        pass
 
-        ret = self.collection_return(query, count=count)
-
-        # Alter return dict with any callbacks.
-        for callback in self.callbacks['after_collection_get']:
-            ret = callback(self, ret)
-        return ret
-
-    @jsonapi_view
-    def collection_post(self):
+    def collection_post_old(self):
         """Handle POST requests for the collection.
 
         Create a new object in collection.
@@ -691,108 +375,9 @@ class CollectionViewBase:
                     }
                 }' Content-Type:application/vnd.api+json
         """
-        try:
-            data = self.request.json_body['data']
-        except KeyError:
-            raise HTTPBadRequest('data attribute required in POSTs.')
+        pass
 
-        if not isinstance(data, dict):
-            raise HTTPBadRequest('data attribute must contain a single resource object.')
-
-        # Alter data with any callbacks.
-        for callback in self.callbacks['before_collection_post']:
-            data = callback(self, data)
-
-        # Check to see if we're allowing client ids
-        if not self.api.settings.allow_client_ids and 'id' in data:
-            raise HTTPForbidden('Client generated ids are not supported.')
-        # Type should be correct or raise 409 Conflict
-        datatype = data.get('type')
-        if datatype != self.collection_name:
-            raise HTTPConflict("Unsupported type '{}'".format(datatype))
-        try:
-            atts = data['attributes']
-        except KeyError:
-            atts = {}
-        if 'id' in data:
-            atts[self.model.__pyramid_jsonapi__['id_col_name']] = data['id']
-        item = self.model(**atts)
-        with self.dbsession.no_autoflush:
-            for relname, reldict in data.get('relationships', {}).items():
-                try:
-                    reldata = reldict['data']
-                except KeyError:
-                    raise HTTPBadRequest(
-                        'relationships within POST must have data member'
-                    )
-                try:
-                    rel = self.relationships[relname]
-                except KeyError:
-                    raise HTTPNotFound(
-                        'No relationship {} in collection {}'.format(
-                            relname,
-                            self.collection_name
-                        )
-                    )
-                rel_type = self.api.view_classes[rel.tgt_class].collection_name
-                if rel.direction is ONETOMANY or rel.direction is MANYTOMANY:
-                    # reldata should be a list/array
-                    if not isinstance(reldata, Sequence) or isinstance(reldata, str):
-                        raise HTTPBadRequest(
-                            'Relationship data should be an array for TOMANY relationships.'
-                        )
-                    rel_items = []
-                    for rel_identifier in reldata:
-                        if rel_identifier.get('type') != rel_type:
-                            raise HTTPConflict(
-                                'Relationship identifier has type {} and should be {}'.format(
-                                    rel_identifier.get('type'), rel_type
-                                )
-                            )
-                        try:
-                            rel_items.append(self.dbsession.query(rel.tgt_class).get(rel_identifier['id']))
-                        except KeyError:
-                            raise HTTPBadRequest(
-                                'Relationship identifier must have an id member'
-                            )
-                    setattr(item, relname, rel_items)
-                else:
-                    if (not isinstance(reldata, dict)) and (reldata is not None):
-                        raise HTTPBadRequest(
-                            'Relationship data should be a resource identifier object or null.'
-                        )
-                    if reldata.get('type') != rel_type:
-                        raise HTTPConflict(
-                            'Relationship identifier has type {} and should be {}'.format(
-                                reldata.get('type'), rel_type
-                            )
-                        )
-                    try:
-                        setattr(
-                            item,
-                            relname,
-                            self.dbsession.query(rel.tgt_class).get(reldata['id'])
-                        )
-                    except KeyError:
-                        raise HTTPBadRequest(
-                            'No id member in relationship data.'
-                        )
-        try:
-            self.dbsession.add(item)
-            self.dbsession.flush()
-        except sqlalchemy.exc.IntegrityError as exc:
-            raise HTTPConflict(exc.args[0])
-        self.request.response.status_code = 201
-        self.request.response.headers['Location'] = self.request.route_url(
-            self.api.endpoint_data.make_route_name(self.collection_name, suffix='item'),
-            **{'id': self.id_col(item)}
-        )
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.update({'data': self.serialise_db_item(item, {})})
-        return doc
-
-    @jsonapi_view
-    def related_get(self):
+    def related_get_old(self):
         """Handle GET requests for related URLs.
 
         Get object(s) related to a specified object.
@@ -848,32 +433,9 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/posts/1/author
         """
-        # Set up the query
-        query = self.related_query(self.obj_id, self.rel)
+        pass
 
-        if self.rel.direction is ONETOMANY or self.rel.direction is MANYTOMANY:
-            query = self.rel_view.query_add_sorting(query)
-            query = self.rel_view.query_add_filtering(query)
-            qinfo = self.rel_view.collection_query_info(self.request)
-            try:
-                count = query.count()
-            except sqlalchemy.exc.ProgrammingError:
-                raise HTTPInternalServerError(
-                    'An error occurred querying the database. Server logs may have details.'
-                )
-            query = query.offset(qinfo['page[offset]'])
-            query = query.limit(qinfo['page[limit]'])
-            ret = self.rel_view.collection_return(query, count=count)
-        else:
-            ret = self.rel_view.single_return(query)
-
-        # Alter return dict with any callbacks.
-        for callback in self.callbacks['after_related_get']:
-            ret = callback(self, ret)
-        return ret
-
-    @jsonapi_view
-    def relationships_get(self):
+    def relationships_get_old(self):
         """Handle GET requests for relationships URLs.
 
         Get object identifiers for items referred to by a relationship.
@@ -927,36 +489,9 @@ class CollectionViewBase:
 
                 http GET http://localhost:6543/posts/1/relationships/author
         """
-        # Set up the query
-        query = self.related_query(self.obj_id, self.rel, full_object=False)
+        pass
 
-        if self.rel.direction is ONETOMANY or self.rel.direction is MANYTOMANY:
-            query = self.rel_view.query_add_sorting(query)
-            query = self.rel_view.query_add_filtering(query)
-            qinfo = self.rel_view.collection_query_info(self.request)
-            try:
-                count = query.count()
-            except sqlalchemy.exc.ProgrammingError:
-                raise HTTPInternalServerError(
-                    'An error occurred querying the database. Server logs may have details.'
-                )
-            query = query.offset(qinfo['page[offset]'])
-            query = query.limit(qinfo['page[limit]'])
-            ret = self.rel_view.collection_return(
-                query,
-                count=count,
-                identifiers=True
-            )
-        else:
-            ret = self.rel_view.single_return(query, identifier=True)
-
-        # Alter return dict with any callbacks.
-        for callback in self.callbacks['after_relationships_get']:
-            ret = callback(self, ret)
-        return ret
-
-    @jsonapi_view
-    def relationships_post(self):
+    def relationships_post_old(self):
         """Handle POST requests for TOMANY relationships.
 
         Add the specified member to the relationship.
@@ -1010,51 +545,9 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        if self.rel.direction is MANYTOONE:
-            raise HTTPForbidden('Cannot POST to TOONE relationship link.')
+        pass
 
-        # Alter data with any callbacks
-        data = self.request.json_body['data']
-        for callback in self.callbacks['before_relationships_post']:
-            data = callback(self, data)
-
-        obj = self.dbsession.query(self.model).get(self.obj_id)
-        items = []
-        for resid in data:
-            if resid['type'] != self.rel_view.collection_name:
-                raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(
-                        resid['type'], self.rel_view.collection_name
-                    )
-                )
-            try:
-                newitem = self.dbsession.query(self.rel_class).get(resid['id'])
-            except sqlalchemy.exc.DataError as exc:
-                raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-            if newitem is None:
-                raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
-            items.append(newitem)
-        getattr(obj, self.relname).extend(items)
-        try:
-            self.dbsession.flush()
-        except sqlalchemy.exc.IntegrityError as exc:
-            if 'duplicate key value violates unique constraint' in str(exc):
-                # This happens when using an association proxy if we attempt to
-                # add an object to the relationship that's already there. We
-                # want this to be a no-op.
-                pass
-            else:
-                raise HTTPFailedDependency(str(exc))
-        except sqlalchemy.orm.exc.FlushError as exc:
-            if str(exc).startswith("Can't flush None value"):
-                raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
-            else:
-                # Catch-all. Shouldn't reach here.
-                raise  # pragma: no cover
-        return {}
-
-    @jsonapi_view
-    def relationships_patch(self):
+    def relationships_patch_old(self):
         """Handle PATCH requests for relationships (TOMANY or TOONE).
 
         Completely replace the relationship membership.
@@ -1117,70 +610,9 @@ class CollectionViewBase:
                     { "type": "comments", "id": "2" }
                 ]' Content-Type:application/vnd.api+json
         """
-        # Alter data with any callbacks
-        data = self.request.json_body['data']
-        for callback in self.callbacks['before_relationships_patch']:
-            data = callback(self, data)
+        pass
 
-        obj = self.dbsession.query(self.model).get(self.obj_id)
-        if self.rel.direction is MANYTOONE:
-            local_col, _ = self.rel.obj.local_remote_pairs[0]
-            resid = data
-            if resid is None:
-                setattr(obj, self.relname, None)
-            else:
-                if resid['type'] != self.rel_view.collection_name:
-                    raise HTTPConflict(
-                        "Resource identifier type '{}' does not match relationship type '{}'.".format(
-                            resid['type'],
-                            self.rel_view.collection_name
-                        )
-                    )
-                setattr(
-                    obj,
-                    local_col.name,
-                    resid['id']
-                )
-                try:
-                    self.dbsession.flush()
-                except sqlalchemy.exc.IntegrityError as exc:
-                    raise HTTPFailedDependency(
-                        'Object {}/{} does not exist.'.format(resid['type'], resid['id'])
-                    )
-                except sqlalchemy.exc.DataError as exc:
-                    raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-            return {}
-        items = []
-        for resid in self.request.json_body['data']:
-            if resid['type'] != self.rel_view.collection_name:
-                raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(
-                        resid['type'],
-                        self.rel_view.collection_name
-                    )
-                )
-            try:
-                newitem = self.dbsession.query(self.rel_class).get(resid['id'])
-            except sqlalchemy.exc.DataError as exc:
-                raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-            if newitem is None:
-                raise HTTPFailedDependency("One or more objects POSTed to this relationship do not exist.")
-            items.append(newitem)
-        setattr(obj, self.relname, items)
-        try:
-            self.dbsession.flush()
-        except sqlalchemy.exc.IntegrityError as exc:
-            raise HTTPFailedDependency(str(exc))
-        except sqlalchemy.orm.exc.FlushError as exc:
-            if str(exc).startswith("Can't flush None value"):
-                raise HTTPFailedDependency("One or more objects PATCHed to this relationship do not exist.")
-            else:
-                # Catch-all. Shouldn't reach here.
-                raise  # pragma: no cover
-        return {}
-
-    @jsonapi_view
-    def relationships_delete(self):
+    def relationships_delete_old(self):
         """Handle DELETE requests for TOMANY relationships.
 
         Delete the specified member from the relationship.
@@ -1234,198 +666,38 @@ class CollectionViewBase:
                     { "type": "comments", "id": "1" }
                 ]' Content-Type:application/vnd.api+json
         """
-        if self.rel.direction is MANYTOONE:
-            raise HTTPForbidden('Cannot DELETE to TOONE relationship link.')
-        obj = self.dbsession.query(self.model).get(self.obj_id)
+        pass
 
-        # Call callbacks
-        for callback in self.callbacks['before_relationships_delete']:
-            callback(self, obj)
+    def base_collection_query(self, loadonly=None):
+        if not loadonly:
+            loadonly = self.allowed_requested_query_columns.keys()
+        query = self.dbsession.query(
+            self.model
+        ).options(
+            load_only(*loadonly)
+        )
+        query._entities = [Entity(type=self.model)]
+        query.__class__ = RQLQuery
+        return query
 
-        for resid in self.request.json_body['data']:
-            if resid['type'] != self.rel_view.collection_name:
-                raise HTTPConflict(
-                    "Resource identifier type '{}' does not match relationship type '{}'.".format(
-                        resid['type'], self.rel_view.collection_name
-                    )
-                )
-            try:
-                item = self.dbsession.query(self.rel_class).get(resid['id'])
-            except sqlalchemy.exc.DataError as exc:
-                raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-            if item is None:
-                raise HTTPFailedDependency("One or more objects DELETEd from this relationship do not exist.")
-            try:
-                getattr(obj, self.relname).remove(item)
-            except ValueError as exc:
-                if exc.args[0].endswith('not in list'):
-                    # The item we were asked to remove is not there.
-                    pass
-                else:
-                    raise
-        try:
-            self.dbsession.flush()
-        except sqlalchemy.exc.IntegrityError as exc:
-            raise HTTPFailedDependency(str(exc))
-        return {}
+    def single_item_query(self, obj_id=None, loadonly=None):
+        """A query representing the single item referenced by id.
 
-    def single_item_query(self, loadonly=None):
-        """A query representing the single item referenced by the request.
-
-        **URL (matchdict) Parameters**
-
-            **id** (*str*): resource id
+        Keyword Args:
+            obj_id: id of object to be fetched. If None then use the id from
+                the URL.
+            loadonly: which attributes to load. If None then all requested
+                attributes from the URL.
 
         Returns:
             sqlalchemy.orm.query.Query: query which will fetch item with id
             'id'.
         """
-        if not loadonly:
-            loadonly = self.allowed_requested_query_columns.keys()
-        return self.dbsession.query(
-            self.model
-        ).options(
-            load_only(*loadonly)
-        ).filter(
-            self.id_col(self.model) == self.obj_id
+        if obj_id is None:
+            obj_id = self.obj_id
+        return self.base_collection_query(loadonly=loadonly).filter(
+            self.id_col(self.model) == obj_id
         )
-
-    def single_return(self, query, not_found_message=None, identifier=False):
-        """Populate return dictionary for a single item.
-
-        Arguments:
-            query (sqlalchemy.orm.query.Query): query designed to return one item.
-
-        Keyword Arguments:
-            not_found_message (str or None): if an item is not found either:
-
-                * raise 404 with ``not_found_message`` if it is a str;
-
-                * or return ``{"data": None}`` if ``not_found_message`` is None.
-
-            identifier: return identifier if True, object if false.
-
-        Returns:
-            jsonapi.Document: in the form:
-
-            .. parsed-literal::
-
-                {
-                    "data": { resource object }
-
-                    optionally...
-                    "included": [ included objects ]
-                }
-
-            or
-
-            .. parsed-literal::
-
-                { resource identifier }
-
-        Raises:
-            HTTPNotFound: if the item is not found.
-        """
-        included = {}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        try:
-            item = query.one()
-        except NoResultFound:
-            if not_found_message:
-                raise HTTPNotFound(not_found_message)
-            else:
-                return doc
-        if identifier:
-            doc.data = self.serialise_resource_identifier(self.id_col(item))
-        else:
-            doc.data = self.serialise_db_item(item, included)
-            if self.requested_include_names():
-                doc.included = [obj for obj in included.values()]
-        return doc
-
-    def collection_return(self, query, count=None, identifiers=False):
-        """Populate return document for collections.
-
-        Arguments:
-            query (sqlalchemy.orm.query.Query): query designed to return multiple
-            items.
-
-        Keyword Arguments:
-            count(int): Number of items the query will return (if known).
-
-            identifiers(bool): return identifiers if True, objects if false.
-
-        Returns:
-            jsonapi.Document: in the form:
-
-            .. parsed-literal::
-
-                {
-                    "data": [ resource objects ]
-
-                    optionally...
-                    "included": [ included objects ]
-                }
-
-            or
-
-            .. parsed-literal::
-
-                [ resource identifiers ]
-
-        Raises:
-            HTTPBadRequest: If a count was not supplied and an attempt to call
-            q.count() failed.
-        """
-        # Get info for query.
-        qinfo = self.collection_query_info(self.request)
-
-        # Add information to the return dict
-        doc = pyramid_jsonapi.jsonapi.Document(collection=True)
-        results = {}
-
-        try:
-            count = count or query.count()
-        except sqlalchemy.exc.ProgrammingError:
-            raise HTTPInternalServerError(
-                'An error occurred querying the database. Server logs may have details.'
-            )
-
-        results['available'] = count
-
-        # Pagination links
-        doc.links = self.pagination_links(
-            count=results['available']
-        )
-        results['limit'] = qinfo['page[limit]']
-        results['offset'] = qinfo['page[offset]']
-
-        # Primary data
-        try:
-            if identifiers:
-                data = [
-                    self.serialise_resource_identifier(self.id_col(dbitem))
-                    for dbitem in query.all()
-                ]
-            else:
-                included = {}
-                data = [
-                    self.serialise_db_item(dbitem, included)
-                    for dbitem in query.all()
-                ]
-                # Included objects
-                if self.requested_include_names():
-                    doc.included = [obj for obj in included.values()]
-        except sqlalchemy.exc.DataError as exc:
-            raise HTTPBadRequest(str(exc.orig))
-        for item in data:
-            res = pyramid_jsonapi.jsonapi.Resource()
-            res.update(item)
-            doc.resources.append(res)
-        results['returned'] = len(doc.resources)
-
-        doc.meta = {'results': results}
-        return doc
 
     def query_add_sorting(self, query):
         """Add sorting to query.
@@ -1458,16 +730,14 @@ class CollectionViewBase:
             if main_key == 'id':
                 main_key = self.key_column.name
             order_att = getattr(self.model, main_key)
-            # order_att will be a sqlalchemy.orm.properties.ColumnProperty if
-            # sort_keys[0] is the name of an attribute or a
-            # sqlalchemy.orm.relationships.RelationshipProperty if sort_keys[0]
-            # is the name of a relationship.
-            if hasattr(order_att, 'property') and isinstance(order_att.property, RelationshipProperty):
+            if main_key in self.relationships:
                 # If order_att is a relationship then we need to add a join to
                 # the query and order_by the sort_keys[1] column of the
                 # relationship's target. The default target column is 'id'.
+                rel = self.relationships[main_key]
+                if rel.to_many:
+                    raise HTTPBadRequest(f"Can't sort by TO_MANY relationship {main_key}.")
                 query = query.join(order_att)
-                rel = order_att.property
                 try:
                     sub_key = sort_keys[1]
                 except IndexError:
@@ -1475,7 +745,7 @@ class CollectionViewBase:
                     sub_key = self.view_instance(
                         rel.tgt_class
                     ).key_column.name
-                order_att = getattr(rel.obj.mapper.entity, sub_key)
+                order_att = getattr(rel.tgt_class, sub_key)
             if key_info['ascending']:
                 query = query.order_by(order_att)
             else:
@@ -1579,6 +849,9 @@ class CollectionViewBase:
                 )
             query = query.filter(comparator(val))
 
+        for rql in qinfo['_rql_filters']:
+            query = query.rql(rql)
+
         return query
 
     def related_limit(self, relationship):
@@ -1596,7 +869,7 @@ class CollectionViewBase:
         Returns:
             int: paging limit for related resources.
         """
-        limit_comps = ['limit', 'relationships', relationship.obj.key]
+        limit_comps = ['limit', 'relationships', relationship.name]
         limit = self.default_limit
         qinfo = self.collection_query_info(self.request)
         while limit_comps:
@@ -1636,10 +909,14 @@ class CollectionViewBase:
         proxy = rel.obj.for_class(rel.src_class)
         query = self. dbsession.query(
             rel.tgt_class
-        ).join(proxy.remote_attr).filter(
-            # I thought the simpler
-            # proxy.local_attr.contains() should work but it doesn't
-            proxy.local_attr.property.local_remote_pairs[0][1] == obj_id
+        ).select_from(
+            rel.src_class
+        ).join(
+            proxy.local_attr
+        ).join(
+            proxy.remote_attr
+        ).filter(
+            self.id_col(rel.src_class) == obj_id
         )
         if full_object:
             query = query.options(
@@ -1667,62 +944,24 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
-        rel = relationship.obj
-        rel_class = rel.mapper.class_
-        rel_view = self.view_instance(rel_class)
-        local_col, rem_col = rel.local_remote_pairs[0]
-        query = self.dbsession.query(rel_class)
-        if full_object:
-            query = query.options(
-                load_only(*rel_view.allowed_requested_query_columns.keys())
-            )
+        rel_model = relationship.tgt_class
+        tables = [
+            getattr(col, 'table', None)
+            for col in relationship.obj.local_remote_pairs[0]
+        ]
+        if tables[0] is tables[1]:
+            model = aliased(self.model)
         else:
-            query = query.options(load_only(rel_view.key_column.name))
-        if rel.direction is ONETOMANY:
-            query = query.filter(obj_id == rem_col)
-        elif rel.direction is MANYTOMANY:
-            query = query.filter(
-                obj_id == rel.primaryjoin.right
-            ).filter(
-                self.id_col(rel_class) == rel.secondaryjoin.right
-            )
-        elif rel.direction is MANYTOONE:
-            if rel.primaryjoin.left.table == rel.primaryjoin.right.table:
-                # This is a self-joined table with a child->parent rel. AKA
-                # adjacancy list. We need aliasing.
-                rel_class_alias = aliased(rel_class)
+            model = self.model
+        return self.dbsession.query(rel_model).select_from(
+            model
+        ).join(
+            getattr(model, relationship.name)
+        ).filter(
+            self.id_col(model) == obj_id
+        )
 
-                # Assume a 'Node' model with 'id' and 'parent_id' attributes and
-                # a relationship 'parent' such that parent_id stores the id of
-                # this Node's parent.
-                #
-                # The parent_id column from the aliased class.
-                right_alias = getattr(rel_class_alias, rel.primaryjoin.right.key)
-                # The id column from the aliased class.
-                left_alias = getattr(rel_class_alias, rel.primaryjoin.left.key)
-
-                query = query.join(
-                    rel_class_alias,
-                    # Node.id == Aliased.parent_id
-                    rel.primaryjoin.left == right_alias
-                ).filter(
-                    # Aliased.id == obj_id
-                    left_alias == obj_id
-                )
-            else:
-                query = query.filter(
-                    rel.primaryjoin
-                ).filter(
-                    self.id_col(self.model_from_table(local_col.table)) == obj_id
-                )
-        else:
-            raise HTTPError('Unknown relationships direction, "{}".'.format(
-                rel.direction.name
-            ))
-
-        return query
-
-    def related_query(self, obj_id, relationship, full_object=True):
+    def related_query(self, obj, relationship, full_object=True):
         """Construct query for related objects.
 
         Parameters:
@@ -1744,6 +983,10 @@ class CollectionViewBase:
             sqlalchemy.orm.query.Query: query which will fetch related
             object(s).
         """
+        if obj is None:
+            obj_id = None
+        else:
+            obj_id = self.id_col(obj)
         if isinstance(relationship.obj, AssociationProxy):
             query = self.association_proxy_query(
                 obj_id, relationship, full_object=full_object
@@ -1764,14 +1007,13 @@ class CollectionViewBase:
             bool: True if object exists, False if not.
         """
         try:
-            item = self.dbsession.query(
+            return bool(self.dbsession.query(
                 self.model
             ).options(
                 load_only(self.key_column.name)
-            ).get(obj_id)
+            ).filter(self.key_column == obj_id).one_or_none())
         except (sqlalchemy.exc.DataError, sqlalchemy.exc.StatementError):
-            item = False
-        return bool(item)
+            return False
 
     def mapped_info_from_name(self, name, model=None):
         """Get the pyramid_jsonapi info dictionary for a mapped object.
@@ -1786,127 +1028,6 @@ class CollectionViewBase:
         return sqlalchemy.inspect(model or self.model).all_orm_descriptors.get(
             name
         ).info.get('pyramid_jsonapi', {})
-
-    def serialise_resource_identifier(self, obj_id):
-        """Return a resource identifier dictionary for id "obj_id"
-
-        """
-        ret = {
-            'type': self.collection_name,
-            'id': str(obj_id)
-        }
-
-        for callback in self.callbacks['after_serialise_identifier']:
-            ret = callback(self, ret)
-
-        return ret
-
-    def serialise_db_item(
-            self, item,
-            included, include_path=None,
-    ):
-        """Serialise an individual database item to JSON-API.
-
-        Arguments:
-            item: item to serialise.
-
-        Keyword Arguments:
-            included (dict): dictionary to be filled with included resource
-                objects.
-            include_path (list): list tracking current include path for
-                recursive calls.
-
-        Returns:
-            jsonapi.Resource:
-        """
-
-        include_path = include_path or []
-
-        # Item's id and type are required at the top level of json-api
-        # objects.
-        # The item's id.
-        item_id = self.id_col(item)
-        # JSON API type.
-        item_url = self.request.route_url(
-            self.api.endpoint_data.make_route_name(self.collection_name, suffix='item'),
-            **{'id': item_id}
-        )
-
-        resource_json = pyramid_jsonapi.jsonapi.Resource(self)
-        resource_json.id = str(item_id)
-        resource_json.attributes = {
-            key: getattr(item, key)
-            for key in self.requested_attributes.keys()
-            if self.mapped_info_from_name(key).get('visible', True)
-        }
-        resource_json.links = {'self': item_url}
-
-        rels = {}
-        for key, rel in self.relationships.items():
-            is_included = False
-            if '.'.join(include_path + [key]) in self.requested_include_names():
-                is_included = True
-            if key not in self.requested_relationships and not is_included:
-                continue
-            if not self.mapped_info_from_name(key).get('visible', True):
-                continue
-
-            rel_dict = {
-                'data': None,
-                'links': {
-                    'self': '{}/relationships/{}'.format(item_url, key),
-                    'related': '{}/{}'.format(item_url, key)
-                },
-                'meta': {
-                    'direction': rel.direction.name,
-                    'results': {}
-                }
-            }
-            rel_view = self.view_instance(rel.tgt_class)
-
-            query = self.related_query(item_id, rel, full_object=is_included)
-
-            many = rel.direction is ONETOMANY or rel.direction is MANYTOMANY
-            if many:
-                limit = self.related_limit(rel)
-                rel_dict['meta']['results']['limit'] = limit
-                query = query.limit(limit)
-
-            data = []
-            ritems = query.all()
-            if not many and len(ritems) > 1:
-                raise HTTPInternalServerError("Multiple results for TOONE relationship.")
-
-            for ritem in ritems:
-                data.append(
-                    rel_view.serialise_resource_identifier(
-                        self.id_col(ritem)
-                    )
-                )
-                if is_included:
-                    included[
-                        (rel_view.collection_name, self.id_col(ritem))
-                    ] = rel_view.serialise_db_item(
-                        ritem,
-                        included, include_path + [key]
-                    )
-            if many:
-                rel_dict['meta']['results']['available'] = query.count()
-                rel_dict['meta']['results']['returned'] = len(data)
-                rel_dict['data'] = data
-            else:
-                if data:
-                    rel_dict['data'] = data[0]
-
-            if key in self.requested_relationships:
-                rels[key] = rel_dict
-
-        resource_json.relationships = rels
-
-        for callback in self.callbacks['after_serialise_object']:
-            callback(self, resource_json)
-
-        return resource_json.as_dict()
 
     @classmethod
     @functools.lru_cache()
@@ -1953,7 +1074,11 @@ class CollectionViewBase:
             cls.max_limit,
             int(request.params.get('page[limit]', cls.default_limit))
         )
+        if info['page[limit]'] < 0:
+            raise HTTPBadRequest('page[limit] must not be negative.')
         info['page[offset]'] = int(request.params.get('page[offset]', 0))
+        if info['page[offset]'] < 0:
+            raise HTTPBadRequest('page[offset] must not be negative.')
 
         # Sorting.
         # Use param 'sort' as per spec.
@@ -1981,6 +1106,7 @@ class CollectionViewBase:
 
         # Find all parametrised parameters ( :) )
         info['_filters'] = {}
+        info['_rql_filters'] = []
         info['_page'] = {}
         for param in request.params.keys():
             match = re.match(r'(.*?)\[(.*?)\]', param)
@@ -2005,22 +1131,30 @@ class CollectionViewBase:
             #
             # Find all the filters.
             if match.group(1) == 'filter':
-                colspec = match.group(2)
-                operator = 'eq'
-                try:
-                    colspec, operator = colspec.split(':')
-                except ValueError:
-                    pass
-                colspec = colspec.split('.')
-                info['_filters'][param] = {
-                    'colspec': colspec,
-                    'op': operator,
-                    'value': val
-                }
+                if match.group(2) == '*rql':
+                    info['_rql_filters'].append(val)
+                else:
+                    colspec = match.group(2)
+                    operator = 'eq'
+                    try:
+                        colspec, operator = colspec.split(':')
+                    except ValueError:
+                        pass
+                    colspec = colspec.split('.')
+                    info['_filters'][param] = {
+                        'colspec': colspec,
+                        'op': operator,
+                        'value': val
+                    }
 
             # Paging.
             elif match.group(1) == 'page':
                 info['_page'][match.group(2)] = val
+
+        # Options.
+        info['pj_include_count'] = asbool(
+            request.params.get('pj_include_count', 'false')
+        )
 
         return info
 
@@ -2140,9 +1274,7 @@ class CollectionViewBase:
                     }
         """
         return {
-            k: v for k, v in itertools.chain(
-                self.attributes.items(), self.hybrid_attributes.items()
-            )
+            k: v for k, v in self.all_attributes.items()
             if k in self.requested_field_names
         }
 
@@ -2251,6 +1383,19 @@ class CollectionViewBase:
                     inc.add('.'.join(curname))
         return inc
 
+    # @functools.lru_cache()
+    def path_is_included(self, path):
+        """Test if path is in requested includes.
+
+        Args:
+            path (list): list representation if include path to test.
+
+        Returns:
+            bool: True if path is in requested includes.
+
+        """
+        return '.'.join(path) in self.requested_include_names()
+
     @property
     def bad_include_paths(self):
         """Return a set of invalid 'include' parameters.
@@ -2295,93 +1440,172 @@ class CollectionViewBase:
         Returns:
             class: subclass of CollectionViewBase providing view for ``model``.
         """
-        return self.api.view_classes[model](self.request)
+        view_instance = self.api.view_classes[model](self.request)
+        try:
+            view_instance.pj_shared = self.pj_shared
+        except AttributeError:
+            pass
+        return view_instance
 
     @classmethod
-    def append_callback_set(cls, set_name):
-        """Append a named set of callbacks from ``callback_sets``.
-
-        Args:
-            set_name (str): key in ``callback_sets``.
-        """
-        for cb_name, callback in cls.callback_sets[set_name].items():
-            cls.callbacks[cb_name].append(callback)
-
-    def acso_after_serialise_object(view, obj):  # pylint:disable=no-self-argument
-        """Standard callback altering object to take account of permissions.
-
-        Args:
-            obj (dict): the object immediately after serialisation.
-
-        Returns:
-            dict: the object, possibly with some fields removed, or meta
-            information indicating permission was denied to the whole object.
-        """
-        if view.allowed_object(obj):
-            # Remove any forbidden fields that have been added by other
-            # callbacks. Those from the model won't have been added in the first
-            # place.
-
-            # Keep track so we can tell the caller which ones were forbidden.
-            forbidden = set()
-            for attr in ('attributes', 'relationships'):
-                if hasattr(obj, attr):
-                    new = {}
-                    for name, val in getattr(obj, attr).items():
-                        if name in view.allowed_fields:
-                            new[name] = val
-                        else:
-                            forbidden.add(name)
-                    setattr(obj, attr, new)
-            # Now add all the forbidden fields from the model to the forbidden
-            # list. They don't need to be removed from the serialised object
-            # because they should not have been added in the first place.
-            for field in view.requested_field_names:
-                if field not in view.allowed_fields:
-                    forbidden.add(field)
-            if not hasattr(obj, 'meta'):
-                obj.meta = {}
-            obj.meta['forbidden_fields'] = list(forbidden)
-        else:
-            obj.meta = {
-                'errors': [
-                    {
-                        'code': 403,
-                        'title': 'Forbidden',
-                        'detail': 'No permission to view {}/{}.'.format(
-                            obj.type, obj.id
-                        )
-                    }
-                ]
-            }
-        return obj
-
-    def acso_after_get(view, ret):  # pylint:disable=unused-argument, no-self-argument, no-self-use
-        """Standard callback throwing 403 (Forbidden) based on information in meta.
-
-        Args:
-            ret (jsonapi.Document): object which would have been returned from get().
-
-        Returns:
-            jsonapi.Document: the same object if an error has not been raised.
-
-        Raises:
-            HTTPForbidden
-        """
-        obj = ret
-        errors = []
+    def _add_stage_handler(
+        cls, view_method, stage_name, hfunc,
+        add_after='end',
+        add_existing=False,
+    ):
+        '''
+        Add a stage handler to a stage of a view method.
+        '''
+        vm_func = getattr(cls, view_method)
         try:
-            errors = obj.meta['errors']
+            stage = vm_func.stages[stage_name]
         except KeyError:
-            return ret
-        for error in errors:
-            if error['code'] == 403:
-                raise HTTPForbidden(error['detail'])
-        return ret
+            raise KeyError(
+                f'Endpoint {view_method} has no stage {stage_name}.'
+            )
+        try:
+            index = stage.index(hfunc)
+        except ValueError:
+            index = False
+        if index and not add_existing:
+            return
+        if add_after == 'start':
+            stage.appendleft(hfunc)
+        elif add_after == 'end':
+            stage.append(hfunc)
+        else:
+            stage.insert(stage.index(add_after) + 1, hfunc)
 
-    callback_sets = {
-        'access_control_serialised_objects': {
-            'after_serialise_object': acso_after_serialise_object,
-            'after_get': acso_after_get
-        }
-    }
+    @classmethod
+    def add_stage_handler(
+        cls, methods, stages, hfunc,
+        add_after='end',
+        add_existing=False,
+    ):
+        '''
+        Add a stage handler to stages of view methods.
+
+        Arguments:
+            methods: an iterable of view method names (``get``,
+                ``collection_get`` etc.).
+            stages: an iterable of stage names.
+            hfunc: the handler function.
+            add_existing: If True, add this handler even if it exists in the
+                deque.
+            add_after: 'start', 'end', or an existing function.
+        '''
+        for vm_name in methods:
+            vm_func = getattr(cls, vm_name)
+            for stage_name in stages:
+                cls._add_stage_handler(
+                    vm_name, stage_name, hfunc, add_after, add_existing,
+                )
+
+    @staticmethod
+    def true_filter(*args, **kwargs):
+        return True
+
+    def permission_to_dict(self, permission):
+        if permission is False:
+            return {
+                'id': False,
+                'attributes': set(),
+                'relationships': set()
+            }
+        if permission is True:
+            allowed = {
+                'id': True,
+                'attributes': set(self.all_attributes),
+                'relationships': set(self.relationships),
+            }
+        else:
+            # Make a shallow copy of permission so we don't alter it.
+            allowed = dict()
+            allowed.update(permission)
+        # allowed should now be a dictionary.
+        if 'id' not in allowed:
+            allowed['id'] = True
+        if allowed['attributes'] is True:
+            allowed['attributes'] = set(self.all_attributes)
+        if allowed['attributes'] is False:
+            allowed['attributes'] = set()
+        if allowed['relationships'] is True:
+            allowed['relationships'] = set(self.relationships)
+        if allowed['relationships'] is False:
+            allowed['relationships'] = set()
+        return allowed
+
+    @classmethod
+    def register_permission_filter(cls, permissions, stages, pfunc):
+        # Permission filters should have the signature:
+        #   pfunc(object_rep, view, stage, permission)
+
+        # expand out 'read' and 'write' http method sets into individual
+        # permissions.
+        perms = []
+        for p in permissions:
+            if p == 'read' or p == 'write':
+                perms.extend(cls.api.endpoint_data.endpoints['method_sets'][p])
+            else:
+                perms.append(p)
+        cls.api.enable_permission_handlers(perms, stages)
+        for stage_name in stages:
+            for perm in perms:
+                perm = perm.lower()
+
+                # Register the filter function.
+                def dictified_pfunc(view, object_rep):
+                    return view.permission_to_dict(
+                        pfunc(
+                            object_rep,
+                            view=view,
+                            stage=stage_name,
+                            permission=perm,
+                        )
+                    )
+                cls.permission_filters[perm][stage_name] = dictified_pfunc
+
+    def permission_filter(self, permission, stage_name, default=None):
+        """
+        Find the permission filter given a permission and stage name.
+        """
+        default = default or (lambda *a, **kw: True)
+        try:
+            filter = self.permission_filters[permission][stage_name]
+        except KeyError as e:
+            filter = lambda view, object_rep: view.permission_to_dict(
+                default(
+                    object_rep,
+                    view_instance=view,
+                    stage_name=stage_name,
+                    permission_sought=permission,
+                )
+            )
+        return partial(filter, self)
+
+    @classmethod
+    def permission_handler(cls, endpoint_name, stage_name):
+        # Look for the most specific permission handler first: see if one is
+        # defined by the workflow method module (wf_kind_endpoint).
+        wf_kind_endpoint = importlib.import_module(
+            getattr(cls.api.settings, 'workflow_{}'.format(endpoint_name))
+        )
+        try:
+            return wf_kind_endpoint.permission_handler(stage_name)
+        except (KeyError, AttributeError):
+            # Either no permission_handler (AttributeError) or it doesn't handle
+            # method_name or stage_name (KeyError). Either way look for a
+            # handler in the wf_kind package.
+            wf_kind = importlib.import_module(wf_kind_endpoint.__package__)
+            # Last part after the underscore of the endpoint name should be the
+            # HTTP method/verb.
+            try:
+                return wf_kind.permission_handler(endpoint_name, stage_name)
+            except (KeyError, AttributeError):
+                # Use generic workflow module if it handles this stage.
+                try:
+                    return wf.permission_handler(endpoint_name, stage_name)
+                except KeyError:
+                    # This method and stage is completely unhandled. Return a
+                    # handler that effectively does nothing.
+                    return lambda view, arg, pdata: arg

@@ -1,6 +1,6 @@
 """Classes to store and manipulate endpoints and routes."""
 
-from functools import partial
+from functools import partial, lru_cache
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPCreated,
@@ -92,6 +92,10 @@ class EndpointData():
         # Mandatory 'http_method' keys: function
         # Optional 'http_method' keys: renderer
         self.endpoints = {
+            'method_sets': {
+                'read': {'GET'},
+                'write': {'POST', 'PATCH', 'DELETE'},
+            },
             'query_parameters': {
                 'fields': '',
                 'filter': '',
@@ -106,6 +110,7 @@ class EndpointData():
                                             'If the server does not support sorting as specified in the query parameter sort, it MUST return 400 Bad Request.',
                                             'If an endpoint does not support the include parameter, it MUST respond with 400 Bad Request to any requests that include it.',
                                             'If the request content is malformed in some way.']},
+                HTTPForbidden: {'reason': ['The authenticated user is not allowed to access the resource in this way.']},
             },
             'endpoints': {
                 'collection': {
@@ -310,3 +315,45 @@ class EndpointData():
         # method instance
         if name in self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()]:
             yield self.endpoints['endpoints'][ep_type]['http_methods'][method.upper()][name]
+
+    def get_function_name(self, view, http_method, route_pattern):
+        """Find the name of the function which handles the given route and method.
+        """
+        for endpoint, endpoint_opts in self.endpoints['endpoints'].items():
+            ep_route_pattern = self.rp_constructor.api_pattern(
+                view.collection_name,
+                self.route_pattern_to_suffix(
+                    endpoint_opts.get('route_pattern', {})
+                )
+            )
+            if ep_route_pattern == route_pattern:
+                return endpoint_opts['http_methods'][http_method.upper()]['function']
+        raise Exception(
+            'No endpoint function found for {}, {}, {},'.format(
+                view.collection_name,
+                http_method,
+                route_pattern,
+            )
+        )
+
+    @property
+    @lru_cache(maxsize=128)
+    def http_to_view_methods(self):
+        ep_map = {}
+        for ep_type in self.endpoints['endpoints'].values():
+            for http_name, data in ep_type['http_methods'].items():
+                http_name = http_name.lower()
+                try:
+                    view_methods = ep_map[http_name]
+                except KeyError:
+                    view_methods = ep_map[http_name] = set()
+                view_methods.add(data['function'])
+        ep_map['write'] = set()
+        for m in map(str.lower, self.endpoints['method_sets']['write']):
+            ep_map['write'] |= ep_map[m]
+        ep_map['read'] = set()
+        for m in map(str.lower, self.endpoints['method_sets']['read']):
+            ep_map['read'] |= ep_map[m]
+        ep_map['all'] = ep_map['read'] | ep_map['write']
+
+        return ep_map

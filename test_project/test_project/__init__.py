@@ -5,6 +5,7 @@ from . import views
 
 # The jsonapi module.
 import pyramid_jsonapi
+import pyramid_jsonapi.workflow as wf
 
 # Import models as a module: needed for create_jsonapi...
 from . import models
@@ -17,7 +18,7 @@ from pyramid.httpexceptions import (
 test_settings = {
     'models_iterable': {
         'module': models,
-        'list': [models.Person, models.Blog],
+        'list': [models.Blog, models.Person, models.Post],
         'composite_key': [models2.CompositeKey]
     }
 }
@@ -27,41 +28,14 @@ import datetime
 def datetime_adapter(obj, request):
     return obj.isoformat()
 
-
-def person_callback_add_information(view, ret):
-    param = view.request.params.get(
-        'fields[{}]'.format(view.collection_name)
-    )
-    if param is None:
-        requested_fields = {'name_copy', 'age'}
-    else:
-        requested_fields = view.requested_field_names
-    if 'name_copy' in requested_fields:
-        ret.attributes['name_copy'] = ret.attributes['name']
-    if 'age' in requested_fields:
-        ret.attributes['age'] = 42
-    return ret
-
-
-def person_allowed_fields(self):
-    if self.request.method == 'GET':
-        return set(self.fields) | {'name_copy'}
-    else:
-        return set(self.fields)
-
-
-def person_allowed_object(self, obj):
-    if self.request.method == 'GET':
-        try:
-            name = obj.attributes['name']
-        except KeyError:
-            return True
-        if name == 'secret_squirrel':
-            return False
-        else:
-            return True
-    else:
-        return True
+# Make sure the schema generator understands some types from sqlalchemy_utils.
+import sqlalchemy_utils
+import alchemyjsonschema
+alchemyjsonschema.default_column_to_schema.update(
+    {
+        sqlalchemy_utils.LtreeType: "string"
+    }
+)
 
 
 def main(global_config, **settings):
@@ -96,17 +70,32 @@ def main(global_config, **settings):
     # Create the routes and views automagically.
     pj.create_jsonapi_using_magic_and_pixie_dust()
 
-    person_view = pj.view_classes[
-        models.Person
-    ]
-    person_view.callbacks['after_serialise_object'].appendleft(
-        person_callback_add_information
-    )
-    person_view.allowed_fields = property(person_allowed_fields)
-    person_view.allowed_object = person_allowed_object
-    pj.append_callback_set_to_all_views(
-        'access_control_serialised_objects'
-    )
+    person_view = pj.view_classes[models.Person]
+    blogs_view = pj.view_classes[models.Blog]
+    def sh_add_some_info(doc, view, stage, view_method):
+        doc['meta']['added'] = 'some random info'
+        return doc
+
+    # Add some random information via the alter_document stage.
+    person_view.get.stages['alter_document'].append(sh_add_some_info)
+
+    # Apply GET permission handlers at the alter_direct_results and
+    # alter_related_results stages.
+    # pj.enable_permission_handlers('get', ['alter_direct_results', 'alter_related_results'])
+
+    # Add permission filters to do the logic of accepting or rejecting items.
+    # person_view.register_permission_filter(
+    #     ['get'],
+    #     ['alter_direct_results', 'alter_related_results'],
+    #     lambda obj, *args, **kwargs: obj.object.name != 'alice',
+    # )
+    # blogs_view.register_permission_filter(
+    #     ['get'],
+    #     ['alter_direct_results', 'alter_related_results'],
+    #     lambda obj, *args, **kwargs: obj.object.id != 3,
+    # )
 
     # Back to the usual pyramid stuff.
-    return config.make_wsgi_app()
+    app = config.make_wsgi_app()
+    app.pj = pj
+    return app

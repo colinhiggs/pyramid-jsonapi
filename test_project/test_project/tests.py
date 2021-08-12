@@ -18,13 +18,16 @@ import urllib
 import warnings
 import json
 from parameterized import parameterized
-import pyramid_jsonapi.jsonapi
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
+import pprint
+import ltree
 
 from test_project.models import (
     DBSession,
-    Base
+    Base,
+    Person,
+    Blog,
 )
 
 from test_project import test_data
@@ -83,6 +86,19 @@ rel_infos = (
 )
 
 
+class MyTestApp(webtest.TestApp):
+
+    def _check_status(self, status, res):
+        try:
+            super()._check_status(status, res)
+        except webtest.AppError as e:
+            errors = res.json_body.get('errors', [{}])
+            raise webtest.AppError(
+                '%s\n%s',
+                errors, res.json_body.get('traceback')
+            )
+
+
 def setUpModule():
     '''Create a test DB and import data.'''
     # Create a new database somewhere in /tmp
@@ -90,6 +106,7 @@ def setUpModule():
     global engine
     postgresql = testing.postgresql.Postgresql(port=7654)
     engine = create_engine(postgresql.url())
+    ltree.add_ltree_extension(engine)
     DBSession.configure(bind=engine)
 
 
@@ -99,9 +116,14 @@ def tearDownModule():
     DBSession.close()
     postgresql.stop()
 
+
 def rels_doc_func(func, i, param):
     src, tgt, comment = param[0]
     return '{}:{}/{} ({})'.format(func.__name__, src.collection, src.rel, comment)
+
+
+def make_ri(_type, _id):
+    return { 'type': _type, 'id': _id }
 
 
 class DBTestBase(unittest.TestCase):
@@ -123,7 +145,7 @@ class DBTestBase(unittest.TestCase):
         Base.metadata.drop_all(engine)
 
     def test_app(self, options=None):
-        if (not options) and self._test_app:
+        if (options is None) and self._test_app:
             # If there are no options and we have a cached app, return it.
             return self._test_app
         return self.new_test_app(options)
@@ -146,7 +168,9 @@ class DBTestBase(unittest.TestCase):
                 "ignore",
                 category=SAWarning
             )
-            test_app = webtest.TestApp(get_app(config_path))
+            app = get_app(config_path)
+            test_app = MyTestApp(app)
+            test_app._pj_app = app
         if options:
             os.remove(config_path)
         return test_app
@@ -160,6 +184,749 @@ class DBTestBase(unittest.TestCase):
 class TestTmp(DBTestBase):
     '''To isolate tests so they can be run individually during development.'''
 
+    # def test_ep_map(self):
+    #     test_app = self.test_app({})
+    #     pj = test_app._pj_app.pj
+    #     print(pj.endpoint_data.http_to_view_methods)
+
+    # @parameterized.expand(rel_infos[1:2], doc_func=rels_doc_func)
+    # def test_rels_related_get(self, src, tgt, comment):
+    #     ''''related' link should fetch related resource(s).
+    #
+    #     If present, a related resource link MUST reference a valid URL, even if
+    #     the relationship isn’t currently associated with any target resources.
+    #     '''
+    #     # Fetch item 1 from the collection
+    #     r = self.test_app().get('/{}/1'.format(src.collection))
+    #     item = r.json['data']
+    #
+    #     # Fetch the related url.
+    #     url = item['relationships'][src.rel]['links']['related']
+    #     data = self.test_app().get(url).json['data']
+    #
+    #     # Check that the returned data is of the expected type.
+    #     if tgt.many:
+    #         self.assertIsInstance(data, list)
+    #         for related_item in data:
+    #             self.assertEqual(related_item['type'], tgt.collection)
+    #     else:
+    #         self.assertIsInstance(data, dict)
+    #         self.assertEqual(data['type'], tgt.collection)
+
+
+class TestPermissions(DBTestBase):
+    '''Test permission handling mechanisms.
+    '''
+
+    def test_get_alter_result_item(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to see alice (people/1)
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['read'],
+            ['alter_result'],
+            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+        )
+        # Shouldn't be allowed to see people/1 (alice)
+        test_app.get('/people/1', status=403)
+        # Should be able to see people/2 (bob)
+        test_app.get('/people/2')
+
+    def test_get_alter_result_item_individual_attributes(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def pfilter(obj, *args, **kwargs):
+            if obj.object.name == 'alice':
+                return {'attributes': {'name'}, 'relationships': True}
+            else:
+                return True
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            pfilter,
+        )
+        # Alice should have attribute 'name' but not 'age'.
+        alice = test_app.get('/people/1').json_body['data']
+        self.assertIn('name', alice['attributes'])
+        self.assertNotIn('age', alice['attributes'])
+
+    def test_get_alter_result_item_individual_rels(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def pfilter(obj, *args, **kwargs):
+            if obj.object.name == 'alice':
+                return {'attributes': True, 'relationships': {'blogs'}}
+            else:
+                return True
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            pfilter,
+        )
+        # Alice should have relationship 'blogs' but not 'posts'.
+        alice = test_app.get('/people/1').json_body['data']
+        self.assertIn('blogs', alice['relationships'])
+        self.assertNotIn('posts', alice['relationships'])
+
+    def test_get_alter_result_item_rel_ids(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to see blogs/1 (one of alice's 2 blogs)
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            lambda obj, *args, **kwargs: obj.object.id != 1,
+        )
+        alice = test_app.get('/people/1').json_body['data']
+        alice_blogs = alice['relationships']['blogs']['data']
+        self.assertIn({'type': 'blogs', 'id': '2'}, alice_blogs)
+        self.assertNotIn({'type': 'blogs', 'id': '1'}, alice_blogs)
+
+    def test_get_alter_result_item_included_items(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to see blogs/1 (one of alice's 2 blogs)
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            lambda obj, *args, **kwargs: obj.object.id != 1,
+        )
+        included = test_app.get('/people/1?include=blogs').json_body['included']
+        included_blogs = {
+            item['id'] for item in included if item['type'] == 'blogs'
+        }
+        self.assertNotIn('1', included_blogs)
+        self.assertIn('2', included_blogs)
+
+    def test_get_alter_result_collection(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to see alice (people/1)
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+        )
+        # Make sure we get the lowest ids with a filter.
+        ret = test_app.get('/people?filter[id:lt]=3').json_body
+        people = ret['data']
+        ppl_ids = { person['id'] for person in people }
+        self.assertNotIn('1', ppl_ids)
+        self.assertIn('2', ppl_ids)
+
+    def test_get_alter_result_collection_meta_info(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to see alice (people/1)
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+        )
+        # Make sure we get the lowest ids with a filter.
+        res = test_app.get('/people?filter[id:lt]=3').json_body
+        meta = res['meta']
+        self.assertIn('people::1', meta['rejected']['objects'])
+
+    def test_related_get_alter_result(self):
+        '''
+        'related' link should fetch only allowed related resource(s).
+        '''
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to see blog with title 'main: alice' (aka blogs/1)
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            lambda obj, *args, **kwargs: obj.object.title != 'main: alice',
+        )
+        r = test_app.get('/people/1/blogs').json_body
+        data = r['data']
+        ids = {o['id'] for o in data}
+        self.assertIsInstance(data, list)
+        self.assertNotIn('1', ids)
+
+        # Not allowed to see alice (people/1)
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['get'],
+            ['alter_result', ],
+            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+        )
+        r = test_app.get('/blogs/2/owner', status=403)
+
+    def test_post_alterreq_collection(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        # Not allowed to post the name "forbidden"
+        def pfilter(obj, *args, **kwargs):
+            return obj['attributes'].get('name') != 'forbidden'
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            pfilter,
+        )
+        # Make sure we can't post the forbidden name.
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'forbidden'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+        # Make sure we can post some other name.
+        test_app.post_json(
+            '/people',
+            {
+                'data': {
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'allowed'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+    def test_post_alterreq_collection_with_rels(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def blogs_pfilter(obj, *args, **kwargs):
+            return {'attributes': True, 'relationships': True}
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow POST to all atts and to 3 relationships.
+        def people_pfilter(obj, *args, **kwargs):
+            return {
+                'attributes': True,
+                'relationships': {
+                    'comments', 'articles_by_proxy', 'articles_by_assoc'
+                }
+            }
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /comments: allow PATCH (required to set 'comments.author') on all
+        # but comments/4.
+        pj.view_classes[test_project.models.Comment].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'4'}
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'10'}
+        )
+        person_in = {
+            'data': {
+                'type': 'people',
+                'attributes': {
+                    'name': 'post perms test'
+                },
+                'relationships': {
+                    'posts': {
+                        'data': [
+                            {'type': 'posts', 'id': '20'},
+                            {'type': 'posts', 'id': '21'}
+                        ]
+                    },
+                    'comments': {
+                        'data': [
+                            {'type': 'comments', 'id': '4'},
+                            {'type': 'comments', 'id': '5'},
+                        ]
+                    },
+                    'articles_by_assoc': {
+                        'data': [
+                            {'type': 'articles_by_assoc', 'id': '10'},
+                            {'type': 'articles_by_assoc', 'id': '11'},
+                        ]
+                    },
+                    'articles_by_proxy': {
+                        'data': [
+                            {'type': 'articles_by_obj', 'id': '10'},
+                            {'type': 'articles_by_obj', 'id': '11'},
+                        ]
+                    }
+                }
+            }
+        }
+        person_out = test_app.post_json(
+            '/people',
+            person_in,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body['data']
+        rels = person_out['relationships']
+        self.assertEqual(len(rels['posts']['data']),0)
+        self.assertIn({'type': 'comments', 'id': '5'}, rels['comments']['data'])
+        self.assertNotIn({'type': 'comments', 'id': '4'}, rels['comments']['data'])
+        self.assertIn({'type': 'articles_by_assoc', 'id': '10'}, rels['articles_by_assoc']['data'])
+        self.assertNotIn({'type': 'articles_by_assoc', 'id': '11'}, rels['articles_by_assoc']['data'])
+        self.assertIn({'type': 'articles_by_obj', 'id': '11'}, rels['articles_by_proxy']['data'])
+        self.assertNotIn({'type': 'articles_by_obj', 'id': '10'}, rels['articles_by_proxy']['data'])
+
+        # Still need to test a to_one relationship. Posts has one of those.
+        # Switching to " for quoting so that the following can be copy/pasted as
+        # JSON in manual tests.
+        post_json = {
+            "data": {
+                "type": "posts",
+                "attributes": {
+                    "title": "test"
+                },
+                "relationships": {
+                    "author": {
+                        "data": {"type": "people", "id": "10"}
+                    },
+                    "blog": {
+                        "data": {"type": "blogs", "id": "10"}
+                    }
+                }
+            }
+        }
+        # The Person permission filter defined above shouldn't allow us to POST
+        # post_json because we don't have permission to POST to Person.posts.
+        test_app.post_json(
+            '/posts',
+            post_json,
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=409 # this should probably be a different status.
+        )
+        # Replace the permission filter for Person - we need to be able to
+        # alter the Person.posts relationship.
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda *a, **kw: True,
+        )
+        post_out = test_app.post_json(
+            '/posts',
+            post_json,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+
+    def test_post_alterreq_relationship(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def blogs_pfilter(obj, *args, **kwargs):
+            if obj['id'] == '12':
+                return False
+            else:
+                return {'attributes': True, 'relationships': True}
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow POST to all atts and to 3 relationships.
+        def people_pfilter(obj, *args, **kwargs):
+            if kwargs['permission'] == 'delete' and obj['id'] == '20':
+                return False
+            if kwargs['permission'] == 'post' and obj['id'] == '12':
+                return False
+            return {
+                'attributes': True,
+                'relationships': {
+                    'blogs', 'articles_by_proxy', 'articles_by_assoc'
+                }
+            }
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post', 'delete'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'10'}
+        )
+        # ONETOMANY relationship.
+        out = test_app.post_json(
+            '/people/1/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                    {'type': 'blogs', 'id': '11'},
+                    {'type': 'blogs', 'id': '12'},
+                    {'type': 'blogs', 'id': '20'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body
+        # pprint.pprint(out)
+
+        # Now fetch people/1 and see if the new blogs are there.
+        p1 = test_app.get('/people/1').json_body['data']
+        blogs = p1['relationships']['blogs']['data']
+        # Should have left the original blogs in place.
+        self.assertIn({'type': 'blogs', 'id': '1'}, blogs)
+        # Should have added blogs/10 (previously no owner)
+        self.assertIn({'type': 'blogs', 'id': '10'}, blogs)
+        # Should have added blogs/11 (previously owned by 11)
+        self.assertIn({'type': 'blogs', 'id': '11'}, blogs)
+        # blogs/12 disallowed by blogs filter.
+        self.assertNotIn({'type': 'blogs', 'id': '12'}, blogs)
+        # blogs/20 disallowed by people filter on people/20.
+        self.assertNotIn({'type': 'blogs', 'id': '20'}, blogs)
+
+        # MANYTOMANY relationship.
+        out = test_app.post_json(
+            '/people/1/relationships/articles_by_assoc',
+            {
+                'data': [
+                    {'type': 'articles_by_assoc', 'id': '10'},
+                    {'type': 'articles_by_assoc', 'id': '11'},
+                    {'type': 'articles_by_assoc', 'id': '12'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body
+        p1 = test_app.get('/people/1').json_body['data']
+        articles = p1['relationships']['articles_by_assoc']['data']
+        # Should have added articles_by_assoc/10
+        self.assertIn({'type': 'articles_by_assoc', 'id': '10'}, articles)
+        # articles_by_assoc/11 disallowed by articles_by_assoc filter.
+        self.assertNotIn({'type': 'articles_by_assoc', 'id': '11'}, articles)
+        # articles_by_assoc/12 disallowed by people filter.
+        # self.assertNotIn({'type': 'articles_by_assoc', 'id': '12'}, articles)
+
+    def test_patch_alterreq_item_with_rels(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def blogs_pfilter(obj, **kwargs):
+            return {'attributes': True, 'relationships': True}
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow PATCH to all atts and to 3 relationships.
+        def people_pfilter(obj, **kwargs):
+            return {
+                'attributes': True,
+                'relationships': {
+                    'comments', 'articles_by_proxy', 'articles_by_assoc'
+                }
+            }
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /comments: allow PATCH (required to set 'comments.author') on all
+        # but comments/4.
+        def comments_pfilter(obj, **kwargs):
+            if obj['id'] == '4' and obj['relationships']['author']['data']['id'] == '1':
+                # We're not allowing people/1 to be the author of comments/4 for
+                # some reason.
+                return False
+            return True
+        pj.view_classes[test_project.models.Comment].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            comments_pfilter
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        person_in = {
+            'data': {
+                'type': 'people',
+                'id': '1',
+                'attributes': {
+                    'name': 'post perms test'
+                },
+                'relationships': {
+                    'posts': {
+                        'data': [
+                            {'type': 'posts', 'id': '1'},
+                            {'type': 'posts', 'id': '2'},
+                            {'type': 'posts', 'id': '3'},
+                            {'type': 'posts', 'id': '20'},
+                        ]
+                    },
+                    'comments': {
+                        'data': [
+                            {'type': 'comments', 'id': '1'},
+                            {'type': 'comments', 'id': '4'},
+                            {'type': 'comments', 'id': '5'},
+                        ]
+                    },
+                    'articles_by_assoc': {
+                        'data': [
+                            {'type': 'articles_by_assoc', 'id': '10'},
+                            {'type': 'articles_by_assoc', 'id': '11'},
+                        ]
+                    },
+                    'articles_by_proxy': {
+                        'data': [
+                            {'type': 'articles_by_obj', 'id': '1'},
+                            {'type': 'articles_by_obj', 'id': '10'},
+                            {'type': 'articles_by_obj', 'id': '11'},
+                        ]
+                    }
+                }
+            }
+        }
+        test_app.patch_json(
+            '/people/1',
+            person_in,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        person_out = test_app.get('/people/1').json_body['data']
+        rels = person_out['relationships']
+        # pprint.pprint(rels['posts']['data'])
+        # pprint.pprint(rels['comments']['data'])
+        # pprint.pprint(rels['articles_by_assoc']['data'])
+        # pprint.pprint(rels['articles_by_proxy']['data'])
+
+        # Still need to test a to_one relationship. Blogs has one of those.
+        def blogs_pfilter(obj, **kwargs):
+            if obj['id'] == '13':
+                # Not allowed to change blogs/13 at all.
+                return False
+            if obj['id'] == '10':
+                # Not allowed to set owner of blogs/10 to people/13
+                if obj['relationships']['owner']['data'].get('id') == '13':
+                    # print('people/13 not allowed as owner of 10')
+                    return {'attributes': True, 'relationships': {'posts'}}
+            if obj['id'] == '11':
+                # Not allowed to set owner of blogs/11 to None.
+                if obj['relationships']['owner']['data'] is None:
+                    return {'attributes': True, 'relationships': {'posts'}}
+            return True
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter
+        )
+        blog = {
+            'data': {
+                'type': 'blogs', 'id': None,
+                'relationships': {
+                    'owner': {
+                        'data': None
+                    }
+                }
+            }
+        }
+        blog_owner = blog['data']['relationships']['owner']
+        # /blogs/10 is owned by no-one. Change owner to people/11. Should
+        # Have permission for this one.
+        ppl11 = make_ri('people', '11')
+        blog['data']['id'] = '10'
+        blog_owner['data'] = ppl11
+        self.assertNotEqual(
+            test_app.get('/blogs/10').json_body['data']['relationships']['owner']['data'],
+            ppl11
+        )
+        test_app.patch_json(
+            '/blogs/10',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertEqual(
+            test_app.get('/blogs/10').json_body['data']['relationships']['owner']['data'],
+            ppl11
+        )
+        # Not allowed to set blogs/10.owner to people/13 though.
+        ppl13 = make_ri('people', '13')
+        blog_owner['data'] = ppl13
+        test_app.patch_json(
+            '/blogs/10',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertNotEqual(
+            test_app.get('/blogs/10').json_body['data']['relationships']['owner']['data'],
+            ppl13
+        )
+
+        # Should be able to switch ownership of blogs/11 to people/12
+        ppl12 = make_ri('people', '12')
+        blog['data']['id'] = '11'
+        blog_owner['data'] = ppl12
+        test_app.patch_json(
+            '/blogs/11',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertEqual(
+            test_app.get('/blogs/11').json_body['data']['relationships']['owner']['data'],
+            ppl12
+        )
+        # but not to None
+        blog_owner['data'] = None
+        test_app.patch_json(
+            '/blogs/11',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        self.assertNotEqual(
+            test_app.get('/blogs/11').json_body['data']['relationships']['owner']['data'],
+            None
+        )
+
+        # Shouldn't be allowed to patch blogs/13 at all.
+        blog['data']['id'] = '13'
+        test_app.patch_json(
+            '/blogs/13',
+            blog,
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+
+    def test_patch_alterreq_relationships(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def people_pfilter(obj, **kwargs):
+            if obj['id'] == '1':
+                return False
+            if obj['id'] == '2':
+                return {'attributes': True, 'relationships': False}
+            return True
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            people_pfilter
+        )
+        def blogs_pfilter(obj, **kwargs):
+            if obj['id'] == '10':
+                # Not allowed to change blogs/10 at all.
+                return False
+            if obj['id'] == '11':
+                # Not allowed to set owner of blogs/11 to None.
+                if obj['relationships']['owner']['data'] is None:
+                    return {'attributes': True, 'relationships': {'posts'}}
+            if obj['id'] == '12':
+                # Not allowed to set owner of blogs/12 to people/11
+                if obj['relationships']['owner']['data'].get('id') == '11':
+                    return {'attributes': True, 'relationships': {'posts'}}
+            return True
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter
+        )
+
+        # ONETOMANY tests
+        # No permission to patch people/1 at all.
+        test_app.patch_json(
+            '/people/1/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+        # No permission to patch relationship of people/2.
+        test_app.patch_json(
+            '/people/2/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+            status=403
+        )
+
+        test_app.patch_json(
+            '/people/11/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '10'},
+                    {'type': 'blogs', 'id': '12'},
+                    {'type': 'blogs', 'id': '13'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        blog_ids = [
+            b['id'] for b in
+            test_app.get('/people/11').json_body['data']['relationships']['blogs']['data']
+        ]
+        # No permission to blogs/10
+        self.assertNotIn('10', blog_ids)
+        # No permission to set blogs/11.owner = people/11
+        self.assertNotIn('12', blog_ids)
+        # No permission to set blogs/11.owner = None
+        self.assertIn('11', blog_ids)
+        # Allowed to add blogs/13 :)
+        self.assertIn('13', blog_ids)
+
+        # MANYTOMANY tests
+        def articles_by_assoc_pfilter(obj, **kwargs):
+            if obj['id'] == '10':
+                # Not allowed to change articles_by_assoc/10 at all.
+                return False
+            if obj['id'] == '12':
+                # Not allowed to alter author of articles_by_assoc/12
+                return {'attributes': True, 'relationships': False}
+            return True
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post', 'delete'],
+            ['alter_request'],
+            articles_by_assoc_pfilter
+        )
+        test_app.patch_json(
+            '/people/12/relationships/articles_by_assoc',
+            {
+                'data': [
+                    {'type': 'articles_by_assoc', 'id': '10'},
+                    {'type': 'articles_by_assoc', 'id': '1'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        )
+        article_ids = [
+            b['id'] for b in
+            test_app.get('/people/12').json_body['data']['relationships']['articles_by_assoc']['data']
+        ]
+        # No permission to add 10
+        self.assertNotIn('10', article_ids)
+        # Permission to remove 13
+        self.assertNotIn('13', article_ids)
+        # No permission to remove 12
+        self.assertIn('12', article_ids)
+        # Permission to add 1
+        self.assertIn('1', article_ids)
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
@@ -1504,8 +2271,11 @@ class TestSpec(DBTestBase):
         # Find all the resource identifiers.
         rids = set()
         for rel in person['data']['relationships'].values():
-            for item in rel['data']:
-                rids.add((item['type'], item['id']))
+            if isinstance(rel['data'], list):
+                for item in rel['data']:
+                    rids.add((item['type'], item['id']))
+            else:
+                rids.add((rel['data']['type'], rel['data']['id']))
 
         # Every included item should have an identifier somewhere.
         for item in person['included']:
@@ -1568,7 +2338,7 @@ class TestSpec(DBTestBase):
 
         Note: only URL string links are currently generated by jsonapi.
         '''
-        links = self.test_app().get('/people').json['links']
+        links = self.test_app().get('/people?pj_include_count=1').json['links']
         self.assertIsInstance(links['self'], str)
         self.assertIsInstance(links['first'], str)
         self.assertIsInstance(links['last'], str)
@@ -1639,6 +2409,25 @@ class TestSpec(DBTestBase):
             prev = item['attributes']['content']
 
 
+    def test_spec_related_sort(self):
+        '''Should return collection sorted by related field.
+
+        Note: It is recommended that dot-separated (U+002E FULL-STOP, “.”) sort
+        fields be used to request sorting based upon relationship attributes.
+        For example, a sort field of author.name could be used to request that
+        the primary data be sorted based upon the name attribute of the author
+        relationship.
+        '''
+        res = self.test_app().get('/posts?sort=author.name')
+        data = res.json['data']
+        prev = ''
+        for item in data:
+            # author_name is a hybrid attribute that just happens to have
+            # author.name in it.
+            self.assertGreaterEqual(item['attributes']['author_name'], prev)
+            prev = item['attributes']['author_name']
+
+
     def test_spec_multiple_sort(self):
         '''Should return collection sorted by multiple fields, applied in order.
 
@@ -1700,7 +2489,9 @@ class TestSpec(DBTestBase):
             * prev: the previous page of data
             * next: the next page of data
         '''
-        json = self.test_app().get('/posts?page[limit]=2&page[offset]=2').json
+        json = self.test_app().get(
+            '/posts?pj_include_count=1&page[limit]=2&page[offset]=2'
+        ).json
         self.assertEqual(len(json['data']), 2)
         self.assertIn('first', json['links'])
         self.assertIn('last', json['links'])
@@ -1713,10 +2504,10 @@ class TestSpec(DBTestBase):
         Keys MUST either be omitted or have a null value to indicate that a
         particular link is unavailable.
         '''
-        r = self.test_app().get('/posts?page[limit]=1')
+        r = self.test_app().get('/posts?pj_include_count=1&page[limit]=1')
         available = r.json['meta']['results']['available']
         json = self.test_app().get(
-            '/posts?page[limit]=2&page[offset]=' + str(available - 2)
+            '/posts?pj_include_count=1&page[limit]=2&page[offset]=' + str(available - 2)
         ).json
         self.assertEqual(len(json['data']), 2)
         self.assertNotIn('next', json['links'])
@@ -2051,7 +2842,7 @@ class TestSpec(DBTestBase):
         test_app = self.test_app(
             options={'pyramid_jsonapi.allow_client_ids': 'false'}
         )
-        test_app.post_json(
+        res = test_app.post_json(
             '/people',
             {
                 'data': {
@@ -2500,6 +3291,34 @@ class TestHybrid(DBTestBase):
         self.assertEqual(data['attributes']['name'], 'alice2')
 
 
+class TestHybridRelationships(DBTestBase):
+    '''Test cases for @hybrid_property relationships.'''
+
+    def test_hybrid_rel_to_one_get(self):
+        '''Post should have a relationship called blog_owner'''
+        data = self.test_app().get('/posts/1').json['data']
+        # Should have a relationship called blog_owner.
+        self.assertIn('blog_owner', data['relationships'])
+        # But not an attribute
+        self.assertNotIn('blog_owner', data['attributes'])
+        self.assertEqual(
+            data['relationships']['blog_owner']['data'],
+            {'type': 'people', 'id': '1'}
+        )
+
+    def test_hybrid_rel_to_many_get(self):
+        '''Blog should have a relationship called posts_authors'''
+        data = self.test_app().get('/blogs/1').json['data']
+        # Should have a relationship called posts_authors.
+        self.assertIn('posts_authors', data['relationships'])
+        # But not an attribute
+        self.assertNotIn('posts_authors', data['attributes'])
+        self.assertEqual(
+            data['relationships']['posts_authors']['data'],
+            [{'type': 'people', 'id': '1'}]
+        )
+
+
 class TestJoinedTableInheritance(DBTestBase):
     '''Test cases for sqlalchemy joined table inheritance pattern.'''
 
@@ -2568,7 +3387,7 @@ class TestFeatures(DBTestBase):
         test_app = self.test_app(
             options={'pyramid_jsonapi_tests.models_iterable': 'list'}
         )
-        test_app.get('/people/1')
+        test_app.get('/blogs/1')
 
     def test_feature_debug_endpoints(self):
         '''Should create a set of debug endpoints for manipulating the database.'''
@@ -2646,7 +3465,7 @@ class TestBugs(DBTestBase):
         '''
         # Need an empty collection: use a filter that will not match.
         last = self.test_app().get(
-            '/posts?filter[title:eq]=frog'
+            '/posts?pj_include_count=1&filter[title:eq]=frog'
         ).json['links']['last']
         offset = int(
             urllib.parse.parse_qs(
@@ -2700,101 +3519,9 @@ class TestBugs(DBTestBase):
         data = self.test_app().get('/people/1').json['data']
         self.assertIn('articles_by_proxy', data['relationships'])
 
-    def test_175_unsupported_method(self):
-        '''Should produce 405 Method Not Allowed on unsupported method.'''
-        self.test_app().head('/people/1', status=405)
-
-
-class TestJSONAPI(unittest.TestCase):
-
-    def test_asdict(self):
-        """Test asdict method."""
-        expected_dict = {'links': {}, 'data': None, 'meta': {}, 'included': []}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        self.assertEqual(doc.as_dict(), expected_dict)
-
-    def test_filter_keys(self):
-        """Test filter_keys to modify dict output."""
-        doc = pyramid_jsonapi.jsonapi.Document()
-        # Filter out links from result
-        del(doc.filter_keys['links'])
-        self.assertTrue('links' not in doc.as_dict())
-
-    def test_set_jsonapi_attribute(self):
-        """Test setting jsonapi values via class attributes."""
-        new_links = {"self": "http://example.com"}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.links = new_links
-        self.assertEqual(doc._jsonapi['links'], new_links)
-
-    def test_set_invalid_jsonapi_attribute(self):
-        """Test setting non-jsonapi class attributes."""
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.not_jsonapi = "cat"
-        # doesn't end up in _jsonapi
-        self.assertTrue('not_jsonapi' not in doc._jsonapi)
-        # Is actually a real class attribute
-        self.assertTrue(hasattr(doc, 'not_jsonapi'))
-
-    def test_data_from_resources_item(self):
-        """Test creating 'data' json from a resources object as an item."""
-        rsc_links = {"self": "http://example.com"}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        # Empty rscs - data is None
-        self.assertIsNone(doc.data_from_resources()['data'])
-        rsc = pyramid_jsonapi.jsonapi.Resource()
-        rsc.links = rsc_links
-        # 1 item - data is a dict
-        doc.resources.append(rsc)
-        self.assertIsInstance(doc.data_from_resources()['data'], dict)
-        self.assertEqual(doc.data_from_resources()['data']['links'], rsc_links)
-
-    def test_data_from_resources_collection(self):
-        """Test creating 'data' json from a resources object as a collection."""
-        rsc_links = {"self": "http://example.com"}
-        doc = pyramid_jsonapi.jsonapi.Document(collection=True)
-        # data is a list, even if empty.
-        self.assertIsInstance(doc.data_from_resources()['data'], list)
-        rsc = pyramid_jsonapi.jsonapi.Resource()
-        rsc.links = rsc_links
-        doc.resources.append(rsc)
-        self.assertEqual(doc.data_from_resources()['data'][0]['links'], rsc_links)
-
-    def test_data_to_resources_item(self):
-        """Test adding a single data resource to a document."""
-        data = {'id':1, 'type': 'person', 'attributes':{}}
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.data_to_resources(data)
-        #Should have appended a Resource to doc.resources
-        rsc = doc.resources[0]
-        self.assertIsInstance(rsc, pyramid_jsonapi.jsonapi.Resource)
-        self.assertEqual(rsc.id, 1)
-
-    def test_data_to_resources_list(self):
-        """Test adding a list of data resources to a document."""
-        data = [{'id':1, 'type': 'person', 'attributes':{}},
-                {'id':2, 'type': 'person', 'attributes':{}}]
-        doc = pyramid_jsonapi.jsonapi.Document()
-        # Should have appended each data item to doc.resources
-        doc.data_to_resources(data)
-        rsc = doc.resources[1]
-        self.assertTrue(len(doc.resources) == 2)
-        self.assertEqual(rsc.id, 2)
-
-    def test_update(self):
-        """Test update method creates resources and updates _jsonapi."""
-        links = {'self': 'http://example.com'}
-        doc_dict = {
-            'data': [{'id':1, 'type': 'person', 'attributes':{}},
-                     {'id':2, 'type': 'person', 'attributes':{}}],
-            'links': links,
-            'meta': {}
-        }
-        doc = pyramid_jsonapi.jsonapi.Document()
-        doc.update(doc_dict)
-        # Appends data to doc.resources, and updates _jsonapi for other attibutes
-        self.assertTrue(len(doc.resources) == 2)
-        self.assertEqual(doc._jsonapi['links'], links)
+    def test_175_head_method(self):
+        '''Should produce OK for HEAD request.'''
+        self.test_app().head('/people/1')
 
 
 class TestEndpoints(DBTestBase):
@@ -3030,9 +3757,10 @@ class TestMetaData(DBTestBase):
         """Test that specification view returns valid json."""
         self.test_app().get('/metadata/OpenAPI/specification', status=200).json
 
-    def test_openapi_specification_valid(self):
-        """Test that the openapi specification returned is valid."""
-        validate_spec(self.test_app().get('/metadata/OpenAPI/specification', status=200).json)
+    # def test_openapi_specification_valid(self):
+    #     """Test that the openapi specification returned is valid."""
+    #     validate_spec(self.test_app().get('/metadata/OpenAPI/specification', status=200).json)
+        # print(json.dumps(self.test_app().get('/metadata/OpenAPI/specification', status=200).json, indent=4))
 
     def test_openapi_file(self):
         """Test providing openapi spec updates in a file."""

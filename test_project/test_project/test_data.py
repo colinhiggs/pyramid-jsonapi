@@ -1,5 +1,8 @@
 import sqlalchemy
-from sqlalchemy import func
+from sqlalchemy import (
+    delete,
+    func,
+)
 import transaction
 from test_project import models
 from test_project.models import (
@@ -11,6 +14,8 @@ import sys
 import json
 from pathlib import Path
 import re
+
+import ltree
 
 def add_to_db(engine):
     '''Add some basic test data.'''
@@ -46,6 +51,11 @@ def add_to_db(engine):
                 if not rows:
                     DBSession.execute(table.insert(), assoc)
 
+        DBSession.execute(delete(models.LtreeNode.__table__))
+
+    lbuilder = ltree.LtreeBuilder(DBSession.bind, models.LtreeNode)
+    lbuilder.populate(2, 5)
+
 def item_transform(item):
     '''Transform item prior to saving to database.
 
@@ -77,8 +87,8 @@ def set_item(model, data, opts):
     keycol = keycols[0]
     item = DBSession.query(model).get(data[keycol.name])
     if item:
-        DBSession.query(model)\
-            .filter(keycol == data[keycol.name]).update(data)
+        for key, val in data.items():
+            setattr(item, key, val)
     else:
         item = model(**data)
         DBSession.add(item)

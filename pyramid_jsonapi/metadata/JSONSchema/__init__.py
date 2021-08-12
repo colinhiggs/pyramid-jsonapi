@@ -289,6 +289,9 @@ class JSONSchema():
                 jsonschema.validate(json_body, schm)
             except (jsonschema.exceptions.ValidationError) as exc:
                 raise HTTPBadRequest(str(exc))
+            except Exception as exc:
+                from pyramid.httpexceptions import HTTPInternalServerError
+                raise HTTPInternalServerError(str(exc))
 
     def build_definitions(self):
         """Build data and attribute references for all endpoints,
