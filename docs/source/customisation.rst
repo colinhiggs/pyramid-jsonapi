@@ -338,7 +338,7 @@ collection so that a created_on_server attribute is populated automatically.
   import socket
 
   def sh_created_on_server(req, view, **kwargs):
-    obj_data = req.json_data['data']
+    obj_data = req.json_body['data']
     obj_data['attributes']['created_on_server'] = socket.gethostname()
     req.body = json.dumps({'data': obj_data}).encode()
     return req
