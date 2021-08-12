@@ -5,19 +5,21 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    pyramid_jsonapi.metadata
+   pyramid_jsonapi.workflow
 
 Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    pyramid_jsonapi.callbacks_doc
    pyramid_jsonapi.collection_view
    pyramid_jsonapi.endpoints
    pyramid_jsonapi.filters
-   pyramid_jsonapi.jsonapi
    pyramid_jsonapi.version
 
 Module contents

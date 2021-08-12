@@ -1,38 +1,45 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>The pyramid-jsonapi project &mdash; pyramid_jsonapi 2.1.14 documentation</title>
-  
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <title>The pyramid-jsonapi project &mdash; pyramid_jsonapi 2.2.0 documentation</title>
   
-  
-  
-
-  
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Getting Started" href="api-creation.html" />
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                2.1.14
+                2.2.0
               </div>
             
           
@@ -77,6 +84,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -105,6 +113,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -139,18 +148,20 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>The pyramid-jsonapi project</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/welcome.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -164,7 +175,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="the-pyramid-jsonapi-project">
+  <section id="the-pyramid-jsonapi-project">
 <h1>The pyramid-jsonapi project<a class="headerlink" href="#the-pyramid-jsonapi-project" title="Permalink to this headline">¶</a></h1>
 <a class="reference external image-reference" href="https://pypi.python.org/pypi/pyramid_jsonapi"><img alt="https://img.shields.io/pypi/v/pyramid_jsonapi.svg" src="https://img.shields.io/pypi/v/pyramid_jsonapi.svg" /></a>
 <img alt="https://img.shields.io/pypi/pyversions/pyramid_jsonapi.svg" src="https://img.shields.io/pypi/pyversions/pyramid_jsonapi.svg" /><a class="reference external image-reference" href="https://travis-ci.org/colinhiggs/pyramid-jsonapi"><img alt="https://travis-ci.org/colinhiggs/pyramid-jsonapi.svg?branch=master" src="https://travis-ci.org/colinhiggs/pyramid-jsonapi.svg?branch=master" /></a>
@@ -174,22 +185,26 @@ the sqlAlchemy ORM and pyramid framework.</p>
 <p>The core idea behind pyramid-jsonapi is to create a working JSON-API
 automatically, starting from the sort of <code class="docutils literal notranslate"><span class="pre">models.py</span></code> file shipped with a
 typical pyramid + sqlalchemy application.</p>
-<div class="section" id="documentation">
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default branch of pyramid_jsonapi is now the 2.2 branch.</p>
+</div>
+<section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <p>Documentation is available at: <a class="reference external" href="https://colinhiggs.github.io/pyramid-jsonapi/">https://colinhiggs.github.io/pyramid-jsonapi/</a></p>
-</div>
-</div>
-<div class="section" id="quick-start">
+</section>
+</section>
+<section id="quick-start">
 <h1>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="installing-pyramid-jsonapi">
+<section id="installing-pyramid-jsonapi">
 <h2>Installing <cite>pyramid_jsonapi</cite><a class="headerlink" href="#installing-pyramid-jsonapi" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -i pyramid_jsonapi
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="api-creation.html#getting-started"><span class="std std-ref">Getting Started</span></a> for other installation options, including installing
 development versions.</p>
-</div>
-<div class="section" id="auto-creating-an-api">
+</section>
+<section id="auto-creating-an-api">
 <h2>Auto-Creating an API<a class="headerlink" href="#auto-creating-an-api" title="Permalink to this headline">¶</a></h2>
 <p>Declare your models somewhere using sqlalchemy’s
 <code class="xref py py-func docutils literal notranslate"><span class="pre">sqlalchemy.ext.declarative.declarative_base()</span></code>. In this documentation we
@@ -262,37 +277,37 @@ additions to the standard pyramid alchemy scaffold’s top level <code class="do
 <a class="reference internal" href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust" title="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust()</span></code></a>. No, you
 don’t <em>have</em> to call it that. If you are feeling more sensible you can use the
 synonym <a class="reference internal" href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi" title="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyramid_jsonapi.PyramidJSONAPI.create_jsonapi()</span></code></a>.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="api-creation.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="index.html" class="btn btn-neutral float-left" title="pyramid-jsonapi Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="api-creation.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="pyramid-jsonapi Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Colin Higgs
+        &#169; Copyright 2016, Colin Higgs.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -300,7 +315,6 @@ synonym <a class="reference internal" href="apidoc/pyramid_jsonapi.html#pyramid_
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

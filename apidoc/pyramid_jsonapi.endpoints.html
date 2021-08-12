@@ -1,38 +1,45 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>pyramid_jsonapi.endpoints module &mdash; pyramid_jsonapi 2.1.14 documentation</title>
-  
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <title>pyramid_jsonapi.endpoints module &mdash; pyramid_jsonapi 2.2.0 documentation</title>
   
-  
-  
-
-  
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="pyramid_jsonapi.filters module" href="pyramid_jsonapi.filters.html" />
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                2.1.14
+                2.2.0
               </div>
             
           
@@ -77,6 +84,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -99,7 +107,6 @@
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.collection_view.html">pyramid_jsonapi.collection_view module</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.endpoints module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.filters.html">pyramid_jsonapi.filters module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.jsonapi.html">pyramid_jsonapi.jsonapi module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.version.html">pyramid_jsonapi.version module</a></li>
 </ul>
 </li>
@@ -111,6 +118,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -145,11 +153,13 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="pyramid_jsonapi.html">pyramid_jsonapi package</a> &raquo;</li>
         
@@ -158,7 +168,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="../_sources/apidoc/pyramid_jsonapi.endpoints.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -172,22 +182,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-pyramid_jsonapi.endpoints">
+  <section id="module-pyramid_jsonapi.endpoints">
 <span id="pyramid-jsonapi-endpoints-module"></span><h1>pyramid_jsonapi.endpoints module<a class="headerlink" href="#module-pyramid_jsonapi.endpoints" title="Permalink to this headline">¶</a></h1>
 <p>Classes to store and manipulate endpoints and routes.</p>
-<dl class="class">
-<dt id="pyramid_jsonapi.endpoints.EndpointData">
-<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.endpoints.</code><code class="sig-name descname">EndpointData</code><span class="sig-paren">(</span><em class="sig-param">api</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.endpoints.</span></span><span class="sig-name descname"><span class="pre">EndpointData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Class to hold endpoint data and utility methods.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>api</strong> – A PyramidJSONAPI object.</p>
 </dd>
 </dl>
-<dl class="method">
-<dt id="pyramid_jsonapi.endpoints.EndpointData.add_routes_views">
-<code class="sig-name descname">add_routes_views</code><span class="sig-paren">(</span><em class="sig-param">view</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.add_routes_views"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.add_routes_views" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData.add_routes_views">
+<span class="sig-name descname"><span class="pre">add_routes_views</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.add_routes_views"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.add_routes_views" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate routes and views from the endpoints data object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -196,9 +206,9 @@
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.endpoints.EndpointData.find_all_keys">
-<code class="sig-name descname">find_all_keys</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">ep_type</em>, <em class="sig-param">method</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.find_all_keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.find_all_keys" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData.find_all_keys">
+<span class="sig-name descname"><span class="pre">find_all_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ep_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.find_all_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.find_all_keys" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generator to fetch all the instances of a particular key in part of the tree.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -211,9 +221,20 @@
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.endpoints.EndpointData.make_route_name">
-<code class="sig-name descname">make_route_name</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.make_route_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.make_route_name" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData.get_function_name">
+<span class="sig-name descname"><span class="pre">get_function_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http_method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">route_pattern</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.get_function_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.get_function_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the name of the function which handles the given route and method.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData.http_to_view_methods">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">http_to_view_methods</span></span><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.http_to_view_methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData.make_route_name">
+<span class="sig-name descname"><span class="pre">make_route_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.make_route_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.make_route_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attach prefix and suffix to name to generate a route_name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -225,50 +246,50 @@
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.endpoints.EndpointData.route_pattern_to_suffix">
-<code class="sig-name descname">route_pattern_to_suffix</code><span class="sig-paren">(</span><em class="sig-param">pattern_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.route_pattern_to_suffix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.route_pattern_to_suffix" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.EndpointData.route_pattern_to_suffix">
+<span class="sig-name descname"><span class="pre">route_pattern_to_suffix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#EndpointData.route_pattern_to_suffix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.EndpointData.route_pattern_to_suffix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert route_pattern dict to suffix string.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="pyramid_jsonapi.endpoints.RoutePatternConstructor">
-<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.endpoints.</code><code class="sig-name descname">RoutePatternConstructor</code><span class="sig-paren">(</span><em class="sig-param">api</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#RoutePatternConstructor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.RoutePatternConstructor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.RoutePatternConstructor">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.endpoints.</span></span><span class="sig-name descname"><span class="pre">RoutePatternConstructor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#RoutePatternConstructor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.RoutePatternConstructor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Construct pyramid_jsonapi route patterns.</p>
-<dl class="method">
-<dt id="pyramid_jsonapi.endpoints.RoutePatternConstructor.create_pattern">
-<code class="sig-name descname">create_pattern</code><span class="sig-paren">(</span><em class="sig-param">type_prefix</em>, <em class="sig-param">endpoint_name</em>, <em class="sig-param">*components</em>, <em class="sig-param">base='/'</em>, <em class="sig-param">rstrip=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#RoutePatternConstructor.create_pattern"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.RoutePatternConstructor.create_pattern" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.RoutePatternConstructor.create_pattern">
+<span class="sig-name descname"><span class="pre">create_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_prefix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rstrip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#RoutePatternConstructor.create_pattern"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.RoutePatternConstructor.create_pattern" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a pattern from a type_prefix, endpoint name and suffix components.</p>
 <p>This method is not usually called directly.  Instead, the wrapping
 <cite>api_pattern</cite> and <cite>metadata_pattern</cite> partial methods are used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>type_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – api or metadataprefix (see ‘partial’ methods).</p></li>
-<li><p><strong>endpoint_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – An endpoint name.</p></li>
-<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Base string to prepend to pattern (defaults to ‘/’).</p></li>
-<li><p><strong>rstrip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Strip trailing separator (defaults to True).</p></li>
-<li><p><strong>*components</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – components to add after collection name.</p></li>
+<li><p><strong>type_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – api or metadataprefix (see ‘partial’ methods).</p></li>
+<li><p><strong>endpoint_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – An endpoint name.</p></li>
+<li><p><strong>base</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Base string to prepend to pattern (defaults to ‘/’).</p></li>
+<li><p><strong>rstrip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Strip trailing separator (defaults to True).</p></li>
+<li><p><strong>*components</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – components to add after collection name.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.endpoints.RoutePatternConstructor.pattern_from_components">
-<code class="sig-name descname">pattern_from_components</code><span class="sig-paren">(</span><em class="sig-param">*components</em>, <em class="sig-param">start_sep=False</em>, <em class="sig-param">end_sep=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#RoutePatternConstructor.pattern_from_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.RoutePatternConstructor.pattern_from_components" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.endpoints.RoutePatternConstructor.pattern_from_components">
+<span class="sig-name descname"><span class="pre">pattern_from_components</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/endpoints.html#RoutePatternConstructor.pattern_from_components"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.endpoints.RoutePatternConstructor.pattern_from_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct a route pattern from components.</p>
 <p>Join components together with self.sep.
 Remove all occurrences of ‘’, and strip extra separators.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>*components</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – route pattern components.</p></li>
-<li><p><strong>start_sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Add a leading separator</p></li>
-<li><p><strong>end_sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Add a trailing separator</p></li>
+<li><p><strong>*components</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – route pattern components.</p></li>
+<li><p><strong>start_sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Add a leading separator</p></li>
+<li><p><strong>end_sep</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Add a trailing separator</p></li>
 </ul>
 </dd>
 </dl>
@@ -276,36 +297,36 @@ Remove all occurrences of ‘’, and strip extra separators.</p>
 
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="pyramid_jsonapi.filters.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.filters module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="pyramid_jsonapi.collection_view.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.collection_view module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="pyramid_jsonapi.filters.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.filters module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pyramid_jsonapi.collection_view.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.collection_view module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Colin Higgs
+        &#169; Copyright 2016, Colin Higgs.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -313,7 +334,6 @@ Remove all occurrences of ‘’, and strip extra separators.</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

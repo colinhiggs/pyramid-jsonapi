@@ -1,0 +1,7 @@
+pyramid\_jsonapi.workflow.loop.relationships\_get module
+========================================================
+
+.. automodule:: pyramid_jsonapi.workflow.loop.relationships_get
+   :members:
+   :undoc-members:
+   :show-inheritance:

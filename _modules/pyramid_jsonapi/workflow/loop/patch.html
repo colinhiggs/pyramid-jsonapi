@@ -1,0 +1,373 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>pyramid_jsonapi.workflow.loop.patch &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+          <li><a href="../../workflow.html">pyramid_jsonapi.workflow</a> &raquo;</li>
+        
+          <li><a href="../loop.html">pyramid_jsonapi.workflow.loop</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.workflow.loop.patch</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.workflow.loop.patch</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">pyramid_jsonapi.workflow</span> <span class="k">as</span> <span class="nn">wf</span>
+<span class="kn">import</span> <span class="nn">sqlalchemy</span>
+
+<span class="kn">from</span> <span class="nn">json.decoder</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">JSONDecodeError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pyramid.httpexceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HTTPBadRequest</span><span class="p">,</span>
+    <span class="n">HTTPConflict</span><span class="p">,</span>
+    <span class="n">HTTPNotFound</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">load_only</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">stages</span>
+
+
+<div class="viewcode-block" id="workflow"><a class="viewcode-back" href="../../../../apidoc/pyramid_jsonapi.workflow.loop.patch.html#pyramid_jsonapi.workflow.loop.patch.workflow">[docs]</a><span class="k">def</span> <span class="nf">workflow</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">):</span>
+    <span class="n">validate_patch_request</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="n">atts</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">hybrid_atts</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span>
+            <span class="n">atts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">elif</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">hybrid_attributes</span><span class="p">:</span>
+            <span class="n">hybrid_atts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span>
+                <span class="s1">&#39;Collection </span><span class="si">{}</span><span class="s1"> has no attribute </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">key</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+    <span class="n">atts</span><span class="p">[</span><span class="n">view</span><span class="o">.</span><span class="n">key_column</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">atts</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">att</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">hybrid_atts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">att</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span>
+                <span class="s1">&#39;Attribute </span><span class="si">{}</span><span class="s1"> is read only.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">att</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="n">rels</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="k">for</span> <span class="n">relname</span><span class="p">,</span> <span class="n">reldict</span> <span class="ow">in</span> <span class="n">rels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">relname</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span>
+                <span class="s1">&#39;Collection </span><span class="si">{}</span><span class="s1"> has no relationship </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">relname</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">rel_view</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">view_instance</span><span class="p">(</span><span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">reldata</span> <span class="o">=</span> <span class="n">reldict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                <span class="s2">&quot;Relationship &#39;</span><span class="si">{}</span><span class="s2">&#39; has no &#39;data&#39; member.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">relname</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                <span class="s2">&quot;Relationship &#39;</span><span class="si">{}</span><span class="s2">&#39; is not a dictionary with a data member.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">relname</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">reldata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">relname</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reldata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">reldata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">rel_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span>
+                    <span class="s1">&#39;Type </span><span class="si">{}</span><span class="s1"> does not match relationship type </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">reldata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">rel_view</span><span class="o">.</span><span class="n">collection_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">reldata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                    <span class="s1">&#39;An id is required in a resource identifier.&#39;</span>
+                <span class="p">)</span>
+            <span class="n">rel_item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">options</span><span class="p">(</span>
+                <span class="n">load_only</span><span class="p">(</span><span class="n">rel_view</span><span class="o">.</span><span class="n">key_column</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">reldata</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">rel_item</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">rel_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">reldata</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                <span class="p">))</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">relname</span><span class="p">,</span> <span class="n">rel_item</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reldata</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">rel_items</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">res_ident</span> <span class="ow">in</span> <span class="n">reldata</span><span class="p">:</span>
+                <span class="n">rel_item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                    <span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">options</span><span class="p">(</span>
+                    <span class="n">load_only</span><span class="p">(</span><span class="n">rel_view</span><span class="o">.</span><span class="n">key_column</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">res_ident</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">rel_item</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1"> not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">rel_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">res_ident</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                    <span class="p">))</span>
+                <span class="n">rel_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_item</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">relname</span><span class="p">,</span> <span class="n">rel_items</span><span class="p">)</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">execute_stage</span><span class="p">(</span>
+        <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;before_write_item&#39;</span><span class="p">,</span> <span class="n">item</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">exc</span><span class="o">.</span><span class="n">IntegrityError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">Doc</span><span class="p">()</span>
+    <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;updated&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">att</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">atts</span><span class="p">,</span> <span class="n">hybrid_atts</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">att</span> <span class="o">!=</span> <span class="n">view</span><span class="o">.</span><span class="n">key_column</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">],</span>
+            <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rels</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1"># if an update is successful ... the server</span>
+    <span class="c1"># responds only with top-level meta data</span>
+    <span class="k">return</span> <span class="n">doc</span></div>
+
+
+<div class="viewcode-block" id="validate_patch_request"><a class="viewcode-back" href="../../../../apidoc/pyramid_jsonapi.workflow.loop.patch.html#pyramid_jsonapi.workflow.loop.patch.validate_patch_request">[docs]</a><span class="k">def</span> <span class="nf">validate_patch_request</span><span class="p">(</span><span class="n">view</span><span class="p">):</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s1">&#39;data attribute required in PATCHes.&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s1">&#39;Error decoding JSON body: </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+    <span class="n">data_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span> <span class="o">!=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span>
+            <span class="s1">&#39;JSON type (</span><span class="si">{}</span><span class="s1">) does not match URL type (</span><span class="si">{}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">),</span> <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">data_id</span> <span class="o">!=</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span>
+            <span class="s1">&#39;JSON id (</span><span class="si">{}</span><span class="s1">) does not match URL id (</span><span class="si">{}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">data_id</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">view</span><span class="o">.</span><span class="n">object_exists</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span>
+            <span class="s1">&#39;No id </span><span class="si">{}</span><span class="s1"> in collection </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Colin Higgs.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

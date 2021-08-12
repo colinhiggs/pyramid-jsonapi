@@ -1,0 +1,7 @@
+pyramid\_jsonapi.workflow.loop.collection\_post module
+======================================================
+
+.. automodule:: pyramid_jsonapi.workflow.loop.collection_post
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,18 @@
+pyramid\_jsonapi.workflow package
+=================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pyramid_jsonapi.workflow.loop
+
+Module contents
+---------------
+
+.. automodule:: pyramid_jsonapi.workflow
+   :members:
+   :undoc-members:
+   :show-inheritance:

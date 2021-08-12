@@ -1,0 +1,344 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>pyramid_jsonapi.workflow.loop.collection_post &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+          <li><a href="../../workflow.html">pyramid_jsonapi.workflow</a> &raquo;</li>
+        
+          <li><a href="../loop.html">pyramid_jsonapi.workflow.loop</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.workflow.loop.collection_post</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.workflow.loop.collection_post</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pyramid_jsonapi.workflow</span> <span class="k">as</span> <span class="nn">wf</span>
+<span class="kn">import</span> <span class="nn">sqlalchemy</span>
+
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+
+<span class="kn">from</span> <span class="nn">.get</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_doc</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm.interfaces</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ONETOMANY</span><span class="p">,</span>
+    <span class="n">MANYTOMANY</span><span class="p">,</span>
+    <span class="n">MANYTOONE</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">pyramid.httpexceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HTTPBadRequest</span><span class="p">,</span>
+    <span class="n">HTTPForbidden</span><span class="p">,</span>
+    <span class="n">HTTPConflict</span><span class="p">,</span>
+    <span class="n">HTTPNotFound</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">stages</span>
+
+
+<div class="viewcode-block" id="workflow"><a class="viewcode-back" href="../../../../apidoc/pyramid_jsonapi.workflow.loop.collection_post.html#pyramid_jsonapi.workflow.loop.collection_post.workflow">[docs]</a><span class="k">def</span> <span class="nf">workflow</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s1">&#39;data attribute required in POSTs.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s1">&#39;data attribute must contain a single resource object.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check to see if we&#39;re allowing client ids</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">view</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">allow_client_ids</span> <span class="ow">and</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;Client generated ids are not supported.&#39;</span><span class="p">)</span>
+    <span class="c1"># Type should be correct or raise 409 Conflict</span>
+    <span class="n">datatype</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">datatype</span> <span class="o">!=</span> <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span><span class="s2">&quot;Unsupported type &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">datatype</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">atts</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">atts</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">atts</span><span class="p">[</span><span class="n">view</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">__pyramid_jsonapi__</span><span class="p">[</span><span class="s1">&#39;id_col_name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">atts</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">no_autoflush</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">relname</span><span class="p">,</span> <span class="n">reldict</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">reldata</span> <span class="o">=</span> <span class="n">reldict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                    <span class="s1">&#39;relationships within POST must have data member&#39;</span>
+                <span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">relname</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span>
+                    <span class="s1">&#39;No relationship </span><span class="si">{}</span><span class="s1"> in collection </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">relname</span><span class="p">,</span>
+                        <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">rel_type</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">view_classes</span><span class="p">[</span><span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">]</span><span class="o">.</span><span class="n">collection_name</span>
+            <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">ONETOMANY</span> <span class="ow">or</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">MANYTOMANY</span><span class="p">:</span>
+                <span class="c1"># reldata should be a list/array</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reldata</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reldata</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                        <span class="s1">&#39;Relationship data should be an array for TOMANY relationships.&#39;</span>
+                    <span class="p">)</span>
+                <span class="n">rel_items</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">rel_identifier</span> <span class="ow">in</span> <span class="n">reldata</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">rel_identifier</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">rel_type</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span>
+                            <span class="s1">&#39;Relationship identifier has type </span><span class="si">{}</span><span class="s1"> and should be </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">rel_identifier</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">),</span> <span class="n">rel_type</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">rel_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rel_identifier</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]))</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                            <span class="s1">&#39;Relationship identifier must have an id member&#39;</span>
+                        <span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">relname</span><span class="p">,</span> <span class="n">rel_items</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reldata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="n">reldata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                        <span class="s1">&#39;Relationship data should be a resource identifier object or null.&#39;</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="n">reldata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">rel_type</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span>
+                        <span class="s1">&#39;Relationship identifier has type </span><span class="si">{}</span><span class="s1"> and should be </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">reldata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">),</span> <span class="n">rel_type</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span>
+                        <span class="n">item</span><span class="p">,</span>
+                        <span class="n">relname</span><span class="p">,</span>
+                        <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">reldata</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+                        <span class="s1">&#39;No id member in relationship data.&#39;</span>
+                    <span class="p">)</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">execute_stage</span><span class="p">(</span>
+        <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;before_write_item&#39;</span><span class="p">,</span> <span class="n">item</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">exc</span><span class="o">.</span><span class="n">IntegrityError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPConflict</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="mi">201</span>
+    <span class="n">item_id</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">id_col</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;Location&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">route_url</span><span class="p">(</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">make_route_name</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;item&#39;</span><span class="p">),</span>
+        <span class="o">**</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">item_id</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="c1"># The rest of this is more or less a get.</span>
+    <span class="k">return</span> <span class="n">get_doc</span><span class="p">(</span>
+        <span class="n">view</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="s1">&#39;get&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">stages</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">single_item_query</span><span class="p">(</span><span class="n">item_id</span><span class="p">)</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Colin Higgs.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,38 +1,45 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>pyramid_jsonapi package &mdash; pyramid_jsonapi 2.1.14 documentation</title>
-  
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <title>pyramid_jsonapi package &mdash; pyramid_jsonapi 2.2.0 documentation</title>
   
-  
-  
-
-  
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="pyramid_jsonapi.metadata package" href="pyramid_jsonapi.metadata.html" />
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                2.1.14
+                2.2.0
               </div>
             
           
@@ -77,6 +84,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -95,6 +103,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">pyramid_jsonapi package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.metadata.html">pyramid_jsonapi.metadata package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.html">pyramid_jsonapi.workflow package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a><ul>
@@ -102,7 +111,6 @@
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.collection_view.html">pyramid_jsonapi.collection_view module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.endpoints.html">pyramid_jsonapi.endpoints module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.filters.html">pyramid_jsonapi.filters module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.jsonapi.html">pyramid_jsonapi.jsonapi module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.version.html">pyramid_jsonapi.version module</a></li>
 </ul>
 </li>
@@ -114,6 +122,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -148,18 +157,20 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>pyramid_jsonapi package</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="../_sources/apidoc/pyramid_jsonapi.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -173,27 +184,20 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="pyramid-jsonapi-package">
+  <section id="pyramid-jsonapi-package">
 <h1>pyramid_jsonapi package<a class="headerlink" href="#pyramid-jsonapi-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.metadata.html">pyramid_jsonapi.metadata package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.metadata.html#subpackages">Subpackages</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.metadata.JSONSchema.html">pyramid_jsonapi.metadata.JSONSchema package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="pyramid_jsonapi.metadata.JSONSchema.html#module-pyramid_jsonapi.metadata.JSONSchema">Module contents</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="pyramid_jsonapi.metadata.JSONSchema.html#configuration">Configuration</a></li>
-<li class="toctree-l5"><a class="reference internal" href="pyramid_jsonapi.metadata.JSONSchema.html#endpoint-view">Endpoint View</a></li>
-</ul>
-</li>
+<li class="toctree-l4"><a class="reference internal" href="pyramid_jsonapi.metadata.JSONSchema.html#module-pyramid_jsonapi.metadata.JSONSchema">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.metadata.OpenAPI.html">pyramid_jsonapi.metadata.OpenAPI package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="pyramid_jsonapi.metadata.OpenAPI.html#module-pyramid_jsonapi.metadata.OpenAPI">Module contents</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="pyramid_jsonapi.metadata.OpenAPI.html#configuration">Configuration</a></li>
-</ul>
-</li>
+<li class="toctree-l4"><a class="reference internal" href="pyramid_jsonapi.metadata.OpenAPI.html#module-pyramid_jsonapi.metadata.OpenAPI">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -201,10 +205,22 @@
 <li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.metadata.html#module-pyramid_jsonapi.metadata">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.workflow.html">pyramid_jsonapi.workflow package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.workflow.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.html">pyramid_jsonapi.workflow.loop package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.html#module-pyramid_jsonapi.workflow.loop">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.workflow.html#module-pyramid_jsonapi.workflow">Module contents</a></li>
+</ul>
+</li>
 </ul>
 </div>
-</div>
-<div class="section" id="submodules">
+</section>
+<section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -212,64 +228,63 @@
 <li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.collection_view.html">pyramid_jsonapi.collection_view module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.endpoints.html">pyramid_jsonapi.endpoints module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.filters.html">pyramid_jsonapi.filters module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.jsonapi.html">pyramid_jsonapi.jsonapi module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.version.html">pyramid_jsonapi.version module</a></li>
 </ul>
 </div>
-</div>
-<div class="section" id="module-pyramid_jsonapi">
+</section>
+<section id="module-pyramid_jsonapi">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyramid_jsonapi" title="Permalink to this headline">¶</a></h2>
 <p>Tools for constructing a JSON-API from sqlalchemy models in Pyramid.</p>
-<dl class="class">
-<dt id="pyramid_jsonapi.DebugView">
-<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.</code><code class="sig-name descname">DebugView</code><span class="sig-paren">(</span><em class="sig-param">request</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.</span></span><span class="sig-name descname"><span class="pre">DebugView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Pyramid view class defining a debug API.</p>
 <p>These are available as <code class="docutils literal notranslate"><span class="pre">/debug/{action}</span></code> if
 <code class="docutils literal notranslate"><span class="pre">pyramid_jsonapi.debug_endpoints</span> <span class="pre">==</span> <span class="pre">'true'</span></code>.</p>
-<dl class="attribute">
-<dt id="pyramid_jsonapi.DebugView.engine">
-<code class="sig-name descname">engine</code><a class="headerlink" href="#pyramid_jsonapi.DebugView.engine" title="Permalink to this definition">¶</a></dt>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView.engine">
+<span class="sig-name descname"><span class="pre">engine</span></span><a class="headerlink" href="#pyramid_jsonapi.DebugView.engine" title="Permalink to this definition">¶</a></dt>
 <dd><p>sqlalchemy engine with connection to the db.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyramid_jsonapi.DebugView.metadata">
-<code class="sig-name descname">metadata</code><a class="headerlink" href="#pyramid_jsonapi.DebugView.metadata" title="Permalink to this definition">¶</a></dt>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#pyramid_jsonapi.DebugView.metadata" title="Permalink to this definition">¶</a></dt>
 <dd><p>sqlalchemy model metadata</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyramid_jsonapi.DebugView.test_data">
-<code class="sig-name descname">test_data</code><a class="headerlink" href="#pyramid_jsonapi.DebugView.test_data" title="Permalink to this definition">¶</a></dt>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView.test_data">
+<span class="sig-name descname"><span class="pre">test_data</span></span><a class="headerlink" href="#pyramid_jsonapi.DebugView.test_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>module with an <code class="docutils literal notranslate"><span class="pre">add_to_db()</span></code> method which will populate
 the database</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.DebugView.drop">
-<code class="sig-name descname">drop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView.drop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView.drop" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView.drop">
+<span class="sig-name descname"><span class="pre">drop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView.drop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView.drop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Drop all tables from the database!!!</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.DebugView.populate">
-<code class="sig-name descname">populate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView.populate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView.populate" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView.populate">
+<span class="sig-name descname"><span class="pre">populate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView.populate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView.populate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create tables and populate with test data.</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.DebugView.reset">
-<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView.reset" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.DebugView.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#DebugView.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.DebugView.reset" title="Permalink to this definition">¶</a></dt>
 <dd><p>The same as ‘drop’ and then ‘populate’.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="pyramid_jsonapi.PyramidJSONAPI">
-<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.</code><code class="sig-name descname">PyramidJSONAPI</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">models</em>, <em class="sig-param">get_dbsession=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.</span></span><span class="sig-name descname"><span class="pre">PyramidJSONAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_dbsession</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Class encapsulating an API.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -279,24 +294,13 @@ the database</p>
 </ul>
 </dd>
 <dt class="field-even">Keyword Arguments</dt>
-<dd class="field-even"><p><strong>get_dbsession</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#callable" title="(in Python v3.8)"><em>callable</em></a>) – function accepting an instance of
+<dd class="field-even"><p><strong>get_dbsession</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#callable" title="(in Python v3.9)"><em>callable</em></a>) – function accepting an instance of
 CollectionViewBase and returning a sqlalchemy database session.</p>
 </dd>
 </dl>
-<dl class="method">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.append_callback_set_to_all_views">
-<code class="sig-name descname">append_callback_set_to_all_views</code><span class="sig-paren">(</span><em class="sig-param">set_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.append_callback_set_to_all_views"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.append_callback_set_to_all_views" title="Permalink to this definition">¶</a></dt>
-<dd><p>Append a named set of callbacks to all view classes.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>set_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – key in <code class="docutils literal notranslate"><span class="pre">callback_sets</span></code>.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.collection_view_factory">
-<code class="sig-name descname">collection_view_factory</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">collection_name=None</em>, <em class="sig-param">expose_fields=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.collection_view_factory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.collection_view_factory" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.collection_view_factory">
+<span class="sig-name descname"><span class="pre">collection_view_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expose_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.collection_view_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.collection_view_factory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a class to handle requests for model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -311,14 +315,14 @@ CollectionViewBase and returning a sqlalchemy database session.</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.config_defaults">
-<code class="sig-name descname">config_defaults</code><em class="property"> = {'allow_client_ids': {'desc': 'Allow client to specify resource ids.', 'val': False}, 'api_version': {'desc': 'API version for prefixing endpoints and metadata generation.', 'val': ''}, 'debug_endpoints': {'desc': 'Whether or not to add debugging endpoints.', 'val': False}, 'debug_meta': {'desc': 'Whether or not to add debug information to the meta key in returned JSON.', 'val': False}, 'debug_test_data_module': {'desc': 'Module responsible for populating test data.', 'val': 'test_data'}, 'debug_traceback': {'desc': 'Whether or not to add a stack traceback to errors.', 'val': False}, 'expose_foreign_keys': {'desc': 'Expose foreign key fields in JSON.', 'val': False}, 'metadata_endpoints': {'desc': 'Should /metadata endpoint be enabled?', 'val': True}, 'metadata_modules': {'desc': 'Modules to load to provide metadata endpoints (defaults are modules provided in the metadata package).', 'val': 'JSONSchema OpenAPI'}, 'openapi_file': {'desc': 'File containing OpenAPI data (YAML or JSON)', 'val': ''}, 'paging_default_limit': {'desc': 'Default pagination limit for collections.', 'val': 10}, 'paging_max_limit': {'desc': 'Default limit on the number of items returned for collections.', 'val': 100}, 'route_name_prefix': {'desc': 'Prefix for pyramid route names for view_classes.', 'val': 'pyramid_jsonapi'}, 'route_name_sep': {'desc': 'Separator for pyramid route names.', 'val': ':'}, 'route_pattern_api_prefix': {'desc': 'Prefix for api endpoints (if metadata_endpoints is enabled).', 'val': 'api'}, 'route_pattern_metadata_prefix': {'desc': 'Prefix for metadata endpoints (if metadata_endpoints is enabled).', 'val': 'metadata'}, 'route_pattern_prefix': {'desc': '&quot;Parent&quot; prefix for all endpoints', 'val': ''}, 'route_pattern_sep': {'desc': 'Separator for pyramid route patterns.', 'val': '/'}, 'schema_file': {'desc': 'File containing jsonschema JSON for validation.', 'val': ''}, 'schema_validation': {'desc': 'jsonschema schema validation enabled?', 'val': True}}</em><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.config_defaults" title="Permalink to this definition">¶</a></dt>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.config_defaults">
+<span class="sig-name descname"><span class="pre">config_defaults</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{'allow_client_ids':</span> <span class="pre">{'desc':</span> <span class="pre">'Allow</span> <span class="pre">client</span> <span class="pre">to</span> <span class="pre">specify</span> <span class="pre">resource</span> <span class="pre">ids.',</span> <span class="pre">'val':</span> <span class="pre">False},</span> <span class="pre">'api_version':</span> <span class="pre">{'desc':</span> <span class="pre">'API</span> <span class="pre">version</span> <span class="pre">for</span> <span class="pre">prefixing</span> <span class="pre">endpoints</span> <span class="pre">and</span> <span class="pre">metadata</span> <span class="pre">generation.',</span> <span class="pre">'val':</span> <span class="pre">''},</span> <span class="pre">'debug_endpoints':</span> <span class="pre">{'desc':</span> <span class="pre">'Whether</span> <span class="pre">or</span> <span class="pre">not</span> <span class="pre">to</span> <span class="pre">add</span> <span class="pre">debugging</span> <span class="pre">endpoints.',</span> <span class="pre">'val':</span> <span class="pre">False},</span> <span class="pre">'debug_meta':</span> <span class="pre">{'desc':</span> <span class="pre">'Whether</span> <span class="pre">or</span> <span class="pre">not</span> <span class="pre">to</span> <span class="pre">add</span> <span class="pre">debug</span> <span class="pre">information</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">meta</span> <span class="pre">key</span> <span class="pre">in</span> <span class="pre">returned</span> <span class="pre">JSON.',</span> <span class="pre">'val':</span> <span class="pre">False},</span> <span class="pre">'debug_test_data_module':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">responsible</span> <span class="pre">for</span> <span class="pre">populating</span> <span class="pre">test</span> <span class="pre">data.',</span> <span class="pre">'val':</span> <span class="pre">'test_data'},</span> <span class="pre">'debug_traceback':</span> <span class="pre">{'desc':</span> <span class="pre">'Whether</span> <span class="pre">or</span> <span class="pre">not</span> <span class="pre">to</span> <span class="pre">add</span> <span class="pre">a</span> <span class="pre">stack</span> <span class="pre">traceback</span> <span class="pre">to</span> <span class="pre">errors.',</span> <span class="pre">'val':</span> <span class="pre">False},</span> <span class="pre">'expose_foreign_keys':</span> <span class="pre">{'desc':</span> <span class="pre">'Expose</span> <span class="pre">foreign</span> <span class="pre">key</span> <span class="pre">fields</span> <span class="pre">in</span> <span class="pre">JSON.',</span> <span class="pre">'val':</span> <span class="pre">False},</span> <span class="pre">'inform_of_get_authz_failures':</span> <span class="pre">{'desc':</span> <span class="pre">&quot;True</span> <span class="pre">=</span> <span class="pre">return</span> <span class="pre">information</span> <span class="pre">in</span> <span class="pre">meta</span> <span class="pre">about</span> <span class="pre">authz</span> <span class="pre">failures;</span> <span class="pre">False</span> <span class="pre">=</span> <span class="pre">pretend</span> <span class="pre">items</span> <span class="pre">don't</span> <span class="pre">exist&quot;,</span> <span class="pre">'val':</span> <span class="pre">True},</span> <span class="pre">'metadata_endpoints':</span> <span class="pre">{'desc':</span> <span class="pre">'Should</span> <span class="pre">/metadata</span> <span class="pre">endpoint</span> <span class="pre">be</span> <span class="pre">enabled?',</span> <span class="pre">'val':</span> <span class="pre">True},</span> <span class="pre">'metadata_modules':</span> <span class="pre">{'desc':</span> <span class="pre">'Modules</span> <span class="pre">to</span> <span class="pre">load</span> <span class="pre">to</span> <span class="pre">provide</span> <span class="pre">metadata</span> <span class="pre">endpoints</span> <span class="pre">(defaults</span> <span class="pre">are</span> <span class="pre">modules</span> <span class="pre">provided</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">metadata</span> <span class="pre">package).',</span> <span class="pre">'val':</span> <span class="pre">'JSONSchema</span> <span class="pre">OpenAPI'},</span> <span class="pre">'openapi_file':</span> <span class="pre">{'desc':</span> <span class="pre">'File</span> <span class="pre">containing</span> <span class="pre">OpenAPI</span> <span class="pre">data</span> <span class="pre">(YAML</span> <span class="pre">or</span> <span class="pre">JSON)',</span> <span class="pre">'val':</span> <span class="pre">''},</span> <span class="pre">'paging_default_limit':</span> <span class="pre">{'desc':</span> <span class="pre">'Default</span> <span class="pre">pagination</span> <span class="pre">limit</span> <span class="pre">for</span> <span class="pre">collections.',</span> <span class="pre">'val':</span> <span class="pre">10},</span> <span class="pre">'paging_max_limit':</span> <span class="pre">{'desc':</span> <span class="pre">'Default</span> <span class="pre">limit</span> <span class="pre">on</span> <span class="pre">the</span> <span class="pre">number</span> <span class="pre">of</span> <span class="pre">items</span> <span class="pre">returned</span> <span class="pre">for</span> <span class="pre">collections.',</span> <span class="pre">'val':</span> <span class="pre">100},</span> <span class="pre">'route_name_prefix':</span> <span class="pre">{'desc':</span> <span class="pre">'Prefix</span> <span class="pre">for</span> <span class="pre">pyramid</span> <span class="pre">route</span> <span class="pre">names</span> <span class="pre">for</span> <span class="pre">view_classes.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi'},</span> <span class="pre">'route_name_sep':</span> <span class="pre">{'desc':</span> <span class="pre">'Separator</span> <span class="pre">for</span> <span class="pre">pyramid</span> <span class="pre">route</span> <span class="pre">names.',</span> <span class="pre">'val':</span> <span class="pre">':'},</span> <span class="pre">'route_pattern_api_prefix':</span> <span class="pre">{'desc':</span> <span class="pre">'Prefix</span> <span class="pre">for</span> <span class="pre">api</span> <span class="pre">endpoints</span> <span class="pre">(if</span> <span class="pre">metadata_endpoints</span> <span class="pre">is</span> <span class="pre">enabled).',</span> <span class="pre">'val':</span> <span class="pre">'api'},</span> <span class="pre">'route_pattern_metadata_prefix':</span> <span class="pre">{'desc':</span> <span class="pre">'Prefix</span> <span class="pre">for</span> <span class="pre">metadata</span> <span class="pre">endpoints</span> <span class="pre">(if</span> <span class="pre">metadata_endpoints</span> <span class="pre">is</span> <span class="pre">enabled).',</span> <span class="pre">'val':</span> <span class="pre">'metadata'},</span> <span class="pre">'route_pattern_prefix':</span> <span class="pre">{'desc':</span> <span class="pre">'&quot;Parent&quot;</span> <span class="pre">prefix</span> <span class="pre">for</span> <span class="pre">all</span> <span class="pre">endpoints',</span> <span class="pre">'val':</span> <span class="pre">''},</span> <span class="pre">'route_pattern_sep':</span> <span class="pre">{'desc':</span> <span class="pre">'Separator</span> <span class="pre">for</span> <span class="pre">pyramid</span> <span class="pre">route</span> <span class="pre">patterns.',</span> <span class="pre">'val':</span> <span class="pre">'/'},</span> <span class="pre">'schema_file':</span> <span class="pre">{'desc':</span> <span class="pre">'File</span> <span class="pre">containing</span> <span class="pre">jsonschema</span> <span class="pre">JSON</span> <span class="pre">for</span> <span class="pre">validation.',</span> <span class="pre">'val':</span> <span class="pre">''},</span> <span class="pre">'schema_validation':</span> <span class="pre">{'desc':</span> <span class="pre">'jsonschema</span> <span class="pre">schema</span> <span class="pre">validation</span> <span class="pre">enabled?',</span> <span class="pre">'val':</span> <span class="pre">True},</span> <span class="pre">'workflow_collection_get':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">collection_get</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.collection_get'},</span> <span class="pre">'workflow_collection_post':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">collection_post</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.collection_post'},</span> <span class="pre">'workflow_delete':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">delete</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.delete'},</span> <span class="pre">'workflow_get':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">get</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.get'},</span> <span class="pre">'workflow_patch':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">patch</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.patch'},</span> <span class="pre">'workflow_related_get':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">related_get</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.related_get'},</span> <span class="pre">'workflow_relationships_delete':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">relationships_delete</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.relationships_delete'},</span> <span class="pre">'workflow_relationships_get':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">relationships_get</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.relationships_get'},</span> <span class="pre">'workflow_relationships_patch':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">relationships_patch</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.relationships_patch'},</span> <span class="pre">'workflow_relationships_post':</span> <span class="pre">{'desc':</span> <span class="pre">'Module</span> <span class="pre">implementing</span> <span class="pre">the</span> <span class="pre">relationships_post</span> <span class="pre">workflow.',</span> <span class="pre">'val':</span> <span class="pre">'pyramid_jsonapi.workflow.loop.relationships_post'}}</span></em><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.config_defaults" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi">
-<code class="sig-name descname">create_jsonapi</code><span class="sig-paren">(</span><em class="sig-param">engine=None</em>, <em class="sig-param">test_data=None</em>, <em class="sig-param">api_version=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.create_jsonapi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi">
+<span class="sig-name descname"><span class="pre">create_jsonapi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.create_jsonapi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Auto-create jsonapi from module or iterable of sqlAlchemy models.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Keyword Arguments</dt>
@@ -334,9 +338,9 @@ defaults to ‘’. Can also be set globally in settings ini file.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust">
-<code class="sig-name descname">create_jsonapi_using_magic_and_pixie_dust</code><span class="sig-paren">(</span><em class="sig-param">engine=None</em>, <em class="sig-param">test_data=None</em>, <em class="sig-param">api_version=''</em><span class="sig-paren">)</span><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust">
+<span class="sig-name descname"><span class="pre">create_jsonapi_using_magic_and_pixie_dust</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.create_jsonapi_using_magic_and_pixie_dust" title="Permalink to this definition">¶</a></dt>
 <dd><p>Auto-create jsonapi from module or iterable of sqlAlchemy models.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Keyword Arguments</dt>
@@ -352,9 +356,9 @@ defaults to ‘’. Can also be set globally in settings ini file.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.create_resource">
-<code class="sig-name descname">create_resource</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">collection_name=None</em>, <em class="sig-param">expose_fields=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.create_resource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.create_resource" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.create_resource">
+<span class="sig-name descname"><span class="pre">create_resource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expose_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.create_resource"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.create_resource" title="Permalink to this definition">¶</a></dt>
 <dd><p>Produce a set of resource endpoints.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -371,55 +375,96 @@ defaults to ‘’. Can also be set globally in settings ini file.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.error">
-<em class="property">static </em><code class="sig-name descname">error</code><span class="sig-paren">(</span><em class="sig-param">exc</em>, <em class="sig-param">request</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.error" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.enable_permission_handlers">
+<span class="sig-name descname"><span class="pre">enable_permission_handlers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permissions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage_names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.enable_permission_handlers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.enable_permission_handlers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add permission handlers to all views.</p>
+<p>Permission handlers are not added to views by default for performance
+reasons. Call this function to add permission handlers to <em>all</em> views
+for the view methods that permissions implies and for the stage names
+specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>permissions</strong> – an iterable of permissions to be enabled. Each permission
+should be one of <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">patch</span></code>, <code class="docutils literal notranslate"><span class="pre">delete</span></code> or
+<code class="docutils literal notranslate"><span class="pre">write</span></code> (which expands to the same as <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">patch</span></code> and
+<code class="docutils literal notranslate"><span class="pre">delet</span></code>).</p></li>
+<li><p><strong>stage_names</strong> – an iterable of stage names to enable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.error">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#PyramidJSONAPI.error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.error" title="Permalink to this definition">¶</a></dt>
 <dd><p>Error method to return jsonapi compliant errors.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyramid_jsonapi.PyramidJSONAPI.view_classes">
-<code class="sig-name descname">view_classes</code><em class="property"> = {}</em><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.view_classes" title="Permalink to this definition">¶</a></dt>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.PyramidJSONAPI.view_classes">
+<span class="sig-name descname"><span class="pre">view_classes</span></span><em class="property"> <span class="pre">=</span> <span class="pre">{}</span></em><a class="headerlink" href="#pyramid_jsonapi.PyramidJSONAPI.view_classes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="pyramid_jsonapi.StdRelationship">
-<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.</code><code class="sig-name descname">StdRelationship</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">obj</em>, <em class="sig-param">view_class</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#StdRelationship"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.StdRelationship" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Standardise access to relationship informationself.</p>
-<dl class="attribute">
-<dt id="pyramid_jsonapi.StdRelationship.obj">
-<code class="sig-name descname">obj</code><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.obj" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.</span></span><span class="sig-name descname"><span class="pre">StdRelationship</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_class</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#StdRelationship"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.StdRelationship" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Standardise access to relationship information.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.obj">
+<span class="sig-name descname"><span class="pre">obj</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.obj" title="Permalink to this definition">¶</a></dt>
 <dd><p>the actual object representing the relationship.</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.StdRelationship.proxy_direction">
-<em class="property">property </em><code class="sig-name descname">proxy_direction</code><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.proxy_direction" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.mirror_relationship">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">mirror_relationship</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.mirror_relationship" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.StdRelationship.proxy_tgt_class">
-<em class="property">property </em><code class="sig-name descname">proxy_tgt_class</code><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.proxy_tgt_class" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.proxy_direction">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">proxy_direction</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.proxy_direction" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.StdRelationship.rel_direction">
-<em class="property">property </em><code class="sig-name descname">rel_direction</code><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.rel_direction" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.proxy_mirror_relationship">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">proxy_mirror_relationship</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.proxy_mirror_relationship" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
-<dt id="pyramid_jsonapi.StdRelationship.rel_tgt_class">
-<em class="property">property </em><code class="sig-name descname">rel_tgt_class</code><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.rel_tgt_class" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.proxy_tgt_class">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">proxy_tgt_class</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.proxy_tgt_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.rel_direction">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">rel_direction</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.rel_direction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.rel_mirror_relationship">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">rel_mirror_relationship</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.rel_mirror_relationship" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.rel_tgt_class">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">rel_tgt_class</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.rel_tgt_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.StdRelationship.to_many">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">to_many</span></span><a class="headerlink" href="#pyramid_jsonapi.StdRelationship.to_many" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="function">
-<dt id="pyramid_jsonapi.get_class_by_tablename">
-<code class="sig-prename descclassname">pyramid_jsonapi.</code><code class="sig-name descname">get_class_by_tablename</code><span class="sig-paren">(</span><em class="sig-param">tablename</em>, <em class="sig-param">registry</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#get_class_by_tablename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.get_class_by_tablename" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.get_class_by_tablename">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.</span></span><span class="sig-name descname"><span class="pre">get_class_by_tablename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tablename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi.html#get_class_by_tablename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.get_class_by_tablename" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return class reference mapped to table.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -432,37 +477,37 @@ defaults to ‘’. Can also be set globally in settings ini file.</p></li>
 <p>return: Class reference or None.</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="pyramid_jsonapi.metadata.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.metadata package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="../developing.html" class="btn btn-neutral float-left" title="Developing pyramid-jsonapi" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="pyramid_jsonapi.metadata.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.metadata package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../developing.html" class="btn btn-neutral float-left" title="Developing pyramid-jsonapi" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Colin Higgs
+        &#169; Copyright 2016, Colin Higgs.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -470,7 +515,6 @@ defaults to ‘’. Can also be set globally in settings ini file.</p></li>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

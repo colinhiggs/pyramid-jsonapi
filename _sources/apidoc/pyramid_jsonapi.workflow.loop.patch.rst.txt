@@ -1,0 +1,7 @@
+pyramid\_jsonapi.workflow.loop.patch module
+===========================================
+
+.. automodule:: pyramid_jsonapi.workflow.loop.patch
+   :members:
+   :undoc-members:
+   :show-inheritance:

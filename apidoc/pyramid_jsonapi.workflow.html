@@ -1,0 +1,567 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>pyramid_jsonapi.workflow package &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pyramid_jsonapi.workflow.loop package" href="pyramid_jsonapi.workflow.loop.html" />
+    <link rel="prev" title="pyramid_jsonapi.metadata package" href="pyramid_jsonapi.metadata.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="pyramid_jsonapi.html">pyramid_jsonapi package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="pyramid_jsonapi.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.metadata.html">pyramid_jsonapi.metadata package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.workflow package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-pyramid_jsonapi.workflow">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#module-pyramid_jsonapi">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="pyramid_jsonapi.html">pyramid_jsonapi package</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.workflow package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/apidoc/pyramid_jsonapi.workflow.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="pyramid-jsonapi-workflow-package">
+<h1>pyramid_jsonapi.workflow package<a class="headerlink" href="#pyramid-jsonapi-workflow-package" title="Permalink to this headline">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.html">pyramid_jsonapi.workflow.loop package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.collection_get.html">pyramid_jsonapi.workflow.loop.collection_get module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.collection_post.html">pyramid_jsonapi.workflow.loop.collection_post module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.delete.html">pyramid_jsonapi.workflow.loop.delete module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.get.html">pyramid_jsonapi.workflow.loop.get module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.patch.html">pyramid_jsonapi.workflow.loop.patch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.related_get.html">pyramid_jsonapi.workflow.loop.related_get module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.relationships_delete.html">pyramid_jsonapi.workflow.loop.relationships_delete module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.relationships_get.html">pyramid_jsonapi.workflow.loop.relationships_get module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.relationships_patch.html">pyramid_jsonapi.workflow.loop.relationships_patch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.relationships_post.html">pyramid_jsonapi.workflow.loop.relationships_post module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.workflow.loop.html#module-pyramid_jsonapi.workflow.loop">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-pyramid_jsonapi.workflow">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyramid_jsonapi.workflow" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Doc">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">Doc</span></span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Doc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Doc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Doc.update_child">
+<span class="sig-name descname"><span class="pre">update_child</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Doc.update_child"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Doc.update_child" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Rejected">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">Rejected</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Rejected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Rejected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Rejected.identifier_to_str">
+<span class="sig-name descname"><span class="pre">identifier_to_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Rejected.identifier_to_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Rejected.identifier_to_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Rejected.reject_attributes">
+<span class="sig-name descname"><span class="pre">reject_attributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">things</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'attributes'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyramid_jsonapi.workflow.Rejected.reject_attributes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Rejected.reject_object">
+<span class="sig-name descname"><span class="pre">reject_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Rejected.reject_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Rejected.reject_object" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Rejected.reject_relationships">
+<span class="sig-name descname"><span class="pre">reject_relationships</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">things</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'relationships'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyramid_jsonapi.workflow.Rejected.reject_relationships" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Rejected.rejected_dict">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">rejected_dict</span></span><a class="headerlink" href="#pyramid_jsonapi.workflow.Rejected.rejected_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">ResultObject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">related</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#ResultObject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject.identifier">
+<span class="sig-name descname"><span class="pre">identifier</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#ResultObject.identifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject.identifier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject.included_dict">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">included_dict</span></span><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject.included_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject.serialise">
+<span class="sig-name descname"><span class="pre">serialise</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#ResultObject.serialise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject.serialise" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject.str_identifier">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">str_identifier</span></span><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject.str_identifier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#ResultObject.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ResultObject.tuple_identifier">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">tuple_identifier</span></span><a class="headerlink" href="#pyramid_jsonapi.workflow.ResultObject.tuple_identifier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">Results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">many</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_included</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_top</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">not_found_message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Object</span> <span class="pre">not</span> <span class="pre">found.'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.compute_meta">
+<span class="sig-name descname"><span class="pre">compute_meta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.compute_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.compute_meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.data">
+<span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predicate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Permission</span> <span class="pre">denied'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_rerun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.identifiers">
+<span class="sig-name descname"><span class="pre">identifiers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.identifiers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.identifiers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.included">
+<span class="sig-name descname"><span class="pre">included</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.included"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.included" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.included_dict">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">included_dict</span></span><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.included_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.meta">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">meta</span></span><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.meta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.rel_dict">
+<span class="sig-name descname"><span class="pre">rel_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.rel_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.rel_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.serialise">
+<span class="sig-name descname"><span class="pre">serialise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.serialise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.serialise" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.Results.serialise_object_with">
+<span class="sig-name descname"><span class="pre">serialise_object_with</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#Results.serialise_object_with"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.Results.serialise_object_with" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.SharedState">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">SharedState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">document</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#SharedState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.SharedState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.ar_check_mirror_rel_perms">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">ar_check_mirror_rel_perms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_or_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#ar_check_mirror_rel_perms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.ar_check_mirror_rel_perms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.execute_stage">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">execute_stage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#execute_stage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.execute_stage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.follow_rel">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">follow_rel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#follow_rel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.follow_rel" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if rel_name should be followed and added.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.get_item">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">get_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_or_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#get_item"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.get_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around view.get_item() to allow passing an item or an id.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.get_jsonapi_accepts">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">get_jsonapi_accepts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#get_jsonapi_accepts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.get_jsonapi_accepts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a set of all ‘application/vnd.api’ parts of the accept
+header.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.make_method">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">make_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#make_method"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.make_method" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.partition">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">partition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">items</span></em>, <em class="sig-param"><span class="pre">predicate=&lt;class</span> <span class="pre">'bool'&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#partition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.partition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.partition_doc_data">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">partition_doc_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partitioner</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#partition_doc_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.partition_doc_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.patch_relationship_ar_helper">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">patch_relationship_ar_helper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">this_item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#patch_relationship_ar_helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.patch_relationship_ar_helper" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.permission_handler">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">permission_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">endpoint_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#permission_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.permission_handler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_alter_document_add_denied">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_alter_document_add_denied</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_alter_document_add_denied"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_alter_document_add_denied" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_alter_document_add_returned_count">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_alter_document_add_returned_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_alter_document_add_returned_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_alter_document_add_returned_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the returned count to meta.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_alter_document_debug_info">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_alter_document_debug_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_alter_document_debug_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_alter_document_debug_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Potentially add some debug information.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_alter_document_self_link">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_alter_document_self_link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_alter_document_self_link"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_alter_document_self_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include a self link unless the method is PATCH.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_alter_request_add_info">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_alter_request_add_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_alter_request_add_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_alter_request_add_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add information commonly used in view operations.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_validate_request_common_validity">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_validate_request_common_validity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_validate_request_common_validity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_validate_request_common_validity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform common request validity checks.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_validate_request_headers">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_validate_request_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_validate_request_headers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_validate_request_headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that request headers comply with spec.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>HTTPUnsupportedMediaType</strong> – </p></li>
+<li><p><strong>HTTPNotAcceptable</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_validate_request_object_exists">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_validate_request_object_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_validate_request_object_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_validate_request_object_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make sure that id exists in collection for all urls specifying an id.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.sh_validate_request_valid_json">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">sh_validate_request_valid_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#sh_validate_request_valid_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.sh_validate_request_valid_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the body of any request is valid JSON.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>HTTPBadRequest</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_collection_post_alter_request">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_collection_post_alter_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_collection_post_alter_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_collection_post_alter_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_delete_alter_request">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_delete_alter_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_delete_alter_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_delete_alter_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_get_alter_document">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_get_alter_document</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_get_alter_document"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_get_alter_document" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_patch_alter_request">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_patch_alter_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_patch_alter_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_patch_alter_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_relationships_delete_alter_request">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_relationships_delete_alter_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_relationships_delete_alter_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_relationships_delete_alter_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_relationships_patch_alter_request">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_relationships_patch_alter_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_relationships_patch_alter_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_relationships_patch_alter_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.shp_relationships_post_alter_request">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">shp_relationships_post_alter_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">view_method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#shp_relationships_post_alter_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.shp_relationships_post_alter_request" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyramid_jsonapi.workflow.wrapped_query_all">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.workflow.</span></span><span class="sig-name descname"><span class="pre">wrapped_query_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/workflow.html#wrapped_query_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.workflow.wrapped_query_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrap query.all() so that SQLAlchemy exceptions can be transformed to
+http ones.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="pyramid_jsonapi.workflow.loop.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.workflow.loop package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pyramid_jsonapi.metadata.html" class="btn btn-neutral float-left" title="pyramid_jsonapi.metadata package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Colin Higgs.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

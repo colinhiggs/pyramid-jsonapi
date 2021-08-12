@@ -1,0 +1,1470 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>pyramid_jsonapi.workflow &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pyramid_jsonapi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html">The pyramid-jsonapi project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../welcome.html#quick-start">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-creation.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../client.html">Consuming the API from the Client End</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../customisation.html">Customising the Generated API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../metadata.html">Metadata Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developing.html">Developing pyramid-jsonapi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidoc/pyramid_jsonapi.html">pyramid_jsonapi package</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyramid_jsonapi</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../pyramid_jsonapi.html">pyramid_jsonapi</a> &raquo;</li>
+        
+      <li>pyramid_jsonapi.workflow</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyramid_jsonapi.workflow</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sqlalchemy</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">deque</span><span class="p">,</span>
+    <span class="n">abc</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">partial</span><span class="p">,</span>
+    <span class="n">partialmethod</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">load_only</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm.interfaces</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ONETOMANY</span><span class="p">,</span>
+    <span class="n">MANYTOMANY</span><span class="p">,</span>
+    <span class="n">MANYTOONE</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">pyramid.httpexceptions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HTTPNotFound</span><span class="p">,</span>
+    <span class="n">HTTPForbidden</span><span class="p">,</span>
+    <span class="n">HTTPBadRequest</span><span class="p">,</span>
+    <span class="n">HTTPConflict</span><span class="p">,</span>
+    <span class="n">HTTPUnsupportedMediaType</span><span class="p">,</span>
+    <span class="n">HTTPNotAcceptable</span><span class="p">,</span>
+    <span class="n">HTTPError</span><span class="p">,</span>
+    <span class="n">HTTPFailedDependency</span><span class="p">,</span>
+    <span class="n">HTTPInternalServerError</span><span class="p">,</span>
+    <span class="n">status_map</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm.relationships</span> <span class="kn">import</span> <span class="n">RelationshipProperty</span>
+
+
+<span class="kn">import</span> <span class="nn">pyramid_jsonapi</span>
+
+
+<div class="viewcode-block" id="make_method"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.make_method">[docs]</a><span class="k">def</span> <span class="nf">make_method</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">api</span><span class="p">):</span>
+    <span class="n">settings</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">settings</span>
+    <span class="n">wf_module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="s1">&#39;workflow_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set up the stages.</span>
+    <span class="n">stages</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;_view_method_name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s1">&#39;validate_request&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>
+        <span class="s1">&#39;alter_document&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>
+        <span class="s1">&#39;validate_response&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="c1"># stage_order = [&#39;alter_request&#39;, &#39;validate_request&#39;, ]</span>
+    <span class="k">for</span> <span class="n">stage_name</span> <span class="ow">in</span> <span class="n">wf_module</span><span class="o">.</span><span class="n">stages</span><span class="p">:</span>
+        <span class="n">stages</span><span class="p">[</span><span class="n">stage_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
+        <span class="c1"># stage_order.append(stage_name)</span>
+    <span class="c1"># stage_order.append(&#39;alter_results&#39;)</span>
+    <span class="c1"># stage_order.append(&#39;validate_response&#39;)</span>
+    <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;validate_request&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_validate_request_headers</span><span class="p">)</span>
+    <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;validate_request&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_validate_request_valid_json</span><span class="p">)</span>
+    <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;validate_request&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_validate_request_common_validity</span><span class="p">)</span>
+    <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;validate_request&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_validate_request_object_exists</span><span class="p">)</span>
+    <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;alter_request&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_alter_request_add_info</span><span class="p">)</span>
+    <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;alter_document&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_alter_document_self_link</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">):</span>
+        <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;alter_document&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_alter_document_add_returned_count</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">api</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">debug_meta</span><span class="p">:</span>
+        <span class="n">stages</span><span class="p">[</span><span class="s1">&#39;alter_document&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sh_alter_document_debug_info</span><span class="p">)</span>
+
+    <span class="c1"># Stack the deques.</span>
+    <span class="k">for</span> <span class="n">stage_name</span><span class="p">,</span> <span class="n">stage_deque</span> <span class="ow">in</span> <span class="n">stages</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">wf_module</span><span class="p">,</span> <span class="s1">&#39;stage_&#39;</span> <span class="o">+</span> <span class="n">stage_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c1"># If there isn&#39;t one, move on.</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+            <span class="c1"># If item is callable just append it.</span>
+            <span class="n">stage_deque</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># item should be an iterable of callables. Append them.</span>
+            <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+                <span class="n">stage_deque</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+
+    <span class="c1"># Build a set of expected responses.</span>
+    <span class="n">ep_dict</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">endpoints</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="s1">&#39;item&#39;</span>
+        <span class="n">http_method</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">endpoint</span><span class="p">,</span> <span class="n">http_method</span> <span class="o">=</span> <span class="n">parts</span>
+        <span class="n">http_method</span> <span class="o">=</span> <span class="n">http_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">responses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="n">ep_dict</span><span class="p">[</span><span class="s1">&#39;responses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">|</span>
+        <span class="n">ep_dict</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">][</span><span class="n">endpoint</span><span class="p">][</span><span class="s1">&#39;responses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">|</span>
+        <span class="n">ep_dict</span><span class="p">[</span><span class="s1">&#39;endpoints&#39;</span><span class="p">][</span><span class="n">endpoint</span><span class="p">][</span><span class="s1">&#39;http_methods&#39;</span><span class="p">][</span><span class="n">http_method</span><span class="p">][</span><span class="s1">&#39;responses&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">method</span><span class="p">(</span><span class="n">view</span><span class="p">):</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span> <span class="o">=</span> <span class="n">SharedState</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># execute_stage(view, stages, &#39;alter_request&#39;)</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="n">execute_stage</span><span class="p">(</span>
+                <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span>
+            <span class="p">)</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="n">execute_stage</span><span class="p">(</span>
+                <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;validate_request&#39;</span><span class="p">,</span> <span class="n">request</span>
+            <span class="p">)</span>
+            <span class="n">view</span><span class="o">.</span><span class="n">request</span> <span class="o">=</span> <span class="n">request</span>
+            <span class="n">document</span> <span class="o">=</span> <span class="n">wf_module</span><span class="o">.</span><span class="n">workflow</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">)</span>
+            <span class="n">document</span> <span class="o">=</span> <span class="n">execute_stage</span><span class="p">(</span>
+                <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;alter_document&#39;</span><span class="p">,</span> <span class="n">document</span>
+            <span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">execute_stage</span><span class="p">(</span>
+                <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;validate_response&#39;</span><span class="p">,</span> <span class="n">document</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="vm">__class__</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">responses</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid exception raised: </span><span class="si">%s</span><span class="s2"> for route_name: </span><span class="si">%s</span><span class="s2"> path: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span>
+                    <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">matched_route</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">current_route_path</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">HTTPError</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="mi">400</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">code</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>  <span class="c1"># pylint:disable=no-member</span>
+                        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s2">&quot;Unexpected client error: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">HTTPInternalServerError</span><span class="p">(</span><span class="s2">&quot;Unexpected server error.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="c1"># Log any responses that were not expected.</span>
+        <span class="n">response_class</span> <span class="o">=</span> <span class="n">status_map</span><span class="p">[</span><span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">response_class</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">responses</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid response: </span><span class="si">%s</span><span class="s2"> for route_name: </span><span class="si">%s</span><span class="s2"> path: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">response_class</span><span class="p">,</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">matched_route</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">current_route_path</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="c1"># Make stages available as an attribute of the method.</span>
+    <span class="n">method</span><span class="o">.</span><span class="n">stages</span> <span class="o">=</span> <span class="n">stages</span>
+
+    <span class="k">return</span> <span class="n">method</span></div>
+
+
+<div class="viewcode-block" id="wrapped_query_all"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.wrapped_query_all">[docs]</a><span class="k">def</span> <span class="nf">wrapped_query_all</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap query.all() so that SQLAlchemy exceptions can be transformed to</span>
+<span class="sd">    http ones.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">query</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">obj</span>
+    <span class="k">except</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">exc</span><span class="o">.</span><span class="n">DataError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">orig</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="follow_rel"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.follow_rel">[docs]</a><span class="k">def</span> <span class="nf">follow_rel</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">include_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    True if rel_name should be followed and added.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">include_path</span> <span class="o">=</span> <span class="n">include_path</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="n">rel_include_path</span> <span class="o">=</span> <span class="n">include_path</span> <span class="o">+</span> <span class="p">[</span><span class="n">rel_name</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">rel_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">requested_relationships</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">view</span><span class="o">.</span><span class="n">path_is_included</span><span class="p">(</span><span class="n">rel_include_path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">view</span><span class="o">.</span><span class="n">mapped_info_from_name</span><span class="p">(</span><span class="n">rel_name</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;visible&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="partition"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.partition">[docs]</a><span class="k">def</span> <span class="nf">partition</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">predicate</span><span class="o">=</span><span class="nb">bool</span><span class="p">):</span>
+    <span class="n">trues</span><span class="p">,</span> <span class="n">falses</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">predicate</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+            <span class="n">trues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">falses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">trues</span><span class="p">,</span> <span class="n">falses</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="execute_stage"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.execute_stage">[docs]</a><span class="k">def</span> <span class="nf">execute_stage</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="n">stage_name</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">stages</span><span class="p">[</span><span class="n">stage_name</span><span class="p">]:</span>
+        <span class="n">arg</span> <span class="o">=</span> <span class="n">handler</span><span class="p">(</span>
+            <span class="c1"># view, arg, None</span>
+            <span class="n">arg</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span>
+            <span class="n">stage</span><span class="o">=</span><span class="n">stage_name</span><span class="p">,</span>
+            <span class="n">view_method</span><span class="o">=</span><span class="n">stages</span><span class="p">[</span><span class="s1">&#39;_view_method_name&#39;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">arg</span></div>
+
+
+<div class="viewcode-block" id="partition_doc_data"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.partition_doc_data">[docs]</a><span class="k">def</span> <span class="nf">partition_doc_data</span><span class="p">(</span><span class="n">doc_data</span><span class="p">,</span> <span class="n">partitioner</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">partitioner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">doc_data</span><span class="p">,</span> <span class="p">[]</span>
+    <span class="n">accepted</span><span class="p">,</span> <span class="n">rejected</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">doc_data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">partitioner</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">doc_data</span><span class="p">):</span>
+            <span class="n">accepted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rejected</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">accepted</span><span class="p">,</span> <span class="n">rejected</span></div>
+
+
+<div class="viewcode-block" id="shp_get_alter_document"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_get_alter_document">[docs]</a><span class="k">def</span> <span class="nf">shp_get_alter_document</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="c1"># Make it so that the data part is always a list for later code DRYness.</span>
+    <span class="c1"># We&#39;ll put it back the way it was later. Honest ;-).</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">many</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">]</span>
+        <span class="n">many</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># Find the top level filter function to run over data.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">data_filter</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+            <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_document&#39;</span><span class="p">),</span>
+            <span class="n">permission_sought</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
+            <span class="n">stage_name</span><span class="o">=</span><span class="s1">&#39;alter_document&#39;</span><span class="p">,</span>
+            <span class="n">view_instance</span><span class="o">=</span><span class="n">view</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">data_filter</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Remember what was rejected so it can be removed from included later.</span>
+    <span class="n">rejected_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">accepted</span><span class="p">,</span> <span class="n">rejected</span> <span class="o">=</span> <span class="n">partition_doc_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">data_filter</span><span class="p">)</span>
+
+    <span class="c1"># Filter any related items.</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">rel_dict</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">rel_data</span> <span class="o">=</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rel_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">rel_many</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rel_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">rel_data</span><span class="p">]</span>
+                <span class="n">rel_many</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">rel_view</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">view_instance</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">rel_name</span><span class="p">]</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rel_filter</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+                    <span class="n">rel_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_document&#39;</span><span class="p">),</span>
+                    <span class="n">permission_sought</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
+                    <span class="n">stage_name</span><span class="o">=</span><span class="s1">&#39;alter_document&#39;</span><span class="p">,</span>
+                    <span class="n">view_instance</span><span class="o">=</span><span class="n">view</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">rel_filter</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">rel_accepted</span><span class="p">,</span> <span class="n">rel_rejected</span> <span class="o">=</span> <span class="n">partition_doc_data</span><span class="p">(</span><span class="n">rel_data</span><span class="p">,</span> <span class="n">rel_filter</span><span class="p">)</span>
+            <span class="n">rejected_set</span> <span class="o">|=</span> <span class="p">{(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rel_rejected</span><span class="p">}</span>
+            <span class="k">if</span> <span class="n">rel_many</span><span class="p">:</span>
+                <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rel_accepted</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rel_accepted</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Time to do what we promised and put scalars back.</span>
+    <span class="k">if</span> <span class="n">many</span><span class="p">:</span>
+        <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">accepted</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">accepted</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rejected</span><span class="p">:</span>
+                <span class="k">raise</span><span class="p">(</span><span class="n">HTTPNotFound</span><span class="p">(</span><span class="s1">&#39;Object not found.&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Remove any rejected items from included.</span>
+    <span class="n">included</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;included&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rejected_set</span>
+    <span class="p">]</span>
+    <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;included&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">included</span>
+    <span class="k">return</span> <span class="n">doc</span></div>
+
+
+<div class="viewcode-block" id="shp_collection_post_alter_request"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_collection_post_alter_request">[docs]</a><span class="k">def</span> <span class="nf">shp_collection_post_alter_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="c1"># Make sure there is a permission filter registered.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pfilter</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="n">obj_data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">pfilter</span><span class="p">(</span><span class="n">obj_data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">allowed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="c1"># Straight up forbidden to create object.</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to POST object:</span><span class="se">\n\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">att_name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">att_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]:</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">obj_data</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">][</span><span class="n">att_name</span><span class="p">])</span>
+            <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+    <span class="n">rel_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">rel_name</span> <span class="ow">in</span> <span class="n">rel_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rel_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">obj_data</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">][</span><span class="n">rel_name</span><span class="p">])</span>
+            <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+    <span class="c1"># Loop through a shallow copy of obj_data[&#39;relationships&#39;] so that we</span>
+    <span class="c1"># can delete entries without causing problems.</span>
+    <span class="n">rels_copy</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">rels_copy</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="k">for</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">rel_dict</span> <span class="ow">in</span> <span class="n">rels_copy</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># For each of these allowed rels, look to see if the *other end*</span>
+        <span class="c1"># of the relationship is to_one (in which case we need PATCH permission</span>
+        <span class="c1"># to that rel in order to set it to this object) or to_many (in which</span>
+        <span class="c1"># case we need POST permission in order to add this object to it).</span>
+        <span class="n">rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">rel_name</span><span class="p">]</span>
+        <span class="n">mirror_rel</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">mirror_relationship</span>
+        <span class="c1"># if rel.direction in (ONETOMANY, MANYTOMANY):</span>
+        <span class="c1">#     tgt_ris = rel_dict[&#39;data&#39;]</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     tgt_ris = [rel_dict[&#39;data&#39;]]</span>
+        <span class="k">if</span> <span class="n">mirror_rel</span><span class="p">:</span>
+            <span class="n">mirror_view</span> <span class="o">=</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">view_class</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ONETOMANY</span><span class="p">,</span> <span class="n">MANYTOMANY</span><span class="p">):</span>
+                <span class="c1"># Need POST permission on tgt_ri.mirror_rel.</span>
+                <span class="n">permission_sought</span> <span class="o">=</span> <span class="s1">&#39;post&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Need PATCH permission on tgt_ri.mirror_rel.</span>
+                <span class="n">permission_sought</span> <span class="o">=</span> <span class="s1">&#39;patch&#39;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">mfilter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span>
+                    <span class="n">permission_sought</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="c1"># No filter registered - treat as always True and skip this</span>
+                <span class="c1"># rel.</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ONETOMANY</span><span class="p">,</span> <span class="n">MANYTOMANY</span><span class="p">):</span>
+                <span class="n">allowed_ris</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">tgt_ri</span> <span class="ow">in</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+                    <span class="n">mallowed</span> <span class="o">=</span> <span class="n">mfilter</span><span class="p">(</span><span class="n">tgt_ri</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                        <span class="n">allowed_ris</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tgt_ri</span><span class="p">)</span>
+                    <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+                <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">allowed_ris</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mallowed</span> <span class="o">=</span> <span class="n">mfilter</span><span class="p">(</span><span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                    <span class="k">del</span><span class="p">(</span><span class="n">obj_data</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">][</span><span class="n">rel_name</span><span class="p">])</span>
+                    <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+
+    <span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">obj_data</span><span class="p">})</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="shp_relationships_post_alter_request"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_relationships_post_alter_request">[docs]</a><span class="k">def</span> <span class="nf">shp_relationships_post_alter_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="c1"># Make sure there is a permission filter registered.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pfilter</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="c1"># First need permision to POST to obj.rel.</span>
+    <span class="n">obj_perms</span> <span class="o">=</span> <span class="n">pfilter</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">obj_perms</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">[]})</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="c1"># We might need</span>
+    <span class="n">mirror_rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">mirror_relationship</span>
+    <span class="n">mirror_view</span> <span class="o">=</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">view_class</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">del_filter</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">del_filter</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">m_patch_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">m_patch_filter</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">m_post_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">m_post_filter</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">new_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ri</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+        <span class="c1"># adding = True</span>
+        <span class="k">if</span> <span class="n">mirror_rel</span> <span class="ow">and</span> <span class="p">(</span><span class="n">del_filter</span> <span class="ow">or</span> <span class="n">m_patch_filter</span><span class="p">):</span>
+            <span class="c1"># Check permission to alter other end of relationship.</span>
+            <span class="n">related</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">dbsession</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">mirror_view</span><span class="o">.</span><span class="n">key_column</span> <span class="o">==</span> <span class="n">ri</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">one_or_none</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">related</span><span class="p">:</span>
+                <span class="n">related_resource</span> <span class="o">=</span> <span class="n">ResultObject</span><span class="p">(</span><span class="n">mirror_view</span><span class="p">,</span> <span class="n">related</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Trying to add a related id that doesn&#39;t exist. This</span>
+                <span class="c1"># is an error but we leave it to be caught later in the</span>
+                <span class="c1"># standard place. In the meantime there is no point in</span>
+                <span class="c1"># checking for permission.</span>
+                <span class="n">new_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">ONETOMANY</span><span class="p">:</span>
+                <span class="c1"># Need DELETE on related.mirror.old_resource.rel</span>
+                <span class="n">old_resource</span> <span class="o">=</span> <span class="n">ResultObject</span><span class="p">(</span>
+                    <span class="n">view</span><span class="p">,</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">related</span><span class="p">,</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">old_dict</span> <span class="o">=</span> <span class="n">old_resource</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">del_filter</span> <span class="ow">and</span> <span class="n">old_dict</span> <span class="ow">and</span>
+                    <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">del_filter</span><span class="p">(</span><span class="n">old_dict</span><span class="p">)[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]</span>
+                <span class="p">):</span>
+                    <span class="c1"># Not allowed to alter this relationship.</span>
+                    <span class="c1"># print(f&#39;No DELETE on {old_dict[&quot;type&quot;]}/{old_dict[&quot;id&quot;]}.{view.rel.name}&#39;)</span>
+                    <span class="k">continue</span>
+                <span class="c1"># Need PATCH on related.mirror</span>
+                <span class="n">perms</span> <span class="o">=</span> <span class="n">m_patch_filter</span><span class="p">(</span><span class="n">related_resource</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">perms</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                    <span class="c1"># print(f&#39;No PATCH on {related_resource.to_dict()}&#39;)</span>
+                    <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># MANYTOMANY</span>
+                <span class="c1"># Need POST on related.mirror</span>
+                <span class="n">perms</span> <span class="o">=</span> <span class="n">m_post_filter</span><span class="p">(</span><span class="n">related_resource</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">perms</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                    <span class="k">continue</span>
+        <span class="c1"># if adding:</span>
+        <span class="n">new_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+    <span class="c1"># TODO: option to select alternate behaviour</span>
+    <span class="c1"># if len(new_data) != len(json_body[&#39;data&#39;]):</span>
+    <span class="c1">#     raise HTTPForbidden(</span>
+    <span class="c1">#         &#39;No permission to POST {} to relationship {}.&#39;.format(</span>
+    <span class="c1">#             item, view.relname</span>
+    <span class="c1">#         )</span>
+    <span class="c1">#     )</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">new_data</span><span class="p">})</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="patch_relationship_ar_helper"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.patch_relationship_ar_helper">[docs]</a><span class="k">def</span> <span class="nf">patch_relationship_ar_helper</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">this_item</span><span class="p">,</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">rel_dict</span><span class="p">):</span>
+    <span class="n">rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">rel_name</span><span class="p">]</span>
+    <span class="n">mirror_rel</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">mirror_relationship</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">mirror_rel</span><span class="p">:</span>
+        <span class="c1"># No mirror relationship: no need to check permissions on it.</span>
+        <span class="k">return</span> <span class="n">rel_dict</span>
+    <span class="n">this_ro</span> <span class="o">=</span> <span class="n">ResultObject</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">this_item</span><span class="p">)</span>
+    <span class="n">mirror_view</span> <span class="o">=</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">view_class</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ONETOMANY</span><span class="p">,</span> <span class="n">MANYTOMANY</span><span class="p">):</span>
+        <span class="c1"># rel data will be an array of ris. We&#39;ll need permission to post,</span>
+        <span class="c1"># delete, or patch each one on the mirror.</span>
+        <span class="c1"># Find the current related items.</span>
+        <span class="n">current_related_ids</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">related_item</span><span class="p">,</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">key_column</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">related_item</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">this_item</span><span class="p">,</span> <span class="n">rel</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">new_related_ids</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="n">adding</span> <span class="o">=</span> <span class="n">new_related_ids</span> <span class="o">-</span> <span class="n">current_related_ids</span>
+        <span class="n">removing</span> <span class="o">=</span> <span class="n">current_related_ids</span> <span class="o">-</span> <span class="n">new_related_ids</span>
+        <span class="n">allowed_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">current_related_ids</span><span class="p">)</span>
+        <span class="c1"># print(f&#39;{rel.name}: cur {current_related_ids}, new {new_related_ids}&#39;)</span>
+        <span class="c1"># print(f&#39;  add {adding}, rem {removing}&#39;)</span>
+        <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">ONETOMANY</span><span class="p">:</span>
+            <span class="c1"># mirror_rel is MANYTOONE and we need PATCH permission for any</span>
+            <span class="c1"># alterations.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">m_patch_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">rel_dict</span>
+            <span class="k">for</span> <span class="n">_id</span> <span class="ow">in</span> <span class="n">adding</span><span class="p">:</span>
+                <span class="n">mallowed</span> <span class="o">=</span> <span class="n">m_patch_filter</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                        <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">_id</span><span class="p">,</span>
+                        <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">this_ro</span><span class="o">.</span><span class="n">identifier</span><span class="p">()</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                    <span class="n">allowed_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">_id</span><span class="p">)</span>
+                <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+            <span class="k">for</span> <span class="n">_id</span> <span class="ow">in</span> <span class="n">removing</span><span class="p">:</span>
+                <span class="n">mallowed</span> <span class="o">=</span> <span class="n">m_patch_filter</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                        <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">_id</span><span class="p">,</span>
+                        <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="kc">None</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                    <span class="n">allowed_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">_id</span><span class="p">)</span>
+                <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># mirror_rel is MANYTOMANY and we need POST permission to add or</span>
+            <span class="c1"># DELETE permission to remove.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">m_post_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">m_post_filter</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">m_del_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">m_del_filter</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">m_post_filter</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_id</span> <span class="ow">in</span> <span class="n">adding</span><span class="p">:</span>
+                    <span class="n">mallowed</span> <span class="o">=</span> <span class="n">m_post_filter</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">_id</span><span class="p">,</span>
+                            <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+                                    <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">this_ro</span><span class="o">.</span><span class="n">identifier</span><span class="p">()</span>
+                                <span class="p">}</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                        <span class="n">allowed_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">_id</span><span class="p">)</span>
+                    <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+            <span class="k">if</span> <span class="n">m_del_filter</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_id</span> <span class="ow">in</span> <span class="n">removing</span><span class="p">:</span>
+                    <span class="n">mallowed</span> <span class="o">=</span> <span class="n">m_del_filter</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">_id</span><span class="p">,</span>
+                            <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+                                    <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">this_ro</span><span class="o">.</span><span class="n">identifier</span><span class="p">()</span>
+                                <span class="p">}</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                        <span class="n">allowed_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">_id</span><span class="p">)</span>
+                    <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">allowed_ids</span> <span class="o">-=</span> <span class="n">removing</span>
+
+        <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">_id</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">_id</span> <span class="ow">in</span> <span class="n">allowed_ids</span>
+        <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># rel.direction is MANYTOONE. There should be just one ri, or None.</span>
+        <span class="n">cur_related</span> <span class="o">=</span> <span class="n">ResultObject</span><span class="p">(</span><span class="n">mirror_view</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">this_item</span><span class="p">,</span> <span class="n">rel</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">cur_related</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Nothing to do.</span>
+            <span class="k">return</span> <span class="n">rel_dict</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">cur_related</span><span class="o">.</span><span class="n">obj_id</span><span class="p">)</span> <span class="o">==</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">):</span>
+            <span class="c1"># Also nothing to do.</span>
+            <span class="k">return</span> <span class="n">rel_dict</span>
+        <span class="k">if</span> <span class="n">cur_related</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Need DELETE permission on cur_related.mirror_rel</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">m_del_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;del&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">rel_dict</span>
+            <span class="n">mallowed</span> <span class="o">=</span> <span class="n">m_del_filter</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">cur_related</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span>
+                    <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">this_ro</span><span class="o">.</span><span class="n">identifier</span><span class="p">()</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+                <span class="c1"># del(obj_data[&#39;relationships&#39;][rel_name])</span>
+        <span class="k">if</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Need POST permission on cur_related.mirror_rel</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">m_post_filter</span> <span class="o">=</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">rel_dict</span>
+            <span class="n">mallowed</span> <span class="o">=</span> <span class="n">m_post_filter</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">mirror_view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+                    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">cur_related</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span>
+                    <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">this_ro</span><span class="o">.</span><span class="n">identifier</span><span class="p">()</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mallowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+                <span class="c1"># del(obj_data[&#39;relationships&#39;][rel_name])</span>
+    <span class="k">return</span> <span class="n">rel_dict</span></div>
+
+
+<div class="viewcode-block" id="shp_patch_alter_request"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_patch_alter_request">[docs]</a><span class="k">def</span> <span class="nf">shp_patch_alter_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="c1"># Make sure there is a permission filter registered.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pfilter</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="n">obj_data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">pfilter</span><span class="p">(</span><span class="n">obj_data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">allowed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="c1"># Straight up forbidden to PATCH object.</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to PATCH object:</span><span class="se">\n\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">att_name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="n">att_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]:</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">obj_data</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">][</span><span class="n">att_name</span><span class="p">])</span>
+            <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+    <span class="n">rel_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">rel_name</span> <span class="ow">in</span> <span class="n">rel_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rel_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">obj_data</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">][</span><span class="n">rel_name</span><span class="p">])</span>
+            <span class="c1"># TODO: alternatively raise HTTPForbidden?</span>
+    <span class="c1"># Loop through a shallow copy of obj_data[&#39;relationships&#39;] so that we</span>
+    <span class="c1"># can delete entries without causing problems.</span>
+    <span class="n">rels_copy</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">rels_copy</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">obj_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">this_item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">get_item</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">rel_dict</span> <span class="ow">in</span> <span class="n">rels_copy</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># For each of these allowed rels, look to see if the *other end*</span>
+        <span class="c1"># of the relationship is to_one (in which case we need PATCH permission</span>
+        <span class="c1"># to that rel in order to set it to this object) or to_many (in which</span>
+        <span class="c1"># case we need POST permission in order to add this object to it).</span>
+        <span class="n">new_rel_dict</span> <span class="o">=</span> <span class="n">patch_relationship_ar_helper</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">this_item</span><span class="p">,</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">rel_dict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_rel_dict</span><span class="p">:</span>
+            <span class="n">obj_data</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">][</span><span class="n">rel_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_rel_dict</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">obj_data</span><span class="p">})</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="shp_relationships_patch_alter_request"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_relationships_patch_alter_request">[docs]</a><span class="k">def</span> <span class="nf">shp_relationships_patch_alter_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="c1"># Make sure there is a permission filter registered.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pfilter</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">pfilter</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># Straight up forbidden to PATCH object.</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to PATCH object:</span><span class="se">\n\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No permission to PATCH </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">this_item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">get_item</span><span class="p">()</span>
+    <span class="n">new_rel_dict</span> <span class="o">=</span> <span class="n">patch_relationship_ar_helper</span><span class="p">(</span>
+        <span class="n">view</span><span class="p">,</span> <span class="n">this_item</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">new_rel_dict</span><span class="p">:</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">new_rel_dict</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No permission to alter remote side of </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="get_item"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.get_item">[docs]</a><span class="k">def</span> <span class="nf">get_item</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">item_or_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper around view.get_item() to allow passing an item or an id.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">item_or_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">item_or_id</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item_or_id</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">model</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">item_or_id</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">view</span><span class="o">.</span><span class="n">get_item</span><span class="p">(</span><span class="n">item_or_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ar_check_mirror_rel_perms"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ar_check_mirror_rel_perms">[docs]</a><span class="k">def</span> <span class="nf">ar_check_mirror_rel_perms</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">permission</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">rel_dict</span><span class="p">,</span> <span class="n">item_or_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># Find the item rel is relative to.</span>
+
+    <span class="c1"># Check for direct permission to alter rel.</span>
+    <span class="c1"># filter = view.permission_filter(permission, &#39;alter_request&#39;, default=view.true_filter)</span>
+    <span class="c1"># if not filter(this_item):</span>
+    <span class="c1">#     return {&#39;forward&#39;: False}</span>
+    <span class="n">mirror_rel</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">mirror_relationship</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">mirror_rel</span><span class="p">:</span>
+        <span class="c1"># No mirror relationship: no need to check permissions on it. Return</span>
+        <span class="c1"># False as a predicate value.</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="c1"># mirror_view = mirror_rel.view_class(view.request)</span>
+    <span class="n">report</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;post&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;allowed&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(),</span> <span class="s1">&#39;denied&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">()},</span>
+        <span class="s1">&#39;patch&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;allowed&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(),</span> <span class="s1">&#39;denied&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">()},</span>
+        <span class="s1">&#39;delete&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;allowed&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(),</span> <span class="s1">&#39;denied&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">()}</span>
+    <span class="p">}</span>
+    <span class="c1"># related_items = view.related_query(this_ro.obj_id, rel).all()</span>
+    <span class="n">rel_data</span> <span class="o">=</span> <span class="n">rel_dict</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">MANYTOONE</span><span class="p">:</span>
+        <span class="c1"># Always a list for DRYness.</span>
+        <span class="n">rel_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">rel_data</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mirror_rel</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">MANYTOONE</span><span class="p">:</span>
+        <span class="c1"># Need patch permission for any alterations.</span>
+        <span class="k">if</span> <span class="n">permission</span> <span class="o">==</span> <span class="s1">&#39;post&#39;</span><span class="p">:</span>
+            <span class="n">adding</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">report</span></div>
+
+
+<div class="viewcode-block" id="shp_delete_alter_request"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_delete_alter_request">[docs]</a><span class="k">def</span> <span class="nf">shp_delete_alter_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="c1"># Make sure there is a permission filter registered.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pfilter</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="n">this_item</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">get_item</span><span class="p">()</span>
+    <span class="n">this_ro</span> <span class="o">=</span> <span class="n">ResultObject</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">this_item</span><span class="p">)</span>
+    <span class="n">this_data</span> <span class="o">=</span> <span class="n">this_ro</span><span class="o">.</span><span class="n">serialise</span><span class="p">()</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">pfilter</span><span class="p">(</span><span class="n">this_data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">view</span><span class="o">.</span><span class="n">everything_mask</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to delete </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span>
+        <span class="p">))</span>
+    <span class="k">for</span> <span class="n">att_name</span> <span class="ow">in</span> <span class="n">this_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="p">{}):</span>
+        <span class="k">if</span> <span class="n">att_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]:</span>
+            <span class="c1"># Need permission to *all* attributes for delete to work sensibly.</span>
+            <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to delete </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">[</span><span class="si">{}</span><span class="s1">]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span> <span class="n">att_name</span>
+            <span class="p">))</span>
+    <span class="k">for</span> <span class="n">rel_name</span> <span class="ow">in</span> <span class="n">this_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{}):</span>
+        <span class="k">if</span> <span class="n">rel_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+            <span class="c1"># Need permission to *all* relationships for delete to work sensibly.</span>
+            <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to delete </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span> <span class="n">rel_name</span>
+            <span class="p">))</span>
+    <span class="k">for</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">rel_dict</span> <span class="ow">in</span> <span class="n">this_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationships&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">rel_name</span><span class="p">]</span>
+        <span class="n">mirror_perms</span> <span class="o">=</span> <span class="n">ar_check_mirror_rel_perms</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="s1">&#39;delete&#39;</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">rel_dict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mirror_perms</span><span class="p">:</span>
+            <span class="c1"># There is no mirror relationship for this rel.</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">mirror_perms</span><span class="p">[</span><span class="s1">&#39;delete&#39;</span><span class="p">][</span><span class="s1">&#39;denied&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">mirror_perms</span><span class="p">[</span><span class="s1">&#39;patch&#39;</span><span class="p">][</span><span class="s1">&#39;denied&#39;</span><span class="p">]:</span>
+            <span class="c1"># At least one required delete or patch on mirror is denied.</span>
+            <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span><span class="s1">&#39;No permission to delete </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1"> by mirror relationship.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span> <span class="n">rel_name</span>
+            <span class="p">))</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="shp_relationships_delete_alter_request"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_relationships_delete_alter_request">[docs]</a><span class="k">def</span> <span class="nf">shp_relationships_delete_alter_request</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pfilter</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+            <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span> <span class="s1">&#39;alter_request&#39;</span><span class="p">),</span>
+            <span class="n">permission_sought</span><span class="o">=</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span>
+            <span class="n">stage_name</span><span class="o">=</span><span class="s1">&#39;alter_request&#39;</span><span class="p">,</span>
+            <span class="n">view_instance</span><span class="o">=</span><span class="n">view</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">request</span>
+    <span class="c1"># TODO: option to select alternate behaviour</span>
+    <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># Pretend that the request only contained the items which are allowed.</span>
+        <span class="n">new_data</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">pfilter</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+        <span class="p">]</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_data</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Deny the whole request if we lack permission for any one item.</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pfilter</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="n">HTTPForbidden</span><span class="p">(</span>
+                    <span class="s1">&#39;No permission to DELETE </span><span class="si">{}</span><span class="s1"> from relationship </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">item</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">relname</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">request</span></div>
+
+
+<span class="n">permission_handlers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_document&#39;</span><span class="p">:</span> <span class="n">shp_get_alter_document</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;collection_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_document&#39;</span><span class="p">:</span> <span class="n">shp_get_alter_document</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;related_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_document&#39;</span><span class="p">:</span> <span class="n">shp_get_alter_document</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;relationships_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_document&#39;</span><span class="p">:</span> <span class="n">shp_get_alter_document</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;collection_post&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">shp_collection_post_alter_request</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;relationships_post&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">shp_relationships_post_alter_request</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;patch&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">shp_patch_alter_request</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;relationships_patch&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">shp_relationships_patch_alter_request</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;delete&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">shp_delete_alter_request</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;relationships_delete&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;alter_request&#39;</span><span class="p">:</span> <span class="n">shp_relationships_delete_alter_request</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="permission_handler"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.permission_handler">[docs]</a><span class="k">def</span> <span class="nf">permission_handler</span><span class="p">(</span><span class="n">endpoint_name</span><span class="p">,</span> <span class="n">stage_name</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">permission_handlers</span><span class="p">[</span><span class="n">endpoint_name</span><span class="p">][</span><span class="n">stage_name</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_jsonapi_accepts"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.get_jsonapi_accepts">[docs]</a><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">get_jsonapi_accepts</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a set of all &#39;application/vnd.api&#39; parts of the accept</span>
+<span class="sd">    header.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">accepts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s1">&#39;,\s*&#39;</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;accept&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">accepts</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;application/vnd.api&#39;</span><span class="p">)</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="sh_validate_request_headers"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_validate_request_headers">[docs]</a><span class="k">def</span> <span class="nf">sh_validate_request_headers</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check that request headers comply with spec.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPUnsupportedMediaType</span>
+<span class="sd">        HTTPNotAcceptable</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Spec says to reject (with 415) any request with media type</span>
+    <span class="c1"># params.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;content-type&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPUnsupportedMediaType</span><span class="p">(</span>
+            <span class="s1">&#39;Media Type parameters not allowed by JSONAPI &#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;spec (http://jsonapi.org/format).&#39;</span>
+        <span class="p">)</span>
+    <span class="c1"># Spec says throw 406 Not Acceptable if Accept header has no</span>
+    <span class="c1"># application/vnd.api+json entry without parameters.</span>
+    <span class="n">jsonapi_accepts</span> <span class="o">=</span> <span class="n">get_jsonapi_accepts</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">jsonapi_accepts</span> <span class="ow">and</span>\
+            <span class="s1">&#39;application/vnd.api+json&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">jsonapi_accepts</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPNotAcceptable</span><span class="p">(</span>
+            <span class="s1">&#39;application/vnd.api+json must appear with no &#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;parameters in Accepts header &#39;</span> <span class="o">+</span>
+            <span class="s1">&#39;(http://jsonapi.org/format).&#39;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="sh_validate_request_valid_json"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_validate_request_valid_json">[docs]</a><span class="k">def</span> <span class="nf">sh_validate_request_valid_json</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check that the body of any request is valid JSON.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPBadRequest</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">content_length</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">json_body</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span><span class="s2">&quot;Body is not valid JSON.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="sh_validate_request_common_validity"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_validate_request_common_validity">[docs]</a><span class="k">def</span> <span class="nf">sh_validate_request_common_validity</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Perform common request validity checks.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">content_length</span> <span class="ow">and</span> <span class="n">view</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">schema_validation</span><span class="p">:</span>
+        <span class="c1"># Validate request JSON against the JSONAPI jsonschema</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">JSONSchema</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">json_body</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">)</span>
+
+    <span class="c1"># Spec says throw BadRequest if any include paths reference non</span>
+    <span class="c1"># existent attributes or relationships.</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">bad_include_paths</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPBadRequest</span><span class="p">(</span>
+            <span class="s2">&quot;Bad include paths </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">bad_include_paths</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Spec says set Content-Type to application/vnd.api+json.</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s1">&#39;application/vnd.api+json&#39;</span>
+
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="sh_validate_request_object_exists"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_validate_request_object_exists">[docs]</a><span class="k">def</span> <span class="nf">sh_validate_request_object_exists</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Make sure that id exists in collection for all urls specifying an id.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">view</span><span class="o">.</span><span class="n">object_exists</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span><span class="s1">&#39;No item </span><span class="si">{}</span><span class="s1"> in </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="p">,</span> <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="sh_alter_document_self_link"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_alter_document_self_link">[docs]</a><span class="k">def</span> <span class="nf">sh_alter_document_self_link</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Include a self link unless the method is PATCH.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">!=</span> <span class="s1">&#39;PATCH&#39;</span><span class="p">:</span>
+        <span class="n">doc</span><span class="o">.</span><span class="n">update_child</span><span class="p">(</span><span class="s1">&#39;links&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;self&#39;</span><span class="p">:</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">doc</span></div>
+
+
+<div class="viewcode-block" id="sh_alter_document_debug_info"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_alter_document_debug_info">[docs]</a><span class="k">def</span> <span class="nf">sh_alter_document_debug_info</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Potentially add some debug information.&quot;&quot;&quot;</span>
+    <span class="n">debug</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;accept_header&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="n">a</span><span class="p">:</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">get_jsonapi_accepts</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="p">)</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;qinfo_page&#39;</span><span class="p">:</span>
+            <span class="n">view</span><span class="o">.</span><span class="n">collection_query_info</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="p">)[</span><span class="s1">&#39;_page&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;atts&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">keys</span><span class="p">()},</span>
+        <span class="s1">&#39;includes&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">requested_include_names</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">update_child</span><span class="p">(</span><span class="s1">&#39;meta&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;debug&#39;</span><span class="p">:</span> <span class="n">debug</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">doc</span></div>
+
+
+<div class="viewcode-block" id="sh_alter_document_add_returned_count"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_alter_document_add_returned_count">[docs]</a><span class="k">def</span> <span class="nf">sh_alter_document_add_returned_count</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add the returned count to meta.&quot;&quot;&quot;</span>
+    <span class="c1"># Don&#39;t add a returned count unless we&#39;re returning an array of objects.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">doc</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;returned&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">doc</span></div>
+
+
+<div class="viewcode-block" id="sh_alter_document_add_denied"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_alter_document_add_denied">[docs]</a><span class="k">def</span> <span class="nf">sh_alter_document_add_denied</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">rejected_dict</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">rejected_dict</span>
+    <span class="n">results</span><span class="p">[</span><span class="s1">&#39;denied&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rejected_dict</span><span class="p">[</span><span class="s1">&#39;objects&#39;</span><span class="p">])</span>
+    <span class="n">meta</span><span class="p">[</span><span class="s1">&#39;rejected&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rejected_dict</span>
+
+    <span class="c1"># delete(results[&#39;available&#39;])</span>
+    <span class="k">return</span> <span class="n">doc</span></div>
+
+
+<div class="viewcode-block" id="sh_alter_request_add_info"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_alter_request_add_info">[docs]</a><span class="k">def</span> <span class="nf">sh_alter_request_add_info</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add information commonly used in view operations.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Extract id and relationship from route, if provided</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">obj_id</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">matchdict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">not_found_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;No item </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">obj_id</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">relname</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">matchdict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationship&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">relname</span><span class="p">:</span>
+        <span class="c1"># Gather relationship info</span>
+        <span class="n">mapper</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">mapper</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">view</span><span class="o">.</span><span class="n">rel</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">view</span><span class="o">.</span><span class="n">relname</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPNotFound</span><span class="p">(</span><span class="s1">&#39;No relationship </span><span class="si">{}</span><span class="s1"> in collection </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">relname</span><span class="p">,</span>
+                <span class="n">view</span><span class="o">.</span><span class="n">collection_name</span>
+            <span class="p">))</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">rel_class</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">tgt_class</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">rel_view</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">view_instance</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">rel_class</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="ResultObject"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject">[docs]</a><span class="k">class</span> <span class="nc">ResultObject</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="nb">object</span><span class="p">,</span> <span class="n">related</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span> <span class="o">=</span> <span class="n">view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="nb">object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">related</span> <span class="o">=</span> <span class="n">related</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">id_col</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">route_url</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">make_route_name</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;item&#39;</span>
+            <span class="p">),</span>
+            <span class="o">**</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">requested_attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rel_mask</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">requested_relationships</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_included_dict</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ResultObject.serialise"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.serialise">[docs]</a>    <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># An object of &#39;None&#39; is a special case.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">atts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute_mask</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">mapped_info_from_name</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;visible&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">rels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">rel_name</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">rel_dict</span><span class="p">(</span>
+                <span class="n">rel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">relationships</span><span class="p">[</span><span class="n">rel_name</span><span class="p">],</span>
+                <span class="n">rel_name</span><span class="o">=</span><span class="n">rel_name</span><span class="p">,</span>
+                <span class="n">parent_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">related</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">rel_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_mask</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span><span class="p">),</span>
+            <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="n">atts</span><span class="p">,</span>
+            <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;self&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">},</span>
+            <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="n">rels</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ResultObject.to_dict"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span><span class="p">),</span>
+            <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">key</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">all_attributes</span>
+            <span class="p">}</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="ResultObject.identifier"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.identifier">[docs]</a>    <span class="k">def</span> <span class="nf">identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># An object of &#39;None&#39; is a special case.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+            <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span><span class="p">)</span>
+        <span class="p">}</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tuple_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">str_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="si">}</span><span class="s1">-::-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_id</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">included_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">incd</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">related</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">res</span><span class="o">.</span><span class="n">is_included</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">incd</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">included_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">incd</span></div>
+
+
+<div class="viewcode-block" id="Results"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results">[docs]</a><span class="k">class</span> <span class="nc">Results</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">objects</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_included</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_top</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">not_found_message</span><span class="o">=</span><span class="s1">&#39;Object not found.&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span> <span class="o">=</span> <span class="n">view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="n">objects</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rejected_objects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">many</span> <span class="o">=</span> <span class="n">many</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">count</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">limit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_included</span> <span class="o">=</span> <span class="n">is_included</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_top</span> <span class="o">=</span> <span class="n">is_top</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">not_found_message</span> <span class="o">=</span> <span class="n">not_found_message</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_included_dict</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flag_filtered</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="Results.serialise"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.serialise">[docs]</a>    <span class="k">def</span> <span class="nf">serialise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifiers</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">Doc</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">many</span><span class="p">:</span>
+            <span class="c1"># doc.collection = True</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;links&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">pagination_links</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">identifiers</span><span class="p">:</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">identifiers</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">()</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;included&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">included</span><span class="p">()</span>
+        <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span>
+
+        <span class="k">return</span> <span class="n">doc</span></div>
+
+<div class="viewcode-block" id="Results.serialise_object_with"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.serialise_object_with">[docs]</a>    <span class="k">def</span> <span class="nf">serialise_object_with</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)()</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">many</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_meta</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span>
+
+<div class="viewcode-block" id="Results.compute_meta"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.compute_meta">[docs]</a>    <span class="k">def</span> <span class="nf">compute_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">many</span><span class="p">:</span>
+            <span class="n">meta</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s1">&#39;results&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;available&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">,</span>
+                        <span class="s1">&#39;limit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span><span class="p">,</span>
+                        <span class="c1"># &#39;returned&#39;: len(self.objects)</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">meta</span></div>
+
+<div class="viewcode-block" id="Results.data"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialise_object_with</span><span class="p">(</span><span class="s1">&#39;serialise&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.identifiers"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.identifiers">[docs]</a>    <span class="k">def</span> <span class="nf">identifiers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialise_object_with</span><span class="p">(</span><span class="s1">&#39;identifier&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Results.rel_dict"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.rel_dict">[docs]</a>    <span class="k">def</span> <span class="nf">rel_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">rel_name</span><span class="p">,</span> <span class="n">parent_url</span><span class="p">):</span>
+        <span class="n">rd</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">identifiers</span><span class="p">(),</span>
+            <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;self&#39;</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/relationships/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">parent_url</span><span class="p">,</span> <span class="n">rel_name</span><span class="p">),</span>
+                <span class="s1">&#39;related&#39;</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">parent_url</span><span class="p">,</span> <span class="n">rel_name</span><span class="p">)</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;meta&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;direction&#39;</span><span class="p">:</span> <span class="n">rel</span><span class="o">.</span><span class="n">direction</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">many</span><span class="p">:</span>
+            <span class="n">rd</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;results&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">rd</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;results&#39;</span><span class="p">][</span><span class="s1">&#39;available&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
+            <span class="n">rd</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;results&#39;</span><span class="p">][</span><span class="s1">&#39;limit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span>
+            <span class="n">rd</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;results&#39;</span><span class="p">][</span><span class="s1">&#39;returned&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rd</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">rd</span></div>
+
+<div class="viewcode-block" id="Results.included"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.included">[docs]</a>    <span class="k">def</span> <span class="nf">included</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">serialise</span><span class="p">()</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">included_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">included_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">included_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_top</span><span class="p">:</span>
+                <span class="n">included_dict</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">collection_name</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">obj_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">o</span>
+            <span class="n">included_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">included_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">included_dict</span>
+
+<div class="viewcode-block" id="Results.filter"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;Permission denied&#39;</span><span class="p">,</span> <span class="n">force_rerun</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># if self._flag_filtered and not force_rerun:</span>
+        <span class="c1">#     return</span>
+        <span class="n">accepted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">:</span>
+            <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">permission_to_dict</span><span class="p">(</span><span class="n">predicate</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]:</span>
+                <span class="n">accepted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">reject_atts</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">-</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">&amp;=</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]</span>
+                <span class="c1"># record rejected atts</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_attributes</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span>
+                    <span class="n">reject_atts</span><span class="p">,</span>
+                    <span class="n">reason</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">reject_rels</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">rel_mask</span> <span class="o">-</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">rel_mask</span> <span class="o">&amp;=</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]</span>
+                <span class="c1"># record rejected rels</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_relationships</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span>
+                    <span class="n">reject_rels</span><span class="p">,</span>
+                    <span class="n">reason</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rejected_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_object</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="n">accepted</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flag_filtered</span> <span class="o">=</span> <span class="kc">True</span></div></div>
+
+
+<div class="viewcode-block" id="Doc"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Doc">[docs]</a><span class="k">class</span> <span class="nc">Doc</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Doc.update_child"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Doc.update_child">[docs]</a>    <span class="k">def</span> <span class="nf">update_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div></div>
+
+
+<div class="viewcode-block" id="SharedState"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.SharedState">[docs]</a><span class="k">class</span> <span class="nc">SharedState</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">results</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">document</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rejected</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span> <span class="o">=</span> <span class="n">view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">document</span> <span class="o">=</span> <span class="n">document</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rejected</span> <span class="o">=</span> <span class="n">rejected</span> <span class="ow">or</span> <span class="n">Rejected</span><span class="p">(</span><span class="n">view</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Rejected"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Rejected">[docs]</a><span class="k">class</span> <span class="nc">Rejected</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">rejected</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span> <span class="o">=</span> <span class="n">view</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rejected</span> <span class="o">=</span> <span class="n">rejected</span> <span class="ow">or</span> <span class="p">{</span>
+            <span class="s1">&#39;objects&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="Rejected.reject_object"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Rejected.reject_object">[docs]</a>    <span class="k">def</span> <span class="nf">reject_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">reason</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rejected</span><span class="p">[</span><span class="s1">&#39;objects&#39;</span><span class="p">][</span><span class="n">identifier</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span></div>
+
+    <span class="k">def</span> <span class="nf">_reject_multiple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">things</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">category</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">things</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="n">reason</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">things</span><span class="p">}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rejected</span><span class="p">[</span><span class="n">category</span><span class="p">][</span><span class="n">identifier</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rejected</span><span class="p">[</span><span class="n">category</span><span class="p">][</span><span class="n">identifier</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span>
+
+    <span class="n">reject_attributes</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_reject_multiple</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s1">&#39;attributes&#39;</span><span class="p">)</span>
+    <span class="n">reject_relationships</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">_reject_multiple</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s1">&#39;relationships&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Rejected.identifier_to_str"><a class="viewcode-back" href="../../apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Rejected.identifier_to_str">[docs]</a>    <span class="k">def</span> <span class="nf">identifier_to_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifier</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">identifier</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">::</span><span class="si">{</span><span class="n">identifier</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rejected_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;objects&#39;</span><span class="p">,</span> <span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="s1">&#39;relationships&#39;</span><span class="p">]:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">part</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">identifier_to_str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rejected</span><span class="p">[</span><span class="n">part</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2016, Colin Higgs.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

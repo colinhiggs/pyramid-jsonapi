@@ -1,41 +1,48 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>pyramid_jsonapi.metadata package &mdash; pyramid_jsonapi 2.1.14 documentation</title>
-  
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <title>pyramid_jsonapi.metadata package &mdash; pyramid_jsonapi 2.2.0 documentation</title>
   
-  
-  
-
-  
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="pyramid_jsonapi.callbacks_doc module" href="pyramid_jsonapi.callbacks_doc.html" />
+    <link rel="next" title="pyramid_jsonapi.workflow package" href="pyramid_jsonapi.workflow.html" />
     <link rel="prev" title="pyramid_jsonapi package" href="pyramid_jsonapi.html" /> 
 </head>
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                2.1.14
+                2.2.0
               </div>
             
           
@@ -77,6 +84,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -99,6 +107,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#module-pyramid_jsonapi.metadata">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.workflow.html">pyramid_jsonapi.workflow package</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="pyramid_jsonapi.html#submodules">Submodules</a></li>
@@ -110,6 +119,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -144,11 +154,13 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="pyramid_jsonapi.html">pyramid_jsonapi package</a> &raquo;</li>
         
@@ -157,7 +169,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="../_sources/apidoc/pyramid_jsonapi.metadata.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -171,9 +183,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="pyramid-jsonapi-metadata-package">
+  <section id="pyramid-jsonapi-metadata-package">
 <h1>pyramid_jsonapi.metadata package<a class="headerlink" href="#pyramid-jsonapi-metadata-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="subpackages">
+<section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -194,18 +206,18 @@
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="module-pyramid_jsonapi.metadata">
+</section>
+<section id="module-pyramid_jsonapi.metadata">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyramid_jsonapi.metadata" title="Permalink to this headline">¶</a></h2>
 <p>This package contains metadata ‘plugin’ modules
 that provide extra information related to the API being generated,
 such as documentation, schemas etc.</p>
 <p>Such plugins can optionally be offered as pyramid routes and views
 under the ‘metadata’ endpoint.</p>
-<dl class="class">
-<dt id="pyramid_jsonapi.metadata.MetaData">
-<em class="property">class </em><code class="sig-prename descclassname">pyramid_jsonapi.metadata.</code><code class="sig-name descname">MetaData</code><span class="sig-paren">(</span><em class="sig-param">api</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata.html#MetaData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.MetaData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyramid_jsonapi.metadata.MetaData">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.metadata.</span></span><span class="sig-name descname"><span class="pre">MetaData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">api</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata.html#MetaData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.MetaData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Adds routes and views for all metadata modules.</p>
 <p>Metadata modules are added by inclusion in the <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> option
 in settings.
@@ -215,51 +227,51 @@ that they can be imported by python.</p>
 This class MAY contain a ‘views’ attribute, which contains a list
 of ‘VIEWS’ namedtuple instances, which will be converted into pyramid
 routes and views.</p>
-<dl class="method">
-<dt id="pyramid_jsonapi.metadata.MetaData.make_routes_views">
-<code class="sig-name descname">make_routes_views</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata.html#MetaData.make_routes_views"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.MetaData.make_routes_views" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.metadata.MetaData.make_routes_views">
+<span class="sig-name descname"><span class="pre">make_routes_views</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/metadata.html#MetaData.make_routes_views"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.metadata.MetaData.make_routes_views" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate routes and views for plugin modules.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyramid_jsonapi.metadata.VIEWS">
-<code class="sig-prename descclassname">pyramid_jsonapi.metadata.</code><code class="sig-name descname">VIEWS</code><a class="headerlink" href="#pyramid_jsonapi.metadata.VIEWS" title="Permalink to this definition">¶</a></dt>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.metadata.VIEWS">
+<span class="sig-prename descclassname"><span class="pre">pyramid_jsonapi.metadata.</span></span><span class="sig-name descname"><span class="pre">VIEWS</span></span><a class="headerlink" href="#pyramid_jsonapi.metadata.VIEWS" title="Permalink to this definition">¶</a></dt>
 <dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.metadata.Views</span></code></p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="pyramid_jsonapi.callbacks_doc.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.callbacks_doc module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="pyramid_jsonapi.html" class="btn btn-neutral float-left" title="pyramid_jsonapi package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="pyramid_jsonapi.workflow.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.workflow package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pyramid_jsonapi.html" class="btn btn-neutral float-left" title="pyramid_jsonapi package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Colin Higgs
+        &#169; Copyright 2016, Colin Higgs.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -267,7 +279,6 @@ routes and views.</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

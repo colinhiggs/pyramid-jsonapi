@@ -1,38 +1,45 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Metadata Modules &mdash; pyramid_jsonapi 2.1.14 documentation</title>
-  
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <title>Metadata Modules &mdash; pyramid_jsonapi 2.2.0 documentation</title>
   
-  
-  
-
-  
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="pyramid_jsonapi.metadata.JSONSchema package" href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html" />
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                2.1.14
+                2.2.0
               </div>
             
           
@@ -77,6 +84,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -109,6 +117,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -143,18 +152,20 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Metadata Modules</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/metadata.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -168,13 +179,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="metadata-modules">
+  <section id="metadata-modules">
 <span id="metadata"></span><h1>Metadata Modules<a class="headerlink" href="#metadata-modules" title="Permalink to this headline">¶</a></h1>
 <p>Metadata modules provide access to metadata about the API. The
 <a class="reference internal" href="apidoc/pyramid_jsonapi.metadata.html#module-pyramid_jsonapi.metadata" title="pyramid_jsonapi.metadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.metadata</span></code></a> class is responsible for loading the modules
 and setting up routes and views under <code class="docutils literal notranslate"><span class="pre">/metadata</span></code>
 (by default - see <cite>settings</cite>).</p>
-<div class="section" id="built-in-modules">
+<section id="built-in-modules">
 <h2>Built-in Modules<a class="headerlink" href="#built-in-modules" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> configuration option lists modules which are to be loaded
 (see <cite>settings</cite>). If this list is empty, no modules
@@ -201,14 +212,14 @@ validation requires the <code class="docutils literal notranslate"><span class="
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="custom-modules">
+</section>
+<section id="custom-modules">
 <h2>Custom Modules<a class="headerlink" href="#custom-modules" title="Permalink to this headline">¶</a></h2>
 <p>As well as the built-in modules it is possible to write new metadata modules and add them to
 the <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> list (space or newline separated).</p>
 <p><strong>Note</strong> - if modifying the <code class="docutils literal notranslate"><span class="pre">metadata_modules</span></code> list, you will need to explicitly
 include any of the ones provided with the project you wish to keep active.</p>
-<div class="section" id="requirements">
+<section id="requirements">
 <h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
 <p>Any modules must follow these rules in order to work properly:</p>
 <ul class="simple">
@@ -251,38 +262,38 @@ include any of the ones provided with the project you wish to keep active.</p>
 </div>
 <p>Note the use of the <a class="reference external" href="https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/urldispatch.html#route-pattern-syntax">Route pattern syntax</a>
 in the second example would result in <code class="docutils literal notranslate"><span class="pre">generate_string()</span></code> being called for route <code class="docutils literal notranslate"><span class="pre">/metadata/Foo/resource/baz</span></code> with endpoint set to <code class="docutils literal notranslate"><span class="pre">baz</span></code>.</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.metadata.JSONSchema package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="customisation.html" class="btn btn-neutral float-left" title="Customising the Generated API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html" class="btn btn-neutral float-right" title="pyramid_jsonapi.metadata.JSONSchema package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="customisation.html" class="btn btn-neutral float-left" title="Customising the Generated API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Colin Higgs
+        &#169; Copyright 2016, Colin Higgs.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -290,7 +301,6 @@ in the second example would result in <code class="docutils literal notranslate"
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
