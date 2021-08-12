@@ -4,8 +4,8 @@
 cd "$(dirname $0)/.."
 
 PATH=bin/:$PATH
-SOURCE=docs/source
-TARGET=docs/build
+SOURCE=${SOURCE:-docs/source}
+TARGET=${TARGET:-docs/build}
 
 sphinx-apidoc -f -T -e -o ${SOURCE}/apidoc pyramid_jsonapi
 # Generate config docs from python method
