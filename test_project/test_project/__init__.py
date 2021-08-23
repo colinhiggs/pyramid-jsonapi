@@ -77,7 +77,7 @@ def main(global_config, **settings):
         return doc
 
     # Add some random information via the alter_document stage.
-    person_view.get.stages['alter_document'].append(sh_add_some_info)
+    person_view.item_get.stages['alter_document'].append(sh_add_some_info)
 
     # Apply GET permission handlers at the alter_direct_results and
     # alter_related_results stages.

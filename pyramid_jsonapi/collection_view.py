@@ -1576,9 +1576,9 @@ class CollectionViewBase:
             filter = lambda view, object_rep: view.permission_to_dict(
                 default(
                     object_rep,
-                    view_instance=view,
-                    stage_name=stage_name,
-                    permission_sought=permission,
+                    view=view,
+                    stage=stage_name,
+                    permission=permission,
                 )
             )
         return partial(filter, self)
@@ -1608,4 +1608,4 @@ class CollectionViewBase:
                 except KeyError:
                     # This method and stage is completely unhandled. Return a
                     # handler that effectively does nothing.
-                    return lambda view, arg, pdata: arg
+                    return lambda arg, *args, **kwargs: arg

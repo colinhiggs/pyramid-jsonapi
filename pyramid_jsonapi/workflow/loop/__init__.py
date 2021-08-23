@@ -145,10 +145,10 @@ def shp_get_alter_result(obj, view, stage, view_method):
 
 def permission_handler(endpoint_name, stage_name):
     handlers = {
-        'get': {
+        'item_get': {
             'alter_result': shp_get_alter_result,
         }
     }
     for ep in ('collection_get', 'related_get', 'relationships_get'):
-        handlers[ep] = handlers['get']
+        handlers[ep] = handlers['item_get']
     return handlers[endpoint_name][stage_name]

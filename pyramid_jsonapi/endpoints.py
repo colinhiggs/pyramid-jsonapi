@@ -147,7 +147,7 @@ class EndpointData():
                     'route_pattern': {'fields': ['id'], 'pattern': '{{{}}}'},
                     'http_methods': {
                         'DELETE': {
-                            'function': 'delete',
+                            'function': 'item_delete',
                             'responses': {
                                 HTTPOk: {'reason': ['A server MUST return a 200 OK status code if a deletion request is successful and the server responds with only top-level meta data.']},
                                 HTTPNotFound: {'reason': ['A server SHOULD return a 404 Not Found status code if a deletion request fails due to the resource not existing.']},
@@ -155,14 +155,14 @@ class EndpointData():
                             },
                         },
                         'GET': {
-                            'function': 'get',
+                            'function': 'item_get',
                             'responses': {
                                 HTTPOk: {'reason': ['A server MUST respond to a successful request to fetch an individual resource or resource collection with a 200 OK response.']},
                                 HTTPNotFound: {'reason': ['A server MUST respond with 404 Not Found when processing a request to fetch a single resource that does not exist.']},
                             },
                         },
                         'PATCH': {
-                            'function': 'patch',
+                            'function': 'item_patch',
                             'request_schema': True,
                             'responses': {
                                 HTTPOk: {'reason': ['If an update is successful and the server doesn’t update any attributes besides those provided, the server MUST return either a 200 OK status code and response document']},
@@ -337,7 +337,6 @@ class EndpointData():
         )
 
     @property
-    @lru_cache(maxsize=128)
     def http_to_view_methods(self):
         ep_map = {}
         for ep_type in self.endpoints['endpoints'].values():

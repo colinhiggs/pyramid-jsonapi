@@ -3,7 +3,7 @@ import sqlalchemy
 
 from collections.abc import Sequence
 
-from .get import (
+from .item_get import (
     get_doc,
 )
 
@@ -122,5 +122,5 @@ def workflow(view, stages):
 
     # The rest of this is more or less a get.
     return get_doc(
-        view, getattr(view, 'get').stages, view.single_item_query(item_id)
+        view, getattr(view, 'item_get').stages, view.single_item_query(item_id)
     )

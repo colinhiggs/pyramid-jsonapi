@@ -99,9 +99,9 @@ class PyramidJSONAPI():
         'debug_test_data_module': {'val': 'test_data', 'desc': 'Module responsible for populating test data.'},
         'debug_traceback': {'val': False, 'desc': 'Whether or not to add a stack traceback to errors.'},
         'debug_meta': {'val': False, 'desc': 'Whether or not to add debug information to the meta key in returned JSON.'},
-        'workflow_get': {'val': 'pyramid_jsonapi.workflow.loop.get', 'desc': 'Module implementing the get workflow.'},
-        'workflow_patch': {'val': 'pyramid_jsonapi.workflow.loop.patch', 'desc': 'Module implementing the patch workflow.'},
-        'workflow_delete': {'val': 'pyramid_jsonapi.workflow.loop.delete', 'desc': 'Module implementing the delete workflow.'},
+        'workflow_item_get': {'val': 'pyramid_jsonapi.workflow.loop.item_get', 'desc': 'Module implementing the item_get workflow.'},
+        'workflow_item_patch': {'val': 'pyramid_jsonapi.workflow.loop.item_patch', 'desc': 'Module implementing the item_patch workflow.'},
+        'workflow_item_delete': {'val': 'pyramid_jsonapi.workflow.loop.item_delete', 'desc': 'Module implementing the item_delete workflow.'},
         'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
         'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post', 'desc': 'Module implementing the collection_post workflow.'},
         'workflow_related_get': {'val': 'pyramid_jsonapi.workflow.loop.related_get', 'desc': 'Module implementing the related_get workflow.'},
@@ -284,17 +284,18 @@ class PyramidJSONAPI():
         view.default_limit = int(self.settings.paging_default_limit)
         view.max_limit = int(self.settings.paging_max_limit)
 
-        view.get = wf.make_method('get', self)
-        view.patch = wf.make_method('patch', self)
-        view.delete = wf.make_method('delete', self)
-        view.collection_get = wf.make_method('collection_get', self)
-        view.collection_post = wf.make_method('collection_post', self)
-        view.related_get = wf.make_method('related_get', self)
-        view.relationships_get = wf.make_method('relationships_get', self)
-        view.relationships_post = wf.make_method('relationships_post', self)
-        view.relationships_patch = wf.make_method('relationships_patch', self)
-        view.relationships_delete = wf.make_method('relationships_delete', self)
-
+        # view.get = wf.make_method('get', self)
+        # view.patch = wf.make_method('patch', self)
+        # view.delete = wf.make_method('delete', self)
+        # view.collection_get = wf.make_method('collection_get', self)
+        # view.collection_post = wf.make_method('collection_post', self)
+        # view.related_get = wf.make_method('related_get', self)
+        # view.relationships_get = wf.make_method('relationships_get', self)
+        # view.relationships_post = wf.make_method('relationships_post', self)
+        # view.relationships_patch = wf.make_method('relationships_patch', self)
+        # view.relationships_delete = wf.make_method('relationships_delete', self)
+        for vm in self.endpoint_data.http_to_view_methods['all']:
+            setattr(view, vm, wf.make_method(vm, self))
         self.endpoint_data.add_routes_views(view)
 
     def collection_view_factory(self, model, collection_name=None, expose_fields=None):

@@ -775,7 +775,7 @@ def shp_relationships_delete_alter_request(request, view, stage, view_method):
 
 
 permission_handlers = {
-    'get': {
+    'item_get': {
         'alter_document': shp_get_alter_document,
     },
     'collection_get': {
@@ -793,13 +793,13 @@ permission_handlers = {
     'relationships_post': {
         'alter_request': shp_relationships_post_alter_request,
     },
-    'patch': {
+    'item_patch': {
         'alter_request': shp_patch_alter_request,
     },
     'relationships_patch': {
         'alter_request': shp_relationships_patch_alter_request,
     },
-    'delete': {
+    'item_delete': {
         'alter_request': shp_delete_alter_request,
     },
     'relationships_delete': {
