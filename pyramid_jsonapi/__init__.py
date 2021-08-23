@@ -284,16 +284,6 @@ class PyramidJSONAPI():
         view.default_limit = int(self.settings.paging_default_limit)
         view.max_limit = int(self.settings.paging_max_limit)
 
-        # view.get = wf.make_method('get', self)
-        # view.patch = wf.make_method('patch', self)
-        # view.delete = wf.make_method('delete', self)
-        # view.collection_get = wf.make_method('collection_get', self)
-        # view.collection_post = wf.make_method('collection_post', self)
-        # view.related_get = wf.make_method('related_get', self)
-        # view.relationships_get = wf.make_method('relationships_get', self)
-        # view.relationships_post = wf.make_method('relationships_post', self)
-        # view.relationships_patch = wf.make_method('relationships_patch', self)
-        # view.relationships_delete = wf.make_method('relationships_delete', self)
         for vm in self.endpoint_data.http_to_view_methods['all']:
             setattr(view, vm, wf.make_method(vm, self))
         self.endpoint_data.add_routes_views(view)
