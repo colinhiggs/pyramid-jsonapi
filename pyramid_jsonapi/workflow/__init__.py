@@ -490,7 +490,7 @@ def shp_relationships_post_alter_request(request, view, stage, view_method):
         }
     }
 
-    # Need permision to POST to obj.rel.
+    # Need permission to POST to obj.rel.
     rel_data = authz_write_rel(rel, view, stage, obj_data, 'post')
     if rel_data is False:
         raise HTTPForbidden(
