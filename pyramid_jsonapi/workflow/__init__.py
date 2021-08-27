@@ -38,6 +38,10 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 
 
 import pyramid_jsonapi
+from pyramid_jsonapi.permissions import (
+    PermissionTarget,
+    Targets,
+)
 
 
 def make_method(name, api):
@@ -222,9 +226,9 @@ def shp_get_alter_document(doc, view, stage, view_method):
     # Find the top level filter function to run over data.
     try:
         data_filter = partial(
-            view.permission_filter('get', 'alter_document'),
-            permission_sought='get',
-            stage_name='alter_document',
+            view.permission_filter('get', 'item', 'alter_document'),
+            permission='get',
+            stage='alter_document',
             view_instance=view,
         )
     except KeyError:
@@ -284,156 +288,215 @@ def shp_get_alter_document(doc, view, stage, view_method):
     return doc
 
 
+def authz_write_mirror_rel(rel, mirror_rel, view, stage, ri, perm):
+    """
+    Authorise write action on a mirror relationship.
+    """
+    # No need for further authorisation if mirror_rel is to_many or if
+    # deleting from a to_many rel.
+    if mirror_rel.to_many or perm == 'delete':
+        return True
+    # mirror_rel is to_one and we are posting or patching rel. This means
+    # we are giving ri to new_object.rel and might have to take it from
+    # some_old_object.rel. Better find out if there are any existing objects
+    # out there with this ri.
+    tgt_view = mirror_rel.view_class(view.request)
+    tgt_obj = tgt_view.single_item_query(
+        obj_id=ri['id']
+    ).one_or_none()
+    if not tgt_obj:
+        # Trying to assign a non-existent target object to rel. This is probably
+        # an error but it could be that some later stage will make sure tgt_obj
+        # exists. In any case, it's not the job of an authz routine to call this
+        # out. The assignment doesn't violate any authz rules, so we allow it
+        # for now and let later logic catch consistency errors.
+        return True
+    old_obj = getattr(tgt_obj, mirror_rel.name)
+    if old_obj is None:
+        # Not currently pointing to another object. Fine to proceed
+        return True
+    # Now we know that mirror_rel currently points to another object.
+    # We'll need permission to change rel on old_obj.
+    if rel.to_many:
+        # Need delete permission to remove ri.
+        rel_pf = view.permission_filter('delete', Targets.relationship, stage)
+        return rel_pf(
+            {
+                'type': view.collection_name, 'id': str(view.id_col(old_obj)),
+                'relationships': {
+                    rel.name: {
+                        'data': [ri],
+                    }
+                }
+            },
+            PermissionTarget(Targets.relationship, rel.name),
+        )
+    else:
+        # Need patch permission to set to None.
+        rel_pf = view.permission_filter('patch', Targets.relationship, stage)
+        return rel_pf(
+            {
+                'type': view.collection_name, 'id': view.id_col(old_obj),
+                'relationships': {
+                    rel.name: {
+                        'data': None,
+                    }
+                }
+            },
+            PermissionTarget(Targets.relationship, rel.name),
+        )
+
+def authz_write_rel(rel, view, stage, obj_data, perm):
+    """
+    Authorise write action on a relationship.
+    """
+    # Check if action is allowed in the forward direction.
+    rel_pf = view.permission_filter(perm, Targets.relationship, stage)
+    if not rel_pf(obj_data, PermissionTarget(Targets.relationship, rel.name)):
+        # Not allowed
+        return False
+
+    # Look to see if the *other end* of the relationship is to_one (in which
+    # case we need PATCH permission to that rel in order to set it to this
+    # object or None) or to_many (in which case we need perm permission in order
+    # to add or delete this object).
+
+    # Always have rel data as a list for code DRYness.
+    rel_dict = obj_data['relationships'][rel.name]
+    if rel.to_many:
+        rel_data = rel_dict['data']
+    else:
+        rel_data = [rel_dict['data']]
+    mirror_rel = rel.mirror_relationship
+    if mirror_rel:
+        allowed_ris = []
+        mirror_view = mirror_rel.view_class(view.request)
+        if mirror_rel.to_many:
+            # Need perm permission on tgt_ri.mirror_rel.
+            mfilter = mirror_view.permission_filter(
+                perm, Targets.relationship, stage
+            )
+        else:
+            # Need PATCH permission on tgt_ri.mirror_rel.
+            mfilter = mirror_view.permission_filter(
+                'patch', Targets.relationship, stage
+            )
+        for tgt_ri in rel_data:
+            # We want to POST/PATCH/DELETE object_rep's ri on the mirror rel
+            # of the object at tgt_ri.
+
+            # ri of object_rep. id might be None because it hasn't been
+            # created yet.
+            obj_ri = {'type': obj_data['type'], 'id': obj_data.get('id')}
+            if mirror_rel.to_many:
+                mirror_rel_data = [obj_ri]
+            else:
+                if perm == 'delete':
+                    # DELETE on a to_one rel means set target to None/null.
+                    mirror_rel_data = None
+                else:
+                    mirror_rel_data = obj_ri
+            rel_obj = {
+                'type': tgt_ri['type'],
+                'id': tgt_ri['id'],
+                'relationships': {
+                    mirror_rel.name: {
+                        'data': mirror_rel_data,
+                    }
+                }
+            }
+            mallowed = mfilter(
+                rel_obj, PermissionTarget(Targets.relationship, mirror_rel.name)
+            )
+            if mallowed and authz_write_mirror_rel(
+                rel, mirror_rel, view, stage, tgt_ri, perm
+            ):
+                allowed_ris.append(tgt_ri)
+            # TODO: alternatively raise HTTPForbidden?
+        if rel.to_many:
+            return allowed_ris
+        else:
+            if allowed_ris:
+                return allowed_ris[0]
+            else:
+                # Returning False signalls not allowed for this rel.
+                return False
+                # TODO: alternatively raise HTTPForbidden?
+    return rel_data
+
 def shp_collection_post_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
-    try:
-        pfilter = view.permission_filter('post', 'alter_request')
-    except KeyError:
-        return request
+    col_pf = view.permission_filter('post', Targets.collection, stage)
 
     obj_data = request.json_body['data']
-    allowed = pfilter(obj_data)
-    if allowed.get('id', True) is False:
+    allowed = col_pf(
+        obj_data,
+        target=PermissionTarget(Targets.collection, name=view.collection_name),
+    )
+    if not allowed.id:
         # Straight up forbidden to create object.
-        raise HTTPForbidden('No permission to POST object:\n\n{}'.format(request.json_body['data']))
+        raise HTTPForbidden(
+            f"No permission to POST object:\n\n{request.json_body['data']}"
+        )
+    reject_atts = set()
     for att_name in list(obj_data.get('attributes', {}).keys()):
-        if att_name not in allowed['attributes']:
+        if att_name not in allowed.attributes:
             del(obj_data['attributes'][att_name])
+            reject_atts.add(att_name)
             # TODO: alternatively raise HTTPForbidden?
+    view.pj_shared.rejected.reject_attributes(
+        (obj_data['type'], obj_data.get('id')),
+        reject_atts,
+        f"Attribute rejected during POST to {view.collection_name}"
+    )
+
     rel_names = list(obj_data.get('relationships', {}).keys())
+    reject_rels = set()
+    accept_rels = dict()
     for rel_name in rel_names:
-        if rel_name not in allowed['relationships']:
-            del(obj_data['relationships'][rel_name])
-            # TODO: alternatively raise HTTPForbidden?
-    # Loop through a shallow copy of obj_data['relationships'] so that we
-    # can delete entries without causing problems.
-    rels_copy = {}
-    rels_copy.update(obj_data.get('relationships', {}))
-    for rel_name, rel_dict in rels_copy.items():
-        # For each of these allowed rels, look to see if the *other end*
-        # of the relationship is to_one (in which case we need PATCH permission
-        # to that rel in order to set it to this object) or to_many (in which
-        # case we need POST permission in order to add this object to it).
-        rel = view.relationships[rel_name]
-        mirror_rel = rel.mirror_relationship
-        # if rel.direction in (ONETOMANY, MANYTOMANY):
-        #     tgt_ris = rel_dict['data']
-        # else:
-        #     tgt_ris = [rel_dict['data']]
-        if mirror_rel:
-            mirror_view = mirror_rel.view_class(view.request)
-            if mirror_rel.direction in (ONETOMANY, MANYTOMANY):
-                # Need POST permission on tgt_ri.mirror_rel.
-                permission_sought = 'post'
-            else:
-                # Need PATCH permission on tgt_ri.mirror_rel.
-                permission_sought = 'patch'
-            try:
-                mfilter = mirror_view.permission_filter(
-                    permission_sought, 'alter_request'
-                )
-            except KeyError:
-                # No filter registered - treat as always True and skip this
-                # rel.
-                continue
-            if rel.direction in (ONETOMANY, MANYTOMANY):
-                allowed_ris = []
-                for tgt_ri in rel_dict['data']:
-                    mallowed = mfilter(tgt_ri)
-                    if mirror_rel.name in mallowed['relationships']:
-                        allowed_ris.append(tgt_ri)
-                    # TODO: alternatively raise HTTPForbidden?
-                rel_dict['data'] = allowed_ris
-            else:
-                mallowed = mfilter(rel_dict['data'])
-                if mirror_rel.name not in mallowed['relationships']:
-                    del(obj_data['relationships'][rel_name])
-                    # TODO: alternatively raise HTTPForbidden?
+        rel_data = authz_write_rel(
+            view.relationships[rel_name], view, stage, obj_data, 'post'
+        )
+        if rel_data is not False:  # is not False because None and [] are valid.
+            obj_data['relationships'][rel_name]['data'] = rel_data
+        else:
+            # Record, rather than delete, rejected rels because we're in the
+            # middle of a loop over them.
+            reject_rels.add(rel_name)
+
+    # Deal with rejected rels.
+    for rel_name in reject_rels:
+        del(obj_data['relationships'][rel_name])
+    view.pj_shared.rejected.reject_relationships(
+        (obj_data['type'], obj_data.get('id')),
+        reject_rels,
+        "permission denied"
+    )
 
     request.body = json.dumps({'data': obj_data}).encode()
     return request
 
 
 def shp_relationships_post_alter_request(request, view, stage, view_method):
-    # Make sure there is a permission filter registered.
-    try:
-        pfilter = view.permission_filter('post', 'alter_request')
-    except KeyError:
-        return request
+    rel = view.rel
 
-    # First need permision to POST to obj.rel.
-    obj_perms = pfilter({'type': view.collection_name, 'id': view.obj_id})
-    if view.rel.name not in obj_perms['relationships']:
-        request.body = json.dumps({'data': []}).encode()
-        return request
+    # Construct obj_data in the form that authz needs.
+    obj_data = {
+        'type': view.collection_name, 'id': view.obj_id,
+        'relationships': {
+            rel.name: {
+                'data': request.json_body['data']
+            }
+        }
+    }
 
-    # We might need
-    mirror_rel = view.rel.mirror_relationship
-    mirror_view = mirror_rel.view_class(request)
-    try:
-        del_filter = view.permission_filter('delete', 'alter_request')
-    except KeyError:
-        del_filter = False
-    try:
-        m_patch_filter = mirror_view.permission_filter('patch', 'alter_request')
-    except KeyError:
-        m_patch_filter = False
-    try:
-        m_post_filter = mirror_view.permission_filter('post', 'alter_request')
-    except KeyError:
-        m_post_filter = False
-    new_data = []
-    for ri in request.json_body['data']:
-        # adding = True
-        if mirror_rel and (del_filter or m_patch_filter):
-            # Check permission to alter other end of relationship.
-            related = view.dbsession.query(
-                view.rel.tgt_class
-            ).filter(mirror_view.key_column == ri['id']).one_or_none()
-            if related:
-                related_resource = ResultObject(mirror_view, related)
-            else:
-                # Trying to add a related id that doesn't exist. This
-                # is an error but we leave it to be caught later in the
-                # standard place. In the meantime there is no point in
-                # checking for permission.
-                new_data.append(ri)
-                continue
-            if view.rel.direction is ONETOMANY:
-                # Need DELETE on related.mirror.old_resource.rel
-                old_resource = ResultObject(
-                    view,
-                    getattr(related, mirror_rel.name)
-                )
-                old_dict = old_resource.to_dict()
-                if (
-                    del_filter and old_dict and
-                    view.rel.name not in del_filter(old_dict)['relationships']
-                ):
-                    # Not allowed to alter this relationship.
-                    # print(f'No DELETE on {old_dict["type"]}/{old_dict["id"]}.{view.rel.name}')
-                    continue
-                # Need PATCH on related.mirror
-                perms = m_patch_filter(related_resource.to_dict())
-                if mirror_rel.name not in perms['relationships']:
-                    # print(f'No PATCH on {related_resource.to_dict()}')
-                    continue
-            else:
-                # MANYTOMANY
-                # Need POST on related.mirror
-                perms = m_post_filter(related_resource.to_dict())
-                if mirror_rel.name not in perms['relationships']:
-                    continue
-        # if adding:
-        new_data.append(ri)
-    # TODO: option to select alternate behaviour
-    # if len(new_data) != len(json_body['data']):
-    #     raise HTTPForbidden(
-    #         'No permission to POST {} to relationship {}.'.format(
-    #             item, view.relname
-    #         )
-    #     )
-    request.body = json.dumps({'data': new_data}).encode()
+    # Need permision to POST to obj.rel.
+    rel_data = authz_write_rel(rel, view, stage, obj_data, 'post')
+    if rel_data is False:
+        raise HTTPForbidden(
+            f"No permission to POST to {obj_data['type']}/{obj_data['id']}.{rel.name}"
+        )
+    request.body = json.dumps({'data': rel_data}).encode()
     return request
 
 
@@ -465,7 +528,9 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
             # mirror_rel is MANYTOONE and we need PATCH permission for any
             # alterations.
             try:
-                m_patch_filter = mirror_view.permission_filter('patch', 'alter_request')
+                m_patch_filter = mirror_view.permission_filter(
+                    'patch', 'rel', 'alter_request'
+                )
             except KeyError:
                 return rel_dict
             for _id in adding:
@@ -502,11 +567,15 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
             # mirror_rel is MANYTOMANY and we need POST permission to add or
             # DELETE permission to remove.
             try:
-                m_post_filter = mirror_view.permission_filter('post', 'alter_request')
+                m_post_filter = mirror_view.permission_filter(
+                    'post', 'rel', 'alter_request'
+                )
             except KeyError:
                 m_post_filter = False
             try:
-                m_del_filter = mirror_view.permission_filter('delete', 'alter_request')
+                m_del_filter = mirror_view.permission_filter(
+                    'delete', 'rel', 'alter_request'
+                )
             except KeyError:
                 m_del_filter = False
             if m_post_filter:
@@ -560,7 +629,9 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
         if cur_related.object is not None:
             # Need DELETE permission on cur_related.mirror_rel
             try:
-                m_del_filter = mirror_view.permission_filter('del', 'alter_request')
+                m_del_filter = mirror_view.permission_filter(
+                    'delete', 'rel', 'alter_request'
+                )
             except KeyError:
                 return rel_dict
             mallowed = m_del_filter(
@@ -580,7 +651,9 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
         if rel_dict['data'] is not None:
             # Need POST permission on cur_related.mirror_rel
             try:
-                m_post_filter = mirror_view.permission_filter('post', 'alter_request')
+                m_post_filter = mirror_view.permission_filter(
+                    'post', 'rel', 'alter_request'
+                )
             except KeyError:
                 return rel_dict
             mallowed = m_post_filter(
@@ -603,7 +676,7 @@ def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
 def shp_patch_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
-        pfilter = view.permission_filter('patch', 'alter_request')
+        pfilter = view.permission_filter('patch', 'item', 'alter_request')
     except KeyError:
         return request
 
@@ -641,7 +714,7 @@ def shp_patch_alter_request(request, view, stage, view_method):
 def shp_relationships_patch_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
-        pfilter = view.permission_filter('patch', 'alter_request')
+        pfilter = view.permission_filter('patch', 'rel', 'alter_request')
     except KeyError:
         return request
 
@@ -706,7 +779,7 @@ def ar_check_mirror_rel_perms(view, permission, rel, rel_dict, item_or_id=None):
 def shp_delete_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     try:
-        pfilter = view.permission_filter('delete', 'alter_request')
+        pfilter = view.permission_filter('delete', 'item', 'alter_request')
     except KeyError:
         return request
 

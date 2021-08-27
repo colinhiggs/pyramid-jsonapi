@@ -303,3 +303,116 @@ mask = view.relationships_mask(relationships)
 
 mask = view.mask_or(mask1, mask2)
 mask = view.mask_and(mask1, mask2)
+
+### Perm filters
+
+params: obj_rep, view, stage, permission, mask, rep_type,
+
+
+#### Example: post new person with blogs
+
+post data:
+
+{
+  type: 'people',
+  attributes: {
+    name: 'alice',
+    age: 42,
+  },
+  relationships: {
+    blogs: {
+      data: [
+        blogs/1, blogs/2
+      ]
+    }
+  }
+}
+
+1. authz post item to collection:
+
+  pfilter(
+    {type: people, id: None, atts: {...}},
+    permission=post,
+    mask=<all>,
+    target=PermissionTarget(type=collection, name='people')
+  )
+
+1. authz post blogs to person.blogs:
+
+  pfilter(
+    {type: people, id: None, atts: {...}, rels: {
+      blogs: { data: {blogs/1} } # note only one blog at a time so no array.
+    }},
+    permission=post,
+    mask=<rel blogs>,
+    target=PermissionTarget(type=relationship, name=blogs)
+  )
+
+1. authz reverse rel for blogs (owner):
+
+  pfilter(
+    {
+      type: blogs, id: 1,
+      rels: {owner: {type: people, id: None, atts: {...}}}
+    },
+    permission=patch,
+    mask=<rel blogs>,
+    target=PermissionTarget(type=relationship, name=owner)
+  )
+
+#### Example: patch person/1 with blogs
+
+patch data:
+
+{
+  type: people,
+  id: 1,
+  attributes: {
+    name: alice,
+    age: 42,
+  },
+  relationships: {
+    blogs: {
+      data: [
+        blogs/1, blogs/2
+      ]
+    }
+  }
+}
+
+existing blogs: [blogs/2, blogs/3]
+
+1. authz patch item:
+
+  pfilter(
+    {type: people, id: 1, atts: {...}},
+    permission=patch,
+    mask=<all>,
+    target=PermissionTarget(type=item, name=None)
+  )
+
+1. authz delete blogs/3 from people/1.blogs:
+
+  pfilter(
+    {type: people, id: 1, atts: {...}, rels: {
+      blogs: { data: {blogs/3} } # note only one blog at a time so no array.
+    }},
+    permission=delete,
+    mask=<rel blogs>,
+    target=PermissionTarget(type=relationship, name=blogs)
+  )
+
+1. authz patch blogs/3.owner to None:
+
+  pfilter(
+    {
+      type: blogs, id: 3,
+      rels: {owner: {data: None}}
+    },
+    permission=patch,
+    mask=<rel owner>,
+    target=PermissionTarget(type=relationship, name=owner)
+  )
+1. authz post blogs/1 to people/1.blogs:
+
+  similar to delete of blogs/3, including patch of blogs/1.owner to people/1

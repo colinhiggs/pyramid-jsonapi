@@ -18,6 +18,10 @@ from sqlalchemy.orm.interfaces import (
     MANYTOONE
 )
 
+from pyramid_jsonapi.permissions import (
+    PermissionTarget,
+    Targets,
+)
 
 stages = (
     'alter_query',
@@ -116,39 +120,53 @@ def fill_result_object_related(res_obj, stages):
             )
 
 
-def shp_get_alter_result(obj, view, stage, view_method):
+def shp_get_item_alter_result(obj, view, stage, view_method):
     reason = "Permission denied."
-    predicate = view.permission_filter('get', stage)
+    item_pf = view.permission_filter('get', Targets.item, stage)
     # pred = view.permission_to_dict(predicate(obj))
-    pred = predicate(obj)
-    if pred['id']:
-        reject_atts = obj.attribute_mask - pred['attributes']
-        obj.attribute_mask &= pred['attributes']
-        # record rejected atts
-        view.pj_shared.rejected.reject_attributes(
-            obj.tuple_identifier,
-            reject_atts,
-            reason,
-        )
-        reject_rels = obj.rel_mask - pred['relationships']
-        obj.rel_mask &= pred['relationships']
-        # record rejected rels
-        view.pj_shared.rejected.reject_relationships(
-            obj.tuple_identifier,
-            reject_rels,
-            reason,
-        )
-    else:
+    pred = item_pf(obj, PermissionTarget(Targets.item))
+    if not pred.id:
         view.pj_shared.rejected.reject_object(obj.tuple_identifier, reason)
+
+    reject_atts = obj.attribute_mask - pred.attributes
+    obj.attribute_mask &= pred.attributes
+    # record rejected atts
+    view.pj_shared.rejected.reject_attributes(
+        obj.tuple_identifier,
+        reject_atts,
+        reason,
+    )
+
+    rel_pf = view.permission_filter('get', Targets.relationship, stage)
+    reject_rels = {
+        rel for rel in obj.rel_mask
+        if not rel_pf(obj, PermissionTarget(Targets.relationship, rel))
+    }
+    obj.rel_mask -= reject_rels
+    # record rejected rels
+    view.pj_shared.rejected.reject_relationships(
+        obj.tuple_identifier,
+        reject_rels,
+        reason,
+    )
     return obj
 
 
 def permission_handler(endpoint_name, stage_name):
     handlers = {
         'item_get': {
-            'alter_result': shp_get_alter_result,
-        }
+            'alter_result': shp_get_item_alter_result,
+        },
+        'collection_get': {
+            'alter_result': shp_get_item_alter_result,
+        },
+        'related_get': {
+            'alter_result': shp_get_item_alter_result,
+        },
+        'relationships_get': {
+            'alter_result': shp_get_item_alter_result,
+        },
     }
-    for ep in ('collection_get', 'related_get', 'relationships_get'):
-        handlers[ep] = handlers['item_get']
+    # for ep in ('collection_get', 'related_get', 'relationships_get'):
+    #     handlers[ep] = handlers['item_get']
     return handlers[endpoint_name][stage_name]

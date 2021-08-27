@@ -37,6 +37,10 @@ ONETOMANY = sqlalchemy.orm.interfaces.ONETOMANY
 MANYTOMANY = sqlalchemy.orm.interfaces.MANYTOMANY
 MANYTOONE = sqlalchemy.orm.interfaces.MANYTOONE
 
+from pyramid_jsonapi.permissions import (
+    Permission,
+    Targets,
+)
 import pyramid_jsonapi.workflow as wf
 
 
@@ -83,6 +87,8 @@ class CollectionViewBase:
     view_classes = None
     settings = None
     permission_filters = None
+    permission_template = None
+    methods = None
 
     def __init__(self, request):
         self.request = request
@@ -1505,82 +1511,72 @@ class CollectionViewBase:
     def true_filter(*args, **kwargs):
         return True
 
-    def permission_to_dict(self, permission):
-        if permission is False:
-            return {
-                'id': False,
-                'attributes': set(),
-                'relationships': set()
-            }
-        if permission is True:
-            allowed = {
-                'id': True,
-                'attributes': set(self.all_attributes),
-                'relationships': set(self.relationships),
-            }
-        else:
-            # Make a shallow copy of permission so we don't alter it.
-            allowed = dict()
-            allowed.update(permission)
-        # allowed should now be a dictionary.
-        if 'id' not in allowed:
-            allowed['id'] = True
-        if allowed['attributes'] is True:
-            allowed['attributes'] = set(self.all_attributes)
-        if allowed['attributes'] is False:
-            allowed['attributes'] = set()
-        if allowed['relationships'] is True:
-            allowed['relationships'] = set(self.relationships)
-        if allowed['relationships'] is False:
-            allowed['relationships'] = set()
-        return allowed
+    @classmethod
+    def wrap_permission_filter(cls, permission, stage, pfunc):
+        def wrapped_pfunc(
+            view,
+            object_rep,
+            target,
+            mask=Permission.from_template_cached(
+                cls.permission_template
+            ),
+        ):
+            result = pfunc(
+                object_rep,
+                view=view,
+                stage=stage,
+                permission=permission,
+                target=target,
+                mask=mask,
+            )
+            if target.type == Targets.relationship:
+                # We want to be sure that we return a bool here.
+                if isinstance(result, bool):
+                    return result
+                elif isinstance(result, Permission):
+                    return target.name in result.relationships
+                else:
+                    raise TypeError(
+                        f"Permission filter should return a bool or Permission, not {type(result)}."
+                    )
+            return Permission.from_pfilter(
+                cls.permission_template, result
+            )
+        return wrapped_pfunc
 
     @classmethod
-    def register_permission_filter(cls, permissions, stages, pfunc):
+    def register_permission_filter(
+        cls, permissions, stages, pfunc, target_types=list(Targets)
+    ):
         # Permission filters should have the signature:
         #   pfunc(object_rep, view, stage, permission)
 
-        # expand out 'read' and 'write' http method sets into individual
-        # permissions.
-        perms = []
-        for p in permissions:
-            if p == 'read' or p == 'write':
-                perms.extend(cls.api.endpoint_data.endpoints['method_sets'][p])
+        # Just to shorten a long ugly name:
+        method_sets = cls.api.endpoint_data.endpoints['http_method_sets']
+        perms = set()
+        for pname in permissions:
+            if pname in method_sets:
+                perms |= method_sets[pname]
             else:
-                perms.append(p)
-        cls.api.enable_permission_handlers(perms, stages)
-        for stage_name in stages:
-            for perm in perms:
-                perm = perm.lower()
+                perms.add(pname)
+        cls.api.enable_permission_handlers(stages)
+        # Triply nested for loop gets very deep. Use product to flatten it.
+        for stage_name, perm, tt in itertools.product(stages, perms, target_types):
+            perm = perm.lower()
+            # Register the filter function.
+            cls.permission_filters[perm][tt][stage_name] = \
+                cls.wrap_permission_filter(perm, stage_name, pfunc)
 
-                # Register the filter function.
-                def dictified_pfunc(view, object_rep):
-                    return view.permission_to_dict(
-                        pfunc(
-                            object_rep,
-                            view=view,
-                            stage=stage_name,
-                            permission=perm,
-                        )
-                    )
-                cls.permission_filters[perm][stage_name] = dictified_pfunc
-
-    def permission_filter(self, permission, stage_name, default=None):
+    def permission_filter(self, permission, target_type, stage_name, default=None):
         """
         Find the permission filter given a permission and stage name.
         """
         default = default or (lambda *a, **kw: True)
         try:
-            filter = self.permission_filters[permission][stage_name]
+            filter = self.permission_filters[permission][target_type][stage_name]
         except KeyError as e:
-            filter = lambda view, object_rep: view.permission_to_dict(
-                default(
-                    object_rep,
-                    view=view,
-                    stage=stage_name,
-                    permission=permission,
-                )
-            )
+            defmask = Permission.from_template_cached(self.permission_template)
+            filter = self.wrap_permission_filter(permission, stage_name, default)
         return partial(filter, self)
 
     @classmethod

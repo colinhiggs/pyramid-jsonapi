@@ -56,6 +56,10 @@ import pyramid_jsonapi.collection_view
 import pyramid_jsonapi.endpoints
 import pyramid_jsonapi.filters
 import pyramid_jsonapi.metadata
+from pyramid_jsonapi.permissions import (
+    Permission,
+    Targets,
+)
 import pyramid_jsonapi.version
 import pyramid_jsonapi.workflow as wf
 
@@ -305,16 +309,6 @@ class PyramidJSONAPI():
         class_attrs['key_column'] = sqlalchemy.inspect(model).primary_key[0]
         class_attrs['collection_name'] = collection_name or model.__tablename__
         class_attrs['exposed_fields'] = expose_fields
-        class_attrs['permission_filters'] = {
-            m.lower(): {} for m in
-            self.endpoint_data.endpoints['method_sets']['read']
-        }
-        class_attrs['permission_filters'].update(
-            {
-                m.lower(): {} for m in
-                self.endpoint_data.endpoints['method_sets']['write']
-            }
-        )
 
         # atts is ordinary attributes of the model.
         # hybrid_atts is any hybrid attributes defined.
@@ -352,6 +346,16 @@ class PyramidJSONAPI():
         class_attrs['relationships'] = view_rels
         fields.update(rels)
         class_attrs['fields'] = fields
+        vm_map = copy.deepcopy(
+            self.endpoint_data.http_to_view_methods
+        )
+        class_attrs['permission_filters'] = {
+            hm: {t: {} for t in Targets}
+            for hm in self.endpoint_data.http_methods
+        }
+        for vm in vm_map['all']:
+            vm_map[vm] = {vm}
+        class_attrs['methods'] = vm_map
 
         view_class = type(
             'CollectionView<{}>'.format(collection_name),
@@ -362,30 +366,24 @@ class PyramidJSONAPI():
         # because they need a reference to it.
         for key, rel in rels.items():
             view_rels[key] = StdRelationship(key, rel, view_class)
+        view_class.permission_template = Permission.template_from_view(view_class)
 
         return view_class
 
-    def enable_permission_handlers(self, permissions, stage_names):
+    def enable_permission_handlers(self, stage_names):
         '''
         Add permission handlers to all views.
 
         Permission handlers are not added to views by default for performance
         reasons. Call this function to add permission handlers to *all* views
-        for the view methods that permissions implies and for the stage names
-        specified.
+        for the stage names specified.
 
         Arguments:
-            permissions: an iterable of permissions to be enabled. Each permission
-                should be one of ``get``, ``post``, ``patch``, ``delete`` or
-                ``write`` (which expands to the same as ``post``, ``patch`` and
-                ``delet``).
             stage_names: an iterable of stage names to enable.
 
         '''
         # Build a set of all the end points from permissions.
-        ep_names = set()
-        for perm in permissions:
-            ep_names.update(self.endpoint_data.http_to_view_methods[perm.lower()])
+        ep_names = self.endpoint_data.http_to_view_methods['all']
 
         # Add permission handlers for all view classes.
         for model, view_class in self.view_classes.items():

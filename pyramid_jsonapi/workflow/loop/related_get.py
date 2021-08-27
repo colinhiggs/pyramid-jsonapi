@@ -36,8 +36,6 @@ def get_results(view, stages):
         if view.rel.queryable:
             query = view.rel_view.query_add_sorting(query)
             query = view.rel_view.query_add_filtering(query)
-            query = query.offset(qinfo['page[offset]'])
-            query = query.limit(qinfo['page[limit]'])
             query = wf.execute_stage(view.rel_view, rel_stages, 'alter_query', query)
             rel_objs_iterable = wf.wrapped_query_all(query)
         else:

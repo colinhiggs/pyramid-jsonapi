@@ -92,9 +92,9 @@ class EndpointData():
         # Mandatory 'http_method' keys: function
         # Optional 'http_method' keys: renderer
         self.endpoints = {
-            'method_sets': {
-                'read': {'GET'},
-                'write': {'POST', 'PATCH', 'DELETE'},
+            'http_method_sets': {
+                'read': {'get'},
+                'write': {'post', 'patch', 'delete'},
             },
             'query_parameters': {
                 'fields': '',
@@ -244,6 +244,7 @@ class EndpointData():
                 },
             },
         }
+        self.endpoints['http_method_sets']['all'] = self.http_methods
 
     def make_route_name(self, name, suffix=''):
         """Attach prefix and suffix to name to generate a route_name.
@@ -337,6 +338,13 @@ class EndpointData():
         )
 
     @property
+    def http_methods(self):
+        return {
+            hname.lower() for ep_type in self.endpoints['endpoints'].values()
+            for hname in ep_type['http_methods']
+        }
+
+    @property
     def http_to_view_methods(self):
         ep_map = {}
         for ep_type in self.endpoints['endpoints'].values():
@@ -348,10 +356,10 @@ class EndpointData():
                     view_methods = ep_map[http_name] = set()
                 view_methods.add(data['function'])
         ep_map['write'] = set()
-        for m in map(str.lower, self.endpoints['method_sets']['write']):
+        for m in map(str.lower, self.endpoints['http_method_sets']['write']):
             ep_map['write'] |= ep_map[m]
         ep_map['read'] = set()
-        for m in map(str.lower, self.endpoints['method_sets']['read']):
+        for m in map(str.lower, self.endpoints['http_method_sets']['read']):
             ep_map['read'] |= ep_map[m]
         ep_map['all'] = ep_map['read'] | ep_map['write']
 

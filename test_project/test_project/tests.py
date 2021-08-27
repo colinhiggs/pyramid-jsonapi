@@ -22,6 +22,10 @@ import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
 import pprint
 import ltree
+from pyramid_jsonapi.permissions import (
+    Permission,
+    Targets,
+)
 
 from test_project.models import (
     DBSession,
@@ -235,9 +239,11 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item_individual_attributes(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        def pfilter(obj, *args, **kwargs):
+        def pfilter(obj, view, mask, *args, **kwargs):
             if obj.object.name == 'alice':
-                return {'attributes': {'name'}, 'relationships': True}
+                return Permission.subtractive(
+                    view.permission_template, {'age'}
+                )
             else:
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
@@ -253,15 +259,16 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_item_individual_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        def pfilter(obj, *args, **kwargs):
-            if obj.object.name == 'alice':
-                return {'attributes': True, 'relationships': {'blogs'}}
+        def pfilter(obj, view, target, **kwargs):
+            if obj.object.name == 'alice' and target.name == 'posts':
+                return False
             else:
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
             ['alter_result', ],
             pfilter,
+            target_types=(Targets.relationship,)
         )
         # Alice should have relationship 'blogs' but not 'posts'.
         alice = test_app.get('/people/1').json_body['data']
@@ -358,7 +365,7 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         # Not allowed to post the name "forbidden"
-        def pfilter(obj, *args, **kwargs):
+        def pfilter(obj, view, **kwargs):
             return obj['attributes'].get('name') != 'forbidden'
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['post'],
@@ -396,21 +403,20 @@ class TestPermissions(DBTestBase):
     def test_post_alterreq_collection_with_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        def blogs_pfilter(obj, *args, **kwargs):
-            return {'attributes': True, 'relationships': True}
-        pj.view_classes[test_project.models.Blog].register_permission_filter(
-            ['post'],
-            ['alter_request'],
-            blogs_pfilter,
-        )
+        # def blogs_pfilter(obj, *args, **kwargs):
+        #     return {'attributes': True, 'relationships': True}
+        # pj.view_classes[test_project.models.Blog].register_permission_filter(
+        #     ['post'],
+        #     ['alter_request'],
+        #     blogs_pfilter,
+        # )
         # /people: allow POST to all atts and to 3 relationships.
-        def people_pfilter(obj, *args, **kwargs):
-            return {
-                'attributes': True,
-                'relationships': {
-                    'comments', 'articles_by_proxy', 'articles_by_assoc'
-                }
-            }
+        def people_pfilter(obj, view, **kwargs):
+            return Permission(
+                view.permission_template,
+                True,
+                {'comments', 'articles_by_proxy', 'articles_by_assoc'}
+            )
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['post'],
             ['alter_request'],
@@ -530,24 +536,22 @@ class TestPermissions(DBTestBase):
             if obj['id'] == '12':
                 return False
             else:
-                return {'attributes': True, 'relationships': True}
+                return True
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['patch'],
             ['alter_request'],
             blogs_pfilter,
         )
         # /people: allow POST to all atts and to 3 relationships.
-        def people_pfilter(obj, *args, **kwargs):
-            if kwargs['permission'] == 'delete' and obj['id'] == '20':
+        def people_pfilter(obj, view, permission, **kwargs):
+            if permission == 'delete' and obj['id'] == '20':
                 return False
-            if kwargs['permission'] == 'post' and obj['id'] == '12':
+            if permission == 'post' and obj['id'] == '12':
                 return False
-            return {
-                'attributes': True,
-                'relationships': {
-                    'blogs', 'articles_by_proxy', 'articles_by_assoc'
-                }
-            }
+            return Permission(
+                view.permission_template, True,
+                {'blogs', 'articles_by_proxy', 'articles_by_assoc'}
+            )
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['post', 'delete'],
             ['alter_request'],
