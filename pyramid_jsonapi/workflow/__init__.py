@@ -1,19 +1,17 @@
-import functools
+from collections import (
+    deque,
+    abc,
+)
+from functools import (
+    lru_cache,
+    partial,
+    partialmethod
+)
 import importlib
 import json
 import logging
 import re
 import sqlalchemy
-
-from collections import (
-    deque,
-    abc,
-)
-
-from functools import (
-    partial,
-    partialmethod
-)
 
 from sqlalchemy.orm import load_only
 from sqlalchemy.orm.interfaces import (
@@ -38,7 +36,11 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 
 
 import pyramid_jsonapi
+from pyramid_jsonapi.resource import (
+    ResourceIndicator,
+)
 from pyramid_jsonapi.permissions import (
+    PermissionDenied,
     PermissionTarget,
     Targets,
 )
@@ -302,7 +304,7 @@ def authz_write_mirror_rel(rel, mirror_rel, view, stage, ri, perm):
     # out there with this ri.
     tgt_view = mirror_rel.view_class(view.request)
     tgt_obj = tgt_view.single_item_query(
-        obj_id=ri['id']
+        obj_id=ri['id'], loadonly=(tgt_view.key_column.name, )
     ).one_or_none()
     if not tgt_obj:
         # Trying to assign a non-existent target object to rel. This is probably
@@ -372,9 +374,13 @@ def authz_write_rel(rel, view, stage, obj_data, perm):
         allowed_ris = []
         mirror_view = mirror_rel.view_class(view.request)
         if mirror_rel.to_many:
-            # Need perm permission on tgt_ri.mirror_rel.
+            if rel.to_many:
+                # Need perm permission on tgt_ri.mirror_rel.
+                perm_needed = perm
+            else:
+                perm_needed = 'delete'
             mfilter = mirror_view.permission_filter(
-                perm, Targets.relationship, stage
+                perm_needed, Targets.relationship, stage
             )
         else:
             # Need PATCH permission on tgt_ri.mirror_rel.
@@ -500,218 +506,172 @@ def shp_relationships_post_alter_request(request, view, stage, view_method):
     return request
 
 
-def patch_relationship_ar_helper(view, this_item, rel_name, rel_dict):
-    rel = view.relationships[rel_name]
-    mirror_rel = rel.mirror_relationship
-    if not mirror_rel:
-        # No mirror relationship: no need to check permissions on it.
-        return rel_dict
-    this_ro = ResultObject(view, this_item)
-    mirror_view = mirror_rel.view_class(view.request)
-    if rel.direction in (ONETOMANY, MANYTOMANY):
-        # rel data will be an array of ris. We'll need permission to post,
-        # delete, or patch each one on the mirror.
-        # Find the current related items.
-        current_related_ids = {
-            str(getattr(related_item, mirror_view.key_column.name))
-            for related_item in getattr(this_item, rel.name)
+@lru_cache
+def current_related_ris(view, src_id, rel):
+    rel_view = view.api.view_classes[rel.tgt_class]
+    if rel.to_many:
+        return {
+            ResourceIndicator(
+                rel_view.collection_name,
+                str(rel_view.id_col(rel_item))
+            )
+            for rel_item in getattr(view.get_item(src_id), rel.name)
         }
-        new_related_ids = {
-            item['id'] for item in rel_dict['data']
-        }
-        adding = new_related_ids - current_related_ids
-        removing = current_related_ids - new_related_ids
-        allowed_ids = set(current_related_ids)
-        # print(f'{rel.name}: cur {current_related_ids}, new {new_related_ids}')
-        # print(f'  add {adding}, rem {removing}')
-        if rel.direction is ONETOMANY:
-            # mirror_rel is MANYTOONE and we need PATCH permission for any
-            # alterations.
-            try:
-                m_patch_filter = mirror_view.permission_filter(
-                    'patch', 'rel', 'alter_request'
-                )
-            except KeyError:
-                return rel_dict
-            for _id in adding:
-                mallowed = m_patch_filter(
-                    {
-                        'type': mirror_view.collection_name,
-                        'id': _id,
-                        'relationships': {
-                            mirror_rel.name: {
-                                'data': this_ro.identifier()
-                            }
-                        }
-                    }
-                )
-                if mirror_rel.name in mallowed['relationships']:
-                    allowed_ids.add(_id)
-                # TODO: alternatively raise HTTPForbidden?
-            for _id in removing:
-                mallowed = m_patch_filter(
-                    {
-                        'type': mirror_view.collection_name,
-                        'id': _id,
-                        'relationships': {
-                            mirror_rel.name: {
-                                'data': None
-                            }
-                        }
-                    }
-                )
-                if mirror_rel.name in mallowed['relationships']:
-                    allowed_ids.remove(_id)
-                # TODO: alternatively raise HTTPForbidden?
-        else:
-            # mirror_rel is MANYTOMANY and we need POST permission to add or
-            # DELETE permission to remove.
-            try:
-                m_post_filter = mirror_view.permission_filter(
-                    'post', 'rel', 'alter_request'
-                )
-            except KeyError:
-                m_post_filter = False
-            try:
-                m_del_filter = mirror_view.permission_filter(
-                    'delete', 'rel', 'alter_request'
-                )
-            except KeyError:
-                m_del_filter = False
-            if m_post_filter:
-                for _id in adding:
-                    mallowed = m_post_filter(
-                        {
-                            'type': mirror_view.collection_name,
-                            'id': _id,
-                            'relationships': {
-                                mirror_rel.name: {
-                                    'data': this_ro.identifier()
-                                }
-                            }
-                        }
-                    )
-                    if mirror_rel.name in mallowed['relationships']:
-                        allowed_ids.add(_id)
-                    # TODO: alternatively raise HTTPForbidden?
-            if m_del_filter:
-                for _id in removing:
-                    mallowed = m_del_filter(
-                        {
-                            'type': mirror_view.collection_name,
-                            'id': _id,
-                            'relationships': {
-                                mirror_rel.name: {
-                                    'data': this_ro.identifier()
-                                }
-                            }
-                        }
-                    )
-                    if mirror_rel.name in mallowed['relationships']:
-                        allowed_ids.remove(_id)
-                    # TODO: alternatively raise HTTPForbidden?
-            else:
-                allowed_ids -= removing
-
-        rel_dict['data'] = [
-            {'type': mirror_view.collection_name, 'id': _id}
-            for _id in allowed_ids
-        ]
     else:
-        # rel.direction is MANYTOONE. There should be just one ri, or None.
-        cur_related = ResultObject(mirror_view, getattr(this_item, rel.name))
-        if cur_related.object is None and rel_dict['data'] is None:
-            # Nothing to do.
-            return rel_dict
-        if str(cur_related.obj_id) == rel_dict['data'].get('id'):
-            # Also nothing to do.
-            return rel_dict
-        if cur_related.object is not None:
-            # Need DELETE permission on cur_related.mirror_rel
-            try:
-                m_del_filter = mirror_view.permission_filter(
-                    'delete', 'rel', 'alter_request'
-                )
-            except KeyError:
-                return rel_dict
-            mallowed = m_del_filter(
-                {
-                    'type': mirror_view.collection_name,
-                    'id': cur_related.obj_id,
-                    'relationships': {
-                        mirror_rel.name: {
-                            'data': this_ro.identifier()
-                        }
-                    }
-                }
-            )
-            if mirror_rel.name not in mallowed['relationships']:
-                return False
-                # del(obj_data['relationships'][rel_name])
-        if rel_dict['data'] is not None:
-            # Need POST permission on cur_related.mirror_rel
-            try:
-                m_post_filter = mirror_view.permission_filter(
-                    'post', 'rel', 'alter_request'
-                )
-            except KeyError:
-                return rel_dict
-            mallowed = m_post_filter(
-                {
-                    'type': mirror_view.collection_name,
-                    'id': cur_related.obj_id,
-                    'relationships': {
-                        mirror_rel.name: {
-                            'data': this_ro.identifier()
-                        }
-                    }
-                }
-            )
-            if mirror_rel.name not in mallowed['relationships']:
-                return False
-                # del(obj_data['relationships'][rel_name])
-    return rel_dict
+        rel_item = getattr(view.get_item(src_id), rel.name)
+        if rel_item:
+            return {
+                ResourceIndicator(
+                    rel_view.collection_name,
+                    str(rel_view.id_col(rel_item))
+                ),
+            }
+        else:
+            return {
+                ResourceIndicator(
+                    rel_view.collection_name,
+                    None
+                ),
+            }
+
+def rel_patch_to_actions(view, src_id, rel, rel_patch_data):
+    """
+    Split a patch to a to_many rel into post and delete. Return a to_one patch.
+    """
+    if not rel.to_many:
+        return {'patch': rel_patch_data}
+    rel_view = view.api.view_classes[rel.tgt_class]
+    new_rel_ris = {
+        ResourceIndicator.from_dict(ri) for ri in rel_patch_data
+    }
+    current_obj = view.get_item(src_id)
+    current_rel_ris = current_related_ris(view, src_id, rel)
+    # Construct posts as a list so we preserve the order in rel_patch_data.
+    post_set = new_rel_ris - current_rel_ris
+    post_rel_ris = [
+        ri for ri in rel_patch_data
+        if ResourceIndicator.from_dict(ri) in post_set
+    ]
+    # There's no order divinable for deletes so just construct from the sets.
+    delete_rel_ris = [
+        ri.to_dict() for ri in (current_rel_ris - new_rel_ris)
+    ]
+    return {'post': post_rel_ris, 'delete': delete_rel_ris}
+
+
+def patch_rel_new_data(view, src_type, src_id, rel, rel_dict, stage):
+    obj_rep_for_rel = {
+        'type': src_type, 'id': src_id,
+        'relationships': {
+            rel.name: {},
+        }
+    }
+    new_data = [
+        ri.to_dict() for ri in current_related_ris(view, src_id, rel)
+    ]
+    for hmethod, ris in rel_patch_to_actions(
+        view, src_id, rel, rel_dict['data']
+    ).items():
+        obj_rep_for_rel['relationships'][rel.name]['data'] = ris
+        allowed_rel_changes = authz_write_rel(
+            rel, view, stage, obj_rep_for_rel, hmethod
+        )
+        if allowed_rel_changes is not False:
+            # is not False because None and [] are valid.
+            if hmethod == 'patch':
+                new_data = [allowed_rel_changes]
+            elif hmethod == 'post':
+                new_data.extend(allowed_rel_changes)
+            elif hmethod == 'delete':
+                new_data = [ri for ri in new_data if ri not in allowed_rel_changes]
+        else:
+            raise PermissionDenied(f"No permission to change {rel.name}")
+    if not rel.to_many:
+        new_data = new_data[0]
+    return new_data
 
 
 def shp_patch_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
-    try:
-        pfilter = view.permission_filter('patch', 'item', 'alter_request')
-    except KeyError:
-        return request
+    item_pf = view.permission_filter('patch', Targets.item, stage)
 
     obj_data = request.json_body['data']
-    allowed = pfilter(obj_data)
-    if allowed.get('id', True) is False:
-        # Straight up forbidden to PATCH object.
-        raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
+    allowed = item_pf(
+        obj_data,
+        target=PermissionTarget(Targets.item),
+    )
+    if not allowed.id:
+        # Straight up forbidden to create object.
+        raise HTTPForbidden(
+            f"No permission to PATCH object {obj_data['type']}/{view.obj_id}."
+        )
+    reject_atts = set()
     for att_name in list(obj_data.get('attributes', {}).keys()):
-        if att_name not in allowed['attributes']:
+        if att_name not in allowed.attributes:
             del(obj_data['attributes'][att_name])
+            reject_atts.add(att_name)
             # TODO: alternatively raise HTTPForbidden?
-    rel_names = list(obj_data.get('relationships', {}).keys())
-    for rel_name in rel_names:
-        if rel_name not in allowed['relationships']:
-            del(obj_data['relationships'][rel_name])
-            # TODO: alternatively raise HTTPForbidden?
-    # Loop through a shallow copy of obj_data['relationships'] so that we
-    # can delete entries without causing problems.
-    rels_copy = {}
-    rels_copy.update(obj_data.get('relationships', {}))
-    this_item = view.get_item()
-    for rel_name, rel_dict in rels_copy.items():
-        # For each of these allowed rels, look to see if the *other end*
-        # of the relationship is to_one (in which case we need PATCH permission
-        # to that rel in order to set it to this object) or to_many (in which
-        # case we need POST permission in order to add this object to it).
-        new_rel_dict = patch_relationship_ar_helper(view, this_item, rel_name, rel_dict)
-        if new_rel_dict:
-            obj_data['relationships'][rel_name] = new_rel_dict
+    view.pj_shared.rejected.reject_attributes(
+        (obj_data['type'], obj_data.get('id')),
+        reject_atts,
+        f"Attribute rejected during PATCH of {obj_data['type']}/{view.obj_id}."
+    )
+
+    reject_rels = set()
+    accept_rels = dict()
+    for rel_name, rel_dict in obj_data.get('relationships', {}).items():
+        rel = view.relationships[rel_name]
+        try:
+            new_data =  patch_rel_new_data(
+                view, view.collection_name, view.obj_id, rel, rel_dict, stage
+            )
+        except PermissionDenied:
+            reject_rels.add(rel_name)
+            continue
+        # if not rel.to_many:
+        #     new_data = new_data[0]
+        obj_data['relationships'][rel_name]['data'] = new_data
+
+    # Deal with rejected rels.
+    for rel_name in reject_rels:
+        del(obj_data['relationships'][rel_name])
+    view.pj_shared.rejected.reject_relationships(
+        (obj_data['type'], obj_data.get('id')),
+        reject_rels,
+        "permission denied"
+    )
+
     request.body = json.dumps({'data': obj_data}).encode()
     return request
 
 
 def shp_relationships_patch_alter_request(request, view, stage, view_method):
+    rel = view.rel
+
+    # Construct obj_data in the form that authz needs.
+    obj_data = {
+        'type': view.collection_name, 'id': view.obj_id,
+        'relationships': {
+            rel.name: {
+                'data': request.json_body['data']
+            }
+        }
+    }
+
+    # Need permission to PATCH obj.rel.
+    try:
+        new_data =  patch_rel_new_data(
+            view, view.collection_name, view.obj_id, rel, obj_data['relationships'][rel.name], stage
+        )
+    except PermissionDenied:
+        raise HTTPForbidden(
+            f"No permission to PATCH {obj_data['type']}/{obj_data['id']}.{rel.name}"
+        )
+    obj_data['relationships'][rel.name]['data'] = new_data
+
+    request.body = json.dumps({'data': new_data}).encode()
+    return request
+
     # Make sure there is a permission filter registered.
     try:
         pfilter = view.permission_filter('patch', 'rel', 'alter_request')
@@ -885,7 +845,7 @@ def permission_handler(endpoint_name, stage_name):
     return permission_handlers[endpoint_name][stage_name]
 
 
-@functools.lru_cache()
+@lru_cache
 def get_jsonapi_accepts(request):
     """Return a set of all 'application/vnd.api' parts of the accept
     header.

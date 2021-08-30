@@ -622,21 +622,12 @@ class TestPermissions(DBTestBase):
     def test_patch_alterreq_item_with_rels(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        def blogs_pfilter(obj, **kwargs):
-            return {'attributes': True, 'relationships': True}
-        pj.view_classes[test_project.models.Blog].register_permission_filter(
-            ['post'],
-            ['alter_request'],
-            blogs_pfilter,
-        )
         # /people: allow PATCH to all atts and to 3 relationships.
-        def people_pfilter(obj, **kwargs):
-            return {
-                'attributes': True,
-                'relationships': {
-                    'comments', 'articles_by_proxy', 'articles_by_assoc'
-                }
-            }
+        def people_pfilter(obj, view, **kwargs):
+            return Permission(
+                view.permission_template, True,
+                {'comments', 'articles_by_proxy', 'articles_by_assoc'}
+            )
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['patch'],
             ['alter_request'],
@@ -719,7 +710,7 @@ class TestPermissions(DBTestBase):
         # pprint.pprint(rels['articles_by_proxy']['data'])
 
         # Still need to test a to_one relationship. Blogs has one of those.
-        def blogs_pfilter(obj, **kwargs):
+        def blogs_pfilter(obj, view, **kwargs):
             if obj['id'] == '13':
                 # Not allowed to change blogs/13 at all.
                 return False
@@ -727,11 +718,17 @@ class TestPermissions(DBTestBase):
                 # Not allowed to set owner of blogs/10 to people/13
                 if obj['relationships']['owner']['data'].get('id') == '13':
                     # print('people/13 not allowed as owner of 10')
-                    return {'attributes': True, 'relationships': {'posts'}}
+                    return Permission(
+                        view.permission_template, True,
+                        {'posts',}
+                    )
             if obj['id'] == '11':
                 # Not allowed to set owner of blogs/11 to None.
                 if obj['relationships']['owner']['data'] is None:
-                    return {'attributes': True, 'relationships': {'posts'}}
+                    return Permission(
+                        view.permission_template, True,
+                        {'posts',}
+                    )
             return True
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['patch'],
