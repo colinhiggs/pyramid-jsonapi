@@ -936,6 +936,23 @@ class TestPermissions(DBTestBase):
         # Permission to add 1
         self.assertIn('1', article_ids)
 
+    def test_delete_alterreq_item(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def comments_pfilter(obj, view, **kwargs):
+            if obj['id'] == '1':
+                return True
+            else:
+                return False
+        pj.view_classes[test_project.models.Comment].register_permission_filter(
+            ['delete'],
+            ['alter_request'],
+            comments_pfilter,
+        )
+        test_app.delete('/comments/1')
+        test_app.delete('/comments/2', status=403)
+
+
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
     '''

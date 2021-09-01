@@ -712,74 +712,17 @@ def get_item(view, item_or_id=None):
         return view.get_item(item_or_id)
 
 
-def ar_check_mirror_rel_perms(view, permission, rel, rel_dict, item_or_id=None):
-    # Find the item rel is relative to.
-
-    # Check for direct permission to alter rel.
-    # filter = view.permission_filter(permission, 'alter_request', default=view.true_filter)
-    # if not filter(this_item):
-    #     return {'forward': False}
-    mirror_rel = rel.mirror_relationship
-    if not mirror_rel:
-        # No mirror relationship: no need to check permissions on it. Return
-        # False as a predicate value.
-        return False
-    # mirror_view = mirror_rel.view_class(view.request)
-    report = {
-        'post': {'allowed': set(), 'denied': set()},
-        'patch': {'allowed': set(), 'denied': set()},
-        'delete': {'allowed': set(), 'denied': set()}
-    }
-    # related_items = view.related_query(this_ro.obj_id, rel).all()
-    rel_data = rel_dict['data']
-    if rel.direction is MANYTOONE:
-        # Always a list for DRYness.
-        rel_data = [rel_data]
-    if mirror_rel.direction is MANYTOONE:
-        # Need patch permission for any alterations.
-        if permission == 'post':
-            adding = {'_id': 2}
-    return report
-
-
 def shp_delete_alter_request(request, view, stage, view_method):
-    # Make sure there is a permission filter registered.
-    try:
-        pfilter = view.permission_filter('delete', 'item', 'alter_request')
-    except KeyError:
-        return request
-
+    item_pf = view.permission_filter('delete', Targets.item, stage)
     this_item = view.get_item()
     this_ro = ResultObject(view, this_item)
     this_data = this_ro.serialise()
-    allowed = pfilter(this_data, mask=view.everything_mask)
-    if not allowed['id']:
-        raise HTTPForbidden('No permission to delete {}/{}'.format(
-            view.collection_name, view.obj_id
-        ))
-    for att_name in this_data.get('attributes', {}):
-        if att_name not in allowed['attributes']:
-            # Need permission to *all* attributes for delete to work sensibly.
-            raise HTTPForbidden('No permission to delete {}/{}[{}]'.format(
-                view.collection_name, view.obj_id, att_name
-            ))
-    for rel_name in this_data.get('relationships', {}):
-        if rel_name not in allowed['relationships']:
-            # Need permission to *all* relationships for delete to work sensibly.
-            raise HTTPForbidden('No permission to delete {}/{}.{}'.format(
-                view.collection_name, view.obj_id, rel_name
-            ))
-    for rel_name, rel_dict in this_data.get('relationships', {}).items():
-        rel = view.relationships[rel_name]
-        mirror_perms = ar_check_mirror_rel_perms(view, 'delete', rel, rel_dict)
-        if not mirror_perms:
-            # There is no mirror relationship for this rel.
-            continue
-        if mirror_perms['delete']['denied'] or mirror_perms['patch']['denied']:
-            # At least one required delete or patch on mirror is denied.
-            raise HTTPForbidden('No permission to delete {}/{}.{} by mirror relationship.'.format(
-                view.collection_name, view.obj_id, rel_name
-            ))
+    allowed = item_pf(this_data, target=PermissionTarget(Targets.item))
+    if not allowed.id:
+        # Straight up forbidden to create object.
+        raise HTTPForbidden(
+            f"No permission to DELETE object {this_data['type']}/{view.obj_id}."
+        )
     return request
 
 
