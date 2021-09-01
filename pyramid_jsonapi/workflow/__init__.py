@@ -727,33 +727,26 @@ def shp_delete_alter_request(request, view, stage, view_method):
 
 
 def shp_relationships_delete_alter_request(request, view, stage, view_method):
-    try:
-        pfilter = partial(
-            view.permission_filter('delete', 'alter_request'),
-            permission_sought='delete',
-            stage_name='alter_request',
-            view_instance=view,
+    rel = view.rel
+
+    # Construct obj_data in the form that authz needs.
+    obj_data = {
+        'type': view.collection_name, 'id': view.obj_id,
+        'relationships': {
+            rel.name: {
+                'data': request.json_body['data']
+            }
+        }
+    }
+
+    # Need permission to POST to obj.rel.
+    rel_data = allowed_rel_changes(rel, view, stage, obj_data, 'delete')
+    if rel_data is False:
+        raise HTTPForbidden(
+            f"No permission to DELETE from {obj_data['type']}/{obj_data['id']}.{rel.name}"
         )
-    except KeyError:
-        return request
-    # TODO: option to select alternate behaviour
-    if True:
-        # Pretend that the request only contained the items which are allowed.
-        new_data = [
-            item for item in request.json_body['data']
-            if pfilter(item, request.json_body['data'])
-        ]
-        request.json_body['data'] = new_data
-    else:
-        # Deny the whole request if we lack permission for any one item.
-        for item in request.json_body['data']:
-            if not pfilter(item, request.json_body['data']):
-                raise HTTPForbidden(
-                    'No permission to DELETE {} from relationship {}.'.format(
-                        item, view.relname
-                    )
-                )
-        return request
+    request.body = json.dumps({'data': rel_data}).encode()
+    return request
 
 
 permission_handlers = {

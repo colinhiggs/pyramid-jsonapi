@@ -952,6 +952,62 @@ class TestPermissions(DBTestBase):
         test_app.delete('/comments/1')
         test_app.delete('/comments/2', status=403)
 
+    def test_delete_alterreq_relationship(self):
+        test_app = self.test_app({})
+        pj = test_app._pj_app.pj
+        def blogs_pfilter(obj, *args, **kwargs):
+            if obj['id'] == '12':
+                return False
+            else:
+                return True
+        pj.view_classes[test_project.models.Blog].register_permission_filter(
+            ['patch'],
+            ['alter_request'],
+            blogs_pfilter,
+        )
+        # /people: allow POST to all atts and to 3 relationships.
+        def people_pfilter(obj, view, permission, target, **kwargs):
+            rels = obj['relationships']
+            if target.name == 'blogs' and rels['blogs']['data'][0]['id'] == '1':
+                return False
+            else:
+                return True
+        pj.view_classes[test_project.models.Person].register_permission_filter(
+            ['post', 'delete'],
+            ['alter_request'],
+            people_pfilter,
+        )
+        # /articles_by_assoc: allow POST (required to add people/new to
+        # 'articles_by_assoc.authors') on all but articles_by_assoc/11.
+        pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'11'}
+        )
+        pj.view_classes[test_project.models.ArticleByObj].register_permission_filter(
+            ['post'],
+            ['alter_request'],
+            lambda obj, *args, **kwargs: obj['id'] not in {'10'}
+        )
+        # ONETOMANY relationship.
+        out = test_app.delete_json(
+            '/people/1/relationships/blogs',
+            {
+                'data': [
+                    {'type': 'blogs', 'id': '1'},
+                    {'type': 'blogs', 'id': '2'},
+                ]
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json_body
+        # pprint.pprint(out)
+        post_ids = [
+            b['id'] for b in
+            test_app.get('/people/1').json_body['data']['relationships']['blogs']['data']
+        ]
+        self.assertIn('1', post_ids)
+        self.assertNotIn('2', post_ids)
+
 
 class TestRelationships(DBTestBase):
     '''Test functioning of relationsips.
