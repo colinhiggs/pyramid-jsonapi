@@ -411,7 +411,9 @@ class TestPermissions(DBTestBase):
         #     blogs_pfilter,
         # )
         # /people: allow POST to all atts and to 3 relationships.
-        def people_pfilter(obj, view, **kwargs):
+        def people_pfilter(obj, view, target, **kwargs):
+            # if target.name == 'posts':
+            #     print(obj['type'], obj['relationships']['posts'])
             return Permission(
                 view.permission_template,
                 True,
@@ -577,7 +579,6 @@ class TestPermissions(DBTestBase):
                     {'type': 'blogs', 'id': '10'},
                     {'type': 'blogs', 'id': '11'},
                     {'type': 'blogs', 'id': '12'},
-                    {'type': 'blogs', 'id': '20'},
                 ]
             },
             headers={'Content-Type': 'application/vnd.api+json'},
@@ -595,8 +596,6 @@ class TestPermissions(DBTestBase):
         self.assertIn({'type': 'blogs', 'id': '11'}, blogs)
         # blogs/12 disallowed by blogs filter.
         self.assertNotIn({'type': 'blogs', 'id': '12'}, blogs)
-        # blogs/20 disallowed by people filter on people/20.
-        self.assertNotIn({'type': 'blogs', 'id': '20'}, blogs)
 
         # MANYTOMANY relationship.
         out = test_app.post_json(
@@ -814,32 +813,38 @@ class TestPermissions(DBTestBase):
     def test_patch_alterreq_relationships(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
-        def people_pfilter(obj, **kwargs):
+        def people_pfilter(obj, view, **kwargs):
             if obj['id'] == '1':
                 return False
             if obj['id'] == '2':
-                return {'attributes': True, 'relationships': False}
+                return Permission(
+                    view.permission_template, True, False
+                )
             return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
-            ['patch'],
+            ['write'],
             ['alter_request'],
             people_pfilter
         )
-        def blogs_pfilter(obj, **kwargs):
+        def blogs_pfilter(obj, view, **kwargs):
             if obj['id'] == '10':
                 # Not allowed to change blogs/10 at all.
                 return False
             if obj['id'] == '11':
                 # Not allowed to set owner of blogs/11 to None.
                 if obj['relationships']['owner']['data'] is None:
-                    return {'attributes': True, 'relationships': {'posts'}}
+                    return Permission(
+                        view.permission_template, True, {'posts'}
+                    )
             if obj['id'] == '12':
                 # Not allowed to set owner of blogs/12 to people/11
                 if obj['relationships']['owner']['data'].get('id') == '11':
-                    return {'attributes': True, 'relationships': {'posts'}}
+                    return Permission(
+                        view.permission_template, True, {'posts'}
+                    )
             return True
         pj.view_classes[test_project.models.Blog].register_permission_filter(
-            ['patch'],
+            ['write'],
             ['alter_request'],
             blogs_pfilter
         )
@@ -893,13 +898,15 @@ class TestPermissions(DBTestBase):
         self.assertIn('13', blog_ids)
 
         # MANYTOMANY tests
-        def articles_by_assoc_pfilter(obj, **kwargs):
+        def articles_by_assoc_pfilter(obj, view, **kwargs):
             if obj['id'] == '10':
                 # Not allowed to change articles_by_assoc/10 at all.
                 return False
             if obj['id'] == '12':
                 # Not allowed to alter author of articles_by_assoc/12
-                return {'attributes': True, 'relationships': False}
+                return Permission(
+                    view.permission_template, True, False
+                )
             return True
         pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
             ['post', 'delete'],

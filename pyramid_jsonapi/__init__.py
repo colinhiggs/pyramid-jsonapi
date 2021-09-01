@@ -441,6 +441,10 @@ class StdRelationship:
         return self.direction in (ONETOMANY, MANYTOMANY)
 
     @property
+    def to_one(self):
+        return not self.to_many
+
+    @property
     def proxy_direction(self):
         ps = self.obj.for_class(self.src_class)
         if ps.scalar:
