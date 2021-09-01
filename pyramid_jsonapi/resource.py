@@ -6,6 +6,7 @@ __all__ = (
     'ResourceIndicator',
 )
 
+
 @dataclass(eq=True, frozen=True)
 class ResourceIndicator:
     type: str

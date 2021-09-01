@@ -189,8 +189,8 @@ class Permission(PermissionBase):
         )
 
     @classmethod
-    def from_view_subtractive(view, attributes=set(), relationships=set()):
+    def from_view_subtractive(cls, view, attributes=set(), relationships=set()):
         """
         New instance using view and subtracting atts and rels from full set.
         """
-        return cls.subtractive(view.permission_template, attribute, relationships)
+        return cls.subtractive(view.permission_template, attributes, relationships)

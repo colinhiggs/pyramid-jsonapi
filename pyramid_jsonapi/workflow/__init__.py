@@ -450,6 +450,7 @@ def allowed_rel_changes(rel, view, stage, obj_data, perm):
         # One to one.
         pass
 
+
 def shp_collection_post_alter_request(request, view, stage, view_method):
     # Make sure there is a permission filter registered.
     col_pf = view.permission_filter('post', Targets.collection, stage)
@@ -554,6 +555,7 @@ def current_related_ris(view, src_id, rel):
                 ),
             }
 
+
 def rel_patch_to_actions(view, src_id, rel, rel_patch_data):
     """
     Split a patch to a to_many rel into post and delete. Return a to_one patch.
@@ -649,7 +651,7 @@ def shp_patch_alter_request(request, view, stage, view_method):
     for rel_name, rel_dict in obj_data.get('relationships', {}).items():
         rel = view.relationships[rel_name]
         try:
-            new_data =  patch_rel_new_data(
+            new_data = patch_rel_new_data(
                 view, view.collection_name, view.obj_id, rel, rel_dict, stage
             )
         except PermissionDenied:
@@ -687,7 +689,7 @@ def shp_relationships_patch_alter_request(request, view, stage, view_method):
 
     # Need permission to PATCH obj.rel.
     try:
-        new_data =  patch_rel_new_data(
+        new_data = patch_rel_new_data(
             view, view.collection_name, view.obj_id, rel, obj_data['relationships'][rel.name], stage
         )
     except PermissionDenied:
@@ -697,29 +699,6 @@ def shp_relationships_patch_alter_request(request, view, stage, view_method):
     obj_data['relationships'][rel.name]['data'] = new_data
 
     request.body = json.dumps({'data': new_data}).encode()
-    return request
-
-    # Make sure there is a permission filter registered.
-    try:
-        pfilter = view.permission_filter('patch', 'rel', 'alter_request')
-    except KeyError:
-        return request
-
-    allowed = pfilter({'type': view.collection_name, 'id': view.obj_id})
-    if not allowed.get('id', True):
-        # Straight up forbidden to PATCH object.
-        raise HTTPForbidden('No permission to PATCH object:\n\n{}'.format(request.json_body['data']))
-    if view.rel.name not in allowed['relationships']:
-        raise HTTPForbidden(f'No permission to PATCH {view.collection_name}/{view.obj_id}.{view.rel.name}')
-    this_item = view.get_item()
-    new_rel_dict = patch_relationship_ar_helper(
-        view, this_item, view.rel.name,
-        {'data': view.request.json_body['data']}
-    )
-    if new_rel_dict:
-        request.body = json.dumps(new_rel_dict).encode()
-    else:
-        raise HTTPForbidden(f'No permission to alter remote side of {view.collection_name}/{view.obj_id}.{view.rel.name}')
     return request
 
 
