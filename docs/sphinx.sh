@@ -6,8 +6,10 @@ cd "$(dirname $0)/.."
 PATH=bin/:$PATH
 SOURCE=${SOURCE:-docs/source}
 TARGET=${TARGET:-docs/build}
-
 sphinx-apidoc -f -T -e -o ${SOURCE}/apidoc pyramid_jsonapi
+# apidoc and dataclasses seem to both want create attribute docstrings which
+# clash for a space in the index.
+echo "   :noindex:" >> ${SOURCE}/apidoc/pyramid_jsonapi.permissions.rst
 # Generate config docs from python method
 python -c 'import pyramid_jsonapi; import pyramid_settings_wrapper as psw; s = psw.Settings({}, defaults=pyramid_jsonapi.PyramidJSONAPI.config_defaults); print(s.sphinx_doc())' >docs/source/apidoc/settings.inc
 travis-sphinx --outdir=${TARGET} build --source=${SOURCE}
