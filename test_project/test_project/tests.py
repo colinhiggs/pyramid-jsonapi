@@ -214,9 +214,7 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         def pfilter(obj, view, mask, *args, **kwargs):
             if obj.object.name == 'alice':
-                return Permission.subtractive(
-                    view.permission_template, {'age'}
-                )
+                return view.permission_object(subtract_attributes={'age',})
             else:
                 return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
@@ -387,8 +385,7 @@ class TestPermissions(DBTestBase):
         def people_pfilter(obj, view, target, **kwargs):
             # if target.name == 'posts':
             #     print(obj['type'], obj['relationships']['posts'])
-            return Permission(
-                view.permission_template,
+            return view.permission_object(
                 True,
                 {'comments', 'articles_by_proxy', 'articles_by_assoc'}
             )
@@ -523,8 +520,8 @@ class TestPermissions(DBTestBase):
                 return False
             if permission == 'post' and obj['id'] == '12':
                 return False
-            return Permission(
-                view.permission_template, True,
+            return view.permission_object(
+                True,
                 {'blogs', 'articles_by_proxy', 'articles_by_assoc'}
             )
         pj.view_classes[test_project.models.Person].register_permission_filter(
@@ -596,8 +593,8 @@ class TestPermissions(DBTestBase):
         pj = test_app._pj_app.pj
         # /people: allow PATCH to all atts and to 3 relationships.
         def people_pfilter(obj, view, **kwargs):
-            return Permission(
-                view.permission_template, True,
+            return view.permission_object(
+                True,
                 {'comments', 'articles_by_proxy', 'articles_by_assoc'}
             )
         pj.view_classes[test_project.models.Person].register_permission_filter(
@@ -690,17 +687,11 @@ class TestPermissions(DBTestBase):
                 # Not allowed to set owner of blogs/10 to people/13
                 if obj['relationships']['owner']['data'].get('id') == '13':
                     # print('people/13 not allowed as owner of 10')
-                    return Permission(
-                        view.permission_template, True,
-                        {'posts',}
-                    )
+                    return view.permission_object(True, {'posts',})
             if obj['id'] == '11':
                 # Not allowed to set owner of blogs/11 to None.
                 if obj['relationships']['owner']['data'] is None:
-                    return Permission(
-                        view.permission_template, True,
-                        {'posts',}
-                    )
+                    return view.permission_object(True, {'posts',})
             return True
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['patch'],
@@ -790,9 +781,7 @@ class TestPermissions(DBTestBase):
             if obj['id'] == '1':
                 return False
             if obj['id'] == '2':
-                return Permission(
-                    view.permission_template, True, False
-                )
+                return view.permission_object(True, False)
             return True
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['write'],
@@ -806,15 +795,11 @@ class TestPermissions(DBTestBase):
             if obj['id'] == '11':
                 # Not allowed to set owner of blogs/11 to None.
                 if obj['relationships']['owner']['data'] is None:
-                    return Permission(
-                        view.permission_template, True, {'posts'}
-                    )
+                    return view.permission_object(True, {'posts',})
             if obj['id'] == '12':
                 # Not allowed to set owner of blogs/12 to people/11
                 if obj['relationships']['owner']['data'].get('id') == '11':
-                    return Permission(
-                        view.permission_template, True, {'posts'}
-                    )
+                    return view.permission_object(True, {'posts',})
             return True
         pj.view_classes[test_project.models.Blog].register_permission_filter(
             ['write'],
@@ -877,9 +862,7 @@ class TestPermissions(DBTestBase):
                 return False
             if obj['id'] == '12':
                 # Not allowed to alter author of articles_by_assoc/12
-                return Permission(
-                    view.permission_template, True, False
-                )
+                return view.permission_object(True, False)
             return True
         pj.view_classes[test_project.models.ArticleByAssoc].register_permission_filter(
             ['post', 'delete'],

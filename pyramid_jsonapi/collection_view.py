@@ -1605,3 +1605,19 @@ class CollectionViewBase:
                     # This method and stage is completely unhandled. Return a
                     # handler that effectively does nothing.
                     return lambda arg, *args, **kwargs: arg
+
+    def permission_object(
+        self,
+        attributes=None, relationships=None, id=None,
+        subtract_attributes=frozenset(), subtract_relationships=frozenset()
+    ):
+        template = self.permission_template
+        id = id if id is not None else template.id
+        attributes = Permission._caclulate_attr_val(
+            'attributes', attributes, template.attributes, id
+        ) - subtract_attributes
+        relationships = Permission._caclulate_attr_val(
+            'relationships', relationships, template.relationships, id
+        ) - subtract_relationships
+
+        return Permission(template, attributes, relationships, id)
