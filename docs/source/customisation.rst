@@ -485,7 +485,23 @@ The simplest thing that a permission filter can do is return ``True``
 (``permission`` is granted for the whole object) or ``False``
 (``permission`` is denied for the whole object). To control permissions
 for attributes or relationships, you must return a
-:class:`pyramid_jsonapi.permissions.Permission` object:
+:class:`pyramid_jsonapi.permissions.Permission` object. You can create one
+appropriate to the current view with:
+
+.. code-block:: python
+
+  permission_object = view.permission_object(
+    attributes=view.permission_template.attributes, # Set of allowed attribute
+                                                    # names. Defaults to all
+                                                    # attributes.
+    relationships=view.permission_template.relationships, # Set of allowed rel
+                                                          # names.
+    id=True,
+    subtract_attributes=frozenset(),  # Set of attributes to subtract.
+    subtract_relationships=frozenset()  # Set of relationships to subtract.
+  )
+
+or you can construct one from scratch with:
 
 .. code-block:: python
 
@@ -499,6 +515,8 @@ for attributes or relationships, you must return a
     id=True,  # Controls visibility of / action on the whole object.
               # Most of the time this should be True, which is the default.
   )
+
+Permission objects are immutable.
 
 The different target types are worth saying a little more about since they
 affect how your permission filter is called.

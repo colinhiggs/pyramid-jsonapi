@@ -73,6 +73,21 @@ class Permission(PermissionBase):
     relationships: FrozenSet[str] = None
     id: bool = None
 
+    @staticmethod
+    def _caclulate_attr_val(attr, curval, template_val, id_):
+        if curval is None:
+            # defaults
+            if id_:
+                return template_val
+            else:
+                return frozenset()
+        elif curval is True:
+            return template_val
+        elif curval is False:
+            return frozenset()
+        else:
+            return curval
+
     def __post_init__(self):
         if self.id is None:
             if self.template is None:
@@ -81,25 +96,17 @@ class Permission(PermissionBase):
 
         for attr in ('attributes', 'relationships'):
             curval = getattr(self, attr)
-            if curval is None:
-                if self.template is None:
-                    raise TemplateMissmatch(f"{attr} must be supplied if template is None")
-                # defaults
-                if self.id:
-                    value = getattr(self.template, attr)
-                else:
-                    value = frozenset()
-                object.__setattr__(self, attr, value)
-            elif curval is True:
-                object.__setattr__(self, attr, getattr(self.template, attr))
-            elif curval is False:
-                object.__setattr__(self, attr, frozenset())
-            else:
-                # validation
-                if self.template is not None:
-                    remainder = getattr(self, attr) - getattr(self.template, attr)
-                    if remainder:
-                        raise KeyError(f'Template does not have {attr} {remainder}')
+            if curval in (None, True, False) and self.template is None:
+                raise TemplateMissmatch(f"{attr} must be supplied if template is None")
+            template_val = getattr(self.template, attr, frozenset())
+            object.__setattr__(
+                self, attr,
+                self._caclulate_attr_val(attr, curval, template_val, self.id)
+            )
+            if self.template is not None:
+                remainder = getattr(self, attr) - template_val
+                if remainder:
+                    raise KeyError(f'Template does not have {attr} {remainder}')
 
     def __or__(self, other):
         if self.__class__ is not other.__class__:
