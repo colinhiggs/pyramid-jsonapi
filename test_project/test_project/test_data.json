@@ -507,6 +507,44 @@
         }
       ],
       {"id_seq": "*"}
+    ],
+    [
+      "Job",
+      [
+        {
+          "id": "1",
+          "title": "job 1"
+        },
+        {
+          "id": "2",
+          "title": "job 2"
+        },
+        {
+          "id": "3",
+          "title": "job 3"
+        }
+      ],
+      {"id_seq": "*"}
+    ],
+    [
+      "ManagerAssociation",
+      [
+        {
+          "id": "1",
+          "boss_id": "1",
+          "minion_id": "2"
+        },
+        {
+          "id": "2",
+          "boss_id": "1",
+          "minion_id": "3"
+        },
+        {
+          "id": "3",
+          "boss_id": "2",
+          "minion_id": "3"
+        }
+      ]
     ]
   ],
   "associations": [

@@ -300,3 +300,37 @@ class LtreeNode(Base, LtreeMixin):
     __tablename__ = 'ltree_nodes'
 
     id = IdColumn()
+
+
+# association object for many to many management model.
+class ManagerAssociation(Base):
+    __tablename__ = 'managers'
+
+    id = IdColumn()
+    boss_id = IdRefColumn('jobs.id')
+    minion_id = IdRefColumn('jobs.id')
+
+    # relationships from backrefs:
+    # boss (other end of Job.ao_minions)
+    # minion (other end of Job.ao_bosses)
+
+
+class Job(Base):
+    __tablename__ = 'jobs'
+
+    id = IdColumn()
+    title = Column(Text)
+
+    minions = association_proxy('ao_minions', 'minion')
+    ao_minions = relationship(
+        "ManagerAssociation",
+        foreign_keys=[ManagerAssociation.boss_id],
+        backref=backref("boss")
+    )
+
+    bosses = association_proxy('ao_bosses', 'boss')
+    ao_bosses = relationship(
+        "ManagerAssociation",
+        foreign_keys=[ManagerAssociation.minion_id],
+        backref=backref("minion")
+    )
