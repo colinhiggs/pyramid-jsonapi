@@ -328,7 +328,9 @@ order at the appropriate point and should have the following signature:
 ``argument`` in the ``alter_request`` stage would be a request, for example,
 while in ``alter_document`` it would be a document object. ``argument`` and
 ``view_instance`` are passed positionally while ``stage`` and ``view_method``
-are keyword arguments.
+are keyword arguments. Handlers in a stage deque should work as a pipeline so
+it is important that you return the (potentially altered or replaced
+``argument``)
 
 For example, let's say you would like to alter all posts to the people
 collection so that a created_on_server attribute is populated automatically.
@@ -392,7 +394,11 @@ blog, you need ``patch`` permission on ``blog_x.owner``, ``post`` permission on
 reverse relationship).
 
 There are stage handlers available for stages which handle most of the logic of
-authorisation. The remaining logic is provided by permission filters which you
+authorisation. At the moment these are implemented for ``alter_result`` for read
+operations and ``alter_request`` for write operations. Other stages might be
+supported in the future.
+
+The remaining logic is provided by permission filters which you
 provide. The job of a permission filter is to decide, for an individual object,
 whether the specified operation is allowed on that object or not. The permission
 handler built in to pyramid_jsonapi will call the permission filters at the
@@ -401,12 +407,37 @@ back together into a coherent, authorised whole.
 
 The default permission filters allow everything, which is the same as not having
 any permission handlers at all. Permission filters should be registered with
-:func:`CollectionView.register_permission_filter`.
+:func:`CollectionView.register_permission_filter`:
 
-Note that you supply the lists of permissions and stages handled by the
-permission filter function so you can either write functions that are quite
-specific or more general ones. They will have the permission sought and the
-current stage passed as arguments to aid in decision making.
+.. code-block:: python
+
+  from pyramid_jsonapi.permissions import Targets
+
+  view_class.register_permission_filter(
+    permissions,
+    stages,
+    pfunc,
+    target_types=list(Targets) # the default is all target types.
+  )
+
+``permissions`` is an iterable of permissions (as strings) that this filter will
+handle. Permissions are equivalent to http verbs (lowercased) - 'get', 'post',
+'patch', 'delete'. You can also use any 'permission set' defined in
+``pj.endpoint_data.endpoints['http_method_sets']``. At time of writing these are
+'read' (equivalent to 'get'), 'write' ('post', 'patch' and 'delete'), and 'all'.
+
+``stages`` is an iterable of stage names.
+
+``pfunc`` is the function to handle permission requests.
+
+``target_types`` is an iterable of target types that this filter will handle.
+Target types are a hint to permission filters specifying the type of target
+being authorised in the current call. They are one of the
+``pyramid_jsonapi.permissions.Targets`` enumeration, which at time of writing
+includes ``Targets.collection`` for collection based operations where an id
+might not be included, ``Targets.item`` for operations directly on an item
+and its attributes, and ``Targets.relationship`` for operations on
+relationships.
 
 Permission filters will be called from within the code like this:
 
@@ -417,19 +448,33 @@ Permission filters will be called from within the code like this:
     view=view_instance,
     stage=stage_name,
     permission=permission_sought,
+    target=PermissionTarget_object,
+    mask=Permission_object,
   )
 
-Where ``object_rep`` is some representation of the object to be authorised,
-``view_instance`` is the current view instance, ``stage_name`` is the name of
-the current stage, and ``permission_sought`` is one of ``get``, ``post``,
-``patch``, or ``delete``. Different stages imply different representations. For
-example the ``alter_request`` stage will pass a dictionary representing an item
-from ``data`` from the JSON contained in a pyramid request and the
-``alter_document`` stage will pass a similar dictionary representation of an
-object taken from the ``document`` to be serialised. The ``alter_result`` stage
-from the loop workflow, on the other hand, will pass a
-:class:`workflow.ResultObject`, which is a wrapper around a sqlAlchemy ORM
-object (which you can get to as ``object_rep.object``).
+``object_rep`` is some representation of the object to be authorised. Different
+stages imply different representations. For example the ``alter_request`` stage
+will pass a dictionary representing an item from ``data`` from the JSON
+contained in a pyramid request while the ``alter_result`` stage from the loop
+workflow will pass a :class:`workflow.ResultObject`, which is a wrapper around a
+sqlAlchemy ORM object (which you can get to as ``object_rep.object``).
+
+``view`` is the current view instance.
+
+``stage`` is the name of the current stage.
+
+``permission`` is one of ``get``, ``post``, ``patch``, or ``delete``.
+
+``target`` is a :class:`pyramid_jsonapi.permission.PermissionTarget` object.
+``target.type`` will tell you whether the current authorisation request is for
+a collection, item, or relationship and ``target.name`` will tell you the
+collection or relationship name.
+
+*TODO* ``mask`` is a work in progress. When implemented it will specify which
+attributes and relationships the permission filter should address. Any others
+might not be represented in ``object_rep`` even though an object of that class
+would usually have them. This is mainly to handle the case where the
+request specifies a sparse field set.
 
 Note that you can get the current sqlAlchemy session from
 ``view.dbsession`` (which you might need to make the queries required
@@ -437,17 +482,47 @@ for authorisation) and the pyramid request from ``view.request`` which
 should give you access to the usual things.
 
 The simplest thing that a permission filter can do is return ``True``
-(``permission_sought`` is granted for the whole object) or ``False``
-(``permission_sought`` is denied for the whole object). To control permissions
-for attributes or relationships, you must use the fuller return representation:
+(``permission`` is granted for the whole object) or ``False``
+(``permission`` is denied for the whole object). To control permissions
+for attributes or relationships, you must return a
+:class:`pyramid_jsonapi.permissions.Permission` object:
 
 .. code-block:: python
 
-  {
-    'id': True|False, # Controls visibility of / action on the whole object.
-    'attributes': {'att1', 'att2', ...}, # The set of allowed attribute names.
-    'relationships': {'rel1', 'rel2', ...}, # The set of allowed rel names.
-  }
+  from pyramid_jsonapi.permissions import Permission
+  Permission(
+    template, # A template governing which attributes and relationships are
+              # available. You should normally use view.permission_template.
+    attributes=template.attributes, # The set of allowed attribute names. The
+                                    # default is all attributes in the template.
+    relationships=template.relationships, # The set of allowed rel names.
+    id=True,  # Controls visibility of / action on the whole object.
+              # Most of the time this should be True, which is the default.
+  )
+
+The different target types are worth saying a little more about since they
+affect how your permission filter is called.
+
+  * ``target.type`` *collection* means that the operation is against a collection
+    (almost certainly a GET or a POST). ``target.name`` will hold the name of the
+    collection. The ``id`` of ``object_rep`` might not be defined (it commonly
+    won't be for POSTs). The handler calling the permission filter will not be
+    concerned with relationship authorisation and will ignore relationships
+    specified in any ``Permission`` object returned.
+  * ``target.type`` *item* means that the operation is against an item.
+    ``target.name`` will be empty (``None``). The ``id`` of ``object_rep``
+    should reliably be present. The handler calling the permission filter will
+    not be concerned with relationship authorisation and will ignore
+    relationships specified in any ``Permission`` object returned.
+  * ``target.type`` *relationship* means that the operation is against a
+    relationship. ``target.name`` will hold the name of the relationship. The
+    ``id`` of ``object_rep`` should reliably be present. The permission filter
+    will be called once for each relationship to be authorised and for each
+    item in a to_many operation (once for each item posted to a to_many
+    operation, for example). The handler calling the permission filter will
+    *only* look at whether or not the relationship in question is in the
+    returned ``Permission`` object (it will be if you just return ``True`` and
+    won't if you return ``False``).
 
 Putting that together in some examples:
 
@@ -510,12 +585,11 @@ permission filter - we must use the fuller return format.
       return True
 
     # Everyone else isn't allowed to see age.
-    return {
-      'id': True, # False would reject the whole object. Missing out the 'id'
-                  # key is the same as specifying True.
-      'attributes': set(view.all_attributes) - 'age',
-      'relationships': True # The same as allowing all attributes.
-    }
+    return Permission.subtractive(
+      # subtractive constructs an object by subtracting sets.
+      view.permission_template,
+      {'age'}  # 'age' will be removed from the set of attributes.
+    )
 
   pj.view_classes[models.Person].register_permission_filter(
     ['get'],
