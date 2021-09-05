@@ -68,6 +68,7 @@ def get_related(obj, rel_name, stages, include_path=None):
     is_included = view.path_is_included(rel_include_path)
     if rel.queryable:
         query = view.related_query(obj.object, rel, full_object=is_included)
+        # print(query)
         query = wf.execute_stage(
             view, stages, 'alter_related_query', query
         )

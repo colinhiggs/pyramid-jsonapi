@@ -188,8 +188,6 @@ class DBTestBase(unittest.TestCase):
 class TestTmp(DBTestBase):
     '''To isolate tests so they can be run individually during development.'''
 
-    def test_rel_many_to_many_self(self):
-        pass
 
 class TestPermissions(DBTestBase):
     '''Test permission handling mechanisms.
@@ -1018,6 +1016,17 @@ class TestRelationships(DBTestBase):
             self.assertIsInstance(obj['data'], dict)
             self.assertIn('type', obj['data'])
             self.assertIn('id', obj['data'])
+
+    def test_rel_many_to_many_self(self):
+        """
+        Should get items from a self referential many to many relationship.
+        """
+        test_app = self.test_app()
+        data = test_app.get("/jobs/1").json_body['data']
+        minions = {ri['id'] for ri in data['relationships']['minions']['data']}
+        bosses = {ri['id'] for ri in data['relationships']['bosses']['data']}
+        self.assertEqual(minions, {'2', '3'})
+        self.assertEqual(bosses, set())
 
     @parameterized.expand(rel_infos, doc_func=rels_doc_func)
     def test_rels_related_get(self, src, tgt, comment):

@@ -913,16 +913,17 @@ class CollectionViewBase:
         """
         rel_view = self.view_instance(rel.tgt_class)
         proxy = rel.obj.for_class(rel.src_class)
+        src_class = rel.src_class if rel.src_class is not rel.tgt_class else aliased(rel.src_class)
         query = self. dbsession.query(
             rel.tgt_class
         ).select_from(
-            rel.src_class
+            src_class
         ).join(
             proxy.local_attr
         ).join(
             proxy.remote_attr
         ).filter(
-            self.id_col(rel.src_class) == obj_id
+            self.id_col(src_class) == obj_id
         )
         if full_object:
             query = query.options(
@@ -955,7 +956,8 @@ class CollectionViewBase:
             getattr(col, 'table', None)
             for col in relationship.obj.local_remote_pairs[0]
         ]
-        if tables[0] is tables[1]:
+        # if tables[0] is tables[1]:
+        if rel_model is self.model:
             model = aliased(self.model)
         else:
             model = self.model
