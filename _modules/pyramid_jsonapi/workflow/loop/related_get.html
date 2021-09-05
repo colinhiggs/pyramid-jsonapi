@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>pyramid_jsonapi.workflow.loop.related_get &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  <title>pyramid_jsonapi.workflow.loop.related_get &mdash; pyramid_jsonapi 2.2.2 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.2.2
               </div>
             
           
@@ -208,8 +208,6 @@
         <span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">rel</span><span class="o">.</span><span class="n">queryable</span><span class="p">:</span>
             <span class="n">query</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">rel_view</span><span class="o">.</span><span class="n">query_add_sorting</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
             <span class="n">query</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">rel_view</span><span class="o">.</span><span class="n">query_add_filtering</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-            <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="n">qinfo</span><span class="p">[</span><span class="s1">&#39;page[offset]&#39;</span><span class="p">])</span>
-            <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">qinfo</span><span class="p">[</span><span class="s1">&#39;page[limit]&#39;</span><span class="p">])</span>
             <span class="n">query</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">execute_stage</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">rel_view</span><span class="p">,</span> <span class="n">rel_stages</span><span class="p">,</span> <span class="s1">&#39;alter_query&#39;</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
             <span class="n">rel_objs_iterable</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">wrapped_query_all</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

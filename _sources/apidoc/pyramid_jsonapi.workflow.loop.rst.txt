@@ -9,9 +9,9 @@ Submodules
 
    pyramid_jsonapi.workflow.loop.collection_get
    pyramid_jsonapi.workflow.loop.collection_post
-   pyramid_jsonapi.workflow.loop.delete
-   pyramid_jsonapi.workflow.loop.get
-   pyramid_jsonapi.workflow.loop.patch
+   pyramid_jsonapi.workflow.loop.item_delete
+   pyramid_jsonapi.workflow.loop.item_get
+   pyramid_jsonapi.workflow.loop.item_patch
    pyramid_jsonapi.workflow.loop.related_get
    pyramid_jsonapi.workflow.loop.relationships_delete
    pyramid_jsonapi.workflow.loop.relationships_get

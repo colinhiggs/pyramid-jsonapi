@@ -1,38 +1,44 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>pyramid_jsonapi &mdash; pyramid_jsonapi 2.1.14 documentation</title>
+  <title>pyramid_jsonapi &mdash; pyramid_jsonapi 2.2.2 documentation</title>
   
-
-  
-  
-  
-  
-
-  
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
 </head>
@@ -58,7 +64,7 @@
             
             
               <div class="version">
-                2.1.14
+                2.2.2
               </div>
             
           
@@ -75,6 +81,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -96,6 +103,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -130,11 +138,13 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="index.html">Module code</a> &raquo;</li>
         
@@ -193,16 +203,31 @@
 <span class="kn">import</span> <span class="nn">sqlalchemy</span>
 <span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="kn">import</span> <span class="n">DBAPIError</span>
 <span class="kn">from</span> <span class="nn">sqlalchemy.ext.associationproxy</span> <span class="kn">import</span> <span class="n">ASSOCIATION_PROXY</span>
-<span class="kn">from</span> <span class="nn">sqlalchemy.ext.declarative.api</span> <span class="kn">import</span> <span class="n">DeclarativeMeta</span>
+<span class="c1"># DeclarativeMeta moved between sqlalchemy 1.3 and 1.4</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># &lt;= 1.3</span>
+    <span class="kn">from</span> <span class="nn">sqlalchemy.ext.declarative.api</span> <span class="kn">import</span> <span class="n">DeclarativeMeta</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c1"># 1.4+</span>
+    <span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">DeclarativeMeta</span>
 <span class="kn">from</span> <span class="nn">sqlalchemy.ext.hybrid</span> <span class="kn">import</span> <span class="n">hybrid_property</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm.interfaces</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MANYTOMANY</span><span class="p">,</span>
+    <span class="n">MANYTOONE</span><span class="p">,</span>
+    <span class="n">ONETOMANY</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">sqlalchemy.orm.relationships</span> <span class="kn">import</span> <span class="n">RelationshipProperty</span>
 
 <span class="kn">import</span> <span class="nn">pyramid_jsonapi.collection_view</span>
 <span class="kn">import</span> <span class="nn">pyramid_jsonapi.endpoints</span>
 <span class="kn">import</span> <span class="nn">pyramid_jsonapi.filters</span>
-<span class="kn">import</span> <span class="nn">pyramid_jsonapi.jsonapi</span>
 <span class="kn">import</span> <span class="nn">pyramid_jsonapi.metadata</span>
+<span class="kn">from</span> <span class="nn">pyramid_jsonapi.permissions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Permission</span><span class="p">,</span>
+    <span class="n">Targets</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">import</span> <span class="nn">pyramid_jsonapi.version</span>
+<span class="kn">import</span> <span class="nn">pyramid_jsonapi.workflow</span> <span class="k">as</span> <span class="nn">wf</span>
 
 <span class="n">__version__</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">get_version</span><span class="p">()</span>
 
@@ -226,6 +251,7 @@
         <span class="s1">&#39;allow_client_ids&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Allow client to specify resource ids.&#39;</span><span class="p">},</span>
         <span class="s1">&#39;api_version&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;API version for prefixing endpoints and metadata generation.&#39;</span><span class="p">},</span>
         <span class="s1">&#39;expose_foreign_keys&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Expose foreign key fields in JSON.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;inform_of_get_authz_failures&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;True = return information in meta about authz failures; False = pretend items don</span><span class="se">\&#39;</span><span class="s1">t exist&#39;</span><span class="p">},</span>
         <span class="s1">&#39;metadata_endpoints&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Should /metadata endpoint be enabled?&#39;</span><span class="p">},</span>
         <span class="s1">&#39;metadata_modules&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;JSONSchema OpenAPI&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Modules to load to provide metadata endpoints (defaults are modules provided in the metadata package).&#39;</span><span class="p">},</span>
         <span class="s1">&#39;openapi_file&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;File containing OpenAPI data (YAML or JSON)&#39;</span><span class="p">},</span>
@@ -241,8 +267,18 @@
         <span class="s1">&#39;schema_validation&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;jsonschema schema validation enabled?&#39;</span><span class="p">},</span>
         <span class="s1">&#39;debug_endpoints&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Whether or not to add debugging endpoints.&#39;</span><span class="p">},</span>
         <span class="s1">&#39;debug_test_data_module&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;test_data&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module responsible for populating test data.&#39;</span><span class="p">},</span>
-        <span class="s1">&#39;debug_meta&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Whether or not to add debug information to the meta key in returned JSON.&#39;</span><span class="p">},</span>
         <span class="s1">&#39;debug_traceback&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Whether or not to add a stack traceback to errors.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;debug_meta&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Whether or not to add debug information to the meta key in returned JSON.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_item_get&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.item_get&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the item_get workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_item_patch&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.item_patch&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the item_patch workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_item_delete&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.item_delete&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the item_delete workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_collection_get&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.collection_get&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the collection_get workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_collection_post&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.collection_post&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the collection_post workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_related_get&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.related_get&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the related_get workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_relationships_get&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.relationships_get&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the relationships_get workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_relationships_post&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.relationships_post&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the relationships_post workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_relationships_patch&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.relationships_patch&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the relationships_patch workflow.&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;workflow_relationships_delete&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;pyramid_jsonapi.workflow.loop.relationships_delete&#39;</span><span class="p">,</span> <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;Module implementing the relationships_delete workflow.&#39;</span><span class="p">},</span>
     <span class="p">}</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">get_dbsession</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -384,24 +420,24 @@
 <span class="sd">                ``collection_view_factory()``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="c1"># Find the primary key column from the model and use as &#39;id_col_name&#39;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">keycols</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">primary_key</span>
-        <span class="k">except</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">exc</span><span class="o">.</span><span class="n">NoInspectionAvailable</span><span class="p">:</span>
-            <span class="c1"># Trying to inspect the declarative_base() raises this exception. We</span>
-            <span class="c1"># don&#39;t want to add it to the API.</span>
-            <span class="k">return</span>
-        <span class="c1"># Only deal with one primary key column.</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keycols</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
-                <span class="s1">&#39;Model </span><span class="si">{}</span><span class="s1"> has more than one primary key.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">model</span><span class="o">.</span><span class="vm">__name__</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;__pyramid_jsonapi__&#39;</span><span class="p">):</span>
             <span class="n">model</span><span class="o">.</span><span class="n">__pyramid_jsonapi__</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="k">if</span> <span class="s1">&#39;id_col_name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">__pyramid_jsonapi__</span><span class="p">:</span>
+            <span class="c1"># Find the primary key column from the model and use as &#39;id_col_name&#39;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">keycols</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">primary_key</span>
+            <span class="k">except</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">exc</span><span class="o">.</span><span class="n">NoInspectionAvailable</span><span class="p">:</span>
+                <span class="c1"># Trying to inspect the declarative_base() raises this exception.</span>
+                <span class="c1"># We don&#39;t want to add it to the API.</span>
+                <span class="k">return</span>
+            <span class="c1"># Only deal with one primary key column.</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keycols</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s1">&#39;Model </span><span class="si">{}</span><span class="s1"> has more than one primary key.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">.</span><span class="vm">__name__</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
             <span class="n">model</span><span class="o">.</span><span class="n">__pyramid_jsonapi__</span><span class="p">[</span><span class="s1">&#39;id_col_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keycols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
 
         <span class="c1"># Create a view class for use in the various add_view() calls below.</span>
@@ -418,6 +454,8 @@
         <span class="n">view</span><span class="o">.</span><span class="n">default_limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">paging_default_limit</span><span class="p">)</span>
         <span class="n">view</span><span class="o">.</span><span class="n">max_limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">paging_max_limit</span><span class="p">)</span>
 
+        <span class="k">for</span> <span class="n">vm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">http_to_view_methods</span><span class="p">[</span><span class="s1">&#39;all&#39;</span><span class="p">]:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">vm</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">make_method</span><span class="p">(</span><span class="n">vm</span><span class="p">,</span> <span class="bp">self</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">add_routes_views</span><span class="p">(</span><span class="n">view</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PyramidJSONAPI.collection_view_factory"><a class="viewcode-back" href="../apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.collection_view_factory">[docs]</a>    <span class="k">def</span> <span class="nf">collection_view_factory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">collection_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">expose_fields</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -437,6 +475,7 @@
         <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;key_column&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">primary_key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;collection_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">collection_name</span> <span class="ow">or</span> <span class="n">model</span><span class="o">.</span><span class="n">__tablename__</span>
         <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;exposed_fields&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">expose_fields</span>
+
         <span class="c1"># atts is ordinary attributes of the model.</span>
         <span class="c1"># hybrid_atts is any hybrid attributes defined.</span>
         <span class="c1"># fields is atts + hybrid_atts + relationships</span>
@@ -456,11 +495,16 @@
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">all_orm_descriptors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">hybrid_property</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">expose_fields</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">item</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="n">expose_fields</span><span class="p">:</span>
-                    <span class="n">hybrid_atts</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
-                    <span class="n">fields</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                    <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pyramid_jsonapi&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;relationship&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+                        <span class="n">rels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">hybrid_atts</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="n">fields</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
             <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">extension_type</span> <span class="ow">is</span> <span class="n">ASSOCIATION_PROXY</span><span class="p">:</span>
                 <span class="n">rels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
         <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;hybrid_attributes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hybrid_atts</span>
+        <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;all_attributes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">atts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;all_attributes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">hybrid_atts</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">rel</span> <span class="ow">in</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">relationships</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">expose_fields</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">expose_fields</span><span class="p">:</span>
                 <span class="n">rels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">rel</span>
@@ -468,24 +512,16 @@
         <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">view_rels</span>
         <span class="n">fields</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rels</span><span class="p">)</span>
         <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;fields&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fields</span>
-
-        <span class="c1"># All callbacks have the current view as the first argument. The comments</span>
-        <span class="c1"># below detail subsequent args.</span>
-        <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;callbacks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;after_serialise_identifier&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>  <span class="c1"># args: identifier(dict)</span>
-            <span class="s1">&#39;after_serialise_object&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>      <span class="c1"># args: object(dict)</span>
-            <span class="s1">&#39;after_get&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>                   <span class="c1"># args: document(dict)</span>
-            <span class="s1">&#39;before_patch&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>                <span class="c1"># args: partial_object(dict)</span>
-            <span class="s1">&#39;before_delete&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>               <span class="c1"># args: item(sqlalchemy)</span>
-            <span class="s1">&#39;after_collection_get&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>        <span class="c1"># args: document(dict)</span>
-            <span class="s1">&#39;before_collection_post&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>      <span class="c1"># args: object(dict)</span>
-            <span class="s1">&#39;after_related_get&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>           <span class="c1"># args: document(dict)</span>
-            <span class="s1">&#39;after_relationships_get&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>     <span class="c1"># args: document(dict)</span>
-            <span class="s1">&#39;before_relationships_post&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>   <span class="c1"># args: object(dict)</span>
-            <span class="s1">&#39;before_relationships_patch&#39;</span><span class="p">:</span> <span class="n">deque</span><span class="p">(),</span>  <span class="c1"># args: partial_object(dict)</span>
-            <span class="s1">&#39;before_relationships_delete&#39;</span><span class="p">:</span>
-                <span class="n">deque</span><span class="p">(),</span>                            <span class="c1"># args: parent_item(sqlalchemy)</span>
+        <span class="n">vm_map</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">http_to_view_methods</span>
+        <span class="p">)</span>
+        <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;permission_filters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">hm</span><span class="p">:</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="p">{}</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">Targets</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">hm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">http_methods</span>
         <span class="p">}</span>
+        <span class="k">for</span> <span class="n">vm</span> <span class="ow">in</span> <span class="n">vm_map</span><span class="p">[</span><span class="s1">&#39;all&#39;</span><span class="p">]:</span>
+            <span class="n">vm_map</span><span class="p">[</span><span class="n">vm</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">vm</span><span class="p">}</span>
+        <span class="n">class_attrs</span><span class="p">[</span><span class="s1">&#39;methods&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vm_map</span>
 
         <span class="n">view_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span>
             <span class="s1">&#39;CollectionView&lt;</span><span class="si">{}</span><span class="s1">&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">collection_name</span><span class="p">),</span>
@@ -496,21 +532,41 @@
         <span class="c1"># because they need a reference to it.</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">rel</span> <span class="ow">in</span> <span class="n">rels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">view_rels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">StdRelationship</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">view_class</span><span class="p">)</span>
+        <span class="n">view_class</span><span class="o">.</span><span class="n">permission_template</span> <span class="o">=</span> <span class="n">Permission</span><span class="o">.</span><span class="n">template_from_view</span><span class="p">(</span><span class="n">view_class</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">view_class</span></div>
 
-<div class="viewcode-block" id="PyramidJSONAPI.append_callback_set_to_all_views"><a class="viewcode-back" href="../apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.append_callback_set_to_all_views">[docs]</a>    <span class="k">def</span> <span class="nf">append_callback_set_to_all_views</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_name</span><span class="p">):</span>  <span class="c1"># pylint:disable=invalid-name</span>
-        <span class="sd">&quot;&quot;&quot;Append a named set of callbacks to all view classes.</span>
+<div class="viewcode-block" id="PyramidJSONAPI.enable_permission_handlers"><a class="viewcode-back" href="../apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.enable_permission_handlers">[docs]</a>    <span class="k">def</span> <span class="nf">enable_permission_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage_names</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Add permission handlers to all views.</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            set_name (str): key in ``callback_sets``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">view_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">view_classes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="n">view_class</span><span class="o">.</span><span class="n">append_callback_set</span><span class="p">(</span><span class="n">set_name</span><span class="p">)</span></div></div>
+<span class="sd">        Permission handlers are not added to views by default for performance</span>
+<span class="sd">        reasons. Call this function to add permission handlers to *all* views</span>
+<span class="sd">        for the stage names specified.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            stage_names: an iterable of stage names to enable.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># Build a set of all the end points from permissions.</span>
+        <span class="n">ep_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_data</span><span class="o">.</span><span class="n">http_to_view_methods</span><span class="p">[</span><span class="s1">&#39;all&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Add permission handlers for all view classes.</span>
+        <span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">view_class</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">view_classes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">ep_name</span> <span class="ow">in</span> <span class="n">ep_names</span><span class="p">:</span>
+                <span class="n">ep_func</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">view_class</span><span class="p">,</span> <span class="n">ep_name</span><span class="p">)</span>
+                <span class="n">ep_func</span><span class="o">.</span><span class="n">stages</span><span class="p">[</span><span class="s1">&#39;alter_document&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">wf</span><span class="o">.</span><span class="n">sh_alter_document_add_denied</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">stage_name</span> <span class="ow">in</span> <span class="n">stage_names</span><span class="p">:</span>
+                    <span class="n">view_class</span><span class="o">.</span><span class="n">add_stage_handler</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">ep_name</span><span class="p">],</span> <span class="p">[</span><span class="n">stage_name</span><span class="p">],</span>
+                        <span class="n">view_class</span><span class="o">.</span><span class="n">permission_handler</span><span class="p">(</span><span class="n">ep_name</span><span class="p">,</span> <span class="n">stage_name</span><span class="p">)</span>
+                    <span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="StdRelationship"><a class="viewcode-back" href="../apidoc/pyramid_jsonapi.html#pyramid_jsonapi.StdRelationship">[docs]</a><span class="k">class</span> <span class="nc">StdRelationship</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Standardise access to relationship informationself.</span>
+    <span class="sd">&quot;&quot;&quot;Standardise access to relationship information.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        obj: the actual object representing the relationship.</span>
@@ -524,21 +580,43 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">RelationshipProperty</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">direction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_direction</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tgt_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_tgt_class</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instrumented</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_class</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">queryable</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">hybrid_property</span><span class="p">):</span>
+            <span class="n">pj_info</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;pyramid_jsonapi&#39;</span><span class="p">][</span><span class="s1">&#39;relationship&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">direction</span> <span class="o">=</span> <span class="n">pj_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;direction&#39;</span><span class="p">,</span> <span class="n">ONETOMANY</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">queryable</span> <span class="o">=</span> <span class="n">pj_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;queryable&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">tgt_class</span> <span class="o">=</span> <span class="n">pj_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tgt_class&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tgt_class</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">mapper</span> <span class="ow">in</span> <span class="n">view_class</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">mappers</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">mapper</span><span class="o">.</span><span class="n">class_</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="n">tgt_class</span><span class="p">:</span>
+                        <span class="n">tgt_class</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="n">class_</span>
+                        <span class="k">break</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tgt_class</span> <span class="o">=</span> <span class="n">tgt_class</span>
         <span class="k">elif</span> <span class="n">obj</span><span class="o">.</span><span class="n">extension_type</span> <span class="ow">is</span> <span class="n">ASSOCIATION_PROXY</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">direction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proxy_direction</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tgt_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proxy_tgt_class</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">queryable</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rel_direction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">direction</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">to_many</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">direction</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ONETOMANY</span><span class="p">,</span> <span class="n">MANYTOMANY</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">to_one</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_many</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">proxy_direction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">for_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_class</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ps</span><span class="o">.</span><span class="n">scalar</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">orm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">MANYTOONE</span>
+            <span class="k">return</span> <span class="n">MANYTOONE</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">orm</span><span class="o">.</span><span class="n">interfaces</span><span class="o">.</span><span class="n">MANYTOMANY</span>
+            <span class="k">return</span> <span class="n">MANYTOMANY</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rel_tgt_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -547,7 +625,62 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">proxy_tgt_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">for_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_class</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ps</span><span class="o">.</span><span class="n">target_class</span><span class="p">,</span> <span class="n">ps</span><span class="o">.</span><span class="n">value_attr</span><span class="p">)</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">class_</span></div>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ps</span><span class="o">.</span><span class="n">target_class</span><span class="p">,</span> <span class="n">ps</span><span class="o">.</span><span class="n">value_attr</span><span class="p">)</span><span class="o">.</span><span class="n">mapper</span><span class="o">.</span><span class="n">class_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">rel_mirror_relationship</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tgt_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view_class</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">view_classes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">]</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">rname</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">tgt_view</span><span class="o">.</span><span class="n">relationships</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">RelationshipProperty</span><span class="p">):</span>
+                <span class="c1"># Making the assumption that the mirror of any normal rel</span>
+                <span class="c1"># will be another normal rel.</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">direction</span> <span class="ow">is</span> <span class="n">MANYTOMANY</span><span class="p">:</span>
+                <span class="c1"># For MANYTOMANY we need to look at the secondaryjoin.</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">secondaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">secondaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">secondaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">secondaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span>
+                <span class="p">):</span>
+                    <span class="k">return</span> <span class="n">StdRelationship</span><span class="p">(</span><span class="n">rname</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">tgt_view</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span>
+                <span class="p">):</span>
+                    <span class="c1"># Done.</span>
+                    <span class="k">return</span> <span class="n">StdRelationship</span><span class="p">(</span><span class="n">rname</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">tgt_view</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">proxy_mirror_relationship</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tgt_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view_class</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">view_classes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tgt_class</span><span class="p">]</span>
+        <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">for_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_class</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rname</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">tgt_view</span><span class="o">.</span><span class="n">relationships</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">extension_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ASSOCIATION_PROXY</span><span class="p">:</span>
+                <span class="c1"># Assume that the mirror of any association proxy rel</span>
+                <span class="c1"># will be another association proxy.</span>
+                <span class="k">continue</span>
+            <span class="n">rpi</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">for_class</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">src_class</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">pi</span><span class="o">.</span><span class="n">local_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="o">==</span> <span class="n">rpi</span><span class="o">.</span><span class="n">remote_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="ow">and</span>
+                <span class="n">pi</span><span class="o">.</span><span class="n">local_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="o">==</span> <span class="n">rpi</span><span class="o">.</span><span class="n">remote_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="ow">and</span>
+                <span class="n">pi</span><span class="o">.</span><span class="n">remote_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="o">==</span> <span class="n">rpi</span><span class="o">.</span><span class="n">local_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">left</span> <span class="ow">and</span>
+                <span class="n">pi</span><span class="o">.</span><span class="n">remote_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span> <span class="o">==</span> <span class="n">rpi</span><span class="o">.</span><span class="n">local_attr</span><span class="o">.</span><span class="n">property</span><span class="o">.</span><span class="n">primaryjoin</span><span class="o">.</span><span class="n">right</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="n">StdRelationship</span><span class="p">(</span><span class="n">rname</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">tgt_view</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mirror_relationship</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">RelationshipProperty</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel_mirror_relationship</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">extension_type</span> <span class="ow">is</span> <span class="n">ASSOCIATION_PROXY</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proxy_mirror_relationship</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="DebugView"><a class="viewcode-back" href="../apidoc/pyramid_jsonapi.html#pyramid_jsonapi.DebugView">[docs]</a><span class="k">class</span> <span class="nc">DebugView</span><span class="p">:</span>
@@ -606,20 +739,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Colin Higgs
+        &#169; Copyright 2016, Colin Higgs.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -627,7 +765,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

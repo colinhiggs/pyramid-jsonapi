@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Index &mdash; pyramid_jsonapi 2.2.1 documentation</title>
+  <title>Index &mdash; pyramid_jsonapi 2.2.2 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                2.2.1
+                2.2.2
               </div>
             
           
@@ -212,12 +212,18 @@
       <li><a href="apidoc/pyramid_jsonapi.callbacks_doc.html#pyramid_jsonapi.callbacks_doc.after_serialise_object">after_serialise_object() (in module pyramid_jsonapi.callbacks_doc)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.all_attributes">all_attributes (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
+
+      <ul>
+        <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.TestView.all_attributes">(pyramid_jsonapi.unit_tests.TestView attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.allowed_fields">allowed_fields (pyramid_jsonapi.collection_view.CollectionViewBase property)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.allowed_object">allowed_object() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.allowed_rel_changes">allowed_rel_changes() (in module pyramid_jsonapi.workflow)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.allowed_requested_query_columns">allowed_requested_query_columns (pyramid_jsonapi.collection_view.CollectionViewBase property)</a>
 </li>
@@ -226,8 +232,6 @@
       <li><a href="apidoc/pyramid_jsonapi.workflow.loop.html#pyramid_jsonapi.workflow.loop.altered_objects_iterator">altered_objects_iterator() (in module pyramid_jsonapi.workflow.loop)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.api">api (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
-</li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ar_check_mirror_rel_perms">ar_check_mirror_rel_perms() (in module pyramid_jsonapi.workflow)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.association_proxy_query">association_proxy_query() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
 </li>
@@ -285,10 +289,10 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.collection_view_factory">collection_view_factory() (pyramid_jsonapi.PyramidJSONAPI method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase">CollectionViewBase (class in pyramid_jsonapi.collection_view)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.compute_meta">compute_meta() (pyramid_jsonapi.workflow.Results method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.config_defaults">config_defaults (pyramid_jsonapi.PyramidJSONAPI attribute)</a>
@@ -300,6 +304,8 @@
       <li><a href="apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.RoutePatternConstructor.create_pattern">create_pattern() (pyramid_jsonapi.endpoints.RoutePatternConstructor method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.PyramidJSONAPI.create_resource">create_resource() (pyramid_jsonapi.PyramidJSONAPI method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.current_related_ris">current_related_ris() (in module pyramid_jsonapi.workflow)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -371,6 +377,8 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.follow_rel">follow_rel() (in module pyramid_jsonapi.workflow)</a>
 </li>
+      <li><a href="apidoc/pyramid_jsonapi.resource.html#pyramid_jsonapi.resource.ResourceIndicator.from_dict">from_dict() (pyramid_jsonapi.resource.ResourceIndicator class method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -383,7 +391,7 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.get_class_by_tablename">get_class_by_tablename() (in module pyramid_jsonapi)</a>
 </li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.loop.get.html#pyramid_jsonapi.workflow.loop.get.get_doc">get_doc() (in module pyramid_jsonapi.workflow.loop.get)</a>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_get.html#pyramid_jsonapi.workflow.loop.item_get.get_doc">get_doc() (in module pyramid_jsonapi.workflow.loop.item_get)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.filters.html#pyramid_jsonapi.filters.FilterRegistry.get_filter">get_filter() (pyramid_jsonapi.filters.FilterRegistry method)</a>
 </li>
@@ -417,10 +425,12 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.http_to_view_methods">http_to_view_methods (pyramid_jsonapi.endpoints.EndpointData property)</a>
+      <li><a href="apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.http_methods">http_methods (pyramid_jsonapi.endpoints.EndpointData property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidoc/pyramid_jsonapi.endpoints.html#pyramid_jsonapi.endpoints.EndpointData.http_to_view_methods">http_to_view_methods (pyramid_jsonapi.endpoints.EndpointData property)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.hybrid_attributes">hybrid_attributes (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
 </li>
   </ul></td>
@@ -429,16 +439,18 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidoc/pyramid_jsonapi.resource.html#pyramid_jsonapi.resource.ResourceIndicator.id">id (pyramid_jsonapi.resource.ResourceIndicator attribute)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.id_col">id_col() (pyramid_jsonapi.collection_view.CollectionViewBase static method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.identifier">identifier() (pyramid_jsonapi.workflow.ResultObject method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Rejected.identifier_to_str">identifier_to_str() (pyramid_jsonapi.workflow.Rejected method)</a>
 </li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.identifiers">identifiers() (pyramid_jsonapi.workflow.Results method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.identifiers">identifiers() (pyramid_jsonapi.workflow.Results method)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.included">included() (pyramid_jsonapi.workflow.Results method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.included_dict">included_dict (pyramid_jsonapi.workflow.ResultObject property)</a>
@@ -495,6 +507,8 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.DebugView.metadata">metadata (pyramid_jsonapi.DebugView attribute)</a>
 </li>
+      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.methods">methods (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.StdRelationship.mirror_relationship">mirror_relationship (pyramid_jsonapi.StdRelationship property)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.model">model() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
@@ -521,6 +535,10 @@
 </li>
         <li><a href="apidoc/pyramid_jsonapi.metadata.OpenAPI.html#module-pyramid_jsonapi.metadata.OpenAPI">pyramid_jsonapi.metadata.OpenAPI</a>
 </li>
+        <li><a href="apidoc/pyramid_jsonapi.resource.html#module-pyramid_jsonapi.resource">pyramid_jsonapi.resource</a>
+</li>
+        <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#module-pyramid_jsonapi.unit_tests">pyramid_jsonapi.unit_tests</a>
+</li>
         <li><a href="apidoc/pyramid_jsonapi.version.html#module-pyramid_jsonapi.version">pyramid_jsonapi.version</a>
 </li>
         <li><a href="apidoc/pyramid_jsonapi.workflow.html#module-pyramid_jsonapi.workflow">pyramid_jsonapi.workflow</a>
@@ -531,11 +549,11 @@
 </li>
         <li><a href="apidoc/pyramid_jsonapi.workflow.loop.collection_post.html#module-pyramid_jsonapi.workflow.loop.collection_post">pyramid_jsonapi.workflow.loop.collection_post</a>
 </li>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.delete.html#module-pyramid_jsonapi.workflow.loop.delete">pyramid_jsonapi.workflow.loop.delete</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_delete.html#module-pyramid_jsonapi.workflow.loop.item_delete">pyramid_jsonapi.workflow.loop.item_delete</a>
 </li>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.get.html#module-pyramid_jsonapi.workflow.loop.get">pyramid_jsonapi.workflow.loop.get</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_get.html#module-pyramid_jsonapi.workflow.loop.item_get">pyramid_jsonapi.workflow.loop.item_get</a>
 </li>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.patch.html#module-pyramid_jsonapi.workflow.loop.patch">pyramid_jsonapi.workflow.loop.patch</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_patch.html#module-pyramid_jsonapi.workflow.loop.item_patch">pyramid_jsonapi.workflow.loop.item_patch</a>
 </li>
         <li><a href="apidoc/pyramid_jsonapi.workflow.loop.related_get.html#module-pyramid_jsonapi.workflow.loop.related_get">pyramid_jsonapi.workflow.loop.related_get</a>
 </li>
@@ -588,7 +606,7 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.patch_old">patch_old() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
 </li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.patch_relationship_ar_helper">patch_relationship_ar_helper() (in module pyramid_jsonapi.workflow)</a>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.patch_rel_new_data">patch_rel_new_data() (in module pyramid_jsonapi.workflow)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.path_is_included">path_is_included() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
 </li>
@@ -606,7 +624,11 @@
         <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.permission_handler">(pyramid_jsonapi.collection_view.CollectionViewBase class method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.permission_to_dict">permission_to_dict() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
+      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.permission_object">permission_object() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.permission_template">permission_template (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions">Permissions (class in pyramid_jsonapi.unit_tests)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.DebugView.populate">populate() (pyramid_jsonapi.DebugView method)</a>
 </li>
@@ -675,6 +697,20 @@
 </li>
       </ul></li>
       <li>
+    pyramid_jsonapi.resource
+
+      <ul>
+        <li><a href="apidoc/pyramid_jsonapi.resource.html#module-pyramid_jsonapi.resource">module</a>
+</li>
+      </ul></li>
+      <li>
+    pyramid_jsonapi.unit_tests
+
+      <ul>
+        <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#module-pyramid_jsonapi.unit_tests">module</a>
+</li>
+      </ul></li>
+      <li>
     pyramid_jsonapi.version
 
       <ul>
@@ -710,24 +746,24 @@
 </li>
       </ul></li>
       <li>
-    pyramid_jsonapi.workflow.loop.delete
+    pyramid_jsonapi.workflow.loop.item_delete
 
       <ul>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.delete.html#module-pyramid_jsonapi.workflow.loop.delete">module</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_delete.html#module-pyramid_jsonapi.workflow.loop.item_delete">module</a>
 </li>
       </ul></li>
       <li>
-    pyramid_jsonapi.workflow.loop.get
+    pyramid_jsonapi.workflow.loop.item_get
 
       <ul>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.get.html#module-pyramid_jsonapi.workflow.loop.get">module</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_get.html#module-pyramid_jsonapi.workflow.loop.item_get">module</a>
 </li>
       </ul></li>
       <li>
-    pyramid_jsonapi.workflow.loop.patch
+    pyramid_jsonapi.workflow.loop.item_patch
 
       <ul>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.patch.html#module-pyramid_jsonapi.workflow.loop.patch">module</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_patch.html#module-pyramid_jsonapi.workflow.loop.item_patch">module</a>
 </li>
       </ul></li>
       <li>
@@ -815,6 +851,8 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.StdRelationship.rel_mirror_relationship">rel_mirror_relationship (pyramid_jsonapi.StdRelationship property)</a>
 </li>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.rel_patch_to_actions">rel_patch_to_actions() (in module pyramid_jsonapi.workflow)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.StdRelationship.rel_tgt_class">rel_tgt_class (pyramid_jsonapi.StdRelationship property)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.rel_view">rel_view (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
@@ -825,10 +863,14 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.related_query">related_query() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
 </li>
+      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.relationships">relationships (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
+
+      <ul>
+        <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.TestView.relationships">(pyramid_jsonapi.unit_tests.TestView attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.relationships">relationships (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
-</li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.relationships_delete_old">relationships_delete_old() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.relationships_get_old">relationships_get_old() (pyramid_jsonapi.collection_view.CollectionViewBase method)</a>
@@ -859,6 +901,8 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.resource_attributes_view">resource_attributes_view() (pyramid_jsonapi.metadata.JSONSchema.JSONSchema method)</a>
 </li>
+      <li><a href="apidoc/pyramid_jsonapi.resource.html#pyramid_jsonapi.resource.ResourceIndicator">ResourceIndicator (class in pyramid_jsonapi.resource)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject">ResultObject (class in pyramid_jsonapi.workflow)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results">Results (class in pyramid_jsonapi.workflow)</a>
@@ -884,6 +928,8 @@
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.Results.serialise_object_with">serialise_object_with() (pyramid_jsonapi.workflow.Results method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.settings">settings (pyramid_jsonapi.collection_view.CollectionViewBase attribute)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.setUp">setUp() (pyramid_jsonapi.unit_tests.Permissions method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.sh_alter_document_add_denied">sh_alter_document_add_denied() (in module pyramid_jsonapi.workflow)</a>
 </li>
@@ -913,7 +959,7 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_get_alter_document">shp_get_alter_document() (in module pyramid_jsonapi.workflow)</a>
 </li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.loop.html#pyramid_jsonapi.workflow.loop.shp_get_alter_result">shp_get_alter_result() (in module pyramid_jsonapi.workflow.loop)</a>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.loop.html#pyramid_jsonapi.workflow.loop.shp_get_item_alter_result">shp_get_item_alter_result() (in module pyramid_jsonapi.workflow.loop)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.shp_patch_alter_request">shp_patch_alter_request() (in module pyramid_jsonapi.workflow)</a>
 </li>
@@ -941,20 +987,58 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.template">template() (pyramid_jsonapi.metadata.JSONSchema.JSONSchema method)</a>
 </li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_empty">test_create_empty() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_no_template">test_create_no_template() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_subtractive">test_create_subtractive() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_with_attributes">test_create_with_attributes() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_with_bool_attributes">test_create_with_bool_attributes() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_with_false_id">test_create_with_false_id() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_with_incorrect_atts">test_create_with_incorrect_atts() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_with_incorrect_rels">test_create_with_incorrect_rels() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_create_with_rels">test_create_with_rels() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.DebugView.test_data">test_data (pyramid_jsonapi.DebugView attribute)</a>
 </li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.to_dict">to_dict() (pyramid_jsonapi.workflow.ResultObject method)</a>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_op_and">test_op_and() (pyramid_jsonapi.unit_tests.Permissions method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_op_or">test_op_or() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_op_sub">test_op_sub() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.Permissions.test_template_from_view">test_template_from_view() (pyramid_jsonapi.unit_tests.Permissions method)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.unit_tests.html#pyramid_jsonapi.unit_tests.TestView">TestView (class in pyramid_jsonapi.unit_tests)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.resource.html#pyramid_jsonapi.resource.ResourceIndicator.to_dict">to_dict() (pyramid_jsonapi.resource.ResourceIndicator method)</a>
+
+      <ul>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.to_dict">(pyramid_jsonapi.workflow.ResultObject method)</a>
+</li>
+      </ul></li>
       <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.StdRelationship.to_many">to_many (pyramid_jsonapi.StdRelationship property)</a>
+</li>
+      <li><a href="apidoc/pyramid_jsonapi.html#pyramid_jsonapi.StdRelationship.to_one">to_one (pyramid_jsonapi.StdRelationship property)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.true_filter">true_filter() (pyramid_jsonapi.collection_view.CollectionViewBase static method)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.ResultObject.tuple_identifier">tuple_identifier (pyramid_jsonapi.workflow.ResultObject property)</a>
 </li>
       <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.Entity.type">type (pyramid_jsonapi.collection_view.Entity attribute)</a>
+
+      <ul>
+        <li><a href="apidoc/pyramid_jsonapi.resource.html#pyramid_jsonapi.resource.ResourceIndicator.type">(pyramid_jsonapi.resource.ResourceIndicator attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -973,7 +1057,7 @@
 </li>
       <li><a href="apidoc/pyramid_jsonapi.metadata.JSONSchema.html#pyramid_jsonapi.metadata.JSONSchema.JSONSchema.validate">validate() (pyramid_jsonapi.metadata.JSONSchema.JSONSchema method)</a>
 </li>
-      <li><a href="apidoc/pyramid_jsonapi.workflow.loop.patch.html#pyramid_jsonapi.workflow.loop.patch.validate_patch_request">validate_patch_request() (in module pyramid_jsonapi.workflow.loop.patch)</a>
+      <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_patch.html#pyramid_jsonapi.workflow.loop.item_patch.validate_patch_request">validate_patch_request() (in module pyramid_jsonapi.workflow.loop.item_patch)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -998,11 +1082,11 @@
       <ul>
         <li><a href="apidoc/pyramid_jsonapi.workflow.loop.collection_post.html#pyramid_jsonapi.workflow.loop.collection_post.workflow">(in module pyramid_jsonapi.workflow.loop.collection_post)</a>
 </li>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.delete.html#pyramid_jsonapi.workflow.loop.delete.workflow">(in module pyramid_jsonapi.workflow.loop.delete)</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_delete.html#pyramid_jsonapi.workflow.loop.item_delete.workflow">(in module pyramid_jsonapi.workflow.loop.item_delete)</a>
 </li>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.get.html#pyramid_jsonapi.workflow.loop.get.workflow">(in module pyramid_jsonapi.workflow.loop.get)</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_get.html#pyramid_jsonapi.workflow.loop.item_get.workflow">(in module pyramid_jsonapi.workflow.loop.item_get)</a>
 </li>
-        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.patch.html#pyramid_jsonapi.workflow.loop.patch.workflow">(in module pyramid_jsonapi.workflow.loop.patch)</a>
+        <li><a href="apidoc/pyramid_jsonapi.workflow.loop.item_patch.html#pyramid_jsonapi.workflow.loop.item_patch.workflow">(in module pyramid_jsonapi.workflow.loop.item_patch)</a>
 </li>
         <li><a href="apidoc/pyramid_jsonapi.workflow.loop.related_get.html#pyramid_jsonapi.workflow.loop.related_get.workflow">(in module pyramid_jsonapi.workflow.loop.related_get)</a>
 </li>
@@ -1017,6 +1101,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidoc/pyramid_jsonapi.collection_view.html#pyramid_jsonapi.collection_view.CollectionViewBase.wrap_permission_filter">wrap_permission_filter() (pyramid_jsonapi.collection_view.CollectionViewBase class method)</a>
+</li>
       <li><a href="apidoc/pyramid_jsonapi.workflow.html#pyramid_jsonapi.workflow.wrapped_query_all">wrapped_query_all() (in module pyramid_jsonapi.workflow)</a>
 </li>
   </ul></td>

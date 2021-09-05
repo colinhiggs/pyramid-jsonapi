@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Customising the Generated API &mdash; pyramid_jsonapi 2.2.1 documentation</title>
+  <title>Customising the Generated API &mdash; pyramid_jsonapi 2.2.2 documentation</title>
   
 
   
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                2.2.1
+                2.2.2
               </div>
             
           
@@ -260,14 +260,14 @@ This provides default values as class attributes.</p>
 <span class="c1"># Module implementing the collection_post workflow.</span>
 <span class="n">workflow_collection_post</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">collection_post</span>
 
-<span class="c1"># Module implementing the delete workflow.</span>
-<span class="n">workflow_delete</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">delete</span>
+<span class="c1"># Module implementing the item_delete workflow.</span>
+<span class="n">workflow_item_delete</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">item_delete</span>
 
-<span class="c1"># Module implementing the get workflow.</span>
-<span class="n">workflow_get</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">get</span>
+<span class="c1"># Module implementing the item_get workflow.</span>
+<span class="n">workflow_item_get</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">item_get</span>
 
-<span class="c1"># Module implementing the patch workflow.</span>
-<span class="n">workflow_patch</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">patch</span>
+<span class="c1"># Module implementing the item_patch workflow.</span>
+<span class="n">workflow_item_patch</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">item_patch</span>
 
 <span class="c1"># Module implementing the related_get workflow.</span>
 <span class="n">workflow_related_get</span> <span class="o">=</span> <span class="n">pyramid_jsonapi</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">loop</span><span class="o">.</span><span class="n">related_get</span>
@@ -600,7 +600,9 @@ order at the appropriate point and should have the following signature:</p>
 <p><code class="docutils literal notranslate"><span class="pre">argument</span></code> in the <code class="docutils literal notranslate"><span class="pre">alter_request</span></code> stage would be a request, for example,
 while in <code class="docutils literal notranslate"><span class="pre">alter_document</span></code> it would be a document object. <code class="docutils literal notranslate"><span class="pre">argument</span></code> and
 <code class="docutils literal notranslate"><span class="pre">view_instance</span></code> are passed positionally while <code class="docutils literal notranslate"><span class="pre">stage</span></code> and <code class="docutils literal notranslate"><span class="pre">view_method</span></code>
-are keyword arguments.</p>
+are keyword arguments. Handlers in a stage deque should work as a pipeline so
+it is important that you return the (potentially altered or replaced
+<code class="docutils literal notranslate"><span class="pre">argument</span></code>)</p>
 <p>For example, let’s say you would like to alter all posts to the people
 collection so that a created_on_server attribute is populated automatically.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">socket</span>
@@ -660,7 +662,10 @@ blog, you need <code class="docutils literal notranslate"><span class="pre">patc
 <code class="docutils literal notranslate"><span class="pre">delete</span></code> permission on <code class="docutils literal notranslate"><span class="pre">old_owner.blogs</span></code> (to remove <code class="docutils literal notranslate"><span class="pre">blog_x</span></code> from the
 reverse relationship).</p>
 <p>There are stage handlers available for stages which handle most of the logic of
-authorisation. The remaining logic is provided by permission filters which you
+authorisation. At the moment these are implemented for <code class="docutils literal notranslate"><span class="pre">alter_result</span></code> for read
+operations and <code class="docutils literal notranslate"><span class="pre">alter_request</span></code> for write operations. Other stages might be
+supported in the future.</p>
+<p>The remaining logic is provided by permission filters which you
 provide. The job of a permission filter is to decide, for an individual object,
 whether the specified operation is allowed on that object or not. The permission
 handler built in to pyramid_jsonapi will call the permission filters at the
@@ -668,46 +673,123 @@ appropriate times (including for related objects) and then stitch the answers
 back together into a coherent, authorised whole.</p>
 <p>The default permission filters allow everything, which is the same as not having
 any permission handlers at all. Permission filters should be registered with
-<code class="xref py py-func docutils literal notranslate"><span class="pre">CollectionView.register_permission_filter()</span></code>.</p>
-<p>Note that you supply the lists of permissions and stages handled by the
-permission filter function so you can either write functions that are quite
-specific or more general ones. They will have the permission sought and the
-current stage passed as arguments to aid in decision making.</p>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">CollectionView.register_permission_filter()</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyramid_jsonapi.permissions</span> <span class="kn">import</span> <span class="n">Targets</span>
+
+<span class="n">view_class</span><span class="o">.</span><span class="n">register_permission_filter</span><span class="p">(</span>
+  <span class="n">permissions</span><span class="p">,</span>
+  <span class="n">stages</span><span class="p">,</span>
+  <span class="n">pfunc</span><span class="p">,</span>
+  <span class="n">target_types</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">Targets</span><span class="p">)</span> <span class="c1"># the default is all target types.</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">permissions</span></code> is an iterable of permissions (as strings) that this filter will
+handle. Permissions are equivalent to http verbs (lowercased) - ‘get’, ‘post’,
+‘patch’, ‘delete’. You can also use any ‘permission set’ defined in
+<code class="docutils literal notranslate"><span class="pre">pj.endpoint_data.endpoints['http_method_sets']</span></code>. At time of writing these are
+‘read’ (equivalent to ‘get’), ‘write’ (‘post’, ‘patch’ and ‘delete’), and ‘all’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">stages</span></code> is an iterable of stage names.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pfunc</span></code> is the function to handle permission requests.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_types</span></code> is an iterable of target types that this filter will handle.
+Target types are a hint to permission filters specifying the type of target
+being authorised in the current call. They are one of the
+<code class="docutils literal notranslate"><span class="pre">pyramid_jsonapi.permissions.Targets</span></code> enumeration, which at time of writing
+includes <code class="docutils literal notranslate"><span class="pre">Targets.collection</span></code> for collection based operations where an id
+might not be included, <code class="docutils literal notranslate"><span class="pre">Targets.item</span></code> for operations directly on an item
+and its attributes, and <code class="docutils literal notranslate"><span class="pre">Targets.relationship</span></code> for operations on
+relationships.</p>
 <p>Permission filters will be called from within the code like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">your_filter</span><span class="p">(</span>
   <span class="n">object_rep</span><span class="p">,</span>
   <span class="n">view</span><span class="o">=</span><span class="n">view_instance</span><span class="p">,</span>
   <span class="n">stage</span><span class="o">=</span><span class="n">stage_name</span><span class="p">,</span>
   <span class="n">permission</span><span class="o">=</span><span class="n">permission_sought</span><span class="p">,</span>
+  <span class="n">target</span><span class="o">=</span><span class="n">PermissionTarget_object</span><span class="p">,</span>
+  <span class="n">mask</span><span class="o">=</span><span class="n">Permission_object</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Where <code class="docutils literal notranslate"><span class="pre">object_rep</span></code> is some representation of the object to be authorised,
-<code class="docutils literal notranslate"><span class="pre">view_instance</span></code> is the current view instance, <code class="docutils literal notranslate"><span class="pre">stage_name</span></code> is the name of
-the current stage, and <code class="docutils literal notranslate"><span class="pre">permission_sought</span></code> is one of <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>,
-<code class="docutils literal notranslate"><span class="pre">patch</span></code>, or <code class="docutils literal notranslate"><span class="pre">delete</span></code>. Different stages imply different representations. For
-example the <code class="docutils literal notranslate"><span class="pre">alter_request</span></code> stage will pass a dictionary representing an item
-from <code class="docutils literal notranslate"><span class="pre">data</span></code> from the JSON contained in a pyramid request and the
-<code class="docutils literal notranslate"><span class="pre">alter_document</span></code> stage will pass a similar dictionary representation of an
-object taken from the <code class="docutils literal notranslate"><span class="pre">document</span></code> to be serialised. The <code class="docutils literal notranslate"><span class="pre">alter_result</span></code> stage
-from the loop workflow, on the other hand, will pass a
-<code class="xref py py-class docutils literal notranslate"><span class="pre">workflow.ResultObject</span></code>, which is a wrapper around a sqlAlchemy ORM
-object (which you can get to as <code class="docutils literal notranslate"><span class="pre">object_rep.object</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">object_rep</span></code> is some representation of the object to be authorised. Different
+stages imply different representations. For example the <code class="docutils literal notranslate"><span class="pre">alter_request</span></code> stage
+will pass a dictionary representing an item from <code class="docutils literal notranslate"><span class="pre">data</span></code> from the JSON
+contained in a pyramid request while the <code class="docutils literal notranslate"><span class="pre">alter_result</span></code> stage from the loop
+workflow will pass a <code class="xref py py-class docutils literal notranslate"><span class="pre">workflow.ResultObject</span></code>, which is a wrapper around a
+sqlAlchemy ORM object (which you can get to as <code class="docutils literal notranslate"><span class="pre">object_rep.object</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">view</span></code> is the current view instance.</p>
+<p><code class="docutils literal notranslate"><span class="pre">stage</span></code> is the name of the current stage.</p>
+<p><code class="docutils literal notranslate"><span class="pre">permission</span></code> is one of <code class="docutils literal notranslate"><span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">post</span></code>, <code class="docutils literal notranslate"><span class="pre">patch</span></code>, or <code class="docutils literal notranslate"><span class="pre">delete</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target</span></code> is a <code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.permission.PermissionTarget</span></code> object.
+<code class="docutils literal notranslate"><span class="pre">target.type</span></code> will tell you whether the current authorisation request is for
+a collection, item, or relationship and <code class="docutils literal notranslate"><span class="pre">target.name</span></code> will tell you the
+collection or relationship name.</p>
+<p><em>TODO</em> <code class="docutils literal notranslate"><span class="pre">mask</span></code> is a work in progress. When implemented it will specify which
+attributes and relationships the permission filter should address. Any others
+might not be represented in <code class="docutils literal notranslate"><span class="pre">object_rep</span></code> even though an object of that class
+would usually have them. This is mainly to handle the case where the
+request specifies a sparse field set.</p>
 <p>Note that you can get the current sqlAlchemy session from
 <code class="docutils literal notranslate"><span class="pre">view.dbsession</span></code> (which you might need to make the queries required
 for authorisation) and the pyramid request from <code class="docutils literal notranslate"><span class="pre">view.request</span></code> which
 should give you access to the usual things.</p>
 <p>The simplest thing that a permission filter can do is return <code class="docutils literal notranslate"><span class="pre">True</span></code>
-(<code class="docutils literal notranslate"><span class="pre">permission_sought</span></code> is granted for the whole object) or <code class="docutils literal notranslate"><span class="pre">False</span></code>
-(<code class="docutils literal notranslate"><span class="pre">permission_sought</span></code> is denied for the whole object). To control permissions
-for attributes or relationships, you must use the fuller return representation:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="o">|</span><span class="kc">False</span><span class="p">,</span> <span class="c1"># Controls visibility of / action on the whole object.</span>
-  <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;att1&#39;</span><span class="p">,</span> <span class="s1">&#39;att2&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span> <span class="c1"># The set of allowed attribute names.</span>
-  <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;rel1&#39;</span><span class="p">,</span> <span class="s1">&#39;rel2&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span> <span class="c1"># The set of allowed rel names.</span>
-<span class="p">}</span>
+(<code class="docutils literal notranslate"><span class="pre">permission</span></code> is granted for the whole object) or <code class="docutils literal notranslate"><span class="pre">False</span></code>
+(<code class="docutils literal notranslate"><span class="pre">permission</span></code> is denied for the whole object). To control permissions
+for attributes or relationships, you must return a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">pyramid_jsonapi.permissions.Permission</span></code> object. You can create one
+appropriate to the current view with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">permission_object</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_object</span><span class="p">(</span>
+  <span class="n">attributes</span><span class="o">=</span><span class="n">view</span><span class="o">.</span><span class="n">permission_template</span><span class="o">.</span><span class="n">attributes</span><span class="p">,</span> <span class="c1"># Set of allowed attribute</span>
+                                                  <span class="c1"># names. Defaults to all</span>
+                                                  <span class="c1"># attributes.</span>
+  <span class="n">relationships</span><span class="o">=</span><span class="n">view</span><span class="o">.</span><span class="n">permission_template</span><span class="o">.</span><span class="n">relationships</span><span class="p">,</span> <span class="c1"># Set of allowed rel</span>
+                                                        <span class="c1"># names.</span>
+  <span class="nb">id</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+  <span class="n">subtract_attributes</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">(),</span>  <span class="c1"># Set of attributes to subtract.</span>
+  <span class="n">subtract_relationships</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">()</span>  <span class="c1"># Set of relationships to subtract.</span>
+<span class="p">)</span>
 </pre></div>
 </div>
+<p>or you can construct one from scratch with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyramid_jsonapi.permissions</span> <span class="kn">import</span> <span class="n">Permission</span>
+<span class="n">Permission</span><span class="p">(</span>
+  <span class="n">template</span><span class="p">,</span> <span class="c1"># A template governing which attributes and relationships are</span>
+            <span class="c1"># available. You should normally use view.permission_template.</span>
+  <span class="n">attributes</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">attributes</span><span class="p">,</span> <span class="c1"># The set of allowed attribute names. The</span>
+                                  <span class="c1"># default is all attributes in the template.</span>
+  <span class="n">relationships</span><span class="o">=</span><span class="n">template</span><span class="o">.</span><span class="n">relationships</span><span class="p">,</span> <span class="c1"># The set of allowed rel names.</span>
+  <span class="nb">id</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Controls visibility of / action on the whole object.</span>
+            <span class="c1"># Most of the time this should be True, which is the default.</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Permission objects are immutable.</p>
+<p>The different target types are worth saying a little more about since they
+affect how your permission filter is called.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">target.type</span></code> <em>collection</em> means that the operation is against a collection
+(almost certainly a GET or a POST). <code class="docutils literal notranslate"><span class="pre">target.name</span></code> will hold the name of the
+collection. The <code class="docutils literal notranslate"><span class="pre">id</span></code> of <code class="docutils literal notranslate"><span class="pre">object_rep</span></code> might not be defined (it commonly
+won’t be for POSTs). The handler calling the permission filter will not be
+concerned with relationship authorisation and will ignore relationships
+specified in any <code class="docutils literal notranslate"><span class="pre">Permission</span></code> object returned.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">target.type</span></code> <em>item</em> means that the operation is against an item.
+<code class="docutils literal notranslate"><span class="pre">target.name</span></code> will be empty (<code class="docutils literal notranslate"><span class="pre">None</span></code>). The <code class="docutils literal notranslate"><span class="pre">id</span></code> of <code class="docutils literal notranslate"><span class="pre">object_rep</span></code>
+should reliably be present. The handler calling the permission filter will
+not be concerned with relationship authorisation and will ignore
+relationships specified in any <code class="docutils literal notranslate"><span class="pre">Permission</span></code> object returned.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">target.type</span></code> <em>relationship</em> means that the operation is against a
+relationship. <code class="docutils literal notranslate"><span class="pre">target.name</span></code> will hold the name of the relationship. The
+<code class="docutils literal notranslate"><span class="pre">id</span></code> of <code class="docutils literal notranslate"><span class="pre">object_rep</span></code> should reliably be present. The permission filter
+will be called once for each relationship to be authorised and for each
+item in a to_many operation (once for each item posted to a to_many
+operation, for example). The handler calling the permission filter will
+<em>only</em> look at whether or not the relationship in question is in the
+returned <code class="docutils literal notranslate"><span class="pre">Permission</span></code> object (it will be if you just return <code class="docutils literal notranslate"><span class="pre">True</span></code> and
+won’t if you return <code class="docutils literal notranslate"><span class="pre">False</span></code>).</p></li>
+</ul>
+</div></blockquote>
 <p>Putting that together in some examples:</p>
 <p>Let’s say you have banned the user ‘baddy’ and want to authorise GET requests so
 that baddy can no longer fetch blogs. Both the <code class="docutils literal notranslate"><span class="pre">alter_document</span></code> and
@@ -761,12 +843,11 @@ permission filter - we must use the fuller return format.</p>
     <span class="k">return</span> <span class="kc">True</span>
 
   <span class="c1"># Everyone else isn&#39;t allowed to see age.</span>
-  <span class="k">return</span> <span class="p">{</span>
-    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># False would reject the whole object. Missing out the &#39;id&#39;</span>
-                <span class="c1"># key is the same as specifying True.</span>
-    <span class="s1">&#39;attributes&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">all_attributes</span><span class="p">)</span> <span class="o">-</span> <span class="s1">&#39;age&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;relationships&#39;</span><span class="p">:</span> <span class="kc">True</span> <span class="c1"># The same as allowing all attributes.</span>
-  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">Permission</span><span class="o">.</span><span class="n">subtractive</span><span class="p">(</span>
+    <span class="c1"># subtractive constructs an object by subtracting sets.</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">permission_template</span><span class="p">,</span>
+    <span class="p">{</span><span class="s1">&#39;age&#39;</span><span class="p">}</span>  <span class="c1"># &#39;age&#39; will be removed from the set of attributes.</span>
+  <span class="p">)</span>
 
 <span class="n">pj</span><span class="o">.</span><span class="n">view_classes</span><span class="p">[</span><span class="n">models</span><span class="o">.</span><span class="n">Person</span><span class="p">]</span><span class="o">.</span><span class="n">register_permission_filter</span><span class="p">(</span>
   <span class="p">[</span><span class="s1">&#39;get&#39;</span><span class="p">],</span>

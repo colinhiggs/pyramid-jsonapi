@@ -20,6 +20,9 @@ Submodules
    pyramid_jsonapi.collection_view
    pyramid_jsonapi.endpoints
    pyramid_jsonapi.filters
+   pyramid_jsonapi.permissions
+   pyramid_jsonapi.resource
+   pyramid_jsonapi.unit_tests
    pyramid_jsonapi.version
 
 Module contents

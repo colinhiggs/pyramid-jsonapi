@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>pyramid_jsonapi.workflow.loop &mdash; pyramid_jsonapi 2.2.0 documentation</title>
+  <title>pyramid_jsonapi.workflow.loop &mdash; pyramid_jsonapi 2.2.2 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                2.2.0
+                2.2.2
               </div>
             
           
@@ -188,6 +188,10 @@
     <span class="n">MANYTOONE</span>
 <span class="p">)</span>
 
+<span class="kn">from</span> <span class="nn">pyramid_jsonapi.permissions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PermissionTarget</span><span class="p">,</span>
+    <span class="n">Targets</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">stages</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s1">&#39;alter_query&#39;</span><span class="p">,</span>
@@ -234,6 +238,7 @@
     <span class="n">is_included</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">path_is_included</span><span class="p">(</span><span class="n">rel_include_path</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">queryable</span><span class="p">:</span>
         <span class="n">query</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">related_query</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">object</span><span class="p">,</span> <span class="n">rel</span><span class="p">,</span> <span class="n">full_object</span><span class="o">=</span><span class="n">is_included</span><span class="p">)</span>
+        <span class="c1"># print(query)</span>
         <span class="n">query</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">execute_stage</span><span class="p">(</span>
             <span class="n">view</span><span class="p">,</span> <span class="n">stages</span><span class="p">,</span> <span class="s1">&#39;alter_related_query&#39;</span><span class="p">,</span> <span class="n">query</span>
         <span class="p">)</span>
@@ -286,41 +291,55 @@
             <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="shp_get_alter_result"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.workflow.loop.html#pyramid_jsonapi.workflow.loop.shp_get_alter_result">[docs]</a><span class="k">def</span> <span class="nf">shp_get_alter_result</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
+<div class="viewcode-block" id="shp_get_item_alter_result"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.workflow.loop.html#pyramid_jsonapi.workflow.loop.shp_get_item_alter_result">[docs]</a><span class="k">def</span> <span class="nf">shp_get_item_alter_result</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">view</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">view_method</span><span class="p">):</span>
     <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;Permission denied.&quot;</span>
-    <span class="n">predicate</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span>
+    <span class="n">item_pf</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">Targets</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span>
     <span class="c1"># pred = view.permission_to_dict(predicate(obj))</span>
-    <span class="n">pred</span> <span class="o">=</span> <span class="n">predicate</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]:</span>
-        <span class="n">reject_atts</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">-</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]</span>
-        <span class="n">obj</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">&amp;=</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;attributes&#39;</span><span class="p">]</span>
-        <span class="c1"># record rejected atts</span>
-        <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_attributes</span><span class="p">(</span>
-            <span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span>
-            <span class="n">reject_atts</span><span class="p">,</span>
-            <span class="n">reason</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">reject_rels</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">rel_mask</span> <span class="o">-</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]</span>
-        <span class="n">obj</span><span class="o">.</span><span class="n">rel_mask</span> <span class="o">&amp;=</span> <span class="n">pred</span><span class="p">[</span><span class="s1">&#39;relationships&#39;</span><span class="p">]</span>
-        <span class="c1"># record rejected rels</span>
-        <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_relationships</span><span class="p">(</span>
-            <span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span>
-            <span class="n">reject_rels</span><span class="p">,</span>
-            <span class="n">reason</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">item_pf</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">PermissionTarget</span><span class="p">(</span><span class="n">Targets</span><span class="o">.</span><span class="n">item</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pred</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
         <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_object</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+
+    <span class="n">reject_atts</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">-</span> <span class="n">pred</span><span class="o">.</span><span class="n">attributes</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">attribute_mask</span> <span class="o">&amp;=</span> <span class="n">pred</span><span class="o">.</span><span class="n">attributes</span>
+    <span class="c1"># record rejected atts</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_attributes</span><span class="p">(</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span>
+        <span class="n">reject_atts</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">rel_pf</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">permission_filter</span><span class="p">(</span><span class="s1">&#39;get&#39;</span><span class="p">,</span> <span class="n">Targets</span><span class="o">.</span><span class="n">relationship</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span>
+    <span class="n">reject_rels</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">rel</span> <span class="k">for</span> <span class="n">rel</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">rel_mask</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rel_pf</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">PermissionTarget</span><span class="p">(</span><span class="n">Targets</span><span class="o">.</span><span class="n">relationship</span><span class="p">,</span> <span class="n">rel</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">rel_mask</span> <span class="o">-=</span> <span class="n">reject_rels</span>
+    <span class="c1"># record rejected rels</span>
+    <span class="n">view</span><span class="o">.</span><span class="n">pj_shared</span><span class="o">.</span><span class="n">rejected</span><span class="o">.</span><span class="n">reject_relationships</span><span class="p">(</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">tuple_identifier</span><span class="p">,</span>
+        <span class="n">reject_rels</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">obj</span></div>
 
 
 <div class="viewcode-block" id="permission_handler"><a class="viewcode-back" href="../../../apidoc/pyramid_jsonapi.workflow.loop.html#pyramid_jsonapi.workflow.loop.permission_handler">[docs]</a><span class="k">def</span> <span class="nf">permission_handler</span><span class="p">(</span><span class="n">endpoint_name</span><span class="p">,</span> <span class="n">stage_name</span><span class="p">):</span>
     <span class="n">handlers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;alter_result&#39;</span><span class="p">:</span> <span class="n">shp_get_alter_result</span><span class="p">,</span>
-        <span class="p">}</span>
+        <span class="s1">&#39;item_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alter_result&#39;</span><span class="p">:</span> <span class="n">shp_get_item_alter_result</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;collection_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alter_result&#39;</span><span class="p">:</span> <span class="n">shp_get_item_alter_result</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;related_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alter_result&#39;</span><span class="p">:</span> <span class="n">shp_get_item_alter_result</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;relationships_get&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;alter_result&#39;</span><span class="p">:</span> <span class="n">shp_get_item_alter_result</span><span class="p">,</span>
+        <span class="p">},</span>
     <span class="p">}</span>
-    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;collection_get&#39;</span><span class="p">,</span> <span class="s1">&#39;related_get&#39;</span><span class="p">,</span> <span class="s1">&#39;relationships_get&#39;</span><span class="p">):</span>
-        <span class="n">handlers</span><span class="p">[</span><span class="n">ep</span><span class="p">]</span> <span class="o">=</span> <span class="n">handlers</span><span class="p">[</span><span class="s1">&#39;get&#39;</span><span class="p">]</span>
+    <span class="c1"># for ep in (&#39;collection_get&#39;, &#39;related_get&#39;, &#39;relationships_get&#39;):</span>
+    <span class="c1">#     handlers[ep] = handlers[&#39;item_get&#39;]</span>
     <span class="k">return</span> <span class="n">handlers</span><span class="p">[</span><span class="n">endpoint_name</span><span class="p">][</span><span class="n">stage_name</span><span class="p">]</span></div>
 </pre></div>
 

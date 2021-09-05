@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>pyramid_jsonapi.collection_view module &mdash; pyramid_jsonapi 2.2.1 documentation</title>
+  <title>pyramid_jsonapi.collection_view module &mdash; pyramid_jsonapi 2.2.2 documentation</title>
   
 
   
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                2.2.1
+                2.2.2
               </div>
             
           
@@ -106,6 +106,9 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">pyramid_jsonapi.collection_view module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.endpoints.html">pyramid_jsonapi.endpoints module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.filters.html">pyramid_jsonapi.filters module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.permissions.html">pyramid_jsonapi.permissions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.resource.html">pyramid_jsonapi.resource module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.unit_tests.html">pyramid_jsonapi.unit_tests module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pyramid_jsonapi.version.html">pyramid_jsonapi.version module</a></li>
 </ul>
 </li>
@@ -641,6 +644,11 @@ inspect. Defaults to self.model.</p></li>
 <span class="sig-name descname"><span class="pre">max_limit</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.max_limit" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.methods">
+<span class="sig-name descname"><span class="pre">methods</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.methods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.model">
 <span class="sig-name descname"><span class="pre">model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.model" title="Permalink to this definition">¶</a></dt>
@@ -786,7 +794,7 @@ inspect. Defaults to self.model.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.permission_filter">
-<span class="sig-name descname"><span class="pre">permission_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.permission_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.permission_filter" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">permission_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.permission_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.permission_filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the permission filter given a permission and stage name.</p>
 </dd></dl>
 
@@ -801,8 +809,13 @@ inspect. Defaults to self.model.</p></li>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.permission_to_dict">
-<span class="sig-name descname"><span class="pre">permission_to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permission</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.permission_to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.permission_to_dict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.permission_object">
+<span class="sig-name descname"><span class="pre">permission_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attributes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relationships</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtract_attributes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">frozenset({})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtract_relationships</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">frozenset({})</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.permission_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.permission_object" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.permission_template">
+<span class="sig-name descname"><span class="pre">permission_template</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.permission_template" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -887,7 +900,7 @@ the query.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.register_permission_filter">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_permission_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permissions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stages</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfunc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.register_permission_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.register_permission_filter" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_permission_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">permissions,</span> <span class="pre">stages,</span> <span class="pre">pfunc,</span> <span class="pre">target_types=[&lt;Targets.collection:</span> <span class="pre">1&gt;,</span> <span class="pre">&lt;Targets.item:</span> <span class="pre">2&gt;,</span> <span class="pre">&lt;Targets.relationship:</span> <span class="pre">3&gt;]</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.register_permission_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.register_permission_filter" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1466,6 +1479,11 @@ object(s).</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyramid_jsonapi.collection_view.CollectionViewBase.wrap_permission_filter">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">wrap_permission_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permission</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfunc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyramid_jsonapi/collection_view.html#CollectionViewBase.wrap_permission_filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyramid_jsonapi.collection_view.CollectionViewBase.wrap_permission_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
