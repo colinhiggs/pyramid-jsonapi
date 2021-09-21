@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 import re
 
-import ltree
+import ltree_models as ltree
 
 def add_to_db(engine):
     '''Add some basic test data.'''

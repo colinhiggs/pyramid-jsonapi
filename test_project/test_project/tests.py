@@ -21,7 +21,7 @@ from parameterized import parameterized
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
 import pprint
-import ltree
+import ltree_models as ltree
 from pyramid_jsonapi.permissions import (
     Permission,
     Targets,

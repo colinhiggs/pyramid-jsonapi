@@ -8,18 +8,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
-
-def local_ltree_pkg():
-    list_of_files = glob.glob('/home/chiggs1/git/ltree_models/dist/*.tar.gz')
-    return max(list_of_files, key=os.path.getctime)
-
-def ltree_version(path):
-    fname = os.path.basename(path)
-    match = re.search(r'ltree_models-(.*)\.tar\.gz', fname)
-    return match.group(1)
-
 requires = [
-    # f'ltree @ file://localhost{local_ltree_pkg()}',
     'ltree_models',
     'openapi_spec_validator',
     'psycopg2',
