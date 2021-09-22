@@ -6,6 +6,7 @@ import importlib
 import logging
 import re
 import sqlalchemy
+import warnings
 from collections import namedtuple
 from collections.abc import Sequence
 from functools import partial
@@ -1548,7 +1549,7 @@ class CollectionViewBase:
 
     @classmethod
     def register_permission_filter(
-        cls, permissions, stages, pfunc, target_types=list(Targets)
+        cls, permissions, stages, pfunc, target_types=list(Targets), warn=True,
     ):
         # Permission filters should have the signature:
         #   pfunc(object_rep, view, stage, permission)
@@ -1566,6 +1567,8 @@ class CollectionViewBase:
         for stage_name, perm, tt in itertools.product(stages, perms, target_types):
             perm = perm.lower()
             # Register the filter function.
+            if warn and cls.permission_filters[perm][tt].get(stage_name, False):
+                warnings.warn(f"Overwriting existing permission filter in {perm}.{tt}.{stage_name}")
             cls.permission_filters[perm][tt][stage_name] = \
                 cls.wrap_permission_filter(perm, stage_name, pfunc)
 

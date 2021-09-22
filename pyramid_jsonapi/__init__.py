@@ -114,6 +114,14 @@ class PyramidJSONAPI():
         'workflow_relationships_patch': {'val': 'pyramid_jsonapi.workflow.loop.relationships_patch', 'desc': 'Module implementing the relationships_patch workflow.'},
         'workflow_relationships_delete': {'val': 'pyramid_jsonapi.workflow.loop.relationships_delete', 'desc': 'Module implementing the relationships_delete workflow.'},
     }
+    config_defaults['paging_related_default_limit'] = {
+        'val': config_defaults['paging_default_limit'],
+        'desc': 'Default limit on the number of related items to fetch.'
+    }
+    config_defaults['paging_related_max_limit'] = {
+        'val': config_defaults['paging_max_limit'],
+        'desc': 'Limit on the maximim number of related items which can be fetched.'
+    }
 
     def __init__(self, config, models, get_dbsession=None):
         self.config = config
