@@ -14,6 +14,9 @@ from sqlalchemy.orm import (
     load_only,
 )
 from . import stages
+from .item_get import (
+    get_doc,
+)
 
 
 def workflow(view, stages):
@@ -109,7 +112,9 @@ def workflow(view, stages):
         view.dbsession.flush()
     except sqlalchemy.exc.IntegrityError as exc:
         raise HTTPConflict(str(exc))
-    doc = wf.Doc()
+    doc = get_doc(
+        view, getattr(view, 'item_get').stages, view.single_item_query(view.obj_id)
+    )
     doc['meta'] = {
         'updated': {
             'attributes': [

@@ -3053,7 +3053,33 @@ class TestSpec(DBTestBase):
             status=409
         )
 
-    def test_spec_patch_empty_success(self):
+    def test_spec_patch_item_on_success(self):
+        '''Should return a representation of the patched object.
+
+        If a server accepts an update but also changes the resource(s) in ways
+        other than those specified by the request (for example, updating the
+        updated-at attribute or a computed sha), it MUST return a 200 OK
+        response. The response document MUST include a representation of the
+        updated resource(s) as if a GET request was made to the request URL
+        '''
+        json = self.test_app().patch_json(
+            '/people/1',
+            {
+                'data': {
+                    'id': '1',
+                    'type': 'people',
+                    'attributes': {
+                        'name': 'alice2'
+                    }
+                }
+            },
+            headers={'Content-Type': 'application/vnd.api+json'},
+        ).json
+        self.assertIn('meta',json)
+        self.assertEqual(json['data']['type'], 'people')
+        self.assertEqual(json['data']['id'], '1')
+
+    def notused__spec_patch_empty_success(self):
         '''Should return only meta, not data or links.
 
         A server MUST return a 200 OK status code if an update is successful,
