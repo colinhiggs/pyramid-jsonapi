@@ -12,6 +12,7 @@ from functools import (
 )
 from typing import (
     FrozenSet,
+    Any,
 )
 
 
@@ -50,8 +51,16 @@ class PermissionTarget:
     name: str = None
 
 
+@dataclass(eq=True, frozen=True)
 class PermissionBase:
-    pass
+    """
+    Base class for Permission. We define a separate base class so that
+    Permission can use it as the type of its template attribute.
+    """
+    template: Any = None
+    attributes: FrozenSet[str] = None
+    relationships: FrozenSet[str] = None
+    id: bool = None
 
 
 @dataclass(eq=True, frozen=True)
@@ -69,9 +78,6 @@ class Permission(PermissionBase):
             and deleting from relationships).
     """
     template: PermissionBase = field(repr=False, default=None)
-    attributes: FrozenSet[str] = None
-    relationships: FrozenSet[str] = None
-    id: bool = None
 
     @staticmethod
     def _caclulate_attr_val(attr, curval, template_val, id_):
