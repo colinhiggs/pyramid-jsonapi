@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 import re
 
-import ltree
+import ltree_models
 
 def add_to_db(engine):
     '''Add some basic test data.'''
@@ -53,7 +53,7 @@ def add_to_db(engine):
 
         DBSession.execute(delete(models.LtreeNode.__table__))
 
-    lbuilder = ltree.LtreeBuilder(DBSession.bind, models.LtreeNode)
+    lbuilder = ltree_models.LtreeBuilder(DBSession.bind, models.LtreeNode)
     lbuilder.populate(2, 5)
 
 def item_transform(item):

@@ -21,7 +21,7 @@ from parameterized import parameterized
 import pyramid_jsonapi.metadata
 from openapi_spec_validator import validate_spec
 import pprint
-import ltree
+import ltree_models
 from pyramid_jsonapi.permissions import (
     Permission,
     Targets,
@@ -110,7 +110,7 @@ def setUpModule():
     global engine
     postgresql = testing.postgresql.Postgresql(port=7654)
     engine = create_engine(postgresql.url())
-    ltree.add_ltree_extension(engine)
+    ltree_models.add_ltree_extension(engine)
     DBSession.configure(bind=engine)
 
 
