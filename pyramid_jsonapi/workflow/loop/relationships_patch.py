@@ -14,6 +14,9 @@ from sqlalchemy.orm.interfaces import (
     MANYTOONE,
 )
 from . import stages
+from .related_get import (
+    get_results,
+)
 
 
 def workflow(view, stages):
@@ -44,7 +47,10 @@ def workflow(view, stages):
                 )
             except sqlalchemy.exc.DataError as exc:
                 raise HTTPBadRequest("invalid id '{}'".format(resid['id']))
-        return wf.Doc()
+        # Everything should be PATCHed now - return the relationship as
+        # relationships_get would.
+        return get_results(view, stages).serialise(identifiers=True)
+
     items = []
     for resid in view.request.json_body['data']:
         if resid['type'] != view.rel_view.collection_name:
@@ -75,4 +81,7 @@ def workflow(view, stages):
         else:
             # Catch-all. Shouldn't reach here.
             raise  # pragma: no cover
-    return wf.Doc()
+
+    # Everything should be PATCHed now - return the relationship as
+    # relationships_get would.
+    return get_results(view, stages).serialise(identifiers=True)

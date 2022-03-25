@@ -1715,13 +1715,15 @@ class TestRelationships(DBTestBase):
             new_reldata = { 'type': tgt.collection, 'id': '12'}
             new_empty = None
         # src:11 should be related to tgt:11. Update the relationship.
-        self.test_app().patch_json(
+        res_json = self.test_app().patch_json(
             '/{}/10/relationships/{}'.format(src.collection, src.rel),
             {
                 'data': new_reldata
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-        )
+        ).json
+        # Check that the response included rel data
+        self.assertEqual(new_reldata, res_json['data'])
         # Check that the change went through
         fetched_reldata = self.test_app().get(
             '/{}/10/relationships/{}'.format(src.collection, src.rel)
