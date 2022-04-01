@@ -49,7 +49,15 @@ Entity = namedtuple('Entity', 'type')
 
 
 class RQLQuery(BaseQuery, RQLQueryMixIn):
-    pass
+
+    def _rql_ilike(self, args):
+        attr, value = args
+
+        attr = self._rql_attr(attr)
+        value = self._rql_value(value, attr)
+        value = value.replace("*", "%")
+
+        return attr.ilike(value)
 
 
 class CollectionViewBase:

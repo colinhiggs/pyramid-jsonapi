@@ -1958,6 +1958,22 @@ class TestRelationships(DBTestBase):
         self.assertEqual(len(top_1['data']['relationships']['children']['data']), 2)
 
 
+class TestRQL(DBTestBase):
+    '''Test use of RQL filters.
+
+    https://github.com/pjwerneck/rqlalchemy
+    https://github.com/persvr/rql
+    '''
+
+    def test_rql_ilike(self):
+        '''Should find articles with Capitals in titles.'''
+
+        data = self.test_app().get(
+            '/articles_by_assoc?filter[*rql]=ilike(title, collab*)'
+        ).json
+        self.assertGreater(len(data), 0)
+
+
 class TestSpec(DBTestBase):
     '''Test compliance against jsonapi spec.
 
