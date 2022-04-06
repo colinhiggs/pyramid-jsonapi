@@ -14,6 +14,9 @@ from sqlalchemy.orm.interfaces import (
     MANYTOONE,
 )
 from . import stages
+from .related_get import (
+    get_results,
+)
 
 
 def workflow(view, stages):
@@ -59,4 +62,7 @@ def workflow(view, stages):
         else:
             # Catch-all. Shouldn't reach here.
             raise  # pragma: no cover
-    return wf.Doc()
+
+    # Everything should be done now - return the relationship as
+    # relationships_get would.
+    return get_results(view, stages).serialise(identifiers=True)

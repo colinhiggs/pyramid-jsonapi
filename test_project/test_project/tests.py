@@ -1325,16 +1325,19 @@ class TestRelationships(DBTestBase):
             return
 
         # Add related items 12 and 13 to item 10 (has no related items).
-        self.test_app().post_json(
+        new_reldata = [
+            { 'type': tgt.collection, 'id': '12'},
+            { 'type': tgt.collection, 'id': '13'}
+        ]
+        res_json = self.test_app().post_json(
             '/{}/10/relationships/{}'.format(src.collection, src.rel),
             {
-                'data': [
-                    { 'type': tgt.collection, 'id': '12'},
-                    { 'type': tgt.collection, 'id': '13'}
-                ]
+                'data': new_reldata,
             },
             headers={'Content-Type': 'application/vnd.api+json'},
-        )
+        ).json
+        # Check that the response included rel data
+        self.assertEqual(new_reldata, res_json['data'])
         # Make sure they are there.
         rel_ids = {
             rel_item['id'] for rel_item in
