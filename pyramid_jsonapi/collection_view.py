@@ -718,7 +718,7 @@ class CollectionViewBase:
         """Add sorting to query.
 
         Use information from the ``sort`` query parameter (via
-        :py:func:`collection_query_info`) to contruct an ``order_by`` clause on
+        :py:func:`collection_query_info`) to construct an ``order_by`` clause on
         the query.
 
         See Also:

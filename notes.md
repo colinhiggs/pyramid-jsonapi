@@ -118,7 +118,7 @@ Permissions required:
 
   1. `POST` for the supplied resource. `pfilter` return of `True` will allow the whole resource through; dictionary will strip any blocked attributes and rels before attempting to create the resource (which might result in failure); `False` will entirely block creation (HTTPForbidden).
   2. `POST` for the relationship for any supplied relationships.
-  3. `POST` (if the the created resource will be added to a `to_many` relationship of the related resource) or `PATCH` (if the created resrouce will be the target of a `to_one` relationship of the related resource) for the reverse relationship of any resources in supplied relationships?
+  3. `POST` (if the the created resource will be added to a `to_many` relationship of the related resource) or `PATCH` (if the created resource will be the target of a `to_one` relationship of the related resource) for the reverse relationship of any resources in supplied relationships?
 
 Illustrating creating a resource with supplied relationsips:
 

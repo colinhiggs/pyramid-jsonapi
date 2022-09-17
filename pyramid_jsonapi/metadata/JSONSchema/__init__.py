@@ -219,7 +219,7 @@ class JSONSchema():
         Raises:
             HTTPNotFound error for unknown endpoints.
 
-        Takes 1 path parameert:
+        Takes 1 path parameter:
           * 'endpoint'
 
         Takes 3 optional query parameters:

@@ -85,7 +85,7 @@ class OpenAPI():
 
     @functools.lru_cache()
     def generate_pkg_metadata(self):
-        """Get metadatsa for 'parent' pyramid package."""
+        """Get metadata for 'parent' pyramid package."""
         # Get the PKG-INFO metadata for the 'parent' pyramid app
         pkg_name = self.api.config.package_name
         self.metadata = pkginfo.Installed(pkg_name)
@@ -104,7 +104,7 @@ class OpenAPI():
         }
 
     def build_parameters(self, opts):
-        """Build paramaters schema."""
+        """Build parameters schema."""
 
         # Add 'in: query' parameters - 'global' and ep-specific
         parameters = []
