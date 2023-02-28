@@ -22,7 +22,7 @@ requires = [
     # f'ltree @ file://localhost{local_ltree_pkg()}',
     'ltree_models',
     'openapi_spec_validator',
-    'psycopg2',
+    'psycopg2-binary',
     'pyramid',
     'pyramid_debugtoolbar',
     'pyramid_jsonapi',
