@@ -47,7 +47,7 @@ def get_results(view, stages):
         if 'page[offset]' in view.request.params:
             offset_count = sum(1 for _ in islice(objects_iterator, qinfo['page[offset]']))
         res_objs = list(islice(objects_iterator, limit))
-        if(qinfo['pj_include_count']):
+        if qinfo['pj_include_count']:
             count = offset_count + len(res_objs) + sum(1 for _ in objects_iterator)
     else:
         many = False
@@ -62,7 +62,7 @@ def get_results(view, stages):
             ]
         else:
             res_objs = [wf.ResultObject(view.rel_view, rel_objs)]
-        if(qinfo['pj_include_count']):
+        if qinfo['pj_include_count']:
             count = 1
 
     results = wf.Results(

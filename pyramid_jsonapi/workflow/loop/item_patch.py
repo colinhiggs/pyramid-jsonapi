@@ -10,6 +10,9 @@ from pyramid.httpexceptions import (
     HTTPConflict,
     HTTPNotFound,
 )
+from psycopg2.errors import (  # pylint: disable=no-name-in-module
+    CheckViolation,
+)
 from sqlalchemy.orm import (
     load_only,
 )
@@ -111,7 +114,19 @@ def workflow(view, stages):
     try:
         view.dbsession.flush()
     except sqlalchemy.exc.IntegrityError as exc:
-        raise HTTPConflict(str(exc))
+        if isinstance(exc.orig, CheckViolation):
+            # Use a friendlier exception message for check constraint violations and show the
+            # constraint definition.
+            insp = sqlalchemy.inspect(view.dbsession.get_bind())
+            cons = insp.get_check_constraints(view.model.__table__.name)
+            sqltext = ''
+            for con in cons:
+                if con.get('name', '') == exc.orig.diag.constraint_name:
+                    sqltext = con.get('sqltext', '')
+                    break
+            raise HTTPConflict(str(exc.orig.diag.message_primary) + f'\n\nconstraint sql: {sqltext}')
+        else:
+            raise HTTPConflict(str(exc))
     doc = get_doc(
         view, getattr(view, 'item_get').stages, view.single_item_query(view.obj_id)
     )

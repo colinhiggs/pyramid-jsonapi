@@ -278,7 +278,7 @@ def shp_get_alter_document(doc, view, stage, view_method):
             doc['data'] = accepted[0]
         except IndexError:
             if rejected:
-                raise(HTTPNotFound('Object not found.'))
+                raise HTTPNotFound('Object not found.')
             else:
                 doc['data'] = None
 
@@ -468,7 +468,7 @@ def shp_collection_post_alter_request(request, view, stage, view_method):
     reject_atts = set()
     for att_name in list(obj_data.get('attributes', {}).keys()):
         if att_name not in allowed.attributes:
-            del(obj_data['attributes'][att_name])
+            del obj_data['attributes'][att_name]
             reject_atts.add(att_name)
             # TODO: alternatively raise HTTPForbidden?
     view.pj_shared.rejected.reject_attributes(
@@ -493,7 +493,7 @@ def shp_collection_post_alter_request(request, view, stage, view_method):
 
     # Deal with rejected rels.
     for rel_name in reject_rels:
-        del(obj_data['relationships'][rel_name])
+        del obj_data['relationships'][rel_name]
     view.pj_shared.rejected.reject_relationships(
         (obj_data['type'], obj_data.get('id')),
         reject_rels,
@@ -637,7 +637,7 @@ def shp_patch_alter_request(request, view, stage, view_method):
     reject_atts = set()
     for att_name in list(obj_data.get('attributes', {}).keys()):
         if att_name not in allowed.attributes:
-            del(obj_data['attributes'][att_name])
+            del obj_data['attributes'][att_name]
             reject_atts.add(att_name)
             # TODO: alternatively raise HTTPForbidden?
     view.pj_shared.rejected.reject_attributes(
@@ -663,7 +663,7 @@ def shp_patch_alter_request(request, view, stage, view_method):
 
     # Deal with rejected rels.
     for rel_name in reject_rels:
-        del(obj_data['relationships'][rel_name])
+        del obj_data['relationships'][rel_name]
     view.pj_shared.rejected.reject_relationships(
         (obj_data['type'], obj_data.get('id')),
         reject_rels,

@@ -45,7 +45,7 @@ def workflow(view, stages):
         offset_count = sum(1 for _ in islice(objects_iterator, qinfo['page[offset]']))
     objects = list(islice(objects_iterator, limit))
     count = None
-    if(qinfo['pj_include_count']):
+    if qinfo['pj_include_count']:
         count = offset_count + len(objects) + sum(1 for _ in objects_iterator)
     results = wf.Results(
         view,
