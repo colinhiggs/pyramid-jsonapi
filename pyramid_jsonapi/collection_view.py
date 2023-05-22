@@ -734,39 +734,17 @@ class CollectionViewBase:
         Returns:
             sqlalchemy.orm.query.Query: query with ``order_by`` clause.
         """
-        # Get info for query.
-        qinfo = self.collection_query_info(self.request)
+        qinfo = QueryInfo(self, self.request)
 
-        # Sorting.
-        for key_info in qinfo['_sort']:
-            sort_keys = key_info['key'].split('.')
-            # We are using 'id' to stand in for the key column, whatever that
-            # is.
-            main_key = sort_keys[0]
-            if main_key == 'id':
-                main_key = self.key_column.name
-            order_att = getattr(self.model, main_key)
-            if main_key in self.relationships:
-                # If order_att is a relationship then we need to add a join to
-                # the query and order_by the sort_keys[1] column of the
-                # relationship's target. The default target column is 'id'.
-                rel = self.relationships[main_key]
+        for sinfo in qinfo.sorting_info:
+            for rel in sinfo.rels:
                 if rel.to_many:
-                    raise HTTPBadRequest(f"Can't sort by TO_MANY relationship {main_key}.")
-                query = query.join(order_att)
-                try:
-                    sub_key = sort_keys[1]
-                except IndexError:
-                    # Use the relationship
-                    sub_key = self.view_instance(
-                        rel.tgt_class
-                    ).key_column.name
-                order_att = getattr(rel.tgt_class, sub_key)
-            if key_info['ascending']:
-                query = query.order_by(order_att)
+                    raise HTTPBadRequest(f"Can't sort by TO_MANY relationship {rel.name}.")
+                query = query.join(getattr(rel.src_class, rel.name))
+            if sinfo.ascending:
+                query = query.order_by(sinfo.prop)
             else:
-                query = query.order_by(order_att.desc())
-
+                query = query.order_by(sinfo.prop.desc())
         return query
 
     def query_add_filtering(self, query):
@@ -822,7 +800,7 @@ class CollectionViewBase:
             Support dotted (relationship) attribute specifications.
         """
         qinfo = QueryInfo(self, self.request)
-        for finfo in qinfo.filters:
+        for finfo in qinfo.filter_info:
             if finfo.filter_type == 'native':
                 pname = finfo.colspec[-1]
                 for rel in finfo.rels:
