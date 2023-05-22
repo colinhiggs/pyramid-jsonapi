@@ -42,6 +42,7 @@ from pyramid_jsonapi.permissions import (
     Permission,
     Targets,
 )
+from .http_query import QueryInfo
 import pyramid_jsonapi.workflow as wf
 
 
@@ -820,52 +821,42 @@ class CollectionViewBase:
         Todo:
             Support dotted (relationship) attribute specifications.
         """
-        qinfo = self.collection_query_info(self.request)
-        # Filters
-        for finfo in qinfo['_filters'].values():
-            val = finfo['value']
-            colspec = finfo['colspec']
-            prop_name = colspec[0]
-            operator = finfo['op']
-            try:
-                prop = getattr(self.model, prop_name)
-            except AttributeError:
-                raise HTTPBadRequest(
-                    "Collection '{}' has no attribute '{}'".format(
-                        self.collection_name, '.'.join(colspec)
+        qinfo = QueryInfo(self, self.request)
+        for finfo in qinfo.filters:
+            if finfo.filter_type == 'native':
+                pname = finfo.colspec[-1]
+                for rel in finfo.rels:
+                    if isinstance(rel.obj, AssociationProxy):
+                        # We need to join across association proxies differently.
+                        proxy = rel.obj.for_class(rel.src_class)
+                        query = query.join(proxy.remote_attr).filter(
+                            proxy.local_attr.property.local_remote_pairs[0][1] == self.api.view_classes[rel.src_class].id_col(rel.src_class)
+                        )
+                    else:
+                        query = query.join(getattr(rel.src_class, rel.name))
+                try:
+                    filtr = self.api.filter_registry.get_filter(type(finfo.prop.type), finfo.op)
+                except KeyError:
+                    raise HTTPBadRequest(
+                        "No such filter operator: '{}'".format(finfo.op)
                     )
-                )
-            if prop_name in self.relationships:
-                # The property indicated is on the other side of a relationship
-                rel = self.relationships[prop_name]
-                if isinstance(rel.obj, AssociationProxy):
-                    # We need to join across association proxies differently.
-                    proxy = rel.obj.for_class(rel.src_class)
-                    query = query.join(proxy.remote_attr).filter(
-                        proxy.local_attr.property.local_remote_pairs[0][1] == self.id_col(self.model)
+                val = filtr['value_transform'](finfo.value)
+                try:
+                    comparator = getattr(finfo.prop, filtr['comparator_name'])
+                except AttributeError:
+                    raise HTTPInternalServerError(
+                        "Operator '{}' is registered but has no implementation on attribute '{}'.".format(
+                            finfo.op, '.'.join(finfo.colspec)
+                        )
                     )
-                else:
-                    query = query.join(prop)
-                prop = getattr(rel.tgt_class, colspec[1])
-            try:
-                filtr = self.api.filter_registry.get_filter(type(prop.type), operator)
-            except KeyError:
-                raise HTTPBadRequest(
-                    "No such filter operator: '{}'".format(operator)
-                )
-            val = filtr['value_transform'](val)
-            try:
-                comparator = getattr(prop, filtr['comparator_name'])
-            except AttributeError:
-                raise HTTPInternalServerError(
-                    "Operator '{}' is registered but has no implementation on attribute '{}'.".format(
-                        operator, '.'.join(colspec)
-                    )
-                )
-            query = query.filter(comparator(val))
+                query = query.filter(comparator(val))
 
-        for rql in qinfo['_rql_filters']:
-            query = query.rql(rql)
+            elif finfo.filter_type == 'rql':
+                query = query.rql(finfo.value)
+            else:
+                raise HTTPBadRequest(
+                    f"Unknown filter type: {finfo.filter_type}"
+                )
 
         return query
 
@@ -1085,17 +1076,25 @@ class CollectionViewBase:
         """
         info = {}
 
-        # Paging by limit and offset.
-        # Use params 'page[limit]' and 'page[offset]' to comply with spec.
+        # Limit is common to both paging mechanisms.
         info['page[limit]'] = min(
             cls.max_limit,
             int(request.params.get('page[limit]', cls.default_limit))
         )
         if info['page[limit]'] < 0:
             raise HTTPBadRequest('page[limit] must not be negative.')
+
+        # Paging by limit and offset.
         info['page[offset]'] = int(request.params.get('page[offset]', 0))
-        if info['page[offset]'] < 0:
+        if info['page[offset]'] is not None and info['page[offset]'] < 0:
             raise HTTPBadRequest('page[offset] must not be negative.')
+
+        # Paging by limit and after.
+        info['page[after]'] = request.params.get('page[after]', None)
+
+        # Only one paging start condition should be specified.
+        if info['page[after]'] is not None and info['page[offset]'] is not None:
+            raise HTTPBadRequest('You cannot provide both page[after] and page[offset]')
 
         # Sorting.
         # Use param 'sort' as per spec.

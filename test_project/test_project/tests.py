@@ -96,10 +96,14 @@ class MyTestApp(webtest.TestApp):
         try:
             super()._check_status(status, res)
         except webtest.AppError as e:
-            errors = res.json_body.get('errors', [{}])
+            try:
+                json_body = res.json_body
+            except json.decoder.JSONDecodeError as json_error:
+                raise e
+            errors = json_body.get('errors', [{}])
             raise webtest.AppError(
                 '%s\n%s',
-                errors, res.json_body.get('traceback')
+                errors, json_body.get('traceback')
             )
 
 
