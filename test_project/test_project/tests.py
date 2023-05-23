@@ -3420,6 +3420,14 @@ class TestPaging(DBTestBase):
         ).json
         self.assertEqual(js['meta']['results']['available'], 14)
 
+    def test_last_attrib(self):
+        '''Should get last page.'''
+        js = self.test_app().get(
+            '/people?sort=name&page[last]=1&page[limit]=2'
+        ).json
+        names = [o['attributes']['name'] for o in js['data']]
+        self.assertEqual(names, ['secret_squirrel', 'two things'])
+
 
 class TestHybrid(DBTestBase):
     '''Test cases for @hybrid_property attributes.'''

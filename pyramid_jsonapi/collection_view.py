@@ -716,7 +716,7 @@ class CollectionViewBase:
             self.id_col(self.model) == obj_id
         )
 
-    def query_add_sorting(self, query):
+    def query_add_sorting(self, query, reversed=False):
         """Add sorting to query.
 
         Use information from the ``sort`` query parameter (via
@@ -742,7 +742,10 @@ class CollectionViewBase:
                 if rel.to_many:
                     raise HTTPBadRequest(f"Can't sort by TO_MANY relationship {rel.name}.")
                 query = query.join(getattr(rel.src_class, rel.name))
-            if sinfo.ascending:
+            ascending = sinfo.ascending
+            if reversed:
+                ascending = not ascending
+            if ascending:
                 query = query.order_by(sinfo.prop)
             else:
                 query = query.order_by(sinfo.prop.desc())

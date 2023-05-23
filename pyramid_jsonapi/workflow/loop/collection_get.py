@@ -11,13 +11,18 @@ from ...http_query import QueryInfo
 
 
 def workflow(view, stages):
-    query = view.base_collection_query()
-    query = view.query_add_sorting(query)
-    query = view.query_add_filtering(query)
-
     qinfo = view.query_info
     pinfo = qinfo.paging_info
     count = None
+
+    query = view.base_collection_query()
+    query_reversed = False
+    if pinfo.start_type in ('last', 'before'):
+        # These start types need to fetch records backwards (relative to their
+        # nominal sort order) and reverse them before serialising.
+        query_reversed = True
+    query = view.query_add_sorting(query, reversed=query_reversed)
+    query = view.query_add_filtering(query)
 
     if pinfo.start_type == 'after':
         if qinfo.pj_include_count:
@@ -52,6 +57,8 @@ def workflow(view, stages):
     if pinfo.start_type == 'offset':
         offset_count = sum(1 for _ in islice(objects_iterator, pinfo.offset))
     objects = list(islice(objects_iterator, pinfo.limit))
+    if query_reversed:
+        objects.reverse()
     if pinfo.start_type in ('offset', None) and qinfo.pj_include_count:
         count = offset_count + len(objects) + sum(1 for _ in objects_iterator)
     results = wf.Results(
