@@ -1,8 +1,10 @@
 import re
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import cached_property
 from pyramid.request import Request
+from pyramid.settings import asbool
 from pyramid.httpexceptions import HTTPBadRequest
 
 
@@ -22,7 +24,7 @@ class ColspecMixin:
             except KeyError:
                 HTTPBadRequest(f"{vc.collection_name} has no relationship {rname}")
             rels.append(rel)
-            vc = rel.tgt_class
+            vc = self.view_class.api.view_classes[rel.tgt_class]
         return rels
 
     @cached_property
@@ -59,8 +61,13 @@ class QueryInfo:
 
     @cached_property
     def paging_info(self):
-        # return PagingInfo(self.view_class, self.request)
-        pass
+        return PagingInfo(self.view_class, self.request, self.sorting_info)
+
+    @cached_property
+    def pj_include_count(self):
+        return asbool(
+            self.request.params.get('pj_include_count', 'false')
+        )
 
 
 @dataclass
@@ -117,4 +124,43 @@ class SortingInfo(ColspecMixin):
 
 @dataclass
 class PagingInfo:
-    pass
+    view_class: 'CollectionViewBase'
+    request: Request
+    sorting_info: Iterable[SortingInfo] = tuple()
+    start_type: str = field(init=False, default=None)
+    limit: int = field(init=False)
+    offset: int = field(init=False)
+    before: tuple = field(init=False)
+    after: tuple = field(init=False)
+
+    def __post_init__(self):
+        # We need params a lot so shorten some lines:
+        params = self.request.params
+        self.limit = min(
+            self.view_class.max_limit,
+            int(params.get('page[limit]', self.view_class.default_limit))
+        )
+        if self.limit < 0:
+            raise HTTPBadRequest('page[limit] must not be negative.')
+
+        possible_start_types = ('before', 'after', 'offset')
+        start_types_found = [st for st in possible_start_types if f'page[{st}]' in params]
+        if len(start_types_found) > 1:
+            raise HTTPBadRequest(
+                f'You cannot provide multiple start types: {[f"page[{st}]" for st in start_types_found]}'
+            )
+        if len(start_types_found) == 1:
+            self.start_type = start_types_found[0]
+
+        if self.start_type == 'before':
+            self.before = params.get('page[before]').split(',')
+            if len(self.before) != len(self.sorting_info):
+                raise HTTPBadRequest('page[before] list must match sort column list.')
+        elif self.start_type == 'after':
+            self.after = params.get('page[after]').split(',')
+            if len(self.after) != len(self.sorting_info):
+                raise HTTPBadRequest('page[after] list must match sort column list.')
+        elif self.start_type == 'offset':
+            self.offset = int(params.get('page[offset]', 0))
+            if self.offset < 0:
+                raise HTTPBadRequest('page[offset] must not be negative.')

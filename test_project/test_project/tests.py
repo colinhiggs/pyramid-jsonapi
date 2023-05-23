@@ -3336,6 +3336,76 @@ class TestMalformed(DBTestBase):
         )
 
 
+class TestPaging(DBTestBase):
+    '''Test cases for various kinds of paging.'''
+
+    def test_after_single_sort_attrib(self):
+        '''Should get page of people after name=person 22'''
+        data = self.test_app().get(
+            '/people?sort=name&page[after]=person 22'
+        ).json['data']
+        self.assertEqual(data[0]['attributes']['name'], 'person 23')
+        self.assertEqual(data[1]['attributes']['name'], 'person 24')
+
+    def test_after_single_sort_rel(self):
+        '''Should get the page of blogs owned by person after name=one thing'''
+        data = self.test_app().get(
+            '/blogs?sort=owner.name&page[after]=one thing'
+        ).json['data']
+        owners = [o['attributes']['owner_name'] for o in data]
+        self.assertEqual(owners[0], 'person 20')
+
+    def test_after_single_sort_deeprel(self):
+        '''Should get the page of posts after blog.owner.name=bob'''
+        js = self.test_app().get(
+            '/posts?sort=blog.owner.name&page[after]=bob&include=blog.owner'
+        ).json
+        data = js['data']
+        owner_map = {
+            o['id']: o for o in js['included'] if o['type'] == 'people'
+        }
+        blog_map = {
+            o['id']: o for o in js['included'] if o['type'] == 'blogs'
+        }
+        owners = []
+        for post in data:
+            item = [post['id'], post['attributes']['title']]
+            blog = blog_map[post['relationships']['blog']['data']['id']]
+            item.append(blog['attributes']['title'])
+            owner = owner_map[blog['relationships']['owner']['data']['id']]
+            item.append(owner['attributes']['name'])
+            owners.append(item)
+        self.assertEqual(owners[0][3], 'one thing')
+        self.assertEqual(owners[1][3], 'person 20')
+
+    def test_after_double_sort_deeprel(self):
+        js = self.test_app().get(
+            '/posts?sort=blog.owner.name,-id&page[after]=bob,6&include=blog.owner'
+        ).json
+        data = js['data']
+        owner_map = {
+            o['id']: o for o in js['included'] if o['type'] == 'people'
+        }
+        blog_map = {
+            o['id']: o for o in js['included'] if o['type'] == 'blogs'
+        }
+        owners = []
+        for post in data:
+            item = [post['id'], post['attributes']['title']]
+            blog = blog_map[post['relationships']['blog']['data']['id']]
+            item.append(blog['attributes']['title'])
+            owner = owner_map[blog['relationships']['owner']['data']['id']]
+            item.append(owner['attributes']['name'])
+            owners.append(item)
+        # We should have posts 5 and 4:
+        self.assertEqual(owners[0][0], '5')
+        self.assertEqual(owners[1][0], '4')
+        # Both should belong to bob:
+        self.assertEqual(owners[0][3], 'bob')
+        self.assertEqual(owners[1][3], 'bob')
+
+
+
 class TestHybrid(DBTestBase):
     '''Test cases for @hybrid_property attributes.'''
 

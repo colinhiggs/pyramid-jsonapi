@@ -1071,8 +1071,8 @@ class CollectionViewBase:
         info['page[after]'] = request.params.get('page[after]', None)
 
         # Only one paging start condition should be specified.
-        if info['page[after]'] is not None and info['page[offset]'] is not None:
-            raise HTTPBadRequest('You cannot provide both page[after] and page[offset]')
+        # if info['page[after]'] is not None and info['page[offset]'] is not None:
+        #     raise HTTPBadRequest('You cannot provide both page[after] and page[offset]')
 
         # Sorting.
         # Use param 'sort' as per spec.
