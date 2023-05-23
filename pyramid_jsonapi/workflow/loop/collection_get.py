@@ -14,36 +14,24 @@ def workflow(view, stages):
     query = view.base_collection_query()
     query = view.query_add_sorting(query)
     query = view.query_add_filtering(query)
-    # qinfo = view.collection_query_info(view.request)
-    # limit = qinfo['page[limit]']
 
-    # If there is any chance that the code might alter the number of results
-    # after they come from the database then we can't rely on LIMIT and COUNT
-    # at the database end, so these have been disabled. They might return
-    # if a suitable flag is introduced.
-    # try:
-    #     count = query.count()
-    # except sqlalchemy.exc.ProgrammingError:
-    #     raise HTTPInternalServerError(
-    #         'An error occurred querying the database. Server logs may have details.'
-    #     )
-    # query = query.limit(limit)
-    # query = query.offset(qinfo['page[offset]'])
-
-    qinfo = QueryInfo(view, view.request)
+    qinfo = view.query_info
     pinfo = qinfo.paging_info
+    count = None
 
     if pinfo.start_type == 'after':
+        if qinfo.pj_include_count:
+            count = full_search_count(view, stages)
         # We just add filters here. The necessary joins will have been done by the
         # Sorting that after relies on.
 
-        # Need >= on all but the last prop.
+        # Need >= or <= on all but the last prop.
         for sinfo, after in zip(qinfo.sorting_info[:-1], pinfo.after[:-1]):
             if sinfo.ascending:
                 query = query.filter(sinfo.prop >= after)
             else:
                 query = query.filter(sinfo.prop <= after)
-        # And > on the last one.
+        # And > or < on the last one.
         if qinfo.sorting_info[-1].ascending:
             query = query.filter(qinfo.sorting_info[-1].prop > pinfo.after[-1])
         else:
@@ -64,8 +52,7 @@ def workflow(view, stages):
     if pinfo.start_type == 'offset':
         offset_count = sum(1 for _ in islice(objects_iterator, pinfo.offset))
     objects = list(islice(objects_iterator, pinfo.limit))
-    count = None
-    if qinfo.pj_include_count:
+    if pinfo.start_type in ('offset', None) and qinfo.pj_include_count:
         count = offset_count + len(objects) + sum(1 for _ in objects_iterator)
     results = wf.Results(
         view,
@@ -82,3 +69,16 @@ def workflow(view, stages):
         wf.loop.fill_result_object_related(res_obj, stages)
 
     return results.serialise()
+
+
+def full_search_count(view, stages):
+    # Same as normal query but only id column and don't bother with sorting.
+    query = view.base_collection_query(loadonly=[view.key_column.name])
+    query = view.query_add_filtering(query)
+    query = wf.execute_stage(
+        view, stages, 'alter_query', query
+    )
+    objects_iterator = wf.loop.altered_objects_iterator(
+        view, stages, 'alter_result', wf.wrapped_query_all(query)
+    )
+    return sum(1 for _ in objects_iterator)

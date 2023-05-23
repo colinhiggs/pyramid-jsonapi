@@ -143,7 +143,7 @@ class PagingInfo:
         if self.limit < 0:
             raise HTTPBadRequest('page[limit] must not be negative.')
 
-        possible_start_types = ('before', 'after', 'offset')
+        possible_start_types = ('before', 'after', 'last', 'offset')
         start_types_found = [st for st in possible_start_types if f'page[{st}]' in params]
         if len(start_types_found) > 1:
             raise HTTPBadRequest(

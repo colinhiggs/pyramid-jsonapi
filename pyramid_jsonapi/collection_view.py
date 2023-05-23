@@ -102,6 +102,7 @@ class CollectionViewBase:
 
     def __init__(self, request):
         self.request = request
+        self.query_info = QueryInfo(self, request)
         if self.api.get_dbsession:
             self.dbsession = self.api.get_dbsession(self)
         else:
@@ -734,7 +735,7 @@ class CollectionViewBase:
         Returns:
             sqlalchemy.orm.query.Query: query with ``order_by`` clause.
         """
-        qinfo = QueryInfo(self, self.request)
+        qinfo = self.query_info
 
         for sinfo in qinfo.sorting_info:
             for rel in sinfo.rels:
@@ -799,7 +800,7 @@ class CollectionViewBase:
         Todo:
             Support dotted (relationship) attribute specifications.
         """
-        qinfo = QueryInfo(self, self.request)
+        qinfo = self.query_info
         for finfo in qinfo.filter_info:
             if finfo.filter_type == 'native':
                 pname = finfo.colspec[-1]
@@ -1151,59 +1152,6 @@ class CollectionViewBase:
         )
 
         return info
-
-    def pagination_links(self, count=0):
-        """Return a dictionary of pagination links.
-
-        Args:
-            count (int): total number of results available.
-
-        Returns:
-            dict: dictionary of named links.
-        """
-        links = {}
-        req = self.request
-        route_name = req.matched_route.name
-        qinfo = self.collection_query_info(req)
-        _query = {'page[{}]'.format(k): v for k, v in qinfo['_page'].items()}
-        _query['sort'] = qinfo['sort']
-        for filtr in sorted(qinfo['_filters']):
-            _query[filtr] = qinfo['_filters'][filtr]['value']
-
-        # First link.
-        _query['page[offset]'] = 0
-        links['first'] = req.route_url(
-            route_name, _query=_query, **req.matchdict
-        )
-
-        # Next link.
-        next_offset = qinfo['page[offset]'] + qinfo['page[limit]']
-        if count is None or next_offset < count:
-            _query['page[offset]'] = next_offset
-            links['next'] = req.route_url(
-                route_name, _query=_query, **req.matchdict
-            )
-
-        # Previous link.
-        if qinfo['page[offset]'] > 0:
-            prev_offset = qinfo['page[offset]'] - qinfo['page[limit]']
-            if prev_offset < 0:
-                prev_offset = 0
-            _query['page[offset]'] = prev_offset
-            links['prev'] = req.route_url(
-                route_name, _query=_query, **req.matchdict
-            )
-
-        # Last link.
-        if count is not None:
-            _query['page[offset]'] = (
-                max((count - 1), 0) //
-                qinfo['page[limit]']
-            ) * qinfo['page[limit]']
-            links['last'] = req.route_url(
-                route_name, _query=_query, **req.matchdict
-            )
-        return links
 
     @property
     def allowed_fields(self):
