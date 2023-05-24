@@ -3428,6 +3428,16 @@ class TestPaging(DBTestBase):
         names = [o['attributes']['name'] for o in js['data']]
         self.assertEqual(names, ['secret_squirrel', 'two things'])
 
+    def test_before_single_sort_attrib(self):
+        '''Should get page of people before name=person 22'''
+        js = self.test_app().get(
+            '/people?sort=name&page[before]=person 22'
+        ).json
+        names = [o['attributes']['name'] for o in js['data']]
+        self.assertEqual(names[0], 'alice')
+        self.assertEqual(names[1], 'bob')
+        self.assertEqual(names[-1], 'person 21')
+
 
 class TestHybrid(DBTestBase):
     '''Test cases for @hybrid_property attributes.'''

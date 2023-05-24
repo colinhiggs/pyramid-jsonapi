@@ -24,23 +24,26 @@ def workflow(view, stages):
     query = view.query_add_sorting(query, reversed=query_reversed)
     query = view.query_add_filtering(query)
 
-    if pinfo.start_type == 'after':
+    if pinfo.start_type in ('after', 'before'):
         if qinfo.pj_include_count:
             count = full_search_count(view, stages)
+
         # We just add filters here. The necessary joins will have been done by the
         # Sorting that after relies on.
-
         # Need >= or <= on all but the last prop.
-        for sinfo, after in zip(qinfo.sorting_info[:-1], pinfo.after[:-1]):
-            if sinfo.ascending:
+        for sinfo, after in zip(qinfo.sorting_info[:-1], pinfo.page_start[:-1]):
+            ascending = not sinfo.ascending if query._pj_reversed else sinfo.ascending
+            if ascending:
                 query = query.filter(sinfo.prop >= after)
             else:
                 query = query.filter(sinfo.prop <= after)
         # And > or < on the last one.
-        if qinfo.sorting_info[-1].ascending:
-            query = query.filter(qinfo.sorting_info[-1].prop > pinfo.after[-1])
+        ascending = qinfo.sorting_info[-1].ascending
+        ascending = not ascending if query._pj_reversed else ascending
+        if ascending:
+            query = query.filter(qinfo.sorting_info[-1].prop > pinfo.page_start[-1])
         else:
-            query = query.filter(qinfo.sorting_info[-1].prop < pinfo.after[-1])
+            query = query.filter(qinfo.sorting_info[-1].prop < pinfo.page_start[-1])
 
     query = wf.execute_stage(
         view, stages, 'alter_query', query

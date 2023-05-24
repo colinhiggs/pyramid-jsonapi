@@ -164,3 +164,7 @@ class PagingInfo:
             self.offset = int(params.get('page[offset]', 0))
             if self.offset < 0:
                 raise HTTPBadRequest('page[offset] must not be negative.')
+
+    @cached_property
+    def page_start(self):
+        return getattr(self, self.start_type)

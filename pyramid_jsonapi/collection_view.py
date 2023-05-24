@@ -749,6 +749,7 @@ class CollectionViewBase:
                 query = query.order_by(sinfo.prop)
             else:
                 query = query.order_by(sinfo.prop.desc())
+        query._pj_reversed = reversed
         return query
 
     def query_add_filtering(self, query):
