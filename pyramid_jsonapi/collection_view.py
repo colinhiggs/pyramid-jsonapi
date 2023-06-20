@@ -60,6 +60,12 @@ class RQLQuery(BaseQuery, RQLQueryMixIn):
 
         return attr.ilike(value)
 
+    def _rql_icontains(self, args):
+        attr, value = args
+        attr = self._rql_attr(attr)
+        value = self._rql_value(value, attr)
+        return attr.ilike(f'%{value}%')
+
 
 class CollectionViewBase:
     """Base class for all view classes.
