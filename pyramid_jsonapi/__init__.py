@@ -106,7 +106,7 @@ class PyramidJSONAPI():
         'workflow_item_get': {'val': 'pyramid_jsonapi.workflow.loop.item_get', 'desc': 'Module implementing the item_get workflow.'},
         'workflow_item_patch': {'val': 'pyramid_jsonapi.workflow.loop.item_patch', 'desc': 'Module implementing the item_patch workflow.'},
         'workflow_item_delete': {'val': 'pyramid_jsonapi.workflow.loop.item_delete', 'desc': 'Module implementing the item_delete workflow.'},
-        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
+        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.selectin.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
         'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post', 'desc': 'Module implementing the collection_post workflow.'},
         'workflow_related_get': {'val': 'pyramid_jsonapi.workflow.loop.related_get', 'desc': 'Module implementing the related_get workflow.'},
         'workflow_relationships_get': {'val': 'pyramid_jsonapi.workflow.loop.relationships_get', 'desc': 'Module implementing the relationships_get workflow.'},
@@ -523,6 +523,9 @@ class StdRelationship:
             return self.proxy_mirror_relationship
         else:
             return None
+
+    def __repr__(self):
+        return f'StdRelationship({self.src_class.__name__}.{self.name} -> {self.tgt_class.__name__})'
 
 
 class DebugView:
