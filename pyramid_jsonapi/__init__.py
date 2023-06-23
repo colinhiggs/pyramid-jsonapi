@@ -375,6 +375,8 @@ class PyramidJSONAPI():
         for key, rel in rels.items():
             view_rels[key] = StdRelationship(key, rel, view_class)
         view_class.permission_template = Permission.template_from_view(view_class)
+        view_class.permission_all = Permission(view_class.permission_template)
+        view_class.permission_none = Permission(view_class.permission_template, False, False, False)
 
         return view_class
 

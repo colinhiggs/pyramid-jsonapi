@@ -104,6 +104,8 @@ class CollectionViewBase:
     settings = None
     permission_filters = None
     permission_template = None
+    permission_all = None
+    permission_none = None
     methods = None
 
     def __init__(self, request):
@@ -133,6 +135,11 @@ class CollectionViewBase:
             else:
                 return None
         return item
+    
+    def item_id(self, item):
+        """Return the value of the id column for the item."""
+        item_view = self.view_instance(item.__class__)
+        return getattr(item, item_view.key_column.name)
 
     def get_item(self, _id=None):
         """Return the item specified by _id. Will look up id from request if _id is None.

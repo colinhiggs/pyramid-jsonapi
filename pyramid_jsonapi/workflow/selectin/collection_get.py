@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
 from sqlalchemy.orm.relationships import RelationshipProperty
 
-from . import stages, serialise, longest_includes
+from . import stages, Serialiser, longest_includes, includes
 from ...http_query import QueryInfo
 
 log = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def rel_opts(view, so_far=None):
 def selectin_options(view):
     options = []
     options.extend(rel_opts(view))
-    longest = longest_includes(view.request.params.get('include').split(','))
+    longest = longest_includes(includes(view.request))
     for include in longest:
         cur_view = view
         so_far = None
@@ -113,41 +113,21 @@ def workflow(view, stages):
 
     query = query.options(*selectin_options(view))
 
-    incs = {}
-    inc_paths = []
-    inc_paths_str = view.request.params.get('include')
-    if inc_paths_str:
-        inc_paths = inc_paths_str.split(',')
-    for inc in inc_paths:
-        cur_view = view
-        rel_names = inc.split('.')
-        cur_path = []
-        for rel_name in rel_names:
-            cur_path.append(rel_name)
-            cur_path_str = '.'.join(cur_path)
-            if cur_path_str not in incs:
-                rel = cur_view.relationships[rel_name]
-                rel_view = cur_view.view_instance(rel.tgt_class)
-                incs[cur_path_str] = dict(rel=rel, view=rel_view)
-            cur_view = rel_view
-
-    # for val in incs.values():
-    #     rel_view = val['view']
-    #     for rel_name in rel_view.requested_relationships.keys() & rel_view.allowed_fields:
-    #         rel = rel_view.relationships[rel_name]
-    #         query.options(selectinload(rel))
-
     items_iterator = query_results(query, pinfo.limit)
     offset_count = 0
     if pinfo.start_type == 'offset':
         offset_count = sum(1 for _ in islice(items_iterator, pinfo.offset))
+    before_items = time.time()
     items = list(items_iterator)
+    log.debug(f'items fetched in {time.time() - before_items}')
     if query_reversed:
         items.reverse()
     if pinfo.start_type in ('offset', None) and qinfo.pj_include_count:
         count = offset_count + len(items) + sum(1 for _ in items_iterator)
 
-    doc = serialise(items, view, incs)
+    before_serialise = time.time()
+    doc = Serialiser(view).serialise(items)
+    log.debug(f'items serialised in {time.time() - before_serialise}')
     return doc
 
     # log.debug(f'  {time.time() - wf_start} start gathering direct results')
