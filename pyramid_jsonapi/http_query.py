@@ -62,7 +62,7 @@ class QueryInfo:
     @cached_property
     def paging_info(self):
         return PagingInfo(self.view_class, self.request, self.sorting_info)
-    
+
     @cache
     def rel_paging_info(self, rel_path):
         return PagingInfo(self.view_class, self.request, self.sorting_info, rel_path)
@@ -72,7 +72,7 @@ class QueryInfo:
         return asbool(
             self.request.params.get('pj_include_count', 'false')
         )
-    
+
     @cached_property
     def field_info(self):
         return tuple(
@@ -174,7 +174,7 @@ class PagingInfo:
             raise HTTPBadRequest(f'page[{prefix}limit] must not be negative.')
 
         possible_start_types = (
-            'before', 'after', 'before_id', 'after_id', 
+            'before', 'after', 'before_id', 'after_id',
             'first', 'last',
             'offset'
         )
@@ -204,7 +204,7 @@ class PagingInfo:
     @cached_property
     def after(self):
         return self.before_after
-    
+
     @cached_property
     def item_id(self):
         return self.start_arg
@@ -244,7 +244,7 @@ def include_chain(include):
     chain = []
     names = include.split('.')
     for i in range(len(names)):
-        chain.append(tuple(names[:i+1]))
+        chain.append(tuple(names[:i + 1]))
     return chain
 
 

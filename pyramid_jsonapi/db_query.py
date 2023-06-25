@@ -2,6 +2,7 @@ from pyramid_jsonapi.http_query import QueryInfo
 from rqlalchemy import RQLQueryMixIn
 from sqlalchemy.orm import load_only, Query as BaseQuery
 
+
 class PJQueryMixin:
 
     @staticmethod
@@ -35,7 +36,7 @@ class PJQueryMixin:
         view = self.pj_view
         qinfo = QueryInfo(view.__class__, view.request)
         pinfo = qinfo.paging_info
-        
+
         # We just add filters here. The necessary joins will have been done by the
         # Sorting that after relies on.
         # Need >= or <= on all but the last prop.

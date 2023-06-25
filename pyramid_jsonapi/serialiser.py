@@ -121,7 +121,7 @@ class Serialiser:
         if many:
             ser['links'] = links = self.base_pagination_links()
             if self.view.query_info.paging_info.start_type == 'offset':
-                links.update(self.offset_pagination_links())
+                links.update(self.offset_pagination_links(available))
             elif self.view.query_info.paging_info.is_relative:
                 links.update(self.before_after_pagination_links(my_data))
         return ser
@@ -143,7 +143,7 @@ class Serialiser:
 
         return links
 
-    def offset_pagination_links(self):
+    def offset_pagination_links(self, count):
         links = {}
         req = self.view.request
         route_name = req.matched_route.name
@@ -152,14 +152,14 @@ class Serialiser:
         _query['sort'] = ','.join(qi.value for qi in qinfo.sorting_info)
         if req.params.get('include'):
             _query['include'] = req.params.get('include')
-        for finfo in  qinfo.field_info:
+        for finfo in qinfo.field_info:
             _query[finfo.key] = finfo.val
         for filtr in qinfo.filter_info:
             _query[filtr.pname] = filtr.value
 
         # Next link.
         next_offset = qinfo.paging_info.offset + qinfo.paging_info.limit
-        if self.count is None or next_offset < self.count:
+        if count is None or next_offset < count:
             _query['page[offset]'] = next_offset
             links['next'] = req.route_url(
                 route_name, _query=_query, **req.matchdict
@@ -176,9 +176,9 @@ class Serialiser:
             )
 
         # Last link.
-        if self.count is not None:
+        if count is not None:
             _query['page[offset]'] = (
-                max((self.count - 1), 0) //
+                max((count - 1), 0) //
                 qinfo.paging_info.limit
             ) * qinfo.paging_info.limit
             links['last'] = req.route_url(
@@ -198,7 +198,7 @@ class Serialiser:
             _query[filtr.pname] = filtr.value
         if req.params.get('include'):
             _query['include'] = req.params.get('include')
-        for finfo in  qinfo.field_info:
+        for finfo in qinfo.field_info:
             _query[finfo.key] = finfo.val
         for filtr in qinfo.filter_info:
             _query[filtr.pname] = filtr.value
@@ -237,4 +237,3 @@ class Serialiser:
         )
 
         return links
-

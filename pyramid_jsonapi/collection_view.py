@@ -118,7 +118,7 @@ class CollectionViewBase:
             else:
                 return None
         return item
-    
+
     def item_id(self, item):
         """Return the value of the id column for the item."""
         item_view = self.view_instance(item.__class__)

@@ -12,7 +12,7 @@ class Authoriser:
 
     def iterate_authorised_items(self, it, errors):
         return filter(partial(self.authorise_item, errors=errors), it)
-    
+
     def authorise_item(self, item, errors):
         if item is None:
             return True
