@@ -118,4 +118,123 @@ class Serialiser:
                 }
             }
         )
+        if many:
+            ser['links'] = links = self.base_pagination_links()
+            if self.view.query_info.paging_info.start_type == 'offset':
+                links.update(self.offset_pagination_links())
+            elif self.view.query_info.paging_info.is_relative:
+                links.update(self.before_after_pagination_links(my_data))
         return ser
+
+    def base_pagination_links(self):
+        links = {}
+        req = self.view.request
+        route_name = req.matched_route.name
+        qinfo = self.view.query_info
+        _query = {'page[limit]': qinfo.paging_info.limit}
+        _query['sort'] = ','.join(qi.value for qi in qinfo.sorting_info)
+        for filtr in qinfo.filter_info:
+            _query[filtr.pname] = filtr.value
+
+        # First link.
+        links['first'] = req.route_url(
+            route_name, _query=_query, **req.matchdict
+        )
+
+        return links
+
+    def offset_pagination_links(self):
+        links = {}
+        req = self.view.request
+        route_name = req.matched_route.name
+        qinfo = self.view.query_info
+        _query = {'page[limit]': qinfo.paging_info.limit}
+        _query['sort'] = ','.join(qi.value for qi in qinfo.sorting_info)
+        if req.params.get('include'):
+            _query['include'] = req.params.get('include')
+        for finfo in  qinfo.field_info:
+            _query[finfo.key] = finfo.val
+        for filtr in qinfo.filter_info:
+            _query[filtr.pname] = filtr.value
+
+        # Next link.
+        next_offset = qinfo.paging_info.offset + qinfo.paging_info.limit
+        if self.count is None or next_offset < self.count:
+            _query['page[offset]'] = next_offset
+            links['next'] = req.route_url(
+                route_name, _query=_query, **req.matchdict
+            )
+
+        # Previous link.
+        if qinfo.paging_info.offset > 0:
+            prev_offset = qinfo.paging_info.offset - qinfo.paging_info.limit
+            if prev_offset < 0:
+                prev_offset = 0
+            _query['page[offset]'] = prev_offset
+            links['prev'] = req.route_url(
+                route_name, _query=_query, **req.matchdict
+            )
+
+        # Last link.
+        if self.count is not None:
+            _query['page[offset]'] = (
+                max((self.count - 1), 0) //
+                qinfo.paging_info.limit
+            ) * qinfo.paging_info.limit
+            links['last'] = req.route_url(
+                route_name, _query=_query, **req.matchdict
+            )
+
+        return links
+
+    def before_after_pagination_links(self, data):
+        links = {}
+        req = self.view.request
+        route_name = req.matched_route.name
+        qinfo = self.view.query_info
+        _query = {'page[limit]': qinfo.paging_info.limit}
+        _query['sort'] = ','.join(qi.value for qi in qinfo.sorting_info)
+        for filtr in qinfo.filter_info:
+            _query[filtr.pname] = filtr.value
+        if req.params.get('include'):
+            _query['include'] = req.params.get('include')
+        for finfo in  qinfo.field_info:
+            _query[finfo.key] = finfo.val
+        for filtr in qinfo.filter_info:
+            _query[filtr.pname] = filtr.value
+
+        # Previous link.
+        # vals = []
+        # for sinfo in qinfo.sorting_info:
+        #     val = self.objects[0].object
+        #     for col in sinfo.colspec:
+        #         val = getattr(val, col)
+        #     vals.append(str(val))
+        # _query['page[before]'] = ','.join(vals)
+        _query_prev = {**_query, 'page[before_id]': str(self.view.item_id(data[0]))}
+        links['prev'] = req.route_url(
+            route_name, _query=_query_prev, **req.matchdict
+        )
+
+        # Next link.
+        # vals = []
+        # for sinfo in qinfo.sorting_info:
+        #     val = self.objects[-1].object
+        #     for col in sinfo.colspec:
+        #         val = getattr(val, col)
+        #     vals.append(str(val))
+        # _query['page[after]'] = ','.join(vals)
+        _query_next = {**_query, 'page[after_id]': str(self.view.item_id(data[-1]))}
+        links['next'] = req.route_url(
+            route_name, _query=_query_next, **req.matchdict
+        )
+
+        # Last link.
+        _query['page[last]'] = '1'
+        _query_last = {**_query, 'page[last]': 1}
+        links['last'] = req.route_url(
+            route_name, _query=_query_last, **req.matchdict
+        )
+
+        return links
+

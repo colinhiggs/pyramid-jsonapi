@@ -72,6 +72,28 @@ class QueryInfo:
         return asbool(
             self.request.params.get('pj_include_count', 'false')
         )
+    
+    @cached_property
+    def field_info(self):
+        return tuple(
+            FieldInfo(key, val) for key, val in self.request.params.items()
+            if key.startswith('fields[')
+        )
+
+
+@dataclass
+class FieldInfo:
+    key: str
+    val: str
+
+    @cached_property
+    def collection_name(self):
+        # Remove "fields[" from the start and "]" from the end.
+        return self.key[7:-1]
+
+    @cached_property
+    def field_names(self):
+        return ','.split(self.val)
 
 
 @dataclass
