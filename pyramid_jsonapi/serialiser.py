@@ -34,7 +34,6 @@ class Serialiser:
             if rel_name not in perms.relationships:
                 continue
             ser['relationships'][rel_name] = rel_dict = {}
-            # rel_view = view.view_instance(rel.tgt_class)
             if rel.to_many:
                 rel_dict['data'] = [
                     self.serialise_item(rel_item, errors=errors, as_identifier=True)
