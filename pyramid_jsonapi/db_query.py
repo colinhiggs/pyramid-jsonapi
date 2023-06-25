@@ -1,5 +1,6 @@
-from sqlalchemy.orm import load_only, Query as BaseQuery
+from pyramid_jsonapi.http_query import QueryInfo
 from rqlalchemy import RQLQueryMixIn
+from sqlalchemy.orm import load_only, Query as BaseQuery
 
 class PJQueryMixin:
 
@@ -28,6 +29,48 @@ class PJQueryMixin:
 
     def add_filtering(self):
         return self.pj_view.query_add_filtering(self)
+
+    def add_relative_paging(self):
+        query = self
+        view = self.pj_view
+        qinfo = QueryInfo(view.__class__, view.request)
+        pinfo = qinfo.paging_info
+        
+        # We just add filters here. The necessary joins will have been done by the
+        # Sorting that after relies on.
+        # Need >= or <= on all but the last prop.
+        if pinfo.start_type.endswith('_id'):
+            before_after = self.before_after_from_id(qinfo, pinfo.item_id)
+        else:
+            before_after = pinfo.before_after
+        for sinfo, after in zip(qinfo.sorting_info[:-1], before_after[:-1]):
+            ascending = not sinfo.ascending if query._pj_reversed else sinfo.ascending
+            if ascending:
+                query = query.filter(sinfo.prop >= after)
+            else:
+                query = query.filter(sinfo.prop <= after)
+        # And > or < on the last one.
+        ascending = qinfo.sorting_info[-1].ascending
+        ascending = not ascending if query._pj_reversed else ascending
+        if ascending:
+            print(f'filter: {qinfo.sorting_info[-1].prop} > {before_after[-1]}')
+            query = query.filter(qinfo.sorting_info[-1].prop > before_after[-1])
+        else:
+            query = query.filter(qinfo.sorting_info[-1].prop < before_after[-1])
+
+        return query
+
+    def before_after_from_id(self, qinfo, item_id):
+        item = self.pj_view.get_item(item_id)
+        vals = [self.get_prop_value(item, info) for info in qinfo.sorting_info]
+        print(vals)
+        return vals
+
+    def get_prop_value(self, item, prop_info):
+        val = item
+        for key in prop_info.colspec:
+            val = getattr(val, key)
+        return val
 
     def id_only(self):
         return self.options(load_only(self.pj_view.key_column.name))

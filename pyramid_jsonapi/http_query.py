@@ -170,7 +170,7 @@ class PagingInfo:
 
     @cached_property
     def before_after(self):
-        args = self.start_arg
+        args = self.start_arg.split(',')
         if len(args) != len(self.sorting_info):
             raise HTTPBadRequest(f'page[{self.prefix}{self.start_type}] list must match sort column list.')
         return args
@@ -184,14 +184,15 @@ class PagingInfo:
         return self.before_after
     
     @cached_property
-    def relative_id(self):
+    def item_id(self):
         return self.start_arg
 
     @cached_property
     def offset(self):
-        self.offset = int(self.request.params.get('page[offset]', 0))
-        if self.offset < 0:
+        offset = int(self.request.params.get('page[offset]', 0))
+        if offset < 0:
             raise HTTPBadRequest('page[offset] must not be negative.')
+        return offset
 
     @cached_property
     def is_relative(self):
