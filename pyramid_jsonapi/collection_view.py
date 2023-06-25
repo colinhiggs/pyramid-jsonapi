@@ -42,29 +42,12 @@ from pyramid_jsonapi.permissions import (
     Permission,
     Targets,
 )
+from .db_query import RQLQuery
 from .http_query import QueryInfo
 import pyramid_jsonapi.workflow as wf
 
 
 Entity = namedtuple('Entity', 'type')
-
-
-class RQLQuery(BaseQuery, RQLQueryMixIn):
-
-    def _rql_ilike(self, args):
-        attr, value = args
-
-        attr = self._rql_attr(attr)
-        value = self._rql_value(value, attr)
-        value = value.replace("*", "%")
-
-        return attr.ilike(value)
-
-    def _rql_icontains(self, args):
-        attr, value = args
-        attr = self._rql_attr(attr)
-        value = self._rql_value(value, attr)
-        return attr.ilike(f'%{value}%')
 
 
 class CollectionViewBase:
@@ -706,7 +689,7 @@ class CollectionViewBase:
         ).options(
             load_only(*loadonly)
         )
-        query._entities = [Entity(type=self.model)]
+        # query._entities = [Entity(type=self.model)]
         query.__class__ = RQLQuery
         return query
 

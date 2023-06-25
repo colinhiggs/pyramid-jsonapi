@@ -8,6 +8,7 @@ from version import get_version
 
 requires = [
     'alchemyjsonschema',
+    'cachetools',
     'jsonschema',
     'pkginfo',
     'pyramid',

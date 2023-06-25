@@ -3,6 +3,7 @@ import pyramid_jsonapi.workflow as wf
 import sqlalchemy
 import time
 
+from dataclasses import dataclass
 from itertools import islice
 from pyramid.httpexceptions import (
     HTTPBadRequest,
@@ -13,29 +14,10 @@ from sqlalchemy.ext.associationproxy import ASSOCIATION_PROXY
 from sqlalchemy.orm.relationships import RelationshipProperty
 
 from . import stages, Serialiser, longest_includes, includes
+from ...db_query import RQLQuery
 from ...http_query import QueryInfo
 
 log = logging.getLogger(__name__)
-
-
-def query_results(query, limit, page_size=None):
-    page_size = page_size or limit
-    records_yielded = 0
-    # last_record = None
-    cur_query = query.limit(page_size)
-    records_from_cur = 0
-    while records_yielded < limit:
-        # Loop through records in a page:
-        for record in cur_query:
-            if records_yielded >= limit:
-                continue
-            records_yielded += 1
-            records_from_cur += 1
-            yield record
-        # End of a page
-        if records_from_cur == 0:
-            break
-        cur_query = query.offset(records_yielded).limit(page_size)
 
 
 def rel_opt(rel, so_far=None):
@@ -74,6 +56,47 @@ def selectin_options(view):
     return options
 
 
+from cachetools import cached
+from cachetools.keys import hashkey
+from functools import partial
+from pyramid_jsonapi.permissions import Targets, PermissionTarget
+from ...collection_view import CollectionViewBase
+@dataclass
+class Authoriser:
+    view: CollectionViewBase
+
+    def iterate_authorised_items(self, it, errors):
+        return filter(partial(self.authorise_item, errors=errors), it)
+    
+    def authorise_item(self, item, errors):
+        if item is None:
+            return True
+        perms = self.item_permissions(item)
+        if not perms.id and errors is not None:
+            view = self.view.view_instance(item.__class__)
+            ref = f'{view.collection_name}[{view.get_id(item)}]'
+            errors[ref] = 'GET id denied'
+            return False
+        return True
+
+    def authorised_item(self, item, errors):
+        if self.authorise_item(item, errors):
+            return item
+        return None
+
+    def item_permissions_key(self, item):
+        return (
+            self.view.collection_name,
+            str(getattr(item, self.view.key_column.name))
+        )
+
+    @cached(cache={}, key=item_permissions_key)
+    def item_permissions(self, item):
+        view = self.view.view_instance(item.__class__)
+        pf = view.permission_filter('get', Targets.item, 'alter_item')
+        return pf(item, PermissionTarget(Targets.item))
+
+
 def workflow(view, stages):
     wf_start = time.time()
     log.debug(f'{wf_start} start selectin workflow')
@@ -81,7 +104,8 @@ def workflow(view, stages):
     pinfo = qinfo.paging_info
     count = None
 
-    query = view.base_collection_query()
+    # query = view.base_collection_query()
+    query = RQLQuery.from_view(view, loadonly=None)
     query_reversed = False
     if pinfo.start_type in ('last', 'before'):
         # These start types need to fetch records backwards (relative to their
@@ -91,8 +115,6 @@ def workflow(view, stages):
     query = view.query_add_filtering(query)
 
     if pinfo.start_type in ('after', 'before'):
-        if qinfo.pj_include_count:
-            count = full_search_count(view, stages)
 
         # We just add filters here. The necessary joins will have been done by the
         # Sorting that after relies on.
@@ -113,20 +135,23 @@ def workflow(view, stages):
 
     query = query.options(*selectin_options(view))
 
-    items_iterator = query_results(query, pinfo.limit)
-    offset_count = 0
-    if pinfo.start_type == 'offset':
-        offset_count = sum(1 for _ in islice(items_iterator, pinfo.offset))
+    items_iterator = query.iterate_paged(pinfo.limit)
     before_items = time.time()
-    items = list(items_iterator)
+    authoriser = Authoriser(view)
+    if pinfo.start_type == 'offset':
+        authz_items_no_record = authoriser.iterate_authorised_items(items_iterator, errors=None)
+        next(islice(authz_items_no_record, pinfo.offset, pinfo.offset), None)
+    errors = {}
+    authz_items = authoriser.iterate_authorised_items(items_iterator, errors)
+    items = list(islice(authz_items, pinfo.limit))
     log.debug(f'items fetched in {time.time() - before_items}')
     if query_reversed:
         items.reverse()
-    if pinfo.start_type in ('offset', None) and qinfo.pj_include_count:
-        count = offset_count + len(items) + sum(1 for _ in items_iterator)
 
+    if qinfo.pj_include_count:
+        count = RQLQuery.from_view(view).id_only().add_filtering().pj_count()
     before_serialise = time.time()
-    doc = Serialiser(view).serialise(items)
+    doc = Serialiser(view, authoriser).serialise(items, pinfo.limit, available=count, errors=errors)
     log.debug(f'items serialised in {time.time() - before_serialise}')
     return doc
 

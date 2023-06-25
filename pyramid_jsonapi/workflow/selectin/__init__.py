@@ -10,16 +10,15 @@ stages = (
 
 
 class Serialiser:
-    def __init__(self, view) -> None:
+    def __init__(self, view, authoriser=None) -> None:
         self.view = view
+        self.authoriser = authoriser
         self.serialised_id_count = 0
         self.serialised_count = 0
 
-    def serialise_item(self, item, perms=None, errors=None, as_identifier=False):
+    def serialise_item(self, item, errors=None, as_identifier=False):
         if item is None:
             return None
-        if perms is None:
-            perms = self.view.permission_all
         view = self.view.view_instance(item.__class__)
         ser = {
             'type': view.collection_name,
@@ -28,6 +27,7 @@ class Serialiser:
         if as_identifier:
             self.serialised_id_count += 1
             return ser
+        perms = self.item_permissions(item)
         ser['attributes'] = {}
         ser['relationships'] = {}
         for attr in view.requested_attributes:
@@ -41,31 +41,20 @@ class Serialiser:
             # rel_view = view.view_instance(rel.tgt_class)
             if rel.to_many:
                 rel_dict['data'] = [
-                    sitem for sitem in
-                    self.gen_authorised_seq(getattr(item, rel_name), errors, True)
+                    self.serialise_item(rel_item, errors=errors, as_identifier=True)
+                    for rel_item in
+                    self.authorised_seq(getattr(item, rel_name), errors)
                 ]
             else:
-                rel_dict['data'] = self.authorised_item(item, errors, True)
+                rel_item = getattr(item, rel_name)
+                if self.authoriser:
+                    rel_dict['data'] = self.serialise_item(
+                        self.authoriser.authorised_item(rel_item, errors), as_identifier=True
+                    )
+                else:
+                    rel_dict['data'] = self.serialise_item(rel_item, as_identifier=True)
         self.serialised_count += 1
         return ser
-    
-    def authorised_item(self, item, errors, as_identifier=False):
-        view = self.view.view_instance(item.__class__)
-        pf = view.permission_filter('get', Targets.item, 'alter_item')
-        perms = pf(item, PermissionTarget(Targets.item))
-        # print(f'{view.collection_name}:{item.uuid}\n  - {perms}')
-        if not perms.id:
-            ref = f'{view.collection_name}[{view.get_id(item)}]'
-            errors[ref] = 'GET id denied'
-            return None
-        return self.serialise_item(item, perms, errors, as_identifier)
-
-    def gen_authorised_seq(self, items, errors, as_identifier=False):
-        for item in items:
-            sitem = self.authorised_item(item, errors, as_identifier)
-            if sitem is None:
-                continue
-            yield sitem
 
     def include(self, item, include_list, included_dict):
         if not include_list:
@@ -79,13 +68,25 @@ class Serialiser:
         if rel.to_one:
             rel_items = [rel_items]
         for rel_item in rel_items:
+            if rel_item is None:
+                continue
             ref_tuple = (rel_view.collection_name, str(getattr(rel_item, rel_view.key_column.name)))
             if ref_tuple not in included_dict:
                 included_dict[ref_tuple] = rel_item
             if rel_include_list:
                 self.include(rel_item, rel_include_list, included_dict)
 
-    def serialise(self, data, is_top=True, included=None):
+    def item_permissions(self, item):
+        if self.authoriser:
+            return self.authoriser.item_permissions(item)
+        return self.view.view_instance(item.__class__).permission_all
+
+    def authorised_seq(self, seq, errors):
+        if self.authoriser:
+            return self.authoriser.iterate_authorised_items(seq, errors)
+        return seq
+
+    def serialise(self, data, limit, available=None, errors=None):
         ser = wf.Doc()
         included_dict = {}
         self.serialised_id_count = 0
@@ -96,8 +97,7 @@ class Serialiser:
         else:
             many = False
             my_data = [data]
-        errors = {}
-        ser_data = [sitem for sitem in self.gen_authorised_seq(my_data, errors)]
+        ser_data = [self.serialise_item(item) for item in my_data]
         if many:
             ser['data'] = ser_data
         else:
@@ -106,13 +106,22 @@ class Serialiser:
             for inc in longest_includes(includes(self.view.request)):
                 self.include(item, inc, included_dict)
             ser['included'] = [
-                o for o in self.gen_authorised_seq(included_dict.values(), errors)
+                self.serialise_item(o) for o in self.authorised_seq(included_dict.values(), errors)
             ]
         ser['meta'] = {
             'serialised_count': self.serialised_count,
             'serialised_id_count': self.serialised_id_count,
             'errors': errors,
         }
+        ser['meta'].update(
+            {
+                'results': {
+                    'available': available,
+                    'limit': limit,
+                    # 'returned': len(self.objects)
+                }
+            }
+        )
         return ser
 
 
