@@ -54,7 +54,6 @@ class PJQueryMixin:
         ascending = qinfo.sorting_info[-1].ascending
         ascending = not ascending if query._pj_reversed else ascending
         if ascending:
-            print(f'filter: {qinfo.sorting_info[-1].prop} > {before_after[-1]}')
             query = query.filter(qinfo.sorting_info[-1].prop > before_after[-1])
         else:
             query = query.filter(qinfo.sorting_info[-1].prop < before_after[-1])
@@ -64,7 +63,6 @@ class PJQueryMixin:
     def before_after_from_id(self, qinfo, item_id):
         item = self.pj_view.get_item(item_id)
         vals = [self.get_prop_value(item, info) for info in qinfo.sorting_info]
-        print(vals)
         return vals
 
     def get_prop_value(self, item, prop_info):
