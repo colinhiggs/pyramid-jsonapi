@@ -32,13 +32,16 @@ def rel_opt(rel, so_far=None):
         if so_far:
             return so_far.selectinload(ps.local_attr).selectinload(ps.remote_attr)
         return selectinload(ps.local_attr).selectinload(ps.remote_attr)
+    return None
 
 
 def rel_opts(view, so_far=None):
     options = []
     for rel_name in view.requested_relationships.keys() & view.allowed_fields:
         rel = view.relationships[rel_name]
-        options.append(rel_opt(rel, so_far))
+        opt = rel_opt(rel, so_far)
+        if opt is not None:
+            options.append(opt)
     return options
 
 
