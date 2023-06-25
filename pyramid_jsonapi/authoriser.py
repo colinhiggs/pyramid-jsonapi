@@ -30,9 +30,10 @@ class Authoriser:
         return None
 
     def item_permissions_key(self, item):
+        view = self.view.view_instance(item.__class__)
         return (
-            self.view.collection_name,
-            str(getattr(item, self.view.key_column.name))
+            view.collection_name,
+            str(getattr(item, view.key_column.name))
         )
 
     @cached(cache={}, key=item_permissions_key)
