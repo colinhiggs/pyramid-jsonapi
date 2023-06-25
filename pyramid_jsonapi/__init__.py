@@ -422,7 +422,11 @@ class StdRelationship:
         self.view_class = view_class
         self.src_class = self.view_class.model
         if isinstance(obj, RelationshipProperty):
-            self.direction = self.rel_direction
+            # self.direction = self.rel_direction
+            if getattr(self.src_class, self.name).property.uselist:
+                self.direction = ONETOMANY
+            else:
+                self.direction = MANYTOONE
             self.tgt_class = self.rel_tgt_class
             self.instrumented = getattr(self.src_class, self.name)
             self.queryable = True
