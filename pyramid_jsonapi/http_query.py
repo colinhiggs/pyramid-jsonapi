@@ -168,3 +168,31 @@ class PagingInfo:
     @cached_property
     def page_start(self):
         return getattr(self, self.start_type)
+
+
+def includes(request):
+    incs = request.params.get('include')
+    if not incs:
+        return []
+    return incs.split(',')
+
+
+def include_chain(include):
+    chain = []
+    names = include.split('.')
+    for i in range(len(names)):
+        chain.append(tuple(names[:i+1]))
+    return chain
+
+
+def longest_includes(includes):
+    seen = set()
+    longest = set()
+    for inc in includes:
+        inc_chain = include_chain(inc)
+        if inc_chain[-1] in seen:
+            continue
+        seen |= set(inc_chain)
+        longest -= set(inc_chain[:-1])
+        longest.add(inc_chain[-1])
+    return longest
