@@ -19,7 +19,7 @@ class Authoriser:
         perms = self.item_permissions(item)
         if not perms.id and errors is not None:
             view = self.view.view_instance(item.__class__)
-            ref = f'{view.collection_name}[{view.get_id(item)}]'
+            ref = f'{view.collection_name}[{view.item_id(item)}]'
             errors[ref] = 'GET id denied'
             return False
         return True
@@ -39,5 +39,5 @@ class Authoriser:
     @cached(cache={}, key=item_permissions_key)
     def item_permissions(self, item):
         view = self.view.view_instance(item.__class__)
-        pf = view.permission_filter('get', Targets.item, 'alter_item')
+        pf = view.permission_filter('get', Targets.item, 'alter_result')
         return pf(item, PermissionTarget(Targets.item))
