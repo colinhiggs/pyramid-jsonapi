@@ -1478,6 +1478,7 @@ class CollectionViewBase:
             return Permission.from_pfilter(
                 cls.permission_template, result
             )
+        wrapped_pfunc.pfunc = pfunc
         return wrapped_pfunc
 
     @classmethod

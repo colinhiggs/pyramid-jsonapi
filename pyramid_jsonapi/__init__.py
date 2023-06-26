@@ -136,6 +136,7 @@ class PyramidJSONAPI():
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
         self.filter_registry = pyramid_jsonapi.filters.FilterRegistry()
         self.metadata = {}
+        self.permission_handlers_enabled = False
 
     @staticmethod
     def error(exc, request):
@@ -393,13 +394,14 @@ class PyramidJSONAPI():
 
         '''
         # Build a set of all the end points from permissions.
+        if self.permission_handlers_enabled:
+            return
+        self.permission_handlers_enabled = True
         ep_names = self.endpoint_data.http_to_view_methods['all']
 
         # Add permission handlers for all view classes.
         for model, view_class in self.view_classes.items():
             for ep_name in ep_names:
-                if model == self.models.ArticleByAssoc:
-                    wf_mod_name = getattr(self.settings, f'workflow_{ep_name}')
                 ep_func = getattr(view_class, ep_name)
                 if '.loop.' in getattr(self.settings, f'workflow_{ep_name}',''):
                     ep_func.stages['alter_document'].append(
@@ -425,17 +427,15 @@ class StdRelationship:
         self.view_class = view_class
         self.src_class = self.view_class.model
         if isinstance(obj, RelationshipProperty):
-            # self.direction = self.rel_direction
-            if getattr(self.src_class, self.name).property.uselist:
-                self.direction = ONETOMANY
-            else:
-                self.direction = MANYTOONE
+            self.direction = self.rel_direction
+            self.to_many = getattr(self.src_class, self.name).property.uselist
             self.tgt_class = self.rel_tgt_class
             self.instrumented = getattr(self.src_class, self.name)
             self.queryable = True
         elif isinstance(obj, hybrid_property):
             pj_info = obj.info['pyramid_jsonapi']['relationship']
             self.direction = pj_info.get('direction', ONETOMANY)
+            self.to_many = self.direction in (ONETOMANY, MANYTOMANY)
             self.queryable = pj_info.get('queryable', False)
             tgt_class = pj_info.get('tgt_class')
             if isinstance(tgt_class, str):
@@ -446,16 +446,13 @@ class StdRelationship:
             self.tgt_class = tgt_class
         elif obj.extension_type is ASSOCIATION_PROXY:
             self.direction = self.proxy_direction
+            self.to_many = self.direction is MANYTOMANY
             self.tgt_class = self.proxy_tgt_class
             self.queryable = True
 
     @property
     def rel_direction(self):
-        return self.obj.direction
-
-    @property
-    def to_many(self):
-        return self.direction in (ONETOMANY, MANYTOMANY)
+        return self.obj.direction        
 
     @property
     def to_one(self):

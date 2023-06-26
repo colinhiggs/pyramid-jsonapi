@@ -383,6 +383,9 @@ def allowed_rel_changes(rel, view, stage, obj_data, perm):
                 mirror_data = None
             elif perm == 'post':
                 mirror_data = src_obj_data
+            pf = rel_view.permission_filter(
+                'patch', Targets.relationship, stage
+            )
             if rel_view.permission_filter(
                 'patch', Targets.relationship, stage
             )(
