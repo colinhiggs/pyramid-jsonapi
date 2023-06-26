@@ -19,8 +19,8 @@ class Authoriser:
         perms = self.item_permissions(item)
         if not perms.id and errors is not None:
             view = self.view.view_instance(item.__class__)
-            ref = f'{view.collection_name}[{view.item_id(item)}]'
-            errors[ref] = 'GET id denied'
+            ref = f'{view.collection_name}::{view.item_id(item)}'
+            errors['objects'][ref] = 'GET id denied'
             return False
         return True
 

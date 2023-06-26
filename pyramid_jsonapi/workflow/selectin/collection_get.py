@@ -84,7 +84,7 @@ def workflow(view, stages):
     if pinfo.start_type == 'offset' and pinfo.offset > 0:
         authz_items_no_record = authoriser.iterate_authorised_items(items_iterator, errors=None)
         next(islice(authz_items_no_record, pinfo.offset, pinfo.offset), None)
-    errors = {}
+    errors = {'objects': {}, 'attributes': {}, 'relationships': {}}
     authz_items = authoriser.iterate_authorised_items(items_iterator, errors)
     items = list(islice(authz_items, pinfo.limit))
     log.debug(f'items fetched in {time.time() - before_items}')

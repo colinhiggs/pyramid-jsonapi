@@ -92,7 +92,7 @@ class Serialiser:
         else:
             many = False
             my_data = [data]
-        ser_data = [self.serialise_item(item) for item in my_data]
+        ser_data = [self.serialise_item(item, errors) for item in my_data]
         if many:
             ser['data'] = ser_data
         else:
@@ -106,7 +106,7 @@ class Serialiser:
         ser['meta'] = {
             'serialised_count': self.serialised_count,
             'serialised_id_count': self.serialised_id_count,
-            'errors': errors,
+            'rejected': errors,
         }
         ser['meta'].update(
             {

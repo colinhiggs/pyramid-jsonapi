@@ -106,7 +106,7 @@ class PyramidJSONAPI():
         'workflow_item_get': {'val': 'pyramid_jsonapi.workflow.loop.item_get', 'desc': 'Module implementing the item_get workflow.'},
         'workflow_item_patch': {'val': 'pyramid_jsonapi.workflow.loop.item_patch', 'desc': 'Module implementing the item_patch workflow.'},
         'workflow_item_delete': {'val': 'pyramid_jsonapi.workflow.loop.item_delete', 'desc': 'Module implementing the item_delete workflow.'},
-        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.selectin.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
+        'workflow_collection_get': {'val': 'pyramid_jsonapi.workflow.loop.collection_get', 'desc': 'Module implementing the collection_get workflow.'},
         'workflow_collection_post': {'val': 'pyramid_jsonapi.workflow.loop.collection_post', 'desc': 'Module implementing the collection_post workflow.'},
         'workflow_related_get': {'val': 'pyramid_jsonapi.workflow.loop.related_get', 'desc': 'Module implementing the related_get workflow.'},
         'workflow_relationships_get': {'val': 'pyramid_jsonapi.workflow.loop.relationships_get', 'desc': 'Module implementing the relationships_get workflow.'},
@@ -398,10 +398,13 @@ class PyramidJSONAPI():
         # Add permission handlers for all view classes.
         for model, view_class in self.view_classes.items():
             for ep_name in ep_names:
+                if model == self.models.ArticleByAssoc:
+                    wf_mod_name = getattr(self.settings, f'workflow_{ep_name}')
                 ep_func = getattr(view_class, ep_name)
-                ep_func.stages['alter_document'].append(
-                    wf.sh_alter_document_add_denied
-                )
+                if '.loop.' in getattr(self.settings, f'workflow_{ep_name}',''):
+                    ep_func.stages['alter_document'].append(
+                        wf.sh_alter_document_add_denied
+                    )
                 for stage_name in stage_names:
                     view_class.add_stage_handler(
                         [ep_name], [stage_name],

@@ -281,11 +281,18 @@ class TestPermissions(DBTestBase):
     def test_get_alter_result_collection(self):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
+        if pj.settings.workflow_collection_get.split('.')[2] == 'selectin':
+            def not_alice(obj, *args, **kwargs):
+                return obj.name != 'alice'
+        else:
+            def not_alice(obj, *args, **kwargs):
+                return obj.object.name != 'alice'
         # Not allowed to see alice (people/1)
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
             ['alter_result', ],
-            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+            # lambda obj, *args, **kwargs: obj.object.name != 'alice',
+            not_alice
         )
         # Make sure we get the lowest ids with a filter.
         ret = test_app.get('/people?filter[id:lt]=3').json_body
@@ -298,10 +305,17 @@ class TestPermissions(DBTestBase):
         test_app = self.test_app({})
         pj = test_app._pj_app.pj
         # Not allowed to see alice (people/1)
+        if pj.settings.workflow_collection_get.split('.')[2] == 'selectin':
+            def not_alice(obj, *args, **kwargs):
+                return obj.name != 'alice'
+        else:
+            def not_alice(obj, *args, **kwargs):
+                return obj.object.name != 'alice'
         pj.view_classes[test_project.models.Person].register_permission_filter(
             ['get'],
             ['alter_result', ],
-            lambda obj, *args, **kwargs: obj.object.name != 'alice',
+            # lambda obj, *args, **kwargs: obj.object.name != 'alice',
+            not_alice
         )
         # Make sure we get the lowest ids with a filter.
         res = test_app.get('/people?filter[id:lt]=3').json_body
