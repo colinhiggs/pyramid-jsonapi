@@ -185,6 +185,7 @@ class PagingInfo:
             )
         if len(start_types_found) == 1:
             self.start_type = start_types_found[0]
+        self.start_type = self.start_type or 'first'
 
     @cached_property
     def start_arg(self):
@@ -192,6 +193,8 @@ class PagingInfo:
 
     @cached_property
     def before_after(self):
+        if self.is_terminal:
+            return []
         args = self.start_arg.split(',')
         if len(args) != len(self.sorting_info):
             raise HTTPBadRequest(f'page[{self.prefix}{self.start_type}] list must match sort column list.')
@@ -218,9 +221,11 @@ class PagingInfo:
 
     @cached_property
     def is_relative(self):
-        if self.start_type in {'before', 'after', 'before_id', 'after_id'}:
-            return True
-        return False
+        return self.start_type in {'before', 'after', 'before_id', 'after_id', 'first', 'last'}
+    
+    @cached_property
+    def is_terminal(self):
+        return self.start_type in {'first', 'last'}
 
     @cached_property
     def needs_reversed(self):

@@ -118,29 +118,12 @@ class Serialiser:
             }
         )
         if many:
-            ser['links'] = links = self.base_pagination_links()
+            ser['links'] = links = {}
             if self.view.query_info.paging_info.start_type == 'offset':
                 links.update(self.offset_pagination_links(available))
             elif self.view.query_info.paging_info.is_relative:
                 links.update(self.before_after_pagination_links(my_data))
         return ser
-
-    def base_pagination_links(self):
-        links = {}
-        req = self.view.request
-        route_name = req.matched_route.name
-        qinfo = self.view.query_info
-        _query = {'page[limit]': qinfo.paging_info.limit}
-        _query['sort'] = ','.join(qi.value for qi in qinfo.sorting_info)
-        for filtr in qinfo.filter_info:
-            _query[filtr.pname] = filtr.value
-
-        # First link.
-        links['first'] = req.route_url(
-            route_name, _query=_query, **req.matchdict
-        )
-
-        return links
 
     def offset_pagination_links(self, count):
         links = {}
@@ -155,6 +138,11 @@ class Serialiser:
             _query[finfo.key] = finfo.val
         for filtr in qinfo.filter_info:
             _query[filtr.pname] = filtr.value
+
+        # First link.
+        links['first'] = req.route_url(
+            route_name, _query={**_query, 'page[offset]': 0} **req.matchdict
+        )
 
         # Next link.
         next_offset = qinfo.paging_info.offset + qinfo.paging_info.limit
@@ -202,6 +190,11 @@ class Serialiser:
         for filtr in qinfo.filter_info:
             _query[filtr.pname] = filtr.value
 
+        # First link.
+        links['first'] = req.route_url(
+            route_name, _query={**_query, 'page[first]': 1}, **req.matchdict
+        )
+
         # Previous link.
         # vals = []
         # for sinfo in qinfo.sorting_info:
@@ -210,10 +203,20 @@ class Serialiser:
         #         val = getattr(val, col)
         #     vals.append(str(val))
         # _query['page[before]'] = ','.join(vals)
-        _query_prev = {**_query, 'page[before_id]': str(self.view.item_id(data[0]))}
-        links['prev'] = req.route_url(
-            route_name, _query=_query_prev, **req.matchdict
-        )
+        _query_prev = None
+        if data:
+            _query_prev = {**_query, 'page[before_id]': str(self.view.item_id(data[0]))}
+        else:
+            if qinfo.paging_info.start_type in ('after', 'after_id', 'last'):
+                # off the end of a list of pages. Link to last page.
+                _query_prev = {**_query, 'page[last]': 1}
+            # Otherwise either an empty search (no prev or next) or before beginning (no prev)
+        if qinfo.paging_info.start_type == 'first':
+            _query_prev = None
+        if _query_prev:
+            links['prev'] = req.route_url(
+                route_name, _query=_query_prev, **req.matchdict
+            )
 
         # Next link.
         # vals = []
@@ -223,10 +226,20 @@ class Serialiser:
         #         val = getattr(val, col)
         #     vals.append(str(val))
         # _query['page[after]'] = ','.join(vals)
-        _query_next = {**_query, 'page[after_id]': str(self.view.item_id(data[-1]))}
-        links['next'] = req.route_url(
-            route_name, _query=_query_next, **req.matchdict
-        )
+        _query_next = None
+        if data:
+            _query_next = {**_query, 'page[after_id]': str(self.view.item_id(data[-1]))}
+        else:
+            if qinfo.paging_info.start_type in ('before', 'before_id', 'first'):
+                # before beginning of a list of pages. Link to first page.
+                _query_next = {**_query, 'page[first]': 1}
+            # Otherwise either an empty search (no prev or next) or after end (no next)
+        if qinfo.paging_info.start_type == 'last':
+            _query_next = None
+        if _query_next:
+            links['next'] = req.route_url(
+                route_name, _query=_query_next, **req.matchdict
+            )
 
         # Last link.
         _query['page[last]'] = '1'

@@ -1,3 +1,4 @@
+from pyramid.httpexceptions import HTTPBadRequest
 from pyramid_jsonapi.http_query import QueryInfo
 from rqlalchemy import RQLQueryMixIn
 from sqlalchemy.orm import load_only, Query as BaseQuery
@@ -53,15 +54,19 @@ class PJQueryMixin:
         # And > or < on the last one.
         ascending = qinfo.sorting_info[-1].ascending
         ascending = not ascending if query._pj_reversed else ascending
-        if ascending:
-            query = query.filter(qinfo.sorting_info[-1].prop > before_after[-1])
-        else:
-            query = query.filter(qinfo.sorting_info[-1].prop < before_after[-1])
+        # first and last have empty before_afters
+        if before_after:
+            if ascending:
+                query = query.filter(qinfo.sorting_info[-1].prop > before_after[-1])
+            else:
+                query = query.filter(qinfo.sorting_info[-1].prop < before_after[-1])
 
         return query
 
     def before_after_from_id(self, qinfo, item_id):
         item = self.pj_view.get_item(item_id)
+        if not item:
+            raise HTTPBadRequest(f'Could not find item with after_id {item_id}')
         vals = [self.get_prop_value(item, info) for info in qinfo.sorting_info]
         return vals
 
