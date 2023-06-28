@@ -222,7 +222,7 @@ class PagingInfo:
     @cached_property
     def is_relative(self):
         return self.start_type in {'before', 'after', 'before_id', 'after_id', 'first', 'last'}
-    
+
     @cached_property
     def is_terminal(self):
         return self.start_type in {'first', 'last'}

@@ -141,7 +141,7 @@ class Serialiser:
 
         # First link.
         links['first'] = req.route_url(
-            route_name, _query={**_query, 'page[offset]': 0} **req.matchdict
+            route_name, _query={**_query, 'page[offset]': 0}, **req.matchdict
         )
 
         # Next link.

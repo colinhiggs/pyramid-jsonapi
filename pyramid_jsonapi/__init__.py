@@ -403,7 +403,7 @@ class PyramidJSONAPI():
         for model, view_class in self.view_classes.items():
             for ep_name in ep_names:
                 ep_func = getattr(view_class, ep_name)
-                if '.loop.' in getattr(self.settings, f'workflow_{ep_name}',''):
+                if '.loop.' in getattr(self.settings, f'workflow_{ep_name}', ''):
                     ep_func.stages['alter_document'].append(
                         wf.sh_alter_document_add_denied
                     )
@@ -452,7 +452,7 @@ class StdRelationship:
 
     @property
     def rel_direction(self):
-        return self.obj.direction        
+        return self.obj.direction
 
     @property
     def to_one(self):
