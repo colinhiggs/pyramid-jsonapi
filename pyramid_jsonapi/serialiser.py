@@ -180,7 +180,7 @@ class Serialiser:
         route_name = req.matched_route.name
         qinfo = self.view.query_info
         _query = {'page[limit]': qinfo.paging_info.limit}
-        _query['sort'] = ','.join(qi.value for qi in qinfo.sorting_info)
+        _query['sort'] = ','.join(str(qi) for qi in qinfo.sorting_info)
         for filtr in qinfo.filter_info:
             _query[filtr.pname] = filtr.value
         if req.params.get('include'):

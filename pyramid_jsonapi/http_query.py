@@ -140,6 +140,12 @@ class SortingInfo(ColspecMixin):
         else:
             self.ascending = True
 
+    def __str__(self) -> str:
+        if self.ascending:
+            return self.value
+        else:
+            return f'-{self.value}'
+
     @cached_property
     def colspec(self):
         return tuple(
