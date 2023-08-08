@@ -113,3 +113,21 @@ class RQLQuery(BaseQuery, RQLQueryMixIn, PJQueryMixin):
         attr = self._rql_attr(attr)
         value = self._rql_value(value, attr)
         return attr.ilike(f'%{value}%')
+
+    def _rql_isempty(self, args):
+        attr = self._rql_attr(args[0])
+        return attr.__eq__('')
+
+    def _rql_isnull(self, args):
+        attr = self._rql_attr(args[0])
+        # None value translates to 'IS NULL'
+        return attr.__eq__()
+
+    def _rql_isnotempty(self, args):
+        attr = self._rql_attr(args[0])
+        return attr.__ne__('')
+
+    def _rql_isnotnull(self, args):
+        attr = self._rql_attr(args[0])
+        # None value translates to 'IS NOT NULL'
+        return attr.__ne__()
