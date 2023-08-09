@@ -121,7 +121,7 @@ class RQLQuery(BaseQuery, RQLQueryMixIn, PJQueryMixin):
     def _rql_isnull(self, args):
         attr = self._rql_attr(args[0])
         # None value translates to 'IS NULL'
-        return attr.__eq__()
+        return attr.__eq__(None)
 
     def _rql_isnotempty(self, args):
         attr = self._rql_attr(args[0])
@@ -130,4 +130,12 @@ class RQLQuery(BaseQuery, RQLQueryMixIn, PJQueryMixin):
     def _rql_isnotnull(self, args):
         attr = self._rql_attr(args[0])
         # None value translates to 'IS NOT NULL'
-        return attr.__ne__()
+        return attr.__ne__(None)
+
+    def _rql_istrue(self, args):
+        attr = self._rql_attr(args[0])
+        return attr.__eq__(True)
+
+    def _rql_isfalse(self, args):
+        attr = self._rql_attr(args[0])
+        return attr.__eq__(False)
