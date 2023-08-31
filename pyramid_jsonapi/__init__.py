@@ -136,7 +136,7 @@ class PyramidJSONAPI():
         self.endpoint_data = pyramid_jsonapi.endpoints.EndpointData(self)
         self.filter_registry = pyramid_jsonapi.filters.FilterRegistry()
         self.metadata = {}
-        self.permission_handlers_enabled = False
+        self.permission_handlers_enabled = set()
 
     @staticmethod
     def error(exc, request):
@@ -393,10 +393,11 @@ class PyramidJSONAPI():
             stage_names: an iterable of stage names to enable.
 
         '''
-        # Build a set of all the end points from permissions.
-        if self.permission_handlers_enabled:
+        # Don't do stages we've done before
+        if not (set(stage_names) - self.permission_handlers_enabled):
             return
-        self.permission_handlers_enabled = True
+
+        # Build a set of all the end points from permissions.
         ep_names = self.endpoint_data.http_to_view_methods['all']
 
         # Add permission handlers for all view classes.
@@ -408,6 +409,7 @@ class PyramidJSONAPI():
                         wf.sh_alter_document_add_denied
                     )
                 for stage_name in stage_names:
+                    self.permission_handlers_enabled.add(stage_name)
                     view_class.add_stage_handler(
                         [ep_name], [stage_name],
                         view_class.permission_handler(ep_name, stage_name)
