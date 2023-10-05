@@ -22,7 +22,7 @@ class ColspecMixin:
             try:
                 rel = vc.relationships[rname]
             except KeyError:
-                HTTPBadRequest(f"{vc.collection_name} has no relationship {rname}")
+                raise HTTPBadRequest(f"{vc.collection_name} has no relationship {rname}")
             rels.append(rel)
             vc = self.view_class.api.view_classes[rel.tgt_class]
         return rels
