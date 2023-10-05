@@ -453,7 +453,48 @@ def allowed_rel_changes(rel, view, stage, obj_data, perm):
         return allowed_ris if allowed_ris else False
     else:
         # One to one.
-        pass
+        new_rel_data = allowed_forward_ris[0]
+        if view.obj_id is None:
+            old_rel_obj = None
+        else:
+            # Will raise HTTPNotFound if there isn't an object with id
+            # view.obj_id but we want that to bubble up.
+            old_rel_obj = getattr(view.get_item(), rel.name)
+        if old_rel_obj:
+            # Need permission to PATCH old_rel_obj.mirror_rel (set it to None)
+            if not rel_view.permission_filter(
+                    'patch', Targets.relationship, stage
+                )(
+                    {
+                        'type': rel_view.collection_name,
+                        'id': str(rel_view.id_col(old_rel_obj)),
+                        'relationships': {
+                            mirror_rel.name: {
+                                'data': None,
+                            }
+                        }
+                    },
+                    mirror_target
+                ):
+                    return False
+        if new_rel_data:
+            # Need permission to PATCH new_obj.mirror_rel to set it to this object
+            if not rel_view.permission_filter(
+                    'patch', Targets.relationship, stage
+                )(
+                    {
+                        'type': new_rel_data['type'],
+                        'id': new_rel_data['id'],
+                        'relationships': {
+                            mirror_rel.name: {
+                                'data': src_obj_data,
+                            }
+                        }
+                    },
+                    mirror_target
+                ):
+                    return False
+        return new_rel_data
 
 
 def shp_collection_post_alter_request(request, view, stage, view_method):
