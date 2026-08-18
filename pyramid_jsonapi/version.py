@@ -8,7 +8,7 @@ Based on: https://github.com/Changaco/version.py
 from os.path import dirname, isdir, isfile, join
 import re
 from subprocess import CalledProcessError, check_output
-from importlib.metadata import version
+import importlib.metadata
 
 
 def get_version():
@@ -45,7 +45,7 @@ def get_version():
             return version_re.search(info_f.read()).group(1)
 
     # Package was installed (os pkg, pip etc) without PKG-INFO
-    return version('pyramid-jsonapi')
+    return importlib.metadata.version('pyramid-jsonapi')
 
 
 if __name__ == '__main__':
